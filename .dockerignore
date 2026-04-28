@@ -1,0 +1,7 @@
+.git
+.idea
+vendor
+.phpunit.cache
+build
+database/*.sqlite
+

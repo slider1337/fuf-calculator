@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: FUF Gruppenreise Kalkulator API
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /api/settings:
+    get:
+      summary: Globale Defaults laden
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+    put:
+      summary: Globale Defaults aktualisieren
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/trips:
+    get:
+      summary: Alle Reisen als Liste
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripListItem'
+    post:
+      summary: Reise anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/trips/{id}:
+    get:
+      summary: Reise laden
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Reise aktualisieren
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTripRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/trips/{id}/calculate:
+    post:
+      summary: Reisepreise berechnen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trips/{id}/registrations:
+    get:
+      summary: Anmeldungen einer Reise laden
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationWithBilling'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Alle Anmeldungen einer Reise loeschen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trips/{id}/registrations/import:
+    post:
+      summary: CSV-Datei mit Anmeldungen importieren
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [csv_file]
+              properties:
+                csv_file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationWithBilling'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/trips/{id}/registrations/recalculate:
+    post:
+      summary: Abrechnungen aller Anmeldungen neu berechnen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationWithBilling'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trips/{id}/actual-expenses:
+    get:
+      summary: Tatsaechliche Ausgaben einer Reise laden
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActualExpense'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Tatsaechliche Ausgabe hinzufuegen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActualExpenseRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActualExpense'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/trips/{id}/actual-expenses/{expenseId}:
+    put:
+      summary: Tatsaechliche Ausgabe aktualisieren
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActualExpenseRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActualExpense'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: Tatsaechliche Ausgabe loeschen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trips/{id}/settlement:
+    get:
+      summary: Abrechnung / Settlement einer Reise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: validation_error
+              details:
+                type: object
+                additionalProperties:
+                  type: string
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: not_found
+
+  schemas:
+    Settings:
+      type: object
+      required:
+        - defaultMarkupPercent
+        - defaultClubFeePercent
+        - defaultDistributionMethod
+        - defaultSpaTaxPerPerson
+        - defaultSpaTaxAgeThreshold
+      properties:
+        defaultMarkupPercent:
+          type: number
+          format: float
+          example: 10.0
+        defaultClubFeePercent:
+          type: number
+          format: float
+          example: 5.0
+        defaultDistributionMethod:
+          type: string
+          enum: [PER_PERSON, PER_CATEGORY_UNITS]
+        defaultSpaTaxPerPerson:
+          type: number
+          format: float
+          example: 2.5
+        defaultSpaTaxAgeThreshold:
+          type: integer
+          example: 18
+
+    RoomBooking:
+      type: object
+      required: [categoryType, count, basePricePerPerson]
+      properties:
+        categoryType:
+          type: string
+          enum: [ADULT_DOUBLE, ADULT_MULTI, CHILD]
+        count:
+          type: integer
+        basePricePerPerson:
+          type: number
+          format: float
+
+    GroupExpense:
+      type: object
+      required: [label, amount]
+      properties:
+        label:
+          type: string
+        amount:
+          type: number
+          format: float
+
+    CreateTripRequest:
+      type: object
+      required:
+        - name
+        - startDate
+        - markupPercent
+        - clubFeePercent
+        - distributionMethod
+        - spaTaxPerPerson
+        - spaTaxAgeThreshold
+        - bookings
+        - groupExpenses
+      properties:
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+        markupPercent:
+          type: number
+          format: float
+        clubFeePercent:
+          type: number
+          format: float
+        distributionMethod:
+          type: string
+          enum: [PER_PERSON, PER_CATEGORY_UNITS]
+        spaTaxPerPerson:
+          type: number
+          format: float
+        spaTaxAgeThreshold:
+          type: integer
+        bookings:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomBooking'
+        groupExpenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupExpense'
+
+    Trip:
+      allOf:
+        - $ref: '#/components/schemas/CreateTripRequest'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+
+    TripListItem:
+      type: object
+      required: [id, name, startDate]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+
+    CalculationResult:
+      type: object
+      properties:
+        pricesPerCategory:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+        priceBreakdowns:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PriceBreakdown'
+        totalGroupExpenses:
+          type: number
+          format: float
+        totalParticipants:
+          type: integer
+        totalCalculatedRevenue:
+          type: number
+          format: float
+        totalCalculatedCosts:
+          type: number
+          format: float
+        surplus:
+          type: number
+          format: float
+        distributionMethod:
+          type: string
+          enum: [PER_PERSON, PER_CATEGORY_UNITS]
+        spaTaxAgeThreshold:
+          type: integer
+        startDate:
+          type: string
+          format: date
+
+    PriceBreakdown:
+      type: object
+      properties:
+        basePricePerPerson:
+          type: number
+          format: float
+        spaTaxPerPerson:
+          type: number
+          format: float
+        groupExpenseShare:
+          type: number
+          format: float
+        subtotalBeforeMarkup:
+          type: number
+          format: float
+        markupPercent:
+          type: number
+          format: float
+        markupAmount:
+          type: number
+          format: float
+        subtotalBeforeClubFee:
+          type: number
+          format: float
+        clubFeePercent:
+          type: number
+          format: float
+        clubFeeAmount:
+          type: number
+          format: float
+        finalPrice:
+          type: number
+          format: float
+        count:
+          type: integer
+        categoryRevenue:
+          type: number
+          format: float
+
+    RegistrationParticipant:
+      type: object
+      required: [name, birthDate]
+      properties:
+        name:
+          type: string
+        birthDate:
+          type: string
+          format: date
+
+    BillingLineItem:
+      type: object
+      required: [participantName, categoryType, price]
+      properties:
+        participantName:
+          type: string
+        categoryType:
+          type: string
+          enum: [ADULT_DOUBLE, ADULT_MULTI, CHILD]
+        price:
+          type: number
+          format: float
+
+    RegistrationWithBilling:
+      type: object
+      required: [id, tripId, roomCategory, participants, source]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        roomCategory:
+          type: string
+        receivedAt:
+          type: string
+          nullable: true
+        comment:
+          type: string
+        source:
+          type: string
+          enum: [csv, manual]
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationParticipant'
+        billingCalculatedAt:
+          type: string
+          nullable: true
+        billingTotal:
+          type: number
+          format: float
+          nullable: true
+        billingItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingLineItem'
+
+    CreateRegistrationRequest:
+      type: object
+      required: [roomCategory, participants]
+      properties:
+        roomCategory:
+          type: string
+          example: "3-Bettzimmer"
+        comment:
+          type: string
+          example: ""
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationParticipant'
+
+    CreateActualExpenseRequest:
+      type: object
+      required: [label, amount]
+      properties:
+        label:
+          type: string
+          example: Unterkunft
+        amount:
+          type: number
+          format: float
+          example: 1500.00
+
+    ActualExpense:
+      type: object
+      required: [id, tripId, label, amount]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        label:
+          type: string
+        amount:
+          type: number
+          format: float
+
+    SettlementResponse:
+      type: object
+      required: [totalRevenue, plannedCostItems, totalPlannedCosts, totalAdditionalExpenses, totalAllExpenses, surplus, expenses]
+      properties:
+        totalRevenue:
+          type: number
+          format: float
+        plannedCostItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedCostItem'
+        totalPlannedCosts:
+          type: number
+          format: float
+        totalAdditionalExpenses:
+          type: number
+          format: float
+        totalAllExpenses:
+          type: number
+          format: float
+        surplus:
+          type: number
+          format: float
+        expenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActualExpense'
+
+    PlannedCostItem:
+      type: object
+      required: [label, amount]
+      properties:
+        label:
+          type: string
+          example: "Zimmer: Erwachsener DZ (3 × 100.00 €)"
+        amount:
+          type: number
+          format: float
+
+

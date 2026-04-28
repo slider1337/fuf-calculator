@@ -1,0 +1,6 @@
+/vendor/
+/database/*.sqlite
+!/database/.gitkeep
+
+.idea
+.phpunit.cache

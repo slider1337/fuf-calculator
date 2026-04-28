@@ -1,0 +1,75 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Integration;
+
+use PHPUnit\Framework\TestCase;
+use Slim\App;
+use Slim\Psr7\Factory\ServerRequestFactory;
+use Slim\Psr7\Factory\StreamFactory;
+
+abstract class ApiTestCase extends TestCase
+{
+    private string $dbPath;
+
+    protected App $app;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->dbPath = sys_get_temp_dir() . '/fuf-test-' . uniqid('', true) . '.sqlite';
+        putenv('DB_PATH=' . $this->dbPath);
+
+        $factory = require __DIR__ . '/../../config/app.php';
+        $this->app = $factory();
+    }
+
+    protected function tearDown(): void
+    {
+        if (is_file($this->dbPath)) {
+            unlink($this->dbPath);
+        }
+
+        putenv('DB_PATH');
+        parent::tearDown();
+    }
+
+    protected function dispatch(string $method, string $path, ?array $jsonPayload = null)
+    {
+        $request = (new ServerRequestFactory())->createServerRequest($method, $path);
+
+        if ($jsonPayload !== null) {
+            $json = json_encode($jsonPayload, JSON_THROW_ON_ERROR);
+            $stream = (new StreamFactory())->createStream($json);
+            $request = $request
+                ->withHeader('Content-Type', 'application/json')
+                ->withBody($stream);
+        }
+
+        return $this->app->handle($request);
+    }
+
+    protected function validTripPayload(): array
+    {
+        return [
+            'name' => 'API Test Reise',
+            'startDate' => '2026-12-20',
+            'markupPercent' => 10.0,
+            'clubFeePercent' => 5.0,
+            'distributionMethod' => 'PER_PERSON',
+            'spaTaxPerPerson' => 2.0,
+            'spaTaxAgeThreshold' => 18,
+            'bookings' => [
+                ['categoryType' => 'ADULT_DOUBLE', 'count' => 3, 'basePricePerPerson' => 100.0],
+                ['categoryType' => 'ADULT_MULTI', 'count' => 2, 'basePricePerPerson' => 90.0],
+                ['categoryType' => 'CHILD', 'count' => 1, 'basePricePerPerson' => 60.0],
+            ],
+            'groupExpenses' => [
+                ['label' => 'Snacks', 'amount' => 30.0],
+            ],
+        ];
+    }
+}
+

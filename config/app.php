@@ -16,7 +16,8 @@ return static function (?ContainerInterface $container = null): App {
     $app->addBodyParsingMiddleware();
     $app->addRoutingMiddleware();
 
-    $errorMiddleware = $app->addErrorMiddleware(true, false, false);
+    $displayErrors = (bool) (getenv('APP_DEBUG') ?: false);
+    $errorMiddleware = $app->addErrorMiddleware($displayErrors, false, false);
     $errorMiddleware->setDefaultErrorHandler(static function ($request, Throwable $exception, bool $displayErrorDetails) use ($app) {
         $response = $app->getResponseFactory()->createResponse(500);
         $response->getBody()->write((string) json_encode([

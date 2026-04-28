@@ -1,0 +1,25 @@
+services:
+  app:
+    image: ghcr.io/slider1337/fuf-calculator:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - sqlite-data:/app/database
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      - DB_PATH=/app/database/fuf.sqlite
+      - APP_DEBUG=0
+      - SERVER_NAME=fuf-calc.benna.me
+
+volumes:
+  sqlite-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local

@@ -1,7 +1,11 @@
 .git
+.github
 .idea
 vendor
 .phpunit.cache
 build
 database/*.sqlite
-
+database/*.sqlite-wal
+database/*.sqlite-shm
+node_modules
+*.csv

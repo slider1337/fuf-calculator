@@ -1,0 +1,36 @@
+# Stage 1: Install Composer dependencies
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json ./
+COPY scripts/copy-bootstrap.php ./scripts/copy-bootstrap.php
+COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
+RUN composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+# Stage 2: Production FrankenPHP image
+FROM dunglas/frankenphp
+
+ENV SERVER_NAME=fuf-calc.benna.me
+
+WORKDIR /app
+
+RUN install-php-extensions pdo_sqlite opcache
+
+# Production PHP configuration
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+COPY deploy/php-prod.ini $PHP_INI_DIR/conf.d/99-production.ini
+
+# Copy application
+COPY --from=vendor /app/vendor ./vendor
+COPY --from=vendor /app/public/assets/vendor/bootstrap ./public/assets/vendor/bootstrap
+COPY --from=vendor /app/public/docs/swagger-ui ./public/docs/swagger-ui
+COPY . .
+
+# Remove dev files from production image
+RUN rm -rf tests deploy .github .gitignore phpunit.xml
+
+# Ensure database directory exists and is writable
+RUN mkdir -p /app/database \
+	&& chown -R www-data:www-data /app/database
+
+EXPOSE 80 443
+

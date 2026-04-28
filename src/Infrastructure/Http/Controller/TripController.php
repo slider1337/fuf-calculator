@@ -8,15 +8,19 @@ use App\Application\NotFoundException;
 use App\Application\TripService;
 use App\Application\ValidationException;
 use App\Infrastructure\Http\JsonResponder;
+use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final class TripController
+final readonly class TripController
 {
     public function __construct(private TripService $service)
     {
     }
 
+    /**
+     * @throws JsonException
+     */
     public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -33,11 +37,17 @@ final class TripController
         return JsonResponder::write($response, $this->tripToArray($trip), 201);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         return JsonResponder::write($response, $this->service->listTrips());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function update(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -56,6 +66,9 @@ final class TripController
         return JsonResponder::write($response, $this->tripToArray($trip));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function get(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -67,6 +80,9 @@ final class TripController
         return JsonResponder::write($response, $this->tripToArray($trip));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function calculate(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {

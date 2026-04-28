@@ -40,7 +40,7 @@ final class PriceCalculatorServiceTest extends TestCase
             800.00
         );
 
-        $result = (new PriceCalculatorService())->calculate($trip);
+        $result = new PriceCalculatorService()->calculate($trip);
 
         self::assertSame('PER_PERSON', $result['distributionMethod']);
         self::assertSame(7, $result['totalParticipants']);
@@ -93,7 +93,7 @@ final class PriceCalculatorServiceTest extends TestCase
             350.00
         );
 
-        $result = (new PriceCalculatorService())->calculate($trip);
+        $result = new PriceCalculatorService()->calculate($trip);
 
         self::assertSame('PER_CATEGORY_UNITS', $result['distributionMethod']);
         self::assertSame('2026-08-01', $result['startDate']);

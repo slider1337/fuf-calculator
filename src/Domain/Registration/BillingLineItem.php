@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Registration;
 
-final class BillingLineItem
+final readonly class BillingLineItem
 {
     public function __construct(
         private string $participantName,

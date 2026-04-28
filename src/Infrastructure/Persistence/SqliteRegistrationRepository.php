@@ -8,10 +8,12 @@ use App\Application\Port\RegistrationRepositoryInterface;
 use App\Domain\Registration\BillingLineItem;
 use App\Domain\Registration\Participant;
 use App\Domain\Registration\Registration;
+use DateMalformedStringException;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PDO;
 
-final class SqliteRegistrationRepository implements RegistrationRepositoryInterface
+final readonly class SqliteRegistrationRepository implements RegistrationRepositoryInterface
 {
     public function __construct(private PDO $pdo)
     {
@@ -62,7 +64,7 @@ final class SqliteRegistrationRepository implements RegistrationRepositoryInterf
     {
         $id = $registration->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Registration id is required for billing update.');
+            throw new InvalidArgumentException('Registration id is required for billing update.');
         }
 
         $this->pdo->beginTransaction();
@@ -87,7 +89,10 @@ final class SqliteRegistrationRepository implements RegistrationRepositoryInterf
         return $registration;
     }
 
-    /** @return Registration[] */
+    /**
+     * @return Registration[]
+     * @throws DateMalformedStringException
+     */
     public function findByTripId(int $tripId): array
     {
         $regStmt = $this->pdo->prepare(
@@ -124,6 +129,9 @@ final class SqliteRegistrationRepository implements RegistrationRepositoryInterf
         return $registrations;
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function findById(int $id): ?Registration
     {
         $stmt = $this->pdo->prepare('SELECT * FROM registrations WHERE id = :id');
@@ -207,7 +215,10 @@ final class SqliteRegistrationRepository implements RegistrationRepositoryInterf
             ->execute([':id' => $id]);
     }
 
-    /** @return Participant[] */
+    /**
+     * @return Participant[]
+     * @throws DateMalformedStringException
+     */
     private function loadParticipants(int $registrationId): array
     {
         $stmt = $this->pdo->prepare(

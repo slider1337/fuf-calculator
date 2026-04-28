@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use JsonException;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Slim\App;
 use Slim\Psr7\Factory\ServerRequestFactory;
 use Slim\Psr7\Factory\StreamFactory;
@@ -36,13 +38,16 @@ abstract class ApiTestCase extends TestCase
         parent::tearDown();
     }
 
-    protected function dispatch(string $method, string $path, ?array $jsonPayload = null)
+    /**
+     * @throws JsonException
+     */
+    protected function dispatch(string $method, string $path, ?array $jsonPayload = null): ResponseInterface
     {
-        $request = (new ServerRequestFactory())->createServerRequest($method, $path);
+        $request = new ServerRequestFactory()->createServerRequest($method, $path);
 
         if ($jsonPayload !== null) {
             $json = json_encode($jsonPayload, JSON_THROW_ON_ERROR);
-            $stream = (new StreamFactory())->createStream($json);
+            $stream = new StreamFactory()->createStream($json);
             $request = $request
                 ->withHeader('Content-Type', 'application/json')
                 ->withBody($stream);

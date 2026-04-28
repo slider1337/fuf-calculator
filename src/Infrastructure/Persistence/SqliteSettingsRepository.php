@@ -10,7 +10,7 @@ use App\Domain\Shared\ValueObject\Percentage;
 use App\Domain\Trip\DistributionMethod;
 use PDO;
 
-final class SqliteSettingsRepository implements SettingsRepositoryInterface
+final readonly class SqliteSettingsRepository implements SettingsRepositoryInterface
 {
     public function __construct(private PDO $pdo)
     {

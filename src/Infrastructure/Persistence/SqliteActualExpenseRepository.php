@@ -8,7 +8,7 @@ use App\Application\Port\ActualExpenseRepositoryInterface;
 use App\Domain\Trip\ActualExpense;
 use PDO;
 
-final class SqliteActualExpenseRepository implements ActualExpenseRepositoryInterface
+final readonly class SqliteActualExpenseRepository implements ActualExpenseRepositoryInterface
 {
     public function __construct(private PDO $pdo)
     {

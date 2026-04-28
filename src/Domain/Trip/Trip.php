@@ -7,7 +7,7 @@ namespace App\Domain\Trip;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
-final class Trip
+final readonly class Trip
 {
     /** @param RoomBooking[] $bookings @param GroupExpense[] $groupExpenses */
     public function __construct(

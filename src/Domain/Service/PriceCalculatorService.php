@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Service;
 
 use App\Domain\Trip\DistributionMethod;
-use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 
 final class PriceCalculatorService

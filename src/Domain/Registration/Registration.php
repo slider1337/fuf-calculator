@@ -7,10 +7,10 @@ namespace App\Domain\Registration;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
-final class Registration
+final readonly class Registration
 {
-    public const SOURCE_CSV = 'csv';
-    public const SOURCE_MANUAL = 'manual';
+    public const string SOURCE_CSV = 'csv';
+    public const string SOURCE_MANUAL = 'manual';
 
     /**
      * @param Participant[]     $participants

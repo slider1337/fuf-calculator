@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use JsonException;
 use Symfony\Component\Yaml\Yaml;
 
 final class OpenApiContractTest extends ApiTestCase
@@ -16,6 +17,9 @@ final class OpenApiContractTest extends ApiTestCase
         $this->spec = Yaml::parseFile(__DIR__ . '/../../docs/openapi.yaml');
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testSettingsResponseContainsAllRequiredSchemaFields(): void
     {
         $this->assertPathAndStatusDefined('/api/settings', 'get', '200');
@@ -29,6 +33,9 @@ final class OpenApiContractTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCalculateResponseContainsAllExpectedFieldsFromSchema(): void
     {
         $create = $this->dispatch('POST', '/api/trips', $this->validTripPayload());

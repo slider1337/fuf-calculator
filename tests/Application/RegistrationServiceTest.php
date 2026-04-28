@@ -18,21 +18,22 @@ use App\Domain\Trip\RoomBooking;
 use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
+use DateMalformedStringException;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class RegistrationServiceTest extends TestCase
 {
-    private InMemoryRegistrationRepository $registrationRepo;
     private InMemoryTripRepository $tripRepo;
     private RegistrationService $service;
 
     protected function setUp(): void
     {
-        $this->registrationRepo = new InMemoryRegistrationRepository();
+        $registrationRepo = new InMemoryRegistrationRepository();
         $this->tripRepo = new InMemoryTripRepository();
         $billingService = new RegistrationBillingService(new PriceCalculatorService());
-        $this->service = new RegistrationService($this->registrationRepo, $this->tripRepo, $billingService);
+        $this->service = new RegistrationService($registrationRepo, $this->tripRepo, $billingService);
     }
 
     private function createTrip(): Trip
@@ -68,6 +69,9 @@ final class RegistrationServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvCreatesRegistrations(): void
     {
         $trip = $this->createTrip();
@@ -80,6 +84,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(2, $result[1]->participants());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvCalculatesBillings(): void
     {
         $trip = $this->createTrip();
@@ -93,6 +100,9 @@ final class RegistrationServiceTest extends TestCase
         }
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvReplacesExistingRegistrations(): void
     {
         $trip = $this->createTrip();
@@ -102,12 +112,18 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(2, $result);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithUnknownTripThrowsNotFound(): void
     {
         $this->expectException(NotFoundException::class);
         $this->service->importCsv(9999, $this->sampleCsv());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithEmptyContentThrowsValidation(): void
     {
         $trip = $this->createTrip();
@@ -116,6 +132,9 @@ final class RegistrationServiceTest extends TestCase
         $this->service->importCsv($trip->id(), '');
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithHeaderOnlyThrowsValidation(): void
     {
         $trip = $this->createTrip();
@@ -139,6 +158,9 @@ final class RegistrationServiceTest extends TestCase
         $this->service->getRegistrations(9999);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testRecalculateBillings(): void
     {
         $trip = $this->createTrip();
@@ -151,6 +173,9 @@ final class RegistrationServiceTest extends TestCase
         }
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testDeleteRegistrations(): void
     {
         $trip = $this->createTrip();
@@ -167,6 +192,9 @@ final class RegistrationServiceTest extends TestCase
         $this->service->deleteRegistrations(9999);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvParsesGermanDatesCorrectly(): void
     {
         $trip = $this->createTrip();
@@ -177,6 +205,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('2015-04-08', $participants[1]->birthDate()->format('Y-m-d'));
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvSkipsEmptyParticipants(): void
     {
         $trip = $this->createTrip();
@@ -191,6 +222,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(1, $result[0]->participants());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithExtraColumnsFindsAllParticipants(): void
     {
         $trip = $this->createTrip();
@@ -215,6 +249,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(5, $result[1]->participants());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithMultiLineCommentField(): void
     {
         $trip = $this->createTrip();
@@ -234,6 +271,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(1, $result[1]->participants());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithEmptyRoomCategorySkipsRow(): void
     {
         $trip = $this->createTrip();
@@ -249,6 +289,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('4-Bettzimmer', $result[0]->roomCategory());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithCommaDelimiter(): void
     {
         $trip = $this->createTrip();
@@ -264,6 +307,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('Test', $result[0]->comment());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testImportCsvWithoutCommentColumn(): void
     {
         $trip = $this->createTrip();
@@ -278,6 +324,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('', $result[0]->comment());
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testBillingCategoriesMatchRoomAndAge(): void
     {
         $trip = $this->createTrip();
@@ -343,6 +392,9 @@ final class RegistrationServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testCsvImportPreservesManualRegistrations(): void
     {
         $trip = $this->createTrip();
@@ -358,11 +410,14 @@ final class RegistrationServiceTest extends TestCase
 
         // Should contain manual + CSV registrations
         self::assertCount(3, $result);
-        $sources = array_map(fn ($r) => $r->source(), $result);
+        $sources = array_map(static fn ($r) => $r->source(), $result);
         self::assertContains('manual', $sources);
         self::assertContains('csv', $sources);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testCsvImportReplacesOnlyCsvRegistrations(): void
     {
         $trip = $this->createTrip();
@@ -381,6 +436,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(3, $result);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testDeleteSingleRegistration(): void
     {
         $trip = $this->createTrip();
@@ -391,6 +449,9 @@ final class RegistrationServiceTest extends TestCase
         self::assertCount(1, $result);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testDeleteSingleRegistrationForWrongTripThrowsNotFound(): void
     {
         $trip = $this->createTrip();
@@ -425,6 +486,9 @@ final class RegistrationServiceTest extends TestCase
         $this->service->deleteRegistration($trip->id(), 9999);
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testCsvRegistrationsHaveCsvSource(): void
     {
         $trip = $this->createTrip();
@@ -454,7 +518,7 @@ final class InMemoryRegistrationRepository implements RegistrationRepositoryInte
     {
         $id = $registration->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Registration id is required.');
+            throw new InvalidArgumentException('Registration id is required.');
         }
         $this->items[$id] = $registration;
         return $registration;

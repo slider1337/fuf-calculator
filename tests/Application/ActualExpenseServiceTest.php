@@ -18,21 +18,21 @@ use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class ActualExpenseServiceTest extends TestCase
 {
-    private InMemoryActualExpenseRepository $expenseRepo;
     private InMemoryTripRepository $tripRepo;
     private InMemoryRegistrationRepository $regRepo;
     private ActualExpenseService $service;
 
     protected function setUp(): void
     {
-        $this->expenseRepo = new InMemoryActualExpenseRepository();
+        $expenseRepo = new InMemoryActualExpenseRepository();
         $this->tripRepo = new InMemoryTripRepository();
         $this->regRepo = new InMemoryRegistrationRepository();
-        $this->service = new ActualExpenseService($this->expenseRepo, $this->tripRepo, $this->regRepo);
+        $this->service = new ActualExpenseService($expenseRepo, $this->tripRepo, $this->regRepo);
     }
 
     private function createTrip(): Trip
@@ -266,7 +266,7 @@ final class InMemoryActualExpenseRepository implements ActualExpenseRepositoryIn
     {
         $id = $expense->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Expense id is required.');
+            throw new InvalidArgumentException('Expense id is required.');
         }
         $this->items[$id] = $expense;
         return $expense;
@@ -280,7 +280,7 @@ final class InMemoryActualExpenseRepository implements ActualExpenseRepositoryIn
     /** @return ActualExpense[] */
     public function findByTripId(int $tripId): array
     {
-        return array_values(array_filter($this->items, fn ($e) => $e->tripId() === $tripId));
+        return array_values(array_filter($this->items, static fn ($e) => $e->tripId() === $tripId));
     }
 
     public function getById(int $id): ?ActualExpense
@@ -290,7 +290,7 @@ final class InMemoryActualExpenseRepository implements ActualExpenseRepositoryIn
 
     public function deleteByTripId(int $tripId): void
     {
-        $this->items = array_filter($this->items, fn ($e) => $e->tripId() !== $tripId);
+        $this->items = array_filter($this->items, static fn ($e) => $e->tripId() !== $tripId);
     }
 }
 

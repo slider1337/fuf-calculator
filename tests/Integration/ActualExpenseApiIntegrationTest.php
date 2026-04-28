@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use JsonException;
+
 final class ActualExpenseApiIntegrationTest extends ApiTestCase
 {
+    /**
+     * @throws JsonException
+     */
     private function createTripAndGetId(): int
     {
         $response = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
@@ -14,6 +19,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         return (int) $data['id'];
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateActualExpense(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -31,6 +39,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame($tripId, $data['tripId']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateActualExpenseForNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('POST', '/api/trips/99999/actual-expenses', [
@@ -41,6 +52,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateActualExpenseWithMissingLabelReturns422(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -55,6 +69,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame('validation_error', $data['error']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateActualExpenseWithNegativeAmountReturns422(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -67,6 +84,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame(422, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListActualExpenses(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -89,12 +109,18 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame('B', $data[1]['label']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListActualExpensesForNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('GET', '/api/trips/99999/actual-expenses');
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateActualExpense(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -116,6 +142,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame(250.0, (float) $updated['amount']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateNonExistentActualExpenseReturns404(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -128,6 +157,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDeleteActualExpense(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -146,6 +178,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertCount(0, $list);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDeleteNonExistentActualExpenseReturns404(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -154,6 +189,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testSettlementWithNoData(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -174,6 +212,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         self::assertLessThan(0, (float) $data['surplus']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testSettlementWithExpenses(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -200,6 +241,9 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         );
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testSettlementPlannedCostsIncludeRoomAndSpaTax(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -212,21 +256,33 @@ final class ActualExpenseApiIntegrationTest extends ApiTestCase
         $hasSpaTax = false;
         $hasGroupExpense = false;
         foreach ($labels as $label) {
-            if (str_contains($label, 'Zimmer:')) $hasRoom = true;
-            if (str_contains($label, 'Kurabgabe')) $hasSpaTax = true;
-            if (str_contains($label, 'Gruppenausgabe:')) $hasGroupExpense = true;
+            if (str_contains($label, 'Zimmer:')) {
+                $hasRoom = true;
+            }
+            if (str_contains($label, 'Kurabgabe')) {
+                $hasSpaTax = true;
+            }
+            if (str_contains($label, 'Gruppenausgabe:')) {
+                $hasGroupExpense = true;
+            }
         }
         self::assertTrue($hasRoom, 'Expected planned costs to contain room costs');
         self::assertTrue($hasSpaTax, 'Expected planned costs to contain spa tax');
         self::assertTrue($hasGroupExpense, 'Expected planned costs to contain group expenses');
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testSettlementForNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('GET', '/api/trips/99999/settlement');
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testActualExpensesAreCascadeDeletedWithTrip(): void
     {
         $tripId = $this->createTripAndGetId();

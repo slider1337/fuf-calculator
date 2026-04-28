@@ -6,7 +6,7 @@ namespace App\Domain\Shared\ValueObject;
 
 use InvalidArgumentException;
 
-final class Percentage
+final readonly class Percentage
 {
     public function __construct(private float $value)
     {

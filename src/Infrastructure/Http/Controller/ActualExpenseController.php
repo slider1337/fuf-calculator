@@ -8,15 +8,19 @@ use App\Application\ActualExpenseService;
 use App\Application\NotFoundException;
 use App\Application\ValidationException;
 use App\Infrastructure\Http\JsonResponder;
+use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final class ActualExpenseController
+final readonly class ActualExpenseController
 {
     public function __construct(private ActualExpenseService $service)
     {
     }
 
+    /**
+     * @throws JsonException
+     */
     public function list(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -28,6 +32,9 @@ final class ActualExpenseController
         return JsonResponder::write($response, $this->expensesToArray($expenses));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function create(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -46,6 +53,9 @@ final class ActualExpenseController
         return JsonResponder::write($response, $this->expenseToArray($expense), 201);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function update(ServerRequestInterface $request, ResponseInterface $response, string $id, string $expenseId): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -64,6 +74,9 @@ final class ActualExpenseController
         return JsonResponder::write($response, $this->expenseToArray($expense));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function delete(ServerRequestInterface $request, ResponseInterface $response, string $id, string $expenseId): ResponseInterface
     {
         try {
@@ -75,6 +88,9 @@ final class ActualExpenseController
         return JsonResponder::write($response, ['status' => 'deleted']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function settlement(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {

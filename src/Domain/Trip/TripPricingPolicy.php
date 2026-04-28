@@ -6,7 +6,7 @@ namespace App\Domain\Trip;
 
 use App\Domain\Shared\ValueObject\Percentage;
 
-final class TripPricingPolicy
+final readonly class TripPricingPolicy
 {
     public function __construct(
         private Percentage $markupPercent,

@@ -10,7 +10,7 @@ use App\Domain\Registration\Registration;
 use App\Domain\Trip\Trip;
 use DateTimeImmutable;
 
-final class RegistrationBillingService
+final readonly class RegistrationBillingService
 {
     public function __construct(private PriceCalculatorService $calculator)
     {

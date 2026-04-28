@@ -7,7 +7,7 @@ namespace App\Domain\Registration;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
-final class Participant
+final readonly class Participant
 {
     public function __construct(
         private string $name,
@@ -30,7 +30,7 @@ final class Participant
 
     public function ageAtDate(DateTimeImmutable $referenceDate): int
     {
-        return (int) $this->birthDate->diff($referenceDate)->y;
+        return $this->birthDate->diff($referenceDate)->y;
     }
 }
 

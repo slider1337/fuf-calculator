@@ -10,6 +10,7 @@ use App\Application\TripService;
 use App\Application\ValidationException;
 use App\Domain\Service\PriceCalculatorService;
 use App\Domain\Trip\Trip;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class TripServiceTest extends TestCase
@@ -56,7 +57,7 @@ final class InMemoryTripRepository implements TripRepositoryInterface
     {
         $id = $trip->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Trip id is required.');
+            throw new InvalidArgumentException('Trip id is required.');
         }
 
         $this->items[$id] = $trip;

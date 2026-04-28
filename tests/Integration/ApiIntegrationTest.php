@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use JsonException;
+
 final class ApiIntegrationTest extends ApiTestCase
 {
+    /**
+     * @throws JsonException
+     */
     public function testRootPageContainsDocumentationLinks(): void
     {
         $response = $this->dispatch('GET', '/');
@@ -16,6 +21,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertStringContainsString('/openapi.yaml', $html);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testNewTripFrontendRouteIsDirectlyReachable(): void
     {
         $response = $this->dispatch('GET', '/trips/new');
@@ -26,6 +34,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertStringContainsString('Neue Reise erstellen', $html);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testTripFrontendRouteIsDirectlyReachable(): void
     {
         $create = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
@@ -40,6 +51,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertStringContainsString('result-panel', $html);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testGetSettingsReturnsDefaults(): void
     {
         $response = $this->dispatch('GET', '/api/settings');
@@ -51,6 +65,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(5.0, (float) $payload['defaultClubFeePercent']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateTripAndCalculate(): void
     {
         $requestPayload = $this->validTripPayload();
@@ -87,6 +104,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertArrayHasKey('totalGroupExpenses', $calculation);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateTripWithMissingFieldsReturns422(): void
     {
         $response = $this->dispatch('POST', '/api/trips', ['name' => 'Fehlt']);
@@ -96,6 +116,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame('validation_error', $payload['error']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDocumentationRoutesAreReachable(): void
     {
         $docsResponse = $this->dispatch('GET', '/docs');
@@ -107,6 +130,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertStringContainsString('openapi: 3.0.3', (string) $specResponse->getBody());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListTripsContainsCreatedTrip(): void
     {
         $create = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
@@ -122,6 +148,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertArrayHasKey('startDate', $list[0]);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testTripListIsSortedByStartDateDescending(): void
     {
         $older = $this->validTripPayload();
@@ -149,6 +178,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame('2026-01-10', $list[2]['startDate']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateTripPersistsChangedValues(): void
     {
         $create = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
@@ -169,6 +201,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(3.5, (float) $updated['spaTaxPerPerson']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateSettingsSuccessfully(): void
     {
         $payload = [
@@ -190,6 +225,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(16, $data['defaultSpaTaxAgeThreshold']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateSettingsPersistsValues(): void
     {
         $payload = [
@@ -208,6 +246,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(14, $data['defaultSpaTaxAgeThreshold']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateSettingsWithMissingFieldsReturns422(): void
     {
         $response = $this->dispatch('PUT', '/api/settings', ['defaultMarkupPercent' => 10.0]);
@@ -218,6 +259,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertArrayHasKey('details', $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testGetNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('GET', '/api/trips/99999');
@@ -227,6 +271,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame('not_found', $data['error']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('PUT', '/api/trips/99999', $this->validTripPayload());
@@ -234,6 +281,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCalculateNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('POST', '/api/trips/99999/calculate');
@@ -241,6 +291,9 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testUpdateTripWithMissingFieldsReturns422(): void
     {
         $create = $this->dispatch('POST', '/api/trips', $this->validTripPayload());

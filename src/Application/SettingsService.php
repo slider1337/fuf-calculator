@@ -8,8 +8,9 @@ use App\Application\Port\SettingsRepositoryInterface;
 use App\Domain\Settings\Settings;
 use App\Domain\Shared\ValueObject\Percentage;
 use App\Domain\Trip\DistributionMethod;
+use Throwable;
 
-final class SettingsService
+final readonly class SettingsService
 {
     public function __construct(private SettingsRepositoryInterface $repository)
     {
@@ -41,7 +42,7 @@ final class SettingsService
                 (float) $payload['defaultSpaTaxPerPerson'],
                 (int) $payload['defaultSpaTaxAgeThreshold']
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);
         }
 

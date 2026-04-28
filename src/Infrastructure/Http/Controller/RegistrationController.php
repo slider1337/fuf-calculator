@@ -8,15 +8,21 @@ use App\Application\NotFoundException;
 use App\Application\RegistrationService;
 use App\Application\ValidationException;
 use App\Infrastructure\Http\JsonResponder;
+use DateMalformedStringException;
+use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final class RegistrationController
+final readonly class RegistrationController
 {
     public function __construct(private RegistrationService $service)
     {
     }
 
+    /**
+     * @throws DateMalformedStringException
+     * @throws JsonException
+     */
     public function import(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $uploadedFiles = $request->getUploadedFiles();
@@ -45,6 +51,9 @@ final class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations), 201);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function create(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
@@ -63,6 +72,9 @@ final class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations), 201);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function list(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -74,6 +86,9 @@ final class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function recalculate(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -85,6 +100,9 @@ final class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations));
     }
 
+    /**
+     * @throws JsonException
+     */
     public function delete(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -96,6 +114,9 @@ final class RegistrationController
         return JsonResponder::write($response, ['status' => 'deleted']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function deleteSingle(ServerRequestInterface $request, ResponseInterface $response, string $id, string $registrationId): ResponseInterface
     {
         try {

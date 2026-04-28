@@ -277,12 +277,12 @@
                             <div class="col-12" id="manual-participants-container">
                                 <div class="row g-2 align-items-end mb-1 manual-participant-row">
                                     <div class="col-md-5">
-                                        <label class="form-label">Name Teilnehmer 1</label>
-                                        <input class="form-control manual-participant-name" type="text" required>
+                                        <label class="form-label" for="manualParticipantName1">Name Teilnehmer 1</label>
+                                        <input class="form-control manual-participant-name" type="text" required id="manualParticipantName1">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">Geburtsdatum Teilnehmer 1</label>
-                                        <input class="form-control manual-participant-birthdate" type="date" required>
+                                        <label class="form-label" for="manualParticipantBirthdate1">Geburtsdatum Teilnehmer 1</label>
+                                        <input class="form-control manual-participant-birthdate" type="date" required id="manualParticipantBirthdate1">
                                     </div>
                                     <div class="col-md-3"></div>
                                 </div>

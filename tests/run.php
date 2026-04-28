@@ -42,7 +42,7 @@ $tests['calculator_per_person'] = static function (): void {
         plannedTotalRevenue: 800.00
     );
 
-    $result = (new PriceCalculatorService())->calculate($trip);
+    $result = new PriceCalculatorService()->calculate($trip);
 
     assertEquals('PER_PERSON', $result['distributionMethod'], 'distribution method mismatch');
     assertTrue($result['totalCalculatedRevenue'] > 0, 'revenue should be positive');
@@ -73,7 +73,7 @@ $tests['calculator_per_category_units'] = static function (): void {
         plannedTotalRevenue: 350.00
     );
 
-    $result = (new PriceCalculatorService())->calculate($trip);
+    $result = new PriceCalculatorService()->calculate($trip);
 
     assertEquals('PER_CATEGORY_UNITS', $result['distributionMethod'], 'distribution method mismatch');
     assertTrue(isset($result['pricesPerCategory']['ADULT_DOUBLE']), 'adult double price missing');

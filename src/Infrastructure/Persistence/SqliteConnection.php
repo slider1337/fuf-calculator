@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use RuntimeException;
 
 final class SqliteConnection
 {
     public static function create(string $databasePath): PDO
     {
         $directory = dirname($databasePath);
-        if (!is_dir($directory)) {
-            if (!mkdir($directory, 0777, true) && !is_dir($directory)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
-            }
+        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $directory));
         }
 
         $pdo = new PDO('sqlite:' . $databasePath);

@@ -9,9 +9,10 @@ use App\Application\Port\TripRepositoryInterface;
 use App\Domain\Registration\Participant;
 use App\Domain\Registration\Registration;
 use App\Domain\Service\RegistrationBillingService;
+use DateMalformedStringException;
 use DateTimeImmutable;
 
-final class RegistrationService
+final readonly class RegistrationService
 {
     public function __construct(
         private RegistrationRepositoryInterface $registrationRepository,
@@ -24,6 +25,7 @@ final class RegistrationService
      * Import registrations from CSV content. Replaces only CSV-sourced registrations; manual ones are preserved.
      *
      * @return Registration[]
+     * @throws DateMalformedStringException
      */
     public function importCsv(int $tripId, string $csvContent): array
     {
@@ -40,9 +42,8 @@ final class RegistrationService
 
         $this->registrationRepository->deleteCsvByTripId($tripId);
 
-        $saved = [];
         foreach ($registrations as $registration) {
-            $saved[] = $this->registrationRepository->save($registration);
+            $this->registrationRepository->save($registration);
         }
 
         return $this->recalculateBillings($tripId);
@@ -182,6 +183,7 @@ final class RegistrationService
 
     /**
      * @return Registration[]
+     * @throws DateMalformedStringException
      */
     private function parseCsv(int $tripId, string $csvContent): array
     {
@@ -190,7 +192,7 @@ final class RegistrationService
         $delimiter = $this->detectDelimiter($csvContent);
 
         // Use a temp stream + fgetcsv to correctly handle multi-line quoted fields
-        $stream = fopen('php://temp', 'r+');
+        $stream = fopen('php://temp', 'rb+');
         if ($stream === false) {
             return [];
         }
@@ -255,7 +257,7 @@ final class RegistrationService
      */
     private function buildColumnMap(array $header): ?array
     {
-        $normalized = array_map(fn(string $h) => mb_strtolower(trim($h)), $header);
+        $normalized = array_map(static fn(string $h) => mb_strtolower(trim($h)), $header);
 
         // Find room category column
         $roomCategoryIdx = $this->findColumnIndex($normalized, ['zimmerkategorie', 'room category', 'zimmer']);
@@ -331,6 +333,7 @@ final class RegistrationService
 
     /**
      * @param array{roomCategory: int, receivedAt: ?int, comment: ?int, participants: array<int, array{name: int, birthDate: int}>} $columnMap
+     * @throws DateMalformedStringException
      */
     private function parseRegistrationRow(int $tripId, array $fields, array $columnMap): ?Registration
     {
@@ -374,6 +377,9 @@ final class RegistrationService
         );
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     private function parseGermanDate(string $dateStr): ?DateTimeImmutable
     {
         $dateStr = trim($dateStr);

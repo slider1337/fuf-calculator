@@ -20,10 +20,12 @@ return static function (?ContainerInterface $container = null): App {
     $errorMiddleware = $app->addErrorMiddleware($displayErrors, false, false);
     $errorMiddleware->setDefaultErrorHandler(static function ($request, Throwable $exception, bool $displayErrorDetails) use ($app) {
         $response = $app->getResponseFactory()->createResponse(500);
-        $response->getBody()->write((string) json_encode([
-            'error' => 'server_error',
-            'message' => $displayErrorDetails ? $exception->getMessage() : 'Internal server error',
-        ]));
+        $response->getBody()->write((string)json_encode([
+                                                            'error' => 'server_error',
+                                                            'message' => $displayErrorDetails ? $exception->getMessage(
+                                                            ) : 'Internal server error',
+                                                        ], JSON_THROW_ON_ERROR)
+        );
 
         return $response->withHeader('Content-Type', 'application/json');
     });

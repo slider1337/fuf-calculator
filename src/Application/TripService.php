@@ -14,8 +14,10 @@ use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
 use DateTimeImmutable;
+use Exception;
+use Throwable;
 
-final class TripService
+final readonly class TripService
 {
     public function __construct(
         private TripRepositoryInterface $repository,
@@ -74,14 +76,14 @@ final class TripService
 
         try {
             $startDate = new DateTimeImmutable((string) $payload['startDate']);
-        } catch (\Exception) {
+        } catch (Exception) {
             $errors['startDate'] = 'invalid_date';
             throw new ValidationException($errors);
         }
 
         $bookings = [];
         try {
-            foreach ((array) $payload['bookings'] as $bookingPayload) {
+            foreach ($payload['bookings'] as $bookingPayload) {
                 $bookings[] = new RoomBooking(
                     RoomCategoryType::from((string) $bookingPayload['categoryType']),
                     (int) $bookingPayload['count'],
@@ -113,7 +115,7 @@ final class TripService
                 plannedTotalCosts: (float) ($payload['plannedTotalCosts'] ?? 0),
                 plannedTotalRevenue: (float) ($payload['plannedTotalRevenue'] ?? 0)
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);
         }
 

@@ -12,10 +12,12 @@ use App\Domain\Trip\RoomBooking;
 use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
+use DateMalformedStringException;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PDO;
 
-final class SqliteTripRepository implements TripRepositoryInterface
+final readonly class SqliteTripRepository implements TripRepositoryInterface
 {
     public function __construct(private PDO $pdo)
     {
@@ -59,7 +61,7 @@ final class SqliteTripRepository implements TripRepositoryInterface
     {
         $tripId = $trip->id();
         if ($tripId === null) {
-            throw new \InvalidArgumentException('Trip id is required for update.');
+            throw new InvalidArgumentException('Trip id is required for update.');
         }
 
         $this->pdo->beginTransaction();
@@ -103,6 +105,9 @@ final class SqliteTripRepository implements TripRepositoryInterface
         return $trip;
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function getById(int $id): ?Trip
     {
         $tripRow = $this->pdo->prepare('SELECT * FROM trips WHERE id = :id');

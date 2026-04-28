@@ -14,13 +14,12 @@ use PHPUnit\Framework\TestCase;
 
 final class SettingsServiceTest extends TestCase
 {
-    private InMemorySettingsRepository $repository;
     private SettingsService $service;
 
     protected function setUp(): void
     {
-        $this->repository = new InMemorySettingsRepository();
-        $this->service = new SettingsService($this->repository);
+        $repository = new InMemorySettingsRepository();
+        $this->service = new SettingsService($repository);
     }
 
     public function testGetSettingsReturnsDefault(): void
@@ -105,17 +104,13 @@ final class InMemorySettingsRepository implements SettingsRepositoryInterface
 
     public function get(): Settings
     {
-        if ($this->settings === null) {
-            return new Settings(
-                new Percentage(10.0),
-                new Percentage(5.0),
-                DistributionMethod::PER_PERSON,
-                0.0,
-                0
-            );
-        }
-
-        return $this->settings;
+        return $this->settings ?? new Settings(
+            new Percentage(10.0),
+            new Percentage(5.0),
+            DistributionMethod::PER_PERSON,
+            0.0,
+            0
+        );
     }
 
     public function save(Settings $settings): void

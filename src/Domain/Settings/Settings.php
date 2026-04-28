@@ -7,7 +7,7 @@ namespace App\Domain\Settings;
 use App\Domain\Shared\ValueObject\Percentage;
 use App\Domain\Trip\DistributionMethod;
 
-final class Settings
+final readonly class Settings
 {
     public function __construct(
         private Percentage $defaultMarkupPercent,

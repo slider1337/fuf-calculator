@@ -7,15 +7,19 @@ namespace App\Infrastructure\Http\Controller;
 use App\Application\SettingsService;
 use App\Application\ValidationException;
 use App\Infrastructure\Http\JsonResponder;
+use JsonException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-final class SettingsController
+final readonly class SettingsController
 {
     public function __construct(private SettingsService $service)
     {
     }
 
+    /**
+     * @throws JsonException
+     */
     public function get(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $settings = $this->service->getSettings();
@@ -29,6 +33,9 @@ final class SettingsController
         ]);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function update(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();

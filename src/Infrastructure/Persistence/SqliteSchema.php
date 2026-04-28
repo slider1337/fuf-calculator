@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use RuntimeException;
 
 final class SqliteSchema
 {
@@ -12,7 +13,7 @@ final class SqliteSchema
     {
         $sql = file_get_contents($schemaFile);
         if ($sql === false) {
-            throw new \RuntimeException('Could not read schema file.');
+            throw new RuntimeException('Could not read schema file.');
         }
 
         $pdo->exec($sql);

@@ -6,7 +6,7 @@ namespace App\Domain\Trip;
 
 use InvalidArgumentException;
 
-final class GroupExpense
+final readonly class GroupExpense
 {
     public function __construct(private string $label, private float $amount)
     {

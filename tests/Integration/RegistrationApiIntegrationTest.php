@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use JsonException;
+use Psr\Http\Message\ResponseInterface;
 use Slim\Psr7\Factory\ServerRequestFactory;
-use Slim\Psr7\Factory\StreamFactory;
 use Slim\Psr7\UploadedFile;
 
 final class RegistrationApiIntegrationTest extends ApiTestCase
@@ -19,6 +20,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         ]);
     }
 
+    /**
+     * @throws JsonException
+     */
     private function createTripAndGetId(): int
     {
         $response = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
@@ -27,7 +31,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         return (int) $body['id'];
     }
 
-    private function dispatchCsvImport(int $tripId, string $csvContent)
+    private function dispatchCsvImport(int $tripId, string $csvContent): ResponseInterface
     {
         $tmpFile = tempnam(sys_get_temp_dir(), 'csv_test_');
         file_put_contents($tmpFile, $csvContent);
@@ -40,7 +44,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
             UPLOAD_ERR_OK
         );
 
-        $request = (new ServerRequestFactory())
+        $request = new ServerRequestFactory()
             ->createServerRequest('POST', "/api/trips/{$tripId}/registrations/import")
             ->withUploadedFiles(['csv_file' => $uploadedFile])
             ->withHeader('Content-Type', 'multipart/form-data');
@@ -48,6 +52,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         return $this->app->handle($request);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testImportCsvCreatesRegistrations(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -58,6 +65,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertCount(2, $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testImportCsvIncludesBillingData(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -71,6 +81,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testImportCsvParsesParticipantsCorrectly(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -84,6 +97,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame('1985-03-07', $firstReg['participants'][0]['birthDate']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testImportCsvReplacesExistingRegistrations(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -95,6 +111,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertCount(2, $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListRegistrations(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -107,6 +126,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertCount(2, $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListRegistrationsEmptyForNewTrip(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -118,12 +140,18 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame([], $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testListRegistrationsForNonExistentTripReturns404(): void
     {
         $response = $this->dispatch('GET', '/api/trips/9999/registrations');
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testRecalculateBillings(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -141,6 +169,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDeleteRegistrations(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -160,11 +191,14 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testImportCsvWithoutFileReturns422(): void
     {
         $tripId = $this->createTripAndGetId();
 
-        $request = (new ServerRequestFactory())
+        $request = new ServerRequestFactory()
             ->createServerRequest('POST', "/api/trips/{$tripId}/registrations/import")
             ->withHeader('Content-Type', 'multipart/form-data');
 
@@ -172,6 +206,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame(422, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testBillingCategoriesAreCorrectlyAssigned(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -188,6 +225,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame('ADULT_DOUBLE', $secondRegItems[1]['categoryType']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testBillingPricesMatchTripCalculation(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -209,6 +249,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateManualRegistration(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -221,7 +264,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
             ],
         ]);
 
-        self::assertSame(201, $response->getStatusCode(), 'Response body: ' . (string) $response->getBody());
+        self::assertSame(201, $response->getStatusCode(), 'Response body: ' . $response->getBody());
         $data = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertCount(1, $data);
         self::assertSame('manual', $data[0]['source']);
@@ -229,6 +272,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertCount(2, $data[0]['participants']);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateManualRegistrationValidation(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -240,6 +286,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame(422, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCreateManualRegistrationForUnknownTripReturns404(): void
     {
         $response = $this->dispatch('POST', '/api/trips/9999/registrations', [
@@ -250,6 +299,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testCsvImportPreservesManualRegistrations(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -261,7 +313,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
                 ['name' => 'Manual Person', 'birthDate' => '1990-01-01'],
             ],
         ]);
-        self::assertSame(201, $createResponse->getStatusCode(), 'Create failed: ' . (string) $createResponse->getBody());
+        self::assertSame(201, $createResponse->getStatusCode(), 'Create failed: ' . $createResponse->getBody());
 
         // Import CSV
         $importResponse = $this->dispatchCsvImport($tripId, $this->sampleCsv());
@@ -275,6 +327,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertContains('csv', $sources);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDeleteSingleRegistration(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -289,6 +344,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertCount(1, $data);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testDeleteSingleRegistrationNotFound(): void
     {
         $tripId = $this->createTripAndGetId();
@@ -296,6 +354,9 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    /**
+     * @throws JsonException
+     */
     public function testRegistrationsIncludeSourceField(): void
     {
         $tripId = $this->createTripAndGetId();

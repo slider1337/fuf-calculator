@@ -6,7 +6,7 @@ namespace App\Domain\Trip;
 
 use InvalidArgumentException;
 
-final class ActualExpense
+final readonly class ActualExpense
 {
     public function __construct(
         private ?int $id,

@@ -30,7 +30,7 @@ return static function (): ContainerInterface {
     $builder = new ContainerBuilder();
 
     $builder->addDefinitions([
-        \PDO::class => static function (): \PDO {
+        PDO::class => static function (): PDO {
             $dbPath = getenv('DB_PATH') ?: (__DIR__ . '/../database/fuf.sqlite');
             $pdo = SqliteConnection::create($dbPath);
             SqliteSchema::ensure($pdo, __DIR__ . '/../database/schema.sql');

@@ -6,7 +6,7 @@ namespace App\Domain\Trip;
 
 use InvalidArgumentException;
 
-final class RoomBooking
+final readonly class RoomBooking
 {
     public function __construct(
         private RoomCategoryType $categoryType,

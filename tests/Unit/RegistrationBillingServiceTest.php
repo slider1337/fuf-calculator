@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Domain\Registration\BillingLineItem;
 use App\Domain\Registration\Participant;
 use App\Domain\Registration\Registration;
 use App\Domain\Service\PriceCalculatorService;

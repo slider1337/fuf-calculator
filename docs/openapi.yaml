@@ -146,6 +146,33 @@ paths:
                   $ref: '#/components/schemas/RegistrationWithBilling'
         '404':
           $ref: '#/components/responses/NotFound'
+    post:
+      summary: Anmeldung manuell hinzufuegen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationWithBilling'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
     delete:
       summary: Alle Anmeldungen einer Reise loeschen
       parameters:
@@ -165,6 +192,32 @@ paths:
                   status:
                     type: string
                     example: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trips/{id}/registrations/{registrationId}:
+    delete:
+      summary: Einzelne Anmeldung loeschen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationWithBilling'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -346,6 +399,88 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/auth/me:
+    get:
+      summary: Aktuell angemeldeten Benutzer laden
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/invite:
+    post:
+      summary: Einladung an eine E-Mail-Adresse senden
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/AuthError'
+        '500':
+          description: Mailer-Fehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorBody'
+
+  /api/users:
+    get:
+      summary: Alle Benutzer auflisten
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/{id}:
+    delete:
+      summary: Benutzer loeschen (nur Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Aktion nicht erlaubt (z. B. Selbst-Loeschung oder letzter Admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorBody'
+
 components:
   responses:
     ValidationError:
@@ -372,6 +507,28 @@ components:
               error:
                 type: string
                 example: not_found
+    Unauthorized:
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: unauthorized
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthErrorBody'
+    AuthError:
+      description: Authentication or authorization error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthErrorBody'
 
   schemas:
     Settings:
@@ -697,5 +854,75 @@ components:
         amount:
           type: number
           format: float
+
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          example: true
+
+    AuthErrorBody:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: forbidden
+        message:
+          type: string
+
+    CurrentUser:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+        role:
+          type: string
+          enum: [admin, user]
+          nullable: true
+
+    InviteRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    UserSummary:
+      type: object
+      required: [id, email, role, createdAt, isCurrentUser, hasPassword, canDelete]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user]
+        createdAt:
+          type: string
+          format: date-time
+        isCurrentUser:
+          type: boolean
+        hasPassword:
+          type: boolean
+        canDelete:
+          type: boolean
+
+    UserListResponse:
+      type: object
+      required: [users]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
 
 

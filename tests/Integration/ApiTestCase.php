@@ -26,10 +26,19 @@ abstract class ApiTestCase extends TestCase
 
         $factory = require __DIR__ . '/../../config/app.php';
         $this->app = $factory();
+
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        $_SESSION['user_id'] = 1;
+        $_SESSION['user_email'] = 'test@example.com';
+        $_SESSION['user_role'] = 'admin';
     }
 
     protected function tearDown(): void
     {
+        $_SESSION = [];
+
         if (is_file($this->dbPath)) {
             unlink($this->dbPath);
         }

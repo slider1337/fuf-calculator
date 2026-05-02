@@ -10,6 +10,7 @@
     "php-di/slim-bridge": "^3.4",
     "zircote/swagger-php": "^5.0",
     "twbs/bootstrap": "^5.3",
+    "symfony/mailer": "^7.2",
     "ext-pdo": "*",
     "ext-mbstring": "*"
   },

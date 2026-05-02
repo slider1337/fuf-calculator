@@ -27,6 +27,11 @@ final class SqliteSchema
         if (!in_array('source', $cols, true)) {
             $pdo->exec("ALTER TABLE registrations ADD COLUMN source TEXT NOT NULL DEFAULT 'csv'");
         }
+
+        $userCols = $pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_COLUMN, 1);
+        if ($userCols !== [] && !in_array('role', $userCols, true)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+        }
     }
 }
 

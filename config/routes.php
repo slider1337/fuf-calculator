@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Infrastructure\Http\Auth\AuthMiddleware;
 use App\Infrastructure\Http\Controller\ActualExpenseController;
+use App\Infrastructure\Http\Controller\AuthController;
 use App\Infrastructure\Http\Controller\RegistrationController;
 use App\Infrastructure\Http\Controller\SettingsController;
 use App\Infrastructure\Http\Controller\TripController;
+use App\Infrastructure\Http\Controller\UserController;
 use Slim\App;
 
 return static function (App $app): void {
@@ -17,9 +20,23 @@ return static function (App $app): void {
         return $response;
     };
 
+    $app->get('/login', [AuthController::class, 'showLogin']);
+    $app->post('/login', [AuthController::class, 'login']);
+    $app->post('/logout', [AuthController::class, 'logout']);
+    $app->get('/forgot-password', [AuthController::class, 'showForgotPassword']);
+    $app->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    $app->get('/set-password', [AuthController::class, 'showSetPassword']);
+    $app->post('/set-password', [AuthController::class, 'setPassword']);
+
     $app->get('/', $renderSpa);
     $app->get('/trips/new', $renderSpa);
     $app->get('/trips/{id:[0-9]+}', $renderSpa);
+
+    $app->get('/api/auth/me', [AuthController::class, 'me']);
+    $app->post('/api/auth/invite', [AuthController::class, 'invite']);
+
+    $app->get('/api/users', [UserController::class, 'list']);
+    $app->delete('/api/users/{id:[0-9]+}', [UserController::class, 'delete']);
 
     $app->get('/api/settings', [SettingsController::class, 'get']);
     $app->put('/api/settings', [SettingsController::class, 'update']);
@@ -54,6 +71,6 @@ return static function (App $app): void {
         $response->getBody()->write((string) $content);
         return $response->withHeader('Content-Type', 'application/yaml');
     });
+
+    $app->add(AuthMiddleware::class);
 };
-
-

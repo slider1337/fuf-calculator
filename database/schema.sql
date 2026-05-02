@@ -72,3 +72,23 @@ CREATE TABLE IF NOT EXISTS actual_expenses (
     amount REAL NOT NULL,
     FOREIGN KEY(trip_id) REFERENCES trips(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purpose TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_email ON auth_tokens(email);

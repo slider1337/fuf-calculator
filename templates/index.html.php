@@ -17,9 +17,71 @@
                 OpenAPI YAML: <a href="/openapi.yaml" target="_blank" rel="noopener">/openapi.yaml</a>
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
+            <span id="current-user-email" class="text-muted small"></span>
+            <span id="current-user-role-badge" class="badge bg-secondary d-none">Admin</span>
+            <button id="open-users-btn" class="btn btn-outline-secondary" type="button">Benutzer</button>
+            <button id="open-invite-btn" class="btn btn-outline-secondary" type="button">Nutzer einladen</button>
             <button id="open-settings-btn" class="btn btn-outline-secondary" type="button">Globale Settings</button>
             <button id="new-trip-btn" class="btn btn-primary" type="button">Neue Reise erstellen</button>
+            <form method="post" action="/logout" class="m-0">
+                <button class="btn btn-outline-danger" type="submit">Abmelden</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="users-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Benutzerverwaltung</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="users-status" class="small mb-2"></div>
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>E-Mail</th>
+                                <th>Rolle</th>
+                                <th>Status</th>
+                                <th class="text-end">Aktion</th>
+                            </tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schliessen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nutzer einladen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Die eingeladene Person bekommt einen Link, &uuml;ber den sie ein Passwort vergeben und sich anmelden kann.</p>
+                    <form id="invite-form">
+                        <div class="mb-3">
+                            <label class="form-label" for="invite-email">E-Mail-Adresse</label>
+                            <input id="invite-email" class="form-control" type="email" required>
+                        </div>
+                        <div id="invite-status" class="small"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schliessen</button>
+                    <button type="submit" form="invite-form" class="btn btn-primary">Einladung senden</button>
+                </div>
+            </div>
         </div>
     </div>
 

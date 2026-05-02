@@ -2,6 +2,9 @@ const state = {
   settings: null,
   currentTripId: null,
   settingsModal: null,
+  inviteModal: null,
+  usersModal: null,
+  currentUser: null,
   currentRegistrations: [],
   currentSettlement: null,
 };
@@ -773,13 +776,102 @@ async function loadSettlement(tripId) {
   }
 }
 
+async function loadCurrentUser() {
+  try {
+    const me = await api("/api/auth/me");
+    state.currentUser = me;
+    if (me && me.email) {
+      byId("current-user-email").textContent = me.email;
+    }
+    const badge = byId("current-user-role-badge");
+    if (me && me.role === "admin") {
+      badge.classList.remove("d-none");
+    } else {
+      badge.classList.add("d-none");
+    }
+  } catch (error) {
+    // ignored — middleware would have redirected if not logged in
+  }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[char];
+  });
+}
+
+async function loadUsers() {
+  const body = byId("users-table-body");
+  const status = byId("users-status");
+  body.innerHTML = "";
+  status.textContent = "";
+  status.className = "small mb-2 text-muted";
+
+  try {
+    const data = await api("/api/users");
+    const users = data.users || [];
+    if (users.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">Keine Benutzer.</td></tr>';
+      return;
+    }
+    body.innerHTML = users.map((user) => {
+      const roleBadge = user.role === "admin"
+        ? '<span class="badge bg-primary">Admin</span>'
+        : '<span class="badge bg-secondary">Benutzer</span>';
+      const statusText = user.hasPassword ? "Aktiv" : "Eingeladen";
+      const youMarker = user.isCurrentUser ? ' <span class="text-muted small">(Du)</span>' : "";
+      const actionCell = user.canDelete
+        ? `<button class="btn btn-sm btn-outline-danger" data-delete-user-id="${user.id}">L&ouml;schen</button>`
+        : '<span class="text-muted small">&mdash;</span>';
+      return `<tr>
+        <td>${escapeHtml(user.email)}${youMarker}</td>
+        <td>${roleBadge}</td>
+        <td><span class="text-muted small">${statusText}</span></td>
+        <td class="text-end">${actionCell}</td>
+      </tr>`;
+    }).join("");
+  } catch (error) {
+    status.textContent = "Fehler beim Laden: " + error.message;
+    status.className = "small mb-2 text-danger";
+  }
+}
+
+async function deleteUser(userId) {
+  const status = byId("users-status");
+  try {
+    await api(`/api/users/${userId}`, { method: "DELETE" });
+    status.textContent = "Benutzer geloescht.";
+    status.className = "small mb-2 text-success";
+    await loadUsers();
+  } catch (error) {
+    let message = error.message;
+    try {
+      const parsed = JSON.parse(error.message);
+      if (parsed && parsed.message) {
+        message = parsed.message;
+      }
+    } catch (_) {}
+    status.textContent = "Fehler: " + message;
+    status.className = "small mb-2 text-danger";
+  }
+}
+
 async function bootstrapPage() {
   if (window.bootstrap && window.bootstrap.Modal) {
     state.settingsModal = new window.bootstrap.Modal(byId("settings-modal"));
+    state.inviteModal = new window.bootstrap.Modal(byId("invite-modal"));
+    state.usersModal = new window.bootstrap.Modal(byId("users-modal"));
   } else {
     throw new Error("Bootstrap Modal konnte nicht initialisiert werden.");
   }
 
+  await loadCurrentUser();
   await loadSettings();
   await loadTripList();
   window.addEventListener("popstate", async () => {
@@ -794,6 +886,54 @@ async function bootstrapPage() {
 }
 
 // --- Event Handlers ---
+
+byId("open-users-btn").addEventListener("click", async () => {
+  state.usersModal.show();
+  await loadUsers();
+});
+
+byId("users-table-body").addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const id = target.getAttribute("data-delete-user-id");
+  if (!id) {
+    return;
+  }
+  if (!window.confirm("Diesen Benutzer wirklich loeschen?")) {
+    return;
+  }
+  await deleteUser(Number(id));
+});
+
+byId("open-invite-btn").addEventListener("click", () => {
+  byId("invite-form").reset();
+  byId("invite-status").textContent = "";
+  byId("invite-status").className = "small";
+  state.inviteModal.show();
+});
+
+byId("invite-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = byId("invite-email").value.trim();
+  const status = byId("invite-status");
+  status.textContent = "Sende Einladung...";
+  status.className = "small text-muted";
+
+  try {
+    await api("/api/auth/invite", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    status.textContent = "Einladung versendet.";
+    status.className = "small text-success";
+    byId("invite-form").reset();
+  } catch (error) {
+    status.textContent = "Fehler: " + error.message;
+    status.className = "small text-danger";
+  }
+});
 
 byId("open-settings-btn").addEventListener("click", async () => {
   try {

@@ -70,13 +70,26 @@ jobs:
 
       - name: Deploy to production VM
         uses: appleboy/ssh-action@v1
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          MAILER_DSN: ${{ secrets.MAILER_DSN }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: APP_URL,MAILER_DSN,MAIL_FROM
           script: |
             set -e
             cd /opt/fuf-calculator
+
+            # Write .env file for docker compose
+            umask 077
+            cat > .env <<EOF
+            APP_URL=${APP_URL}
+            MAILER_DSN=${MAILER_DSN}
+            MAIL_FROM=${MAIL_FROM}
+            EOF
 
             # Pull latest image
             docker pull ghcr.io/${{ github.repository }}:latest

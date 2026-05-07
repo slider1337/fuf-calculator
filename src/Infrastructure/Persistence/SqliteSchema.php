@@ -4,34 +4,26 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence;
 
-use PDO;
-use RuntimeException;
+use Phinx\Config\Config;
+use Phinx\Migration\Manager;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\NullOutput;
 
 final class SqliteSchema
 {
-    public static function ensure(PDO $pdo, string $schemaFile): void
+    public static function migrate(string $dbPath): void
     {
-        $sql = file_get_contents($schemaFile);
-        if ($sql === false) {
-            throw new RuntimeException('Could not read schema file.');
-        }
+        $configPath = __DIR__ . '/../../../phinx.php';
+        $previous = getenv('DB_PATH');
+        putenv('DB_PATH=' . $dbPath);
 
-        $pdo->exec($sql);
-        self::migrate($pdo);
-    }
-
-    private static function migrate(PDO $pdo): void
-    {
-        // Add source column to registrations table if missing
-        $cols = $pdo->query("PRAGMA table_info(registrations)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if (!in_array('source', $cols, true)) {
-            $pdo->exec("ALTER TABLE registrations ADD COLUMN source TEXT NOT NULL DEFAULT 'csv'");
-        }
-
-        $userCols = $pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_COLUMN, 1);
-        if ($userCols !== [] && !in_array('role', $userCols, true)) {
-            $pdo->exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+        try {
+            $configArray = require $configPath;
+            $config = new Config($configArray, $configPath);
+            $manager = new Manager($config, new StringInput(' '), new NullOutput());
+            $manager->migrate('default');
+        } finally {
+            putenv($previous === false ? 'DB_PATH' : 'DB_PATH=' . $previous);
         }
     }
 }
-

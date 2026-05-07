@@ -29,7 +29,6 @@ use App\Infrastructure\Persistence\SqliteActualExpenseRepository;
 use App\Infrastructure\Persistence\SqliteAuthTokenRepository;
 use App\Infrastructure\Persistence\SqliteConnection;
 use App\Infrastructure\Persistence\SqliteRegistrationRepository;
-use App\Infrastructure\Persistence\SqliteSchema;
 use App\Infrastructure\Persistence\SqliteSettingsRepository;
 use App\Infrastructure\Persistence\SqliteTripRepository;
 use App\Infrastructure\Persistence\SqliteUserRepository;
@@ -44,9 +43,7 @@ return static function (): ContainerInterface {
     $builder->addDefinitions([
         PDO::class => static function (): PDO {
             $dbPath = getenv('DB_PATH') ?: (__DIR__ . '/../database/fuf.sqlite');
-            $pdo = SqliteConnection::create($dbPath);
-            SqliteSchema::ensure($pdo, __DIR__ . '/../database/schema.sql');
-            return $pdo;
+            return SqliteConnection::create($dbPath);
         },
         SettingsRepositoryInterface::class => autowire(SqliteSettingsRepository::class),
         TripRepositoryInterface::class => autowire(SqliteTripRepository::class),

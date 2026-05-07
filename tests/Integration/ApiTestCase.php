@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use App\Infrastructure\Persistence\SqliteSchema;
 use JsonException;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -23,6 +24,8 @@ abstract class ApiTestCase extends TestCase
 
         $this->dbPath = sys_get_temp_dir() . '/fuf-test-' . uniqid('', true) . '.sqlite';
         putenv('DB_PATH=' . $this->dbPath);
+
+        SqliteSchema::migrate($this->dbPath);
 
         $factory = require __DIR__ . '/../../config/app.php';
         $this->app = $factory();

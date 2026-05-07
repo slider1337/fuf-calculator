@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../vendor/autoload.php';
+
 spl_autoload_register(static function (string $class): void {
     if (!str_starts_with($class, 'App\\')) {
         return;

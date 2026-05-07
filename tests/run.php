@@ -85,8 +85,8 @@ $tests['sqlite_roundtrip_trip'] = static function (): void {
         unlink($databasePath);
     }
 
+    SqliteSchema::migrate($databasePath);
     $pdo = SqliteConnection::create($databasePath);
-    SqliteSchema::ensure($pdo, __DIR__ . '/../database/schema.sql');
 
     $repository = new SqliteTripRepository($pdo);
 

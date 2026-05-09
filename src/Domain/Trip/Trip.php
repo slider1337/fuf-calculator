@@ -18,7 +18,8 @@ final readonly class Trip
         private array $bookings,
         private array $groupExpenses,
         private float $plannedTotalCosts,
-        private float $plannedTotalRevenue
+        private float $plannedTotalRevenue,
+        private int $spaTaxCount,
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Trip name is required.');

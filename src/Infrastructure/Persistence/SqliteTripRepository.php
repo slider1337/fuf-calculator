@@ -29,9 +29,9 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO trips (
-                name, start_date, markup_percent, club_fee_percent, distribution_method,
+                name, start_date, markup_percent, club_fee_percent, distribution_method, spa_tax_count,
                 spa_tax_per_person, spa_tax_age_threshold, planned_total_costs, planned_total_revenue
-            ) VALUES (:name, :startDate, :markup, :club, :method, :spaTax, :spaAge, :costs, :revenue)'
+            ) VALUES (:name, :startDate, :markup, :club, :method, :spaxTaxCount, :spaTax, :spaAge, :costs, :revenue)'
         );
 
         $policy = $trip->pricingPolicy();
@@ -43,6 +43,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             ':club' => $policy->clubFeePercent()->value(),
             ':method' => $policy->distributionMethod()->value,
             ':spaTax' => $policy->spaTaxPerPerson(),
+            ':spaTaxCount' => $trip->spaTaxCount(),
             ':spaAge' => $policy->spaTaxAgeThreshold(),
             ':costs' => $trip->plannedTotalCosts(),
             ':revenue' => $trip->plannedTotalRevenue(),
@@ -74,6 +75,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 club_fee_percent = :club,
                 distribution_method = :method,
                 spa_tax_per_person = :spaTax,
+                spa_tax_count = :spaTaxCount,
                 spa_tax_age_threshold = :spaAge,
                 planned_total_costs = :costs,
                 planned_total_revenue = :revenue
@@ -90,6 +92,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             ':club' => $policy->clubFeePercent()->value(),
             ':method' => $policy->distributionMethod()->value,
             ':spaTax' => $policy->spaTaxPerPerson(),
+            ':spaTaxCount' => $trip->spaTaxCount(),
             ':spaAge' => $policy->spaTaxAgeThreshold(),
             ':costs' => $trip->plannedTotalCosts(),
             ':revenue' => $trip->plannedTotalRevenue(),

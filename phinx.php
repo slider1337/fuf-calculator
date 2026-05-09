@@ -16,7 +16,7 @@ foreach (['.sqlite', '.sqlite3', '.db'] as $candidate) {
 
 return [
     'paths' => [
-        'migrations' => __DIR__ . '/database/migrations',
+        'migrations' => __DIR__ . '/migrations',
     ],
     'environments' => [
         'default_migration_table' => 'phinxlog',

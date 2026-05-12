@@ -55,7 +55,9 @@ final class ActualExpenseServiceTest extends TestCase
             ],
             groupExpenses: [],
             plannedTotalCosts: 0.0,
-            plannedTotalRevenue: 0.0
+            plannedTotalRevenue: 0.0,
+            spaTaxCount: 3,
+            endDate: new DateTimeImmutable('2026-12-21')
         );
 
         return $this->tripRepo->save($trip);
@@ -163,11 +165,11 @@ final class ActualExpenseServiceTest extends TestCase
 
         self::assertSame(0.0, $settlement['totalRevenue']);
         self::assertCount(0, $settlement['expenses']);
-        // Planned costs from bookings: 2×100 + 1×90 + 1×60 = 350, spa tax: 4×2 = 8
-        self::assertSame(358.0, $settlement['totalPlannedCosts']);
+        // Planned costs from bookings: 2×100 + 1×90 + 1×60 = 350, spa tax (3 adults): 3×2 = 6
+        self::assertSame(356.0, $settlement['totalPlannedCosts']);
         self::assertSame(0.0, $settlement['totalAdditionalExpenses']);
-        self::assertSame(358.0, $settlement['totalAllExpenses']);
-        self::assertSame(-358.0, $settlement['surplus']);
+        self::assertSame(356.0, $settlement['totalAllExpenses']);
+        self::assertSame(-356.0, $settlement['surplus']);
         self::assertNotEmpty($settlement['plannedCostItems']);
     }
 
@@ -193,11 +195,11 @@ final class ActualExpenseServiceTest extends TestCase
 
         self::assertSame(600.0, $settlement['totalRevenue']);
         self::assertSame(150.0, $settlement['totalAdditionalExpenses']);
-        self::assertSame(358.0, $settlement['totalPlannedCosts']);
-        // Total = 358 + 150 = 508
-        self::assertSame(508.0, $settlement['totalAllExpenses']);
-        // Surplus = 600 - 508 = 92
-        self::assertSame(92.0, $settlement['surplus']);
+        self::assertSame(356.0, $settlement['totalPlannedCosts']);
+        // Total = 356 + 150 = 506
+        self::assertSame(506.0, $settlement['totalAllExpenses']);
+        // Surplus = 600 - 506 = 94
+        self::assertSame(94.0, $settlement['surplus']);
         self::assertCount(2, $settlement['expenses']);
     }
 
@@ -221,10 +223,10 @@ final class ActualExpenseServiceTest extends TestCase
 
         self::assertSame(200.0, $settlement['totalRevenue']);
         self::assertSame(500.0, $settlement['totalAdditionalExpenses']);
-        self::assertSame(358.0, $settlement['totalPlannedCosts']);
-        // Total = 358 + 500 = 858, surplus = 200 - 858 = -658
-        self::assertSame(858.0, $settlement['totalAllExpenses']);
-        self::assertSame(-658.0, $settlement['surplus']);
+        self::assertSame(356.0, $settlement['totalPlannedCosts']);
+        // Total = 356 + 500 = 856, surplus = 200 - 856 = -656
+        self::assertSame(856.0, $settlement['totalAllExpenses']);
+        self::assertSame(-656.0, $settlement['surplus']);
     }
 
     public function testGetSettlementPlannedCostItemsBreakdown(): void

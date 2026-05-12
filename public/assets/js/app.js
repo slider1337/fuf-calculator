@@ -65,9 +65,33 @@ function resetCalculationResult() {
   byId("result-breakdowns-container").innerHTML = '<p class="text-muted text-center p-3 mb-0">Keine Aufschlüsselung vorhanden.</p>';
 }
 
+function salesInputValue(inputId) {
+  const value = byId(inputId).value;
+  return value === "" ? null : Number(value);
+}
+
+function prefillSalesPrices(breakdowns) {
+  const map = {
+    ADULT_DOUBLE: byId("salesAdultDouble"),
+    ADULT_MULTI: byId("salesAdultMulti"),
+    CHILD: byId("salesChild"),
+  };
+  Object.entries(map).forEach(([category, input]) => {
+    if (input.value !== "") {
+      return;
+    }
+    const bd = breakdowns[category];
+    if (bd && bd.salesPriceDefault != null) {
+      input.value = bd.salesPriceDefault;
+    }
+  });
+}
+
 function renderCalculationResult(result) {
   byId("result-placeholder").classList.add("d-none");
   byId("result-panel").classList.remove("d-none");
+
+  prefillSalesPrices(result.priceBreakdowns || {});
 
   byId("result-total-participants").textContent = String(result.totalParticipants ?? 0);
   byId("result-total-revenue").textContent = formatCurrency(result.totalCalculatedRevenue);
@@ -77,6 +101,8 @@ function renderCalculationResult(result) {
   byId("result-distribution-method").textContent = distributionLabels[result.distributionMethod] || result.distributionMethod;
   byId("result-spa-tax-age").textContent = `${result.spaTaxAgeThreshold} Jahre`;
   byId("result-start-date").textContent = formatDate(result.startDate);
+  byId("result-end-date").textContent = result.endDate ? formatDate(result.endDate) : "-";
+  byId("result-nights").textContent = String(result.nights ?? 0);
   byId("result-total-group-expenses").textContent = formatCurrency(result.totalGroupExpenses);
 
   // Summary table
@@ -88,7 +114,7 @@ function renderCalculationResult(result) {
     tr.innerHTML = `
       <td>${categoryLabels[category] || category}</td>
       <td class="text-end">${bd.count}</td>
-      <td class="text-end">${formatCurrency(bd.finalPrice)}</td>
+      <td class="text-end">${formatCurrency(bd.salesPricePerPerson ?? bd.finalPrice)}</td>
       <td class="text-end">${formatCurrency(bd.categoryRevenue)}</td>
     `;
     tbody.appendChild(tr);
@@ -121,12 +147,20 @@ function renderCalculationResult(result) {
       <table class="table table-sm table-bordered mb-0 small">
         <tbody>
           <tr>
-            <td>Grundpreis pro Person</td>
+            <td>Grundpreis pro Person/Nacht</td>
             <td class="text-end fw-semibold">${formatCurrency(bd.basePricePerPerson)}</td>
           </tr>
           <tr>
-            <td>+ Kurabgabe pro Person</td>
-            <td class="text-end">${formatCurrency(bd.spaTaxPerPerson)}</td>
+            <td>× Nächte</td>
+            <td class="text-end">${bd.nights ?? "-"}</td>
+          </tr>
+          <tr>
+            <td>= Grundpreis pro Person gesamt</td>
+            <td class="text-end fw-semibold">${formatCurrency(bd.baseTotalPerPerson ?? (bd.basePricePerPerson * (bd.nights ?? 1)))}</td>
+          </tr>
+          <tr>
+            <td>+ Kurabgabe pro Person (${formatCurrency(bd.spaTaxPerPerson)} × ${bd.nights ?? "-"} Nächte)</td>
+            <td class="text-end">${formatCurrency(bd.spaTaxTotalPerPerson ?? (bd.spaTaxPerPerson * (bd.nights ?? 1)))}</td>
           </tr>
           <tr>
             <td>+ Anteil Gruppenausgaben</td>
@@ -149,11 +183,15 @@ function renderCalculationResult(result) {
             <td class="text-end">${formatCurrency(bd.clubFeeAmount)}</td>
           </tr>
           <tr class="table-success">
-            <td><strong>Endpreis pro Person</strong></td>
+            <td><strong>Endpreis pro Person (berechnet)</strong></td>
             <td class="text-end"><strong>${formatCurrency(bd.finalPrice)}</strong></td>
           </tr>
+          <tr class="table-success">
+            <td><strong>Verkaufspreis pro Person</strong>${bd.salesPriceOverridden ? " (manuell)" : " (auf 5er gerundet)"}</td>
+            <td class="text-end"><strong>${formatCurrency(bd.salesPricePerPerson ?? bd.finalPrice)}</strong></td>
+          </tr>
           <tr class="table-info">
-            <td><strong>Einnahmen Kategorie</strong> (${bd.count} &times; ${formatCurrency(bd.finalPrice)})</td>
+            <td><strong>Einnahmen Kategorie</strong> (${bd.count} &times; ${formatCurrency(bd.salesPricePerPerson ?? bd.finalPrice)})</td>
             <td class="text-end"><strong>${formatCurrency(bd.categoryRevenue)}</strong></td>
           </tr>
         </tbody>
@@ -265,6 +303,9 @@ function clearTripFormWithDefaults() {
   form.adultMultiPrice.value = 0;
   form.childCount.value = 0;
   form.childPrice.value = 0;
+  byId("salesAdultDouble").value = "";
+  byId("salesAdultMulti").value = "";
+  byId("salesChild").value = "";
 
   if (state.settings) {
     form.markupPercent.value = state.settings.defaultMarkupPercent;
@@ -290,15 +331,32 @@ function tripPayloadFromForm() {
   return {
     name: form.name.value,
     startDate: form.startDate.value,
+    endDate: form.endDate.value,
     markupPercent: Number(form.markupPercent.value),
     clubFeePercent: Number(form.clubFeePercent.value),
     distributionMethod: form.distributionMethod.value,
     spaTaxPerPerson: Number(form.spaTaxPerPerson.value),
     spaTaxAgeThreshold: Number(form.spaTaxAgeThreshold.value),
+    spaTaxCount: Number(form.spaTaxCount.value),
     bookings: [
-      { categoryType: "ADULT_DOUBLE", count: Number(form.adultDoubleCount.value), basePricePerPerson: Number(form.adultDoublePrice.value) },
-      { categoryType: "ADULT_MULTI", count: Number(form.adultMultiCount.value), basePricePerPerson: Number(form.adultMultiPrice.value) },
-      { categoryType: "CHILD", count: Number(form.childCount.value), basePricePerPerson: Number(form.childPrice.value) },
+      {
+        categoryType: "ADULT_DOUBLE",
+        count: Number(form.adultDoubleCount.value),
+        basePricePerPerson: Number(form.adultDoublePrice.value),
+        salesPricePerPerson: salesInputValue("salesAdultDouble"),
+      },
+      {
+        categoryType: "ADULT_MULTI",
+        count: Number(form.adultMultiCount.value),
+        basePricePerPerson: Number(form.adultMultiPrice.value),
+        salesPricePerPerson: salesInputValue("salesAdultMulti"),
+      },
+      {
+        categoryType: "CHILD",
+        count: Number(form.childCount.value),
+        basePricePerPerson: Number(form.childPrice.value),
+        salesPricePerPerson: salesInputValue("salesChild"),
+      },
     ],
     groupExpenses: expenses,
   };
@@ -309,11 +367,13 @@ function fillTripForm(trip) {
   byId("tripFormId").value = String(trip.id);
   form.name.value = trip.name;
   form.startDate.value = trip.startDate;
+  form.endDate.value = trip.endDate ?? "";
   form.markupPercent.value = trip.markupPercent;
   form.clubFeePercent.value = trip.clubFeePercent;
   form.distributionMethod.value = trip.distributionMethod;
   form.spaTaxPerPerson.value = trip.spaTaxPerPerson;
   form.spaTaxAgeThreshold.value = trip.spaTaxAgeThreshold;
+  form.spaTaxCount.value = trip.spaTaxCount ?? 0;
 
   const byType = {};
   trip.bookings.forEach((booking) => {
@@ -326,6 +386,9 @@ function fillTripForm(trip) {
   form.adultMultiPrice.value = byType.ADULT_MULTI ? byType.ADULT_MULTI.basePricePerPerson : 0;
   form.childCount.value = byType.CHILD ? byType.CHILD.count : 0;
   form.childPrice.value = byType.CHILD ? byType.CHILD.basePricePerPerson : 0;
+  byId("salesAdultDouble").value = byType.ADULT_DOUBLE?.salesPricePerPerson ?? "";
+  byId("salesAdultMulti").value = byType.ADULT_MULTI?.salesPricePerPerson ?? "";
+  byId("salesChild").value = byType.CHILD?.salesPricePerPerson ?? "";
 
   const firstExpense = trip.groupExpenses.length > 0 ? trip.groupExpenses[0] : null;
   form.expenseLabel.value = firstExpense ? firstExpense.label : "";
@@ -1028,6 +1091,23 @@ byId("calculate-btn").addEventListener("click", async () => {
     await calculateTripResult(tripId);
   } catch (error) {
     alert("Fehler bei der Berechnung: " + error.message);
+  }
+});
+
+byId("sales-apply-btn").addEventListener("click", async () => {
+  const tripId = byId("tripFormId").value;
+  if (!tripId) {
+    alert("Bitte erst Reise speichern und berechnen.");
+    return;
+  }
+
+  try {
+    const payload = tripPayloadFromForm();
+    const trip = await api(`/api/trips/${tripId}`, { method: "PUT", body: JSON.stringify(payload) });
+    fillTripForm(trip);
+    await calculateTripResult(String(trip.id));
+  } catch (error) {
+    alert("Fehler beim Übernehmen der Verkaufspreise: " + error.message);
   }
 });
 

@@ -81,13 +81,30 @@ final readonly class TripService
             throw new ValidationException($errors);
         }
 
+        $endDate = null;
+        if (array_key_exists('endDate', $payload) && $payload['endDate'] !== '' && $payload['endDate'] !== null) {
+            try {
+                $endDate = new DateTimeImmutable((string) $payload['endDate']);
+            } catch (Exception) {
+                throw new ValidationException(['endDate' => 'invalid_date']);
+            }
+            if ($endDate < $startDate) {
+                throw new ValidationException(['endDate' => 'must_be_after_start_date']);
+            }
+        }
+
         $bookings = [];
         try {
             foreach ($payload['bookings'] as $bookingPayload) {
+                $salesPriceRaw = $bookingPayload['salesPricePerPerson'] ?? null;
+                $salesPrice = ($salesPriceRaw === null || $salesPriceRaw === '')
+                    ? null
+                    : (float) $salesPriceRaw;
                 $bookings[] = new RoomBooking(
                     RoomCategoryType::from((string) $bookingPayload['categoryType']),
                     (int) $bookingPayload['count'],
-                    (float) $bookingPayload['basePricePerPerson']
+                    (float) $bookingPayload['basePricePerPerson'],
+                    $salesPrice
                 );
             }
 
@@ -113,7 +130,9 @@ final readonly class TripService
                 bookings: $bookings,
                 groupExpenses: $expenses,
                 plannedTotalCosts: (float) ($payload['plannedTotalCosts'] ?? 0),
-                plannedTotalRevenue: (float) ($payload['plannedTotalRevenue'] ?? 0)
+                plannedTotalRevenue: (float) ($payload['plannedTotalRevenue'] ?? 0),
+                spaTaxCount: (int) ($payload['spaTaxCount'] ?? 0),
+                endDate: $endDate,
             );
         } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class V20260509211746 extends AbstractMigration
+final class AddNumberForSpaTax extends AbstractMigration
 {
     /**
      * Change Method.

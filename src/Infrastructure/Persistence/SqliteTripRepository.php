@@ -29,9 +29,9 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO trips (
-                name, start_date, markup_percent, club_fee_percent, distribution_method, spa_tax_count,
+                name, start_date, end_date, markup_percent, club_fee_percent, distribution_method, spa_tax_count,
                 spa_tax_per_person, spa_tax_age_threshold, planned_total_costs, planned_total_revenue
-            ) VALUES (:name, :startDate, :markup, :club, :method, :spaxTaxCount, :spaTax, :spaAge, :costs, :revenue)'
+            ) VALUES (:name, :startDate, :endDate, :markup, :club, :method, :spaTaxCount, :spaTax, :spaAge, :costs, :revenue)'
         );
 
         $policy = $trip->pricingPolicy();
@@ -39,6 +39,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
         $stmt->execute([
             ':name' => $trip->name(),
             ':startDate' => $trip->startDate()->format('Y-m-d'),
+            ':endDate' => $trip->endDate()?->format('Y-m-d'),
             ':markup' => $policy->markupPercent()->value(),
             ':club' => $policy->clubFeePercent()->value(),
             ':method' => $policy->distributionMethod()->value,
@@ -71,6 +72,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             'UPDATE trips SET
                 name = :name,
                 start_date = :startDate,
+                end_date = :endDate,
                 markup_percent = :markup,
                 club_fee_percent = :club,
                 distribution_method = :method,
@@ -88,6 +90,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             ':id' => $tripId,
             ':name' => $trip->name(),
             ':startDate' => $trip->startDate()->format('Y-m-d'),
+            ':endDate' => $trip->endDate()?->format('Y-m-d'),
             ':markup' => $policy->markupPercent()->value(),
             ':club' => $policy->clubFeePercent()->value(),
             ':method' => $policy->distributionMethod()->value,
@@ -130,7 +133,10 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             $bookings[] = new RoomBooking(
                 RoomCategoryType::from((string) $row['category_type']),
                 (int) $row['participant_count'],
-                (float) $row['base_price_per_person']
+                (float) $row['base_price_per_person'],
+                isset($row['sales_price_per_person']) && $row['sales_price_per_person'] !== null
+                    ? (float) $row['sales_price_per_person']
+                    : null
             );
         }
 
@@ -160,7 +166,11 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             bookings: $bookings,
             groupExpenses: $expenses,
             plannedTotalCosts: (float) $trip['planned_total_costs'],
-            plannedTotalRevenue: (float) $trip['planned_total_revenue']
+            plannedTotalRevenue: (float) $trip['planned_total_revenue'],
+            spaTaxCount: (int) ($trip['spa_tax_count'] ?? 0),
+            endDate: isset($trip['end_date']) && $trip['end_date'] !== null
+                ? new DateTimeImmutable((string) $trip['end_date'])
+                : null
         );
     }
 
@@ -182,8 +192,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
     private function persistChildren(int $tripId, Trip $trip): void
     {
         $bookingStmt = $this->pdo->prepare(
-            'INSERT INTO trip_bookings (trip_id, category_type, participant_count, base_price_per_person)
-             VALUES (:tripId, :categoryType, :count, :basePrice)'
+            'INSERT INTO trip_bookings (trip_id, category_type, participant_count, base_price_per_person, sales_price_per_person)
+             VALUES (:tripId, :categoryType, :count, :basePrice, :salesPrice)'
         );
 
         foreach ($trip->bookings() as $booking) {
@@ -192,6 +202,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 ':categoryType' => $booking->categoryType()->value,
                 ':count' => $booking->count(),
                 ':basePrice' => $booking->basePricePerPerson(),
+                ':salesPrice' => $booking->salesPricePerPerson(),
             ]);
         }
 

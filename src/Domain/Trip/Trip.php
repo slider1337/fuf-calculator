@@ -19,7 +19,8 @@ final readonly class Trip
         private array $groupExpenses,
         private float $plannedTotalCosts,
         private float $plannedTotalRevenue,
-        private int $spaTaxCount,
+        private int $spaTaxCount = 0,
+        private ?DateTimeImmutable $endDate = null,
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Trip name is required.');
@@ -27,6 +28,10 @@ final readonly class Trip
 
         if ($plannedTotalCosts < 0 || $plannedTotalRevenue < 0) {
             throw new InvalidArgumentException('Planned totals must be >= 0.');
+        }
+
+        if ($endDate !== null && $endDate < $startDate) {
+            throw new InvalidArgumentException('End date must not be before start date.');
         }
     }
 
@@ -45,7 +50,9 @@ final readonly class Trip
             $this->bookings,
             $this->groupExpenses,
             $this->plannedTotalCosts,
-            $this->plannedTotalRevenue
+            $this->plannedTotalRevenue,
+            $this->spaTaxCount,
+            $this->endDate
         );
     }
 
@@ -84,6 +91,25 @@ final readonly class Trip
     public function plannedTotalRevenue(): float
     {
         return round($this->plannedTotalRevenue, 2, PHP_ROUND_HALF_UP);
+    }
+
+    public function spaTaxCount(): int
+    {
+        return $this->spaTaxCount;
+    }
+
+    public function endDate(): ?DateTimeImmutable
+    {
+        return $this->endDate;
+    }
+
+    public function nights(): int
+    {
+        if ($this->endDate === null) {
+            return 0;
+        }
+
+        return (int) $this->startDate->diff($this->endDate)->days;
     }
 }
 

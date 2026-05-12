@@ -73,11 +73,13 @@ abstract class ApiTestCase extends TestCase
         return [
             'name' => 'API Test Reise',
             'startDate' => '2026-12-20',
+            'endDate' => '2026-12-21',
             'markupPercent' => 10.0,
             'clubFeePercent' => 5.0,
             'distributionMethod' => 'PER_PERSON',
             'spaTaxPerPerson' => 2.0,
             'spaTaxAgeThreshold' => 18,
+            'spaTaxCount' => 5,
             'bookings' => [
                 ['categoryType' => 'ADULT_DOUBLE', 'count' => 3, 'basePricePerPerson' => 100.0],
                 ['categoryType' => 'ADULT_MULTI', 'count' => 2, 'basePricePerPerson' => 90.0],

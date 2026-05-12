@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Service;
 
 use App\Domain\Trip\DistributionMethod;
+use App\Domain\Trip\RoomCategoryType;
 use App\Domain\Trip\Trip;
 
 final class PriceCalculatorService
@@ -13,6 +14,7 @@ final class PriceCalculatorService
     {
         $policy = $trip->pricingPolicy();
         $bookings = $trip->bookings();
+        $nights = $trip->nights();
 
         $distribution = $this->distributionFor($policy->distributionMethod());
         $denominator = max(1, $distribution->denominator($bookings));
@@ -40,21 +42,31 @@ final class PriceCalculatorService
                 ? $sharedExpensePerUnit
                 : $this->round2($sharedExpensePerUnit / $booking->count());
 
-            $base = $booking->basePricePerPerson();
-            $spaTax = $policy->spaTaxPerPerson();
-            $withSpaTax = $this->round2($base + $spaTax);
+            $basePerNight = $booking->basePricePerPerson();
+            $spaTaxPerNight = $booking->categoryType() === RoomCategoryType::CHILD
+                ? 0.0
+                : $policy->spaTaxPerPerson();
+            $baseTotalPerPerson = $this->round2($basePerNight * $nights);
+            $spaTaxTotalPerPerson = $this->round2($spaTaxPerNight * $nights);
+            $withSpaTax = $this->round2($baseTotalPerPerson + $spaTaxTotalPerPerson);
             $withExpenses = $this->round2($withSpaTax + $categoryExpenseShare);
             $markupAmount = $this->round2($withExpenses * $policy->markupPercent()->factor());
             $withMarkup = $this->round2($withExpenses + $markupAmount);
             $clubFeeAmount = $this->round2($withMarkup * $policy->clubFeePercent()->factor());
             $finalPrice = $this->round2($withMarkup + $clubFeeAmount);
 
+            $salesPriceDefault = $this->roundToNearest5($finalPrice);
+            $salesPrice = $booking->salesPricePerPerson() ?? $salesPriceDefault;
+
             $categoryKey = $booking->categoryType()->value;
-            $pricesPerCategory[$categoryKey] = $finalPrice;
+            $pricesPerCategory[$categoryKey] = $salesPrice;
 
             $priceBreakdowns[$categoryKey] = [
-                'basePricePerPerson' => $base,
-                'spaTaxPerPerson' => $spaTax,
+                'basePricePerPerson' => $basePerNight,
+                'spaTaxPerPerson' => $spaTaxPerNight,
+                'nights' => $nights,
+                'baseTotalPerPerson' => $baseTotalPerPerson,
+                'spaTaxTotalPerPerson' => $spaTaxTotalPerPerson,
                 'groupExpenseShare' => $categoryExpenseShare,
                 'subtotalBeforeMarkup' => $withExpenses,
                 'markupPercent' => $policy->markupPercent()->value(),
@@ -63,17 +75,20 @@ final class PriceCalculatorService
                 'clubFeePercent' => $policy->clubFeePercent()->value(),
                 'clubFeeAmount' => $clubFeeAmount,
                 'finalPrice' => $finalPrice,
+                'salesPricePerPerson' => $salesPrice,
+                'salesPriceDefault' => $salesPriceDefault,
+                'salesPriceOverridden' => $booking->salesPricePerPerson() !== null,
                 'count' => $booking->count(),
-                'categoryRevenue' => $this->round2($finalPrice * $booking->count()),
+                'categoryRevenue' => $this->round2($salesPrice * $booking->count()),
             ];
 
-            $categoryRevenue = $this->round2($finalPrice * $booking->count());
+            $categoryRevenue = $this->round2($salesPrice * $booking->count());
             $totalCalculatedRevenue = $this->round2($totalCalculatedRevenue + $categoryRevenue);
 
-            $categoryBaseCost = $this->round2($booking->basePricePerPerson() * $booking->count());
+            $categoryBaseCost = $this->round2($baseTotalPerPerson * $booking->count());
             $totalBaseCosts = $this->round2($totalBaseCosts + $categoryBaseCost);
 
-            $categorySpaTax = $this->round2($policy->spaTaxPerPerson() * $booking->count());
+            $categorySpaTax = $this->round2($spaTaxTotalPerPerson * $booking->count());
             $totalSpaTaxCosts = $this->round2($totalSpaTaxCosts + $categorySpaTax);
 
             $totalParticipants += $booking->count();
@@ -92,6 +107,8 @@ final class PriceCalculatorService
             'distributionMethod' => $policy->distributionMethod()->value,
             'spaTaxAgeThreshold' => $policy->spaTaxAgeThreshold(),
             'startDate' => $trip->startDate()->format('Y-m-d'),
+            'endDate' => $trip->endDate()?->format('Y-m-d'),
+            'nights' => $nights,
         ];
     }
 
@@ -106,6 +123,11 @@ final class PriceCalculatorService
     private function round2(float $value): float
     {
         return round($value, 2, PHP_ROUND_HALF_UP);
+    }
+
+    private function roundToNearest5(float $value): float
+    {
+        return round($value / 5, 0, PHP_ROUND_HALF_UP) * 5;
     }
 }
 

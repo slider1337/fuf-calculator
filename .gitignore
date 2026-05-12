@@ -4,3 +4,4 @@
 
 .idea
 .phpunit.cache
+/build/logs/clover.xml

@@ -133,6 +133,10 @@
                     <input id="startDate" class="form-control" name="startDate" type="date" required>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label" for="endDate">Enddatum (Abreise)</label>
+                    <input id="endDate" class="form-control" name="endDate" type="date" required>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label" for="markupPercent">Aufschlag %</label>
                     <input id="markupPercent" class="form-control" name="markupPercent" type="number" step="0.01" required>
                 </div>
@@ -149,41 +153,44 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label" for="spaTaxPerPerson">Kurabgabe pro Person</label>
+                    <label class="form-label" for="spaTaxPerPerson">Kurabgabe pro Person/Nacht</label>
                     <input id="spaTaxPerPerson" class="form-control" name="spaTaxPerPerson" type="number" step="0.01" required>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="spaTaxAgeThreshold">Kurabgabe ab Alter</label>
                     <input id="spaTaxAgeThreshold" class="form-control" name="spaTaxAgeThreshold" type="number" step="1" required>
                 </div>
-                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <label class="form-label" for="spaTaxCount">Kurabgabe Anzahl Personen</label>
+                    <input id="spaTaxCount" class="form-control" name="spaTaxCount" type="number" step="1" min="0" value="0" required>
+                </div>
+                <div class="col-md-3"></div>
 
                 <div class="col-12"><hr></div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label" for="adultDoubleCount">Erwachsene DZ Anzahl</label>
                     <input id="adultDoubleCount" class="form-control" name="adultDoubleCount" type="number" step="1" min="0" value="0" required>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="adultDoublePrice">Erwachsene DZ Preis</label>
+                <div class="col-md-3">
+                    <label class="form-label" for="adultDoublePrice">Erwachsene DZ Preis/Nacht</label>
                     <input id="adultDoublePrice" class="form-control" name="adultDoublePrice" type="number" step="0.01" min="0" value="0" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label" for="adultMultiCount">Erwachsene MBZ Anzahl</label>
                     <input id="adultMultiCount" class="form-control" name="adultMultiCount" type="number" step="1" min="0" value="0" required>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="adultMultiPrice">Erwachsene MBZ Preis</label>
+                <div class="col-md-3">
+                    <label class="form-label" for="adultMultiPrice">Erwachsene MBZ Preis/Nacht</label>
                     <input id="adultMultiPrice" class="form-control" name="adultMultiPrice" type="number" step="0.01" min="0" value="0" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label" for="childCount">Kinder Anzahl</label>
                     <input id="childCount" class="form-control" name="childCount" type="number" step="1" min="0" value="0" required>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="childPrice">Kinder Preis</label>
+                <div class="col-md-3">
+                    <label class="form-label" for="childPrice">Kinder Preis/Nacht</label>
                     <input id="childPrice" class="form-control" name="childPrice" type="number" step="0.01" min="0" value="0" required>
                 </div>
-
                 <div class="col-12"><hr></div>
                 <div class="col-md-5">
                     <label class="form-label" for="expenseLabel">Zusatzausgabe (optional)</label>
@@ -264,6 +271,10 @@
                                     <dd id="result-spa-tax-age" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Reisebeginn</dt>
                                     <dd id="result-start-date" class="col-6 text-end mb-2">-</dd>
+                                    <dt class="col-6">Abreise</dt>
+                                    <dd id="result-end-date" class="col-6 text-end mb-2">-</dd>
+                                    <dt class="col-6">Nächte</dt>
+                                    <dd id="result-nights" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Gruppenausgaben gesamt</dt>
                                     <dd id="result-total-group-expenses" class="col-6 text-end mb-0">-</dd>
                                 </dl>
@@ -279,6 +290,42 @@
                                         <thead><tr><th>Kategorie</th><th class="text-end">Anzahl</th><th class="text-end">Preis/Pers.</th><th class="text-end">Summe</th></tr></thead>
                                         <tbody id="result-category-prices-body"></tbody>
                                     </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span>Verkaufspreis pro Person</span>
+                                <small class="text-muted">Vorbelegt mit dem auf 5er gerundeten Endpreis &mdash; bei Bedarf anpassen.</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="salesAdultDouble">Erwachsene DZ</label>
+                                        <div class="input-group">
+                                            <input id="salesAdultDouble" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
+                                            <span class="input-group-text">&euro;</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="salesAdultMulti">Erwachsene MBZ</label>
+                                        <div class="input-group">
+                                            <input id="salesAdultMulti" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
+                                            <span class="input-group-text">&euro;</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="salesChild">Kinder</label>
+                                        <div class="input-group">
+                                            <input id="salesChild" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
+                                            <span class="input-group-text">&euro;</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 d-grid">
+                                        <button id="sales-apply-btn" class="btn btn-primary" type="button">Verkaufspreise &uuml;bernehmen &amp; neu berechnen</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

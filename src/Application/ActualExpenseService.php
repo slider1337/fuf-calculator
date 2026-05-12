@@ -86,30 +86,28 @@ final class ActualExpenseService
         // Planned costs from trip data
         $plannedCostItems = [];
         $totalPlannedCosts = 0.0;
+        $nights = $trip->nights();
 
         foreach ($trip->bookings() as $booking) {
             if ($booking->count() === 0) {
                 continue;
             }
-            $cost = round($booking->basePricePerPerson() * $booking->count(), 2, PHP_ROUND_HALF_UP);
+            $cost = round($booking->basePricePerPerson() * $booking->count() * $nights, 2, PHP_ROUND_HALF_UP);
             $plannedCostItems[] = [
                 'label' => 'Zimmer: ' . $this->categoryLabel($booking->categoryType()->value)
-                    . ' (' . $booking->count() . ' × ' . number_format($booking->basePricePerPerson(), 2, '.', '') . ' €)',
+                    . ' (' . $booking->count() . ' × ' . number_format($booking->basePricePerPerson(), 2, '.', '') . ' € × ' . $nights . ' Nächte)',
                 'amount' => $cost,
             ];
             $totalPlannedCosts = round($totalPlannedCosts + $cost, 2, PHP_ROUND_HALF_UP);
         }
 
         $policy = $trip->pricingPolicy();
-        $totalParticipants = 0;
-        foreach ($trip->bookings() as $booking) {
-            $totalParticipants += $booking->count();
-        }
+        $spaTaxCount = $trip->spaTaxCount();
 
-        if ($totalParticipants > 0 && $policy->spaTaxPerPerson() > 0) {
-            $spaTaxTotal = round($policy->spaTaxPerPerson() * $totalParticipants, 2, PHP_ROUND_HALF_UP);
+        if ($spaTaxCount > 0 && $policy->spaTaxPerPerson() > 0 && $nights > 0) {
+            $spaTaxTotal = round($policy->spaTaxPerPerson() * $spaTaxCount * $nights, 2, PHP_ROUND_HALF_UP);
             $plannedCostItems[] = [
-                'label' => 'Kurabgabe (' . $totalParticipants . ' × ' . number_format($policy->spaTaxPerPerson(), 2, '.', '') . ' €)',
+                'label' => 'Kurabgabe (' . $spaTaxCount . ' × ' . number_format($policy->spaTaxPerPerson(), 2, '.', '') . ' € × ' . $nights . ' Nächte)',
                 'amount' => $spaTaxTotal,
             ];
             $totalPlannedCosts = round($totalPlannedCosts + $spaTaxTotal, 2, PHP_ROUND_HALF_UP);

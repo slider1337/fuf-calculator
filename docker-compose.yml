@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./database:/var/www/html/database
+      - .:/var/www/html
     environment:
       - DB_PATH=/var/www/html/database/fuf.sqlite
 

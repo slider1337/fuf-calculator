@@ -37,7 +37,9 @@ final class PriceCalculatorServiceTest extends TestCase
             ],
             [new GroupExpense('Getraenke', 70.00)],
             700.00,
-            800.00
+            800.00,
+            0,
+            new DateTimeImmutable('2026-01-11')
         );
 
         $result = new PriceCalculatorService()->calculate($trip);
@@ -63,9 +65,9 @@ final class PriceCalculatorServiceTest extends TestCase
         self::assertSame(5.0, $bd['clubFeePercent']);
         self::assertArrayHasKey('clubFeeAmount', $bd);
         self::assertArrayHasKey('finalPrice', $bd);
-        self::assertSame($result['pricesPerCategory']['ADULT_DOUBLE'], $bd['finalPrice']);
+        self::assertSame($result['pricesPerCategory']['ADULT_DOUBLE'], $bd['salesPricePerPerson']);
         self::assertSame(4, $bd['count']);
-        self::assertSame($bd['finalPrice'] * 4, $bd['categoryRevenue']);
+        self::assertSame($bd['salesPricePerPerson'] * 4, $bd['categoryRevenue']);
         self::assertArrayHasKey('totalGroupExpenses', $result);
         self::assertSame(70.0, $result['totalGroupExpenses']);
     }
@@ -90,7 +92,9 @@ final class PriceCalculatorServiceTest extends TestCase
             ],
             [new GroupExpense('Lagerfeuer', 20.00)],
             300.00,
-            350.00
+            350.00,
+            0,
+            new DateTimeImmutable('2026-08-02')
         );
 
         $result = new PriceCalculatorService()->calculate($trip);
@@ -108,12 +112,13 @@ final class PriceCalculatorServiceTest extends TestCase
 
         $childBd = $result['priceBreakdowns']['CHILD'];
         self::assertSame(50.0, $childBd['basePricePerPerson']);
-        self::assertSame(1.0, $childBd['spaTaxPerPerson']);
+        self::assertSame(0.0, $childBd['spaTaxPerPerson']);
         self::assertSame(2, $childBd['count']);
-        // Verify calculation chain: subtotal = base + spa + expense share
+        self::assertSame(1, $childBd['nights']);
+        // Verify calculation chain: subtotal = baseTotal + spaTotal + expense share
         self::assertSame(
             $childBd['subtotalBeforeMarkup'],
-            round($childBd['basePricePerPerson'] + $childBd['spaTaxPerPerson'] + $childBd['groupExpenseShare'], 2, PHP_ROUND_HALF_UP)
+            round($childBd['baseTotalPerPerson'] + $childBd['spaTaxTotalPerPerson'] + $childBd['groupExpenseShare'], 2, PHP_ROUND_HALF_UP)
         );
     }
 }

@@ -100,15 +100,18 @@ final readonly class TripController
             'id' => $trip->id(),
             'name' => $trip->name(),
             'startDate' => $trip->startDate()->format('Y-m-d'),
+            'endDate' => $trip->endDate()?->format('Y-m-d'),
             'markupPercent' => $trip->pricingPolicy()->markupPercent()->value(),
             'clubFeePercent' => $trip->pricingPolicy()->clubFeePercent()->value(),
             'distributionMethod' => $trip->pricingPolicy()->distributionMethod()->value,
             'spaTaxPerPerson' => $trip->pricingPolicy()->spaTaxPerPerson(),
             'spaTaxAgeThreshold' => $trip->pricingPolicy()->spaTaxAgeThreshold(),
+            'spaTaxCount' => $trip->spaTaxCount(),
             'bookings' => array_map(static fn ($booking) => [
                 'categoryType' => $booking->categoryType()->value,
                 'count' => $booking->count(),
                 'basePricePerPerson' => $booking->basePricePerPerson(),
+                'salesPricePerPerson' => $booking->salesPricePerPerson(),
             ], $trip->bookings()),
             'groupExpenses' => array_map(static fn ($expense) => [
                 'label' => $expense->label(),

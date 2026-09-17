@@ -13,6 +13,8 @@ const categoryLabels = {
   ADULT_DOUBLE: "Erwachsener im Doppelzimmer",
   ADULT_MULTI: "Erwachsener im Mehrbettzimmer",
   CHILD: "Kind",
+  SPA_TAX: "Kurabgabe",
+  SPA_TAX_CREDIT: "Kurabgabe (nicht pflichtig)",
 };
 
 const distributionLabels = {
@@ -100,6 +102,7 @@ function renderCalculationResult(result) {
   byId("result-surplus").className = `fs-4 fw-semibold ${Number(result.surplus) >= 0 ? "text-success" : "text-danger"}`;
   byId("result-distribution-method").textContent = distributionLabels[result.distributionMethod] || result.distributionMethod;
   byId("result-spa-tax-age").textContent = `${result.spaTaxAgeThreshold} Jahre`;
+  byId("result-adult-age").textContent = `${result.adultAgeThreshold} Jahre`;
   byId("result-start-date").textContent = formatDate(result.startDate);
   byId("result-end-date").textContent = result.endDate ? formatDate(result.endDate) : "-";
   byId("result-nights").textContent = String(result.nights ?? 0);
@@ -287,6 +290,7 @@ function fillSettingsForm(settings) {
   form.defaultDistributionMethod.value = settings.defaultDistributionMethod;
   form.defaultSpaTaxPerPerson.value = settings.defaultSpaTaxPerPerson;
   form.defaultSpaTaxAgeThreshold.value = settings.defaultSpaTaxAgeThreshold;
+  form.defaultAdultAgeThreshold.value = settings.defaultAdultAgeThreshold;
 }
 
 function clearTripFormWithDefaults() {
@@ -313,6 +317,7 @@ function clearTripFormWithDefaults() {
     form.distributionMethod.value = state.settings.defaultDistributionMethod;
     form.spaTaxPerPerson.value = state.settings.defaultSpaTaxPerPerson;
     form.spaTaxAgeThreshold.value = state.settings.defaultSpaTaxAgeThreshold;
+    form.adultAgeThreshold.value = state.settings.defaultAdultAgeThreshold;
   }
 
   resetSettlement();
@@ -337,6 +342,7 @@ function tripPayloadFromForm() {
     distributionMethod: form.distributionMethod.value,
     spaTaxPerPerson: Number(form.spaTaxPerPerson.value),
     spaTaxAgeThreshold: Number(form.spaTaxAgeThreshold.value),
+    adultAgeThreshold: Number(form.adultAgeThreshold.value),
     spaTaxCount: Number(form.spaTaxCount.value),
     bookings: [
       {
@@ -373,6 +379,7 @@ function fillTripForm(trip) {
   form.distributionMethod.value = trip.distributionMethod;
   form.spaTaxPerPerson.value = trip.spaTaxPerPerson;
   form.spaTaxAgeThreshold.value = trip.spaTaxAgeThreshold;
+  form.adultAgeThreshold.value = trip.adultAgeThreshold ?? 16;
   form.spaTaxCount.value = trip.spaTaxCount ?? 0;
 
   const byType = {};
@@ -1017,6 +1024,7 @@ byId("settings-form").addEventListener("submit", async (event) => {
     defaultDistributionMethod: form.defaultDistributionMethod.value,
     defaultSpaTaxPerPerson: Number(form.defaultSpaTaxPerPerson.value),
     defaultSpaTaxAgeThreshold: Number(form.defaultSpaTaxAgeThreshold.value),
+    defaultAdultAgeThreshold: Number(form.defaultAdultAgeThreshold.value),
   };
 
   try {

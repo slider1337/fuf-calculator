@@ -36,7 +36,8 @@ final readonly class SqliteSettingsRepository implements SettingsRepositoryInter
             new Percentage((float) $row['default_club_fee_percent']),
             DistributionMethod::from((string) $row['default_distribution_method']),
             (float) $row['default_spa_tax_per_person'],
-            (int) $row['default_spa_tax_age_threshold']
+            (int) $row['default_spa_tax_age_threshold'],
+            (int) ($row['default_adult_age_threshold'] ?? 16)
         );
     }
 
@@ -49,14 +50,16 @@ final readonly class SqliteSettingsRepository implements SettingsRepositoryInter
                 default_club_fee_percent,
                 default_distribution_method,
                 default_spa_tax_per_person,
-                default_spa_tax_age_threshold
-            ) VALUES (1, :markup, :club, :method, :spaTax, :age)
+                default_spa_tax_age_threshold,
+                default_adult_age_threshold
+            ) VALUES (1, :markup, :club, :method, :spaTax, :age, :adultAge)
             ON CONFLICT(id) DO UPDATE SET
                 default_markup_percent = excluded.default_markup_percent,
                 default_club_fee_percent = excluded.default_club_fee_percent,
                 default_distribution_method = excluded.default_distribution_method,
                 default_spa_tax_per_person = excluded.default_spa_tax_per_person,
-                default_spa_tax_age_threshold = excluded.default_spa_tax_age_threshold'
+                default_spa_tax_age_threshold = excluded.default_spa_tax_age_threshold,
+                default_adult_age_threshold = excluded.default_adult_age_threshold'
         );
 
         $statement->execute([
@@ -65,6 +68,7 @@ final readonly class SqliteSettingsRepository implements SettingsRepositoryInter
             ':method' => $settings->defaultDistributionMethod()->value,
             ':spaTax' => $settings->defaultSpaTaxPerPerson(),
             ':age' => $settings->defaultSpaTaxAgeThreshold(),
+            ':adultAge' => $settings->defaultAdultAgeThreshold(),
         ]);
     }
 }

@@ -30,8 +30,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
         $stmt = $this->pdo->prepare(
             'INSERT INTO trips (
                 name, start_date, end_date, markup_percent, club_fee_percent, distribution_method, spa_tax_count,
-                spa_tax_per_person, spa_tax_age_threshold, planned_total_costs, planned_total_revenue
-            ) VALUES (:name, :startDate, :endDate, :markup, :club, :method, :spaTaxCount, :spaTax, :spaAge, :costs, :revenue)'
+                spa_tax_per_person, spa_tax_age_threshold, adult_age_threshold, planned_total_costs, planned_total_revenue
+            ) VALUES (:name, :startDate, :endDate, :markup, :club, :method, :spaTaxCount, :spaTax, :spaAge, :adultAge, :costs, :revenue)'
         );
 
         $policy = $trip->pricingPolicy();
@@ -46,6 +46,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             ':spaTax' => $policy->spaTaxPerPerson(),
             ':spaTaxCount' => $trip->spaTaxCount(),
             ':spaAge' => $policy->spaTaxAgeThreshold(),
+            ':adultAge' => $policy->adultAgeThreshold(),
             ':costs' => $trip->plannedTotalCosts(),
             ':revenue' => $trip->plannedTotalRevenue(),
         ]);
@@ -79,6 +80,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 spa_tax_per_person = :spaTax,
                 spa_tax_count = :spaTaxCount,
                 spa_tax_age_threshold = :spaAge,
+                adult_age_threshold = :adultAge,
                 planned_total_costs = :costs,
                 planned_total_revenue = :revenue
             WHERE id = :id'
@@ -97,6 +99,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             ':spaTax' => $policy->spaTaxPerPerson(),
             ':spaTaxCount' => $trip->spaTaxCount(),
             ':spaAge' => $policy->spaTaxAgeThreshold(),
+            ':adultAge' => $policy->adultAgeThreshold(),
             ':costs' => $trip->plannedTotalCosts(),
             ':revenue' => $trip->plannedTotalRevenue(),
         ]);
@@ -161,7 +164,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 new Percentage((float) $trip['club_fee_percent']),
                 DistributionMethod::from((string) $trip['distribution_method']),
                 (float) $trip['spa_tax_per_person'],
-                (int) $trip['spa_tax_age_threshold']
+                (int) $trip['spa_tax_age_threshold'],
+                (int) ($trip['adult_age_threshold'] ?? 16)
             ),
             bookings: $bookings,
             groupExpenses: $expenses,

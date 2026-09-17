@@ -44,6 +44,48 @@ final class RegistrationBillingServiceTest extends TestCase
         );
     }
 
+    private function createTripWithNights(
+        int $spaTaxAgeThreshold = 18,
+        int $adultAgeThreshold = 16,
+        float $spaTaxPerPerson = 2.50
+    ): Trip {
+        return new Trip(
+            1,
+            'Winterfreizeit 2026',
+            new DateTimeImmutable('2026-02-14'),
+            new TripPricingPolicy(
+                new Percentage(10.0),
+                new Percentage(5.0),
+                DistributionMethod::PER_PERSON,
+                $spaTaxPerPerson,
+                $spaTaxAgeThreshold,
+                $adultAgeThreshold
+            ),
+            [
+                new RoomBooking(RoomCategoryType::ADULT_DOUBLE, 4, 100.00),
+                new RoomBooking(RoomCategoryType::ADULT_MULTI, 6, 90.00),
+                new RoomBooking(RoomCategoryType::CHILD, 5, 60.00),
+            ],
+            [new GroupExpense('Getraenke', 75.00)],
+            700.00,
+            800.00,
+            5,
+            new DateTimeImmutable('2026-02-17')
+        );
+    }
+
+    /** @return \App\Domain\Registration\BillingLineItem[] */
+    private function billItemsFor(Trip $trip, string $roomCategory, DateTimeImmutable $birthDate): array
+    {
+        $registrations = [
+            new Registration(1, $trip->id(), $roomCategory, null, '', [
+                new Participant('Testperson', $birthDate),
+            ]),
+        ];
+
+        return $this->createService()->calculateBillings($trip, $registrations)[0]->billingItems();
+    }
+
     private function createService(): RegistrationBillingService
     {
         return new RegistrationBillingService(new PriceCalculatorService());
@@ -201,5 +243,95 @@ final class RegistrationBillingServiceTest extends TestCase
         self::assertCount(1, $result[0]->billingItems());
         self::assertCount(2, $result[1]->billingItems());
     }
-}
 
+    public function testCategoryFollowsAdultAgeThresholdNotSpaTaxThreshold(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16);
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2009-02-14'));
+
+        self::assertSame('ADULT_MULTI', $items[0]->categoryType());
+    }
+
+    public function testChildLiableForSpaTaxGetsAdditionalLine(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 12, adultAgeThreshold: 16);
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2012-02-14'));
+
+        self::assertCount(2, $items);
+        self::assertSame('CHILD', $items[0]->categoryType());
+        self::assertSame('SPA_TAX', $items[1]->categoryType());
+        self::assertSame(7.50, $items[1]->price());
+    }
+
+    public function testAdultNotLiableForSpaTaxGetsCreditLine(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16);
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2010-02-14'));
+
+        self::assertCount(2, $items);
+        self::assertSame('ADULT_MULTI', $items[0]->categoryType());
+        self::assertSame('SPA_TAX_CREDIT', $items[1]->categoryType());
+        self::assertSame(-7.50, $items[1]->price());
+    }
+
+    public function testAdultLiableForSpaTaxHasNoCorrectionLine(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16);
+
+        $items = $this->billItemsFor($trip, '2-Bettzimmer', new DateTimeImmutable('1985-03-07'));
+
+        self::assertCount(1, $items);
+        self::assertSame('ADULT_DOUBLE', $items[0]->categoryType());
+    }
+
+    public function testChildNotLiableForSpaTaxHasNoCorrectionLine(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16);
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2018-02-14'));
+
+        self::assertCount(1, $items);
+        self::assertSame('CHILD', $items[0]->categoryType());
+    }
+
+    public function testBillingTotalIncludesSpaTaxCorrection(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16);
+        $registrations = [
+            new Registration(1, $trip->id(), '3-Bettzimmer', null, '', [
+                new Participant('Sechzehn', new DateTimeImmutable('2010-02-14')),
+            ]),
+        ];
+
+        $billing = $this->createService()->calculateBillings($trip, $registrations)[0];
+
+        $itemSum = 0.0;
+        foreach ($billing->billingItems() as $item) {
+            $itemSum = round($itemSum + $item->price(), 2, PHP_ROUND_HALF_UP);
+        }
+
+        self::assertSame($itemSum, $billing->billingTotal());
+        self::assertSame(round($billing->billingItems()[0]->price() - 7.50, 2), $billing->billingTotal());
+    }
+
+    public function testNoCorrectionLineWithoutNights(): void
+    {
+        $trip = $this->createTrip();
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2010-02-14'));
+
+        self::assertCount(1, $items);
+    }
+
+    public function testNoCorrectionLineWithoutSpaTax(): void
+    {
+        $trip = $this->createTripWithNights(spaTaxAgeThreshold: 18, adultAgeThreshold: 16, spaTaxPerPerson: 0.0);
+
+        $items = $this->billItemsFor($trip, '3-Bettzimmer', new DateTimeImmutable('2010-02-14'));
+
+        self::assertCount(1, $items);
+    }
+}

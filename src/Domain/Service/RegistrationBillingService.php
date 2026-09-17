@@ -12,6 +12,10 @@ use DateTimeImmutable;
 
 final readonly class RegistrationBillingService
 {
+    public const string CATEGORY_SPA_TAX = 'SPA_TAX';
+
+    public const string CATEGORY_SPA_TAX_CREDIT = 'SPA_TAX_CREDIT';
+
     public function __construct(private PriceCalculatorService $calculator)
     {
     }
@@ -26,6 +30,9 @@ final readonly class RegistrationBillingService
         $pricesPerCategory = $calculationResult['pricesPerCategory'] ?? [];
         $now = new DateTimeImmutable();
 
+        $policy = $trip->pricingPolicy();
+        $spaTaxPerParticipant = $this->round2($policy->spaTaxPerPerson() * $trip->nights());
+
         $result = [];
         foreach ($registrations as $registration) {
             $items = [];
@@ -36,12 +43,24 @@ final readonly class RegistrationBillingService
                     $participant,
                     $registration->roomCategory(),
                     $trip->startDate(),
-                    $trip->pricingPolicy()->spaTaxAgeThreshold()
+                    $policy->adultAgeThreshold()
                 );
 
                 $price = $pricesPerCategory[$categoryType] ?? 0.0;
                 $items[] = new BillingLineItem($participant->name(), $categoryType, $price);
                 $total = $this->round2($total + $price);
+
+                $correction = $this->spaTaxCorrection(
+                    $participant->ageAtDate($trip->startDate()),
+                    $categoryType,
+                    $policy->spaTaxAgeThreshold(),
+                    $spaTaxPerParticipant
+                );
+
+                if ($correction !== null) {
+                    $items[] = new BillingLineItem($participant->name(), $correction[0], $correction[1]);
+                    $total = $this->round2($total + $correction[1]);
+                }
             }
 
             $result[] = $registration->withBilling($now, $total, $items);
@@ -50,15 +69,45 @@ final readonly class RegistrationBillingService
         return $result;
     }
 
+    /**
+     * The calculation prices the spa tax into the adult categories only. Once the actual ages are
+     * known, participants who fall on the other side of the spa tax age get corrected here.
+     *
+     * @return array{0: string, 1: float}|null
+     */
+    private function spaTaxCorrection(
+        int $age,
+        string $categoryType,
+        int $spaTaxAgeThreshold,
+        float $spaTaxPerParticipant
+    ): ?array {
+        if ($spaTaxPerParticipant === 0.0) {
+            return null;
+        }
+
+        $liable = $age >= $spaTaxAgeThreshold;
+        $pricedIn = $categoryType !== 'CHILD';
+
+        if ($liable && !$pricedIn) {
+            return [self::CATEGORY_SPA_TAX, $spaTaxPerParticipant];
+        }
+
+        if (!$liable && $pricedIn) {
+            return [self::CATEGORY_SPA_TAX_CREDIT, -$spaTaxPerParticipant];
+        }
+
+        return null;
+    }
+
     public function determineCategory(
         Participant $participant,
         string $roomCategory,
         DateTimeImmutable $tripStartDate,
-        int $ageThreshold
+        int $adultAgeThreshold
     ): string {
         $age = $participant->ageAtDate($tripStartDate);
 
-        if ($age < $ageThreshold) {
+        if ($age < $adultAgeThreshold) {
             return 'CHILD';
         }
 

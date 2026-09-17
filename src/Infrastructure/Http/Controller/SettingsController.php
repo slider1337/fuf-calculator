@@ -30,6 +30,7 @@ final readonly class SettingsController
             'defaultDistributionMethod' => $settings->defaultDistributionMethod()->value,
             'defaultSpaTaxPerPerson' => $settings->defaultSpaTaxPerPerson(),
             'defaultSpaTaxAgeThreshold' => $settings->defaultSpaTaxAgeThreshold(),
+            'defaultAdultAgeThreshold' => $settings->defaultAdultAgeThreshold(),
         ]);
     }
 
@@ -55,6 +56,7 @@ final readonly class SettingsController
             'defaultDistributionMethod' => $settings->defaultDistributionMethod()->value,
             'defaultSpaTaxPerPerson' => $settings->defaultSpaTaxPerPerson(),
             'defaultSpaTaxAgeThreshold' => $settings->defaultSpaTaxAgeThreshold(),
+            'defaultAdultAgeThreshold' => $settings->defaultAdultAgeThreshold(),
         ]);
     }
 }

@@ -55,6 +55,7 @@ final readonly class TripService
             'distributionMethod',
             'spaTaxPerPerson',
             'spaTaxAgeThreshold',
+            'adultAgeThreshold',
             'bookings',
             'groupExpenses',
         ];
@@ -125,7 +126,8 @@ final readonly class TripService
                     new Percentage((float) $payload['clubFeePercent']),
                     DistributionMethod::from((string) $payload['distributionMethod']),
                     (float) $payload['spaTaxPerPerson'],
-                    (int) $payload['spaTaxAgeThreshold']
+                    (int) $payload['spaTaxAgeThreshold'],
+                    (int) $payload['adultAgeThreshold']
                 ),
                 bookings: $bookings,
                 groupExpenses: $expenses,

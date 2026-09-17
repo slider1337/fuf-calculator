@@ -79,6 +79,7 @@ abstract class ApiTestCase extends TestCase
             'distributionMethod' => 'PER_PERSON',
             'spaTaxPerPerson' => 2.0,
             'spaTaxAgeThreshold' => 18,
+            'adultAgeThreshold' => 16,
             'spaTaxCount' => 5,
             'bookings' => [
                 ['categoryType' => 'ADULT_DOUBLE', 'count' => 3, 'basePricePerPerson' => 100.0],

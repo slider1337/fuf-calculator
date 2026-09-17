@@ -13,7 +13,8 @@ final readonly class TripPricingPolicy
         private Percentage $clubFeePercent,
         private DistributionMethod $distributionMethod,
         private float $spaTaxPerPerson,
-        private int $spaTaxAgeThreshold
+        private int $spaTaxAgeThreshold,
+        private int $adultAgeThreshold = 16
     ) {
     }
 
@@ -40,6 +41,11 @@ final readonly class TripPricingPolicy
     public function spaTaxAgeThreshold(): int
     {
         return $this->spaTaxAgeThreshold;
+    }
+
+    public function adultAgeThreshold(): int
+    {
+        return $this->adultAgeThreshold;
     }
 }
 

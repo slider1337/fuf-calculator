@@ -107,6 +107,22 @@ final class ApiIntegrationTest extends ApiTestCase
     /**
      * @throws JsonException
      */
+    public function testTripPersistsAdultAgeThreshold(): void
+    {
+        $payload = $this->validTripPayload();
+        $payload['adultAgeThreshold'] = 14;
+
+        $createResponse = $this->dispatch('POST', '/api/trips', $payload);
+        self::assertSame(201, $createResponse->getStatusCode());
+        $created = json_decode((string) $createResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        $getResponse = $this->dispatch('GET', '/api/trips/' . $created['id']);
+        self::assertSame(200, $getResponse->getStatusCode());
+        $trip = json_decode((string) $getResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame(14, $trip['adultAgeThreshold']);
+    }
+
     public function testCreateTripWithMissingFieldsReturns422(): void
     {
         $response = $this->dispatch('POST', '/api/trips', ['name' => 'Fehlt']);
@@ -212,6 +228,7 @@ final class ApiIntegrationTest extends ApiTestCase
             'defaultDistributionMethod' => 'PER_CATEGORY_UNITS',
             'defaultSpaTaxPerPerson' => 3.0,
             'defaultSpaTaxAgeThreshold' => 16,
+            'defaultAdultAgeThreshold' => 14,
         ];
 
         $response = $this->dispatch('PUT', '/api/settings', $payload);
@@ -223,6 +240,7 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame('PER_CATEGORY_UNITS', $data['defaultDistributionMethod']);
         self::assertSame(3.0, (float) $data['defaultSpaTaxPerPerson']);
         self::assertSame(16, $data['defaultSpaTaxAgeThreshold']);
+        self::assertSame(14, $data['defaultAdultAgeThreshold']);
     }
 
     /**
@@ -236,6 +254,7 @@ final class ApiIntegrationTest extends ApiTestCase
             'defaultDistributionMethod' => 'PER_PERSON',
             'defaultSpaTaxPerPerson' => 4.0,
             'defaultSpaTaxAgeThreshold' => 14,
+            'defaultAdultAgeThreshold' => 17,
         ];
 
         $this->dispatch('PUT', '/api/settings', $payload);
@@ -244,6 +263,7 @@ final class ApiIntegrationTest extends ApiTestCase
         $data = json_decode((string) $getResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame(15.0, (float) $data['defaultMarkupPercent']);
         self::assertSame(14, $data['defaultSpaTaxAgeThreshold']);
+        self::assertSame(17, $data['defaultAdultAgeThreshold']);
     }
 
     /**

@@ -24,7 +24,7 @@ final readonly class SettingsService
     public function updateFromArray(array $payload): Settings
     {
         $errors = [];
-        foreach (['defaultMarkupPercent', 'defaultClubFeePercent', 'defaultDistributionMethod', 'defaultSpaTaxPerPerson', 'defaultSpaTaxAgeThreshold'] as $field) {
+        foreach (['defaultMarkupPercent', 'defaultClubFeePercent', 'defaultDistributionMethod', 'defaultSpaTaxPerPerson', 'defaultSpaTaxAgeThreshold', 'defaultAdultAgeThreshold'] as $field) {
             if (!array_key_exists($field, $payload)) {
                 $errors[$field] = 'required';
             }
@@ -40,7 +40,8 @@ final readonly class SettingsService
                 new Percentage((float) $payload['defaultClubFeePercent']),
                 DistributionMethod::from((string) $payload['defaultDistributionMethod']),
                 (float) $payload['defaultSpaTaxPerPerson'],
-                (int) $payload['defaultSpaTaxAgeThreshold']
+                (int) $payload['defaultSpaTaxAgeThreshold'],
+                (int) $payload['defaultAdultAgeThreshold']
             );
         } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);

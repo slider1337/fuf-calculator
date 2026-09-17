@@ -539,6 +539,7 @@ components:
         - defaultDistributionMethod
         - defaultSpaTaxPerPerson
         - defaultSpaTaxAgeThreshold
+        - defaultAdultAgeThreshold
       properties:
         defaultMarkupPercent:
           type: number
@@ -558,6 +559,9 @@ components:
         defaultSpaTaxAgeThreshold:
           type: integer
           example: 18
+        defaultAdultAgeThreshold:
+          type: integer
+          example: 16
 
     RoomBooking:
       type: object
@@ -592,6 +596,7 @@ components:
         - distributionMethod
         - spaTaxPerPerson
         - spaTaxAgeThreshold
+        - adultAgeThreshold
         - bookings
         - groupExpenses
       properties:
@@ -614,6 +619,9 @@ components:
           format: float
         spaTaxAgeThreshold:
           type: integer
+        adultAgeThreshold:
+          type: integer
+          example: 16
         bookings:
           type: array
           items:
@@ -674,6 +682,8 @@ components:
           type: string
           enum: [PER_PERSON, PER_CATEGORY_UNITS]
         spaTaxAgeThreshold:
+          type: integer
+        adultAgeThreshold:
           type: integer
         startDate:
           type: string
@@ -736,7 +746,7 @@ components:
           type: string
         categoryType:
           type: string
-          enum: [ADULT_DOUBLE, ADULT_MULTI, CHILD]
+          enum: [ADULT_DOUBLE, ADULT_MULTI, CHILD, SPA_TAX, SPA_TAX_CREDIT]
         price:
           type: number
           format: float

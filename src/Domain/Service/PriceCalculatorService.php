@@ -106,6 +106,7 @@ final class PriceCalculatorService
             'surplus' => $this->round2($totalCalculatedRevenue - $totalCalculatedCosts),
             'distributionMethod' => $policy->distributionMethod()->value,
             'spaTaxAgeThreshold' => $policy->spaTaxAgeThreshold(),
+            'adultAgeThreshold' => $policy->adultAgeThreshold(),
             'startDate' => $trip->startDate()->format('Y-m-d'),
             'endDate' => $trip->endDate()?->format('Y-m-d'),
             'nights' => $nights,

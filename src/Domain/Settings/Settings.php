@@ -14,7 +14,8 @@ final readonly class Settings
         private Percentage $defaultClubFeePercent,
         private DistributionMethod $defaultDistributionMethod,
         private float $defaultSpaTaxPerPerson,
-        private int $defaultSpaTaxAgeThreshold
+        private int $defaultSpaTaxAgeThreshold,
+        private int $defaultAdultAgeThreshold = 16
     ) {
     }
 
@@ -41,6 +42,11 @@ final readonly class Settings
     public function defaultSpaTaxAgeThreshold(): int
     {
         return $this->defaultSpaTaxAgeThreshold;
+    }
+
+    public function defaultAdultAgeThreshold(): int
+    {
+        return $this->defaultAdultAgeThreshold;
     }
 }
 

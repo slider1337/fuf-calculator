@@ -38,6 +38,7 @@ final class SettingsServiceTest extends TestCase
             'defaultDistributionMethod' => 'PER_CATEGORY_UNITS',
             'defaultSpaTaxPerPerson' => 3.5,
             'defaultSpaTaxAgeThreshold' => 16,
+            'defaultAdultAgeThreshold' => 14,
         ]);
 
         self::assertSame(15.0, $settings->defaultMarkupPercent()->value());
@@ -45,6 +46,7 @@ final class SettingsServiceTest extends TestCase
         self::assertSame(DistributionMethod::PER_CATEGORY_UNITS, $settings->defaultDistributionMethod());
         self::assertSame(3.5, $settings->defaultSpaTaxPerPerson());
         self::assertSame(16, $settings->defaultSpaTaxAgeThreshold());
+        self::assertSame(14, $settings->defaultAdultAgeThreshold());
     }
 
     public function testUpdateFromArrayPersistsToRepository(): void
@@ -55,10 +57,24 @@ final class SettingsServiceTest extends TestCase
             'defaultDistributionMethod' => 'PER_PERSON',
             'defaultSpaTaxPerPerson' => 2.0,
             'defaultSpaTaxAgeThreshold' => 18,
+            'defaultAdultAgeThreshold' => 16,
         ]);
 
         $retrieved = $this->service->getSettings();
         self::assertSame(20.0, $retrieved->defaultMarkupPercent()->value());
+        self::assertSame(16, $retrieved->defaultAdultAgeThreshold());
+    }
+
+    public function testUpdateFromArrayWithoutAdultAgeThresholdThrowsValidation(): void
+    {
+        $this->expectException(ValidationException::class);
+        $this->service->updateFromArray([
+            'defaultMarkupPercent' => 10.0,
+            'defaultClubFeePercent' => 5.0,
+            'defaultDistributionMethod' => 'PER_PERSON',
+            'defaultSpaTaxPerPerson' => 2.0,
+            'defaultSpaTaxAgeThreshold' => 18,
+        ]);
     }
 
     public function testUpdateFromArrayWithMissingFieldsThrowsValidation(): void
@@ -82,6 +98,7 @@ final class SettingsServiceTest extends TestCase
             'defaultDistributionMethod' => 'INVALID',
             'defaultSpaTaxPerPerson' => 2.0,
             'defaultSpaTaxAgeThreshold' => 18,
+            'defaultAdultAgeThreshold' => 16,
         ]);
     }
 
@@ -94,6 +111,7 @@ final class SettingsServiceTest extends TestCase
             'defaultDistributionMethod' => 'PER_PERSON',
             'defaultSpaTaxPerPerson' => 2.0,
             'defaultSpaTaxAgeThreshold' => 18,
+            'defaultAdultAgeThreshold' => 16,
         ]);
     }
 }

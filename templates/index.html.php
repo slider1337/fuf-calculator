@@ -164,7 +164,10 @@
                     <label class="form-label" for="spaTaxCount">Kurabgabe Anzahl Personen</label>
                     <input id="spaTaxCount" class="form-control" name="spaTaxCount" type="number" step="1" min="0" value="0" required>
                 </div>
-                <div class="col-md-3"></div>
+                <div class="col-md-3">
+                    <label class="form-label" for="adultAgeThreshold">Erwachsen ab Alter</label>
+                    <input id="adultAgeThreshold" class="form-control" name="adultAgeThreshold" type="number" step="1" min="0" required>
+                </div>
 
                 <div class="col-12"><hr></div>
                 <div class="col-md-3">
@@ -209,13 +212,6 @@
             </div>
 
             <section id="result-panel" class="d-none">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 mb-0">Berechnungsergebnis</h2>
-                    <div class="small text-muted">
-                        Details der API: <a href="/docs" target="_blank" rel="noopener">Swagger UI</a>
-                    </div>
-                </div>
-
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <div class="card border-0 shadow-sm h-100">
@@ -269,6 +265,8 @@
                                     <dd id="result-distribution-method" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Kurabgabe ab Alter</dt>
                                     <dd id="result-spa-tax-age" class="col-6 text-end mb-2">-</dd>
+                                    <dt class="col-6">Erwachsen ab Alter</dt>
+                                    <dd id="result-adult-age" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Reisebeginn</dt>
                                     <dd id="result-start-date" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Abreise</dt>
@@ -751,6 +749,10 @@
                         <div class="col-md-6">
                             <label class="form-label" for="defaultSpaTaxAgeThreshold">Kurabgabe ab Alter</label>
                             <input id="defaultSpaTaxAgeThreshold" class="form-control" name="defaultSpaTaxAgeThreshold" type="number" step="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="defaultAdultAgeThreshold">Erwachsen ab Alter</label>
+                            <input id="defaultAdultAgeThreshold" class="form-control" name="defaultAdultAgeThreshold" type="number" step="1" min="0" required>
                         </div>
                     </form>
                 </div>

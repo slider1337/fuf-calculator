@@ -214,6 +214,34 @@ final class DomainValidationTest extends TestCase
         self::assertSame(18, $policy->spaTaxAgeThreshold());
     }
 
+    public function testTripPricingPolicyAdultAgeThresholdDefaultsTo16(): void
+    {
+        $policy = new TripPricingPolicy(
+            new Percentage(10.0),
+            new Percentage(5.0),
+            DistributionMethod::PER_PERSON,
+            2.50,
+            18
+        );
+
+        self::assertSame(16, $policy->adultAgeThreshold());
+    }
+
+    public function testTripPricingPolicyKeepsExplicitAdultAgeThreshold(): void
+    {
+        $policy = new TripPricingPolicy(
+            new Percentage(10.0),
+            new Percentage(5.0),
+            DistributionMethod::PER_PERSON,
+            2.50,
+            18,
+            14
+        );
+
+        self::assertSame(14, $policy->adultAgeThreshold());
+        self::assertSame(18, $policy->spaTaxAgeThreshold());
+    }
+
     public function testActualExpenseValid(): void
     {
         $e = new ActualExpense(null, 1, 'Unterkunft', 500.0);

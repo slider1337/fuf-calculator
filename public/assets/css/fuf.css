@@ -369,6 +369,12 @@ h1.fuf-display {
     grid-template-columns: 1.6fr 1fr 1.2fr 1fr 24px;
 }
 
+/* Anmeldungen: CSV-Dropzone links, Manuell-Formular rechts */
+.fuf-grid-intake {
+    grid-template-columns: 1.3fr 1fr;
+    align-items: stretch;
+}
+
 /* Seitenkopf ueber einer Liste: Titel und Hilfetext links, Suche rechts */
 .page-head {
     display: flex;
@@ -1321,6 +1327,25 @@ h1.fuf-display {
     white-space: nowrap;
 }
 
+/* Filter-Chip: derselbe Koerper, aber anklickbar und mit Aktivzustand */
+button.chip-btn {
+    border: 1px solid var(--fuf-sand-400);
+    background: var(--fuf-sand-200);
+    color: var(--fuf-brown-700);
+    cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+}
+
+button.chip-btn:hover {
+    border-color: var(--fuf-sand-500);
+}
+
+button.chip-btn.is-active {
+    background: var(--fuf-sand-300);
+    border-color: var(--fuf-brown-400);
+    color: var(--fuf-brown-900);
+}
+
 .c-green {
     background: var(--fuf-green-100);
     color: var(--fuf-green-700);
@@ -1564,7 +1589,256 @@ h1.fuf-display {
 }
 
 /* ========================================================================
- * 15. Modals
+ * 15. Anmeldungen
+ * ======================================================================== */
+
+/* CSV-Dropzone. Das Dateifeld bleibt ein echtes <input type="file">, nur
+ * abgeblendet - erreichbar ueber das <label> und ueber Drag & Drop. */
+.dropzone {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 2px dashed var(--fuf-sand-500);
+    border-radius: 10px;
+    background: var(--fuf-sand-50);
+    transition: border-color .12s, background .12s;
+}
+
+.dropzone.is-over {
+    border-color: var(--fuf-green-600);
+    background: var(--fuf-green-100);
+}
+
+.dropzone-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dropzone-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.dropzone-text b {
+    font-size: 14px;
+}
+
+.dropzone-text label {
+    color: var(--fuf-green-600);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.dropzone-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    border: 0;
+}
+
+/* Manuell-Formular */
+.reg-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+}
+
+.reg-manual-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reg-manual-head b {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--fuf-brown-400);
+}
+
+.reg-manual-row {
+    display: flex;
+    gap: 10px;
+}
+
+.reg-manual-row .f {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.reg-manual-row .f-cat {
+    flex: 0 0 170px;
+}
+
+/* Die Teilnehmerzeilen liegen in einem eigenen Container, brauchen also ihren
+ * eigenen Abstand - der gap der Karte greift nur eine Ebene hoeher. */
+.reg-manual-participants {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.reg-manual-row .f-date {
+    flex: 0 0 150px;
+}
+
+.reg-manual-foot {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.reg-manual-foot .btn {
+    margin-left: auto;
+}
+
+/* Filter und Suche ueber der Liste */
+.reg-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.reg-filters {
+    display: flex;
+    gap: 4px;
+}
+
+.reg-controls .in-search {
+    width: 240px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.reg-no-match {
+    padding: 14px 4px;
+}
+
+/* Liste der Anmeldungen */
+.reg-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reg-item {
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.reg-row {
+    display: flex;
+    align-items: center;
+    background: #FFFFFF;
+}
+
+/* Aufgeklappte Anmeldung hebt sich ab. Die Aktionsknoepfe stehen neben dem
+ * Umschalter, nicht darin - ein Button im Button waere ungueltiges Markup. */
+.reg-item:has(> .collapse.show) .reg-row {
+    background: var(--fuf-sand-50);
+}
+
+.reg-row-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+    min-width: 0;
+    padding: 12px 0 12px 16px;
+    background: transparent;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.reg-row .chev {
+    padding: 0 16px;
+    align-self: stretch;
+}
+
+.reg-name {
+    font-size: 15px;
+    font-weight: 700;
+    min-width: 190px;
+}
+
+.reg-amount {
+    margin-left: auto;
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--fuf-green-600);
+}
+
+.reg-amount-none {
+    color: var(--fuf-brown-400);
+    font-weight: 600;
+}
+
+.reg-actions {
+    display: inline-flex;
+    gap: 6px;
+    padding-left: 8px;
+    flex-shrink: 0;
+}
+
+.reg-body {
+    border-top: 1px solid var(--fuf-sand-300);
+    padding: 6px 16px 12px 16px;
+    background: #FFFFFF;
+}
+
+.reg-body .tb {
+    font-size: 13px;
+}
+
+.reg-body-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 10px;
+}
+
+.reg-age {
+    margin-left: 8px;
+}
+
+.reg-date {
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+    .fuf-grid-intake {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ========================================================================
+ * 16. Modals
  * ======================================================================== */
 
 .modal-content {
@@ -1597,7 +1871,7 @@ h1.fuf-display {
 }
 
 /* ========================================================================
- * 16. Bootstrap-Varianten-Bruecke
+ * 17. Bootstrap-Varianten-Bruecke
  *
  * --bs-primary allein genuegt nicht: Bootstrap 5.3 faerbt Buttons ueber
  * eigene --bs-btn-*-Properties je Variante, und der Fokusring von

@@ -434,104 +434,134 @@
                 </div>
             </section>
 
-            <section id="registrations-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 mb-0">Anmeldungen &amp; Abrechnung</h2>
-                    <div class="d-flex gap-2">
-                        <button id="recalculate-billings-btn" class="btn btn-sm btn-outline-warning d-none" type="button">Abrechnungen neu berechnen</button>
-                        <button id="delete-registrations-btn" class="btn btn-sm btn-outline-danger d-none" type="button">Alle Anmeldungen l&ouml;schen</button>
-                    </div>
+            <section class="sec" id="registrations-section">
+                <div class="sec-h">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                    <h2>Anmeldungen</h2>
+                    <span class="sum" id="sum-anmeldungen"></span>
+                    <button id="recalculate-billings-btn" class="btn btn-g btn-s d-none" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
+                        Abrechnungen neu berechnen
+                    </button>
+                    <button id="delete-registrations-btn" class="btn btn-d btn-s d-none" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                        Alle l&ouml;schen
+                    </button>
+                    <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#registrations-section-body" aria-expanded="true" aria-controls="registrations-section-body" aria-label="Anmeldungen ein- oder ausklappen">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
                 </div>
-
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-body">
-                        <form id="csv-upload-form" class="row g-2 align-items-end">
-                            <div class="col-md-8">
-                                <label class="form-label" for="csvFile">CSV-Datei importieren</label>
-                                <input id="csvFile" class="form-control" name="csv_file" type="file" accept=".csv" required>
+                <div class="collapse show" id="registrations-section-body">
+                    <div class="sec-b">
+                        <div id="registrations-summary" class="fuf-grid fuf-grid-3 d-none">
+                            <div class="kpi">
+                                <span>Anmeldungen</span>
+                                <b id="reg-count">&ndash;</b>
+                                <small class="help" id="reg-count-note"></small>
                             </div>
-                            <div class="col-md-4 d-grid">
-                                <button class="btn btn-primary" type="submit">Importieren</button>
+                            <div class="kpi" id="reg-participant-kpi">
+                                <span>Teilnehmer gesamt</span>
+                                <b id="reg-participant-count">&ndash;</b>
+                                <small class="help" id="reg-participant-note"></small>
                             </div>
-                        </form>
-                        <div class="small text-muted mt-2">
-                            Erwartetes Format: Semikolon-getrennte CSV mit Kopfzeile. Beim Import werden nur vorherige CSV-Anmeldungen ersetzt. Manuelle Anmeldungen bleiben erhalten.
+                            <div class="kpi">
+                                <span>Abrechnungssumme</span>
+                                <b id="reg-billing-total">&ndash;</b>
+                                <small class="help" id="reg-billing-note"></small>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-white">Anmeldung manuell hinzuf&uuml;gen</div>
-                    <div class="card-body">
-                        <form id="manual-registration-form" class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label" for="manualRoomCategory">Zimmerkategorie</label>
-                                <select id="manualRoomCategory" class="form-select" required>
-                                    <option value="2-Bettzimmer">2-Bettzimmer</option>
-                                    <option value="3-Bettzimmer">3-Bettzimmer</option>
-                                    <option value="4-Bettzimmer">4-Bettzimmer</option>
-                                    <option value="5-Bettzimmer">5-Bettzimmer</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="manualComment">Kommentar</label>
-                                <input id="manualComment" class="form-control" type="text">
-                            </div>
-                            <div class="col-md-3"></div>
-                            <div class="col-12" id="manual-participants-container">
-                                <div class="row g-2 align-items-end mb-1 manual-participant-row">
-                                    <div class="col-md-5">
-                                        <label class="form-label" for="manualParticipantName1">Name Teilnehmer 1</label>
-                                        <input class="form-control manual-participant-name" type="text" required id="manualParticipantName1">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label" for="manualParticipantBirthdate1">Geburtsdatum Teilnehmer 1</label>
-                                        <input class="form-control manual-participant-birthdate" type="date" required id="manualParticipantBirthdate1">
-                                    </div>
-                                    <div class="col-md-3"></div>
+                        <div class="fuf-grid fuf-grid-intake">
+                            <form id="csv-upload-form" class="dropzone">
+                                <span class="dropzone-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                </span>
+                                <span class="dropzone-text">
+                                    <b>CSV hierher ziehen oder <label for="csvFile">ausw&auml;hlen</label></b>
+                                    <span class="help">Semikolon-getrennt mit Kopfzeile. Ersetzt nur fr&uuml;here CSV-Anmeldungen &ndash; manuelle bleiben.</span>
+                                    <span class="help" id="csv-file-name"></span>
+                                </span>
+                                <input id="csvFile" class="dropzone-input" name="csv_file" type="file" accept=".csv">
+                                <button class="btn btn-o" type="submit">Importieren</button>
+                            </form>
+
+                            <form id="manual-registration-form" class="reg-manual">
+                                <div class="reg-manual-head">
+                                    <b>Manuell hinzuf&uuml;gen</b>
+                                    <span class="chip c-amber">Manuell</span>
                                 </div>
-                            </div>
-                            <div class="col-12 d-flex gap-2">
-                                <button type="button" id="add-participant-row-btn" class="btn btn-sm btn-outline-secondary">+ Teilnehmer</button>
-                                <button type="button" id="remove-participant-row-btn" class="btn btn-sm btn-outline-secondary d-none">&minus; Teilnehmer</button>
-                                <button type="submit" class="btn btn-sm btn-success ms-auto">Anmeldung hinzuf&uuml;gen</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                                <div class="reg-manual-row">
+                                    <div class="f f-cat">
+                                        <label for="manualRoomCategory">Zimmerkategorie</label>
+                                        <div class="in">
+                                            <select id="manualRoomCategory" required>
+                                                <option value="2-Bettzimmer">2-Bettzimmer</option>
+                                                <option value="3-Bettzimmer">3-Bettzimmer</option>
+                                                <option value="4-Bettzimmer">4-Bettzimmer</option>
+                                                <option value="5-Bettzimmer">5-Bettzimmer</option>
+                                            </select>
+                                            <span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+                                        </div>
+                                    </div>
+                                    <div class="f">
+                                        <label for="manualComment">Kommentar</label>
+                                        <div class="in"><input id="manualComment" type="text" placeholder="optional"></div>
+                                    </div>
+                                </div>
+                                <div id="manual-participants-container" class="reg-manual-participants">
+                                    <div class="reg-manual-row manual-participant-row">
+                                        <div class="f">
+                                            <label for="manualParticipantName1">Teilnehmer 1</label>
+                                            <div class="in"><input class="manual-participant-name" type="text" required id="manualParticipantName1" placeholder="Name"></div>
+                                        </div>
+                                        <div class="f f-date">
+                                            <label for="manualParticipantBirthdate1">Geburtsdatum</label>
+                                            <div class="in"><input class="manual-participant-birthdate" type="date" required id="manualParticipantBirthdate1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reg-manual-foot">
+                                    <button type="button" id="add-participant-row-btn" class="ib" aria-label="Teilnehmer hinzuf&uuml;gen" title="Teilnehmer hinzuf&uuml;gen">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    </button>
+                                    <button type="button" id="remove-participant-row-btn" class="ib d-none" aria-label="Letzten Teilnehmer entfernen" title="Letzten Teilnehmer entfernen">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                                    </button>
+                                    <button type="submit" class="btn btn-p btn-s">Anmeldung hinzuf&uuml;gen</button>
+                                </div>
+                            </form>
+                        </div>
 
-                <div id="registrations-summary" class="row g-3 mb-3 d-none">
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Anmeldungen</div>
-                                <div id="reg-count" class="fs-4 fw-semibold">-</div>
+                        <div id="registrations-controls" class="reg-controls d-none">
+                            <div class="reg-filters" role="group" aria-label="Anmeldungen filtern">
+                                <button type="button" class="chip chip-btn is-active" id="reg-filter-all" data-reg-filter="all">Alle</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-csv" data-reg-filter="csv">CSV</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-manual" data-reg-filter="manual">Manuell</button>
+                            </div>
+                            <div class="in in-search">
+                                <span class="p">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                                </span>
+                                <input id="reg-search" type="search" placeholder="Name suchen &hellip;" aria-label="Anmeldung suchen">
+                            </div>
+                        </div>
+
+                        <div id="registrations-table-wrapper" class="d-none">
+                            <div id="registrations-accordion" class="reg-list"></div>
+                            <p id="registrations-no-match" class="help reg-no-match d-none">Keine Anmeldung passt zu Filter und Suche.</p>
+                        </div>
+
+                        <div id="registrations-empty" class="fuf-empty">
+                            <div class="fuf-empty-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                            </div>
+                            <div class="fuf-empty-text">
+                                <b>Noch keine Anmeldungen</b>
+                                <span class="help">CSV importieren oder eine Anmeldung manuell hinzuf&uuml;gen.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Teilnehmer gesamt</div>
-                                <div id="reg-participant-count" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Abrechnungssumme</div>
-                                <div id="reg-billing-total" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-
-                <div id="registrations-table-wrapper" class="d-none">
-                    <div class="accordion" id="registrations-accordion"></div>
-                </div>
-
-                <p id="registrations-empty" class="text-muted mb-0">Noch keine Anmeldungen vorhanden. Bitte CSV-Datei importieren.</p>
             </section>
 
             <section id="room-summary-section" class="d-none mt-3">

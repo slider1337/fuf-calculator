@@ -405,7 +405,7 @@ h1.fuf-display {
 
 .pg-side {
     position: sticky;
-    top: 24px;
+    top: 76px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -475,6 +475,128 @@ h1.fuf-display {
     justify-content: space-between;
     gap: 24px;
     flex-wrap: wrap;
+    /* Der Umschalter sass bisher ganz oben auf einer 3.000 px langen Seite.
+       Die App-Kopfleiste darueber scrollt normal weg, nur dieser Kopf bleibt. */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    transition: padding .15s, box-shadow .15s;
+}
+
+.trip-head-right {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+/* Zurueck-Pfeil, Kennzahl und Speichern gehoeren nur in den gescrollten
+   Zustand - ungescrollt stehen Breadcrumb und Sticky-Panel dafuer bereit. */
+.trip-head-back,
+.trip-head-kpi,
+#trip-save-btn-head {
+    display: none;
+}
+
+.trip-head-back {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--fuf-radius-control);
+    border: 1px solid var(--fuf-sand-500);
+    color: var(--fuf-brown-700);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.trip-head-back:hover {
+    background: var(--fuf-sand-50);
+    color: var(--fuf-brown-900);
+}
+
+.trip-head-kpi {
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.trip-head-kpi b {
+    font-family: var(--fuf-font-display);
+    font-size: 17px;
+    color: var(--fuf-green-600);
+    font-variant-numeric: tabular-nums;
+}
+
+.trip-head-kpi b.fuf-neg {
+    color: var(--fuf-red-700);
+    font-weight: 500;
+}
+
+/* Gescrollt: eine Zeile, 52 px hoch. */
+.trip-head.is-scrolled {
+    padding: 8px 32px;
+    align-items: center;
+    flex-wrap: nowrap;
+    box-shadow: 0 6px 14px -6px rgba(61, 40, 23, .25);
+}
+
+.trip-head.is-scrolled .bc,
+.trip-head.is-scrolled #trip-editor-meta {
+    display: none;
+}
+
+.trip-head.is-scrolled .trip-head-text {
+    padding-bottom: 0;
+    /* Der Name steht direkt neben dem Pfeil, nicht mittig zwischen Pfeil und
+       Umschalter - space-between wuerde ihn sonst in die Mitte schieben. */
+    margin-right: auto;
+    min-width: 0;
+}
+
+.trip-head.is-scrolled .trip-head-title h1 {
+    font-family: var(--fuf-font-body);
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trip-head.is-scrolled .trip-head-back,
+.trip-head.is-scrolled .trip-head-kpi {
+    display: flex;
+}
+
+.trip-head.is-scrolled .trip-head-right {
+    align-items: center;
+}
+
+/* Der Speichern-Knopf ist nur in der Planung sinnvoll - in der Abrechnung
+   gibt es kein Formular, das er abschicken koennte. */
+.trip-head.is-scrolled:not(.is-abrechnung) #trip-save-btn-head {
+    display: inline-flex;
+}
+
+/* Gescrollt wird aus dem Unterstrich-Umschalter ein Segment-Umschalter: in
+   einer 52-px-Zeile hat ein Unterstrich keine Kante, auf der er sitzen kann. */
+.trip-head.is-scrolled .nav-tabs.trip-tabs {
+    background: var(--fuf-sand-200);
+    border-radius: var(--fuf-radius-control);
+    padding: 3px;
+    margin-bottom: 0;
+    gap: 0;
+}
+
+.trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link {
+    padding: 4px 14px;
+    font-size: 13px;
+    border-bottom-color: transparent;
+    border-radius: 6px;
+}
+
+.trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link.active {
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(61, 40, 23, .12);
+    border-bottom-color: transparent;
 }
 
 .trip-head-text {

@@ -172,7 +172,10 @@
     </section>
 
     <section id="trip-editor-section" class="d-none">
-        <div class="trip-head">
+        <div class="trip-head" id="trip-head">
+            <a class="trip-head-back" id="trip-head-back-btn" href="/" aria-label="Zur&uuml;ck zur Reiseliste" title="Alle Reisen">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
             <div class="trip-head-text">
                 <nav class="bc" aria-label="Pfad">
                     <a id="back-to-list-btn" href="/">Alle Reisen</a>
@@ -184,7 +187,12 @@
                     <span class="help" id="trip-editor-meta"></span>
                 </div>
             </div>
-            <ul class="nav nav-tabs trip-tabs" id="tripTabs" role="tablist">
+            <div class="trip-head-right">
+                <div class="trip-head-kpi">
+                    <span class="help" id="trip-head-kpi-label">&Uuml;berschuss</span>
+                    <b id="trip-head-kpi-value">&ndash;</b>
+                </div>
+                <ul class="nav nav-tabs trip-tabs" id="tripTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="tab-planung" data-bs-toggle="tab" data-bs-target="#panel-planung" type="button" role="tab" aria-controls="panel-planung" aria-selected="true">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>
@@ -197,7 +205,12 @@
                         Abrechnung
                     </button>
                 </li>
-            </ul>
+                </ul>
+                <button id="trip-save-btn-head" class="btn btn-p btn-s" type="submit" form="trip-form">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                    <span id="trip-save-label-head">Speichern</span>
+                </button>
+            </div>
         </div>
 
         <div class="tab-content" id="tripTabContent">

@@ -130,6 +130,9 @@ function resetCalculationResult() {
 function setTripSaveLabel(text) {
   byId("trip-save-label").textContent = text;
   byId("trip-save-label-sticky").textContent = text;
+  // In der schmalen Kontextleiste ist nur Platz fuer das Verb.
+  const short = text.replace(/^Reise /, "");
+  byId("trip-save-label-head").textContent = short.charAt(0).toUpperCase() + short.slice(1);
 }
 
 // DESIGN: Eingabefeld je Kategorie in der Akkordeonzeile. Die ID bleibt, damit
@@ -582,6 +585,7 @@ function renderPanel(result, source) {
   const surplus = Number(result.surplus ?? 0);
   byId("panel-surplus").textContent = signedCurrency(surplus);
   byId("panel-green").className = surplus < 0 ? "pnl-green pnl-green-bad" : "pnl-green";
+  renderHeadKpi();
 
   const adultDouble = breakdowns.ADULT_DOUBLE?.salesPricePerPerson;
   const adultMulti = breakdowns.ADULT_MULTI?.salesPricePerPerson;
@@ -801,6 +805,83 @@ function renderJumpState() {
   });
 }
 
+// DESIGN: Sticky Kontextleiste. Umschaltpunkt ist die Scrollposition und kein
+// Sentinel: .trip-head zieht sich mit negativen Raendern aus dem Innenabstand
+// von .app-main heraus, ein Sentinel darueber muesste sich darin zurechtfinden.
+const HEAD_SCROLL_THRESHOLD = 120;
+
+function renderHeadScrollState() {
+  byId("trip-head").classList.toggle("is-scrolled", window.scrollY > HEAD_SCROLL_THRESHOLD);
+}
+
+function observeHeadScroll() {
+  let pending = false;
+
+  window.addEventListener("scroll", () => {
+    if (pending) {
+      return;
+    }
+    pending = true;
+    window.requestAnimationFrame(() => {
+      pending = false;
+      renderHeadScrollState();
+    });
+  }, { passive: true });
+
+  renderHeadScrollState();
+}
+
+function activeTabName() {
+  return byId("tab-abrechnung").classList.contains("active") ? "abrechnung" : "planung";
+}
+
+// DESIGN: Die wichtigste Zahl des jeweiligen Bereichs, damit man sie aus jeder
+// Scrollposition sieht. Sie wird nicht neu gerechnet, sondern von der Stelle
+// abgelesen, die sie ohnehin schon anzeigt.
+function renderHeadKpi() {
+  const isSettlement = activeTabName() === "abrechnung";
+  const source = isSettlement ? byId("settlement-surplus") : byId("panel-surplus");
+  const value = source.textContent.trim();
+
+  byId("trip-head-kpi-label").textContent = isSettlement ? "Überschuss Ist" : "Überschuss";
+  byId("trip-head-kpi-value").textContent = value === "" ? "–" : value;
+  byId("trip-head-kpi-value").className = value.includes("−") || value.startsWith("-")
+    ? "fuf-neg"
+    : "";
+}
+
+function renderHeadTabState() {
+  byId("trip-head").classList.toggle("is-abrechnung", activeTabName() === "abrechnung");
+  renderHeadKpi();
+}
+
+// DESIGN: Der Tab steht im Hash, damit Zurueck-Button, Neuladen und geteilte
+// Links denselben Bereich zeigen.
+function tabFromHash() {
+  return window.location.hash === "#abrechnung" ? "abrechnung" : "planung";
+}
+
+function showTab(name) {
+  if (activeTabName() === name) {
+    return;
+  }
+
+  const trigger = byId(name === "abrechnung" ? "tab-abrechnung" : "tab-planung");
+  if (window.bootstrap && window.bootstrap.Tab) {
+    window.bootstrap.Tab.getOrCreateInstance(trigger).show();
+  } else {
+    trigger.click();
+  }
+}
+
+function writeTabHash(name) {
+  const hash = `#${name}`;
+  if (window.location.hash === hash) {
+    return;
+  }
+  window.history.pushState({}, "", window.location.pathname + hash);
+}
+
 // DESIGN: Der aktive Eintrag folgt dem Abschnitt, der gerade oben im Blickfeld
 // steht. Der Observer wird beim Oeffnen des Editors aufgebaut.
 function observeSections() {
@@ -855,6 +936,7 @@ async function api(url, options = {}) {
 function showListSection() {
   byId("trip-list-section").classList.remove("d-none");
   byId("trip-editor-section").classList.add("d-none");
+  window.scrollTo({ top: 0 });
   if (state.sectionObserver) {
     state.sectionObserver.disconnect();
     state.sectionObserver = null;
@@ -867,6 +949,11 @@ function showEditorSection(titleText, breadcrumbText) {
   byId("trip-editor-breadcrumb").textContent = breadcrumbText;
   byId("trip-list-section").classList.add("d-none");
   byId("trip-editor-section").classList.remove("d-none");
+  // Mit der sticky Kontextleiste faellt eine mitgeschleppte Scrollposition
+  // auf: man landet mitten in der Seite und die Leiste ist schon geschrumpft.
+  window.scrollTo({ top: 0 });
+  renderHeadScrollState();
+  renderHeadTabState();
   observeSections();
 }
 
@@ -918,6 +1005,13 @@ async function renderCurrentRoute() {
   }
 
   if (route.name === "trip-detail") {
+    // Zurueck zwischen zwei Tabs derselben Reise ist ein Hash-Wechsel. Ohne
+    // diese Abkuerzung wuerde jeder davon die Reise komplett neu laden.
+    if (state.currentTripId === route.tripId) {
+      showTab(tabFromHash());
+      return;
+    }
+
     await openTrip(route.tripId);
   }
 }
@@ -1195,6 +1289,7 @@ async function openTrip(tripId) {
   state.currentTripId = trip.id;
   fillTripForm(trip);
   showEditorSection(trip.name, `Reise #${trip.id}`);
+  showTab(tabFromHash());
   byId("retentionPercent").value = trip.clubFeePercent;
   await calculateTripResult(String(trip.id));
   await loadRegistrations(String(trip.id));
@@ -1732,6 +1827,7 @@ function renderSettlement(settlement) {
   renderJumpState();
   renderRefundDistribution();
   renderSettlementPanel();
+  renderHeadKpi();
 }
 
 // DESIGN: Plan/Ist nach NAVIGATION.md. Die Planwerte fuer Einnahmen, Teilnehmer
@@ -2079,6 +2175,7 @@ async function bootstrapPage() {
     }
   });
 
+  observeHeadScroll();
   await renderCurrentRoute();
 }
 
@@ -2193,6 +2290,11 @@ byId("trip-search").addEventListener("input", () => {
 
 byId("back-to-list-btn").addEventListener("click", async (event) => {
   // DESIGN: Der Breadcrumb-Link ersetzt den Button, das Routing bleibt clientseitig.
+  event.preventDefault();
+  await navigateTo("/");
+});
+
+byId("trip-head-back-btn").addEventListener("click", async (event) => {
   event.preventDefault();
   await navigateTo("/");
 });
@@ -2604,10 +2706,17 @@ byId("actual-expenses-body").addEventListener("click", async (event) => {
 
 // Load settlement when switching to the Abrechnung tab
 byId("tab-abrechnung").addEventListener("shown.bs.tab", async () => {
+  writeTabHash("abrechnung");
+  renderHeadTabState();
   const tripId = byId("tripFormId").value;
   if (tripId) {
     await loadSettlement(tripId);
   }
+});
+
+byId("tab-planung").addEventListener("shown.bs.tab", () => {
+  writeTabHash("planung");
+  renderHeadTabState();
 });
 
 // Recalculate refund distribution when retention percent changes

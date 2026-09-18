@@ -369,6 +369,26 @@ h1.fuf-display {
     grid-template-columns: 1.6fr 1fr 1.2fr 1fr 24px;
 }
 
+/* Seitenkopf ueber einer Liste: Titel und Hilfetext links, Suche rechts */
+.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.page-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.page-head .in-search {
+    width: 260px;
+    flex-shrink: 0;
+}
+
 /* Planungsseite: Inhalt + Sticky-Spalte */
 .pg {
     display: grid;
@@ -411,6 +431,15 @@ h1.fuf-display {
 
     .app-main {
         padding: 20px 16px;
+    }
+
+    .page-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-head .in-search {
+        width: auto;
     }
 }
 
@@ -716,6 +745,43 @@ h1.fuf-display {
 .tb-empty td {
     color: var(--fuf-brown-400);
     text-align: center;
+}
+
+/* Reiseliste: schmale ID-Spalte, feste Aktionsspalte */
+.tb-col-id {
+    width: 60px;
+}
+
+.tb-col-action {
+    width: 200px;
+}
+
+/* Pfeil, der die Sortierspalte markiert */
+.tb-sort {
+    color: var(--fuf-green-600);
+}
+
+/* Erste Zeile einer Zelle als Titel, zweite als Hilfstext darunter */
+.tb-title {
+    font: inherit;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--fuf-brown-900);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tb-title:hover {
+    color: var(--fuf-green-700);
+    text-decoration: underline;
+}
+
+.tb-sub {
+    display: block;
 }
 
 /* ========================================================================

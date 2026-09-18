@@ -5,6 +5,7 @@ const state = {
   inviteModal: null,
   usersModal: null,
   currentUser: null,
+  trips: [],
   currentRegistrations: [],
   currentSettlement: null,
 };
@@ -409,6 +410,120 @@ async function loadSettings() {
   fillSettingsForm(state.settings);
 }
 
+// DESIGN: "2027-02-10" + "2027-02-14" -> "10.–14.02.2027". Gemeinsame Bestandteile
+// werden zusammengezogen, wie in Mockup 01.
+function formatTripPeriod(trip) {
+  const start = formatDate(trip.startDate);
+  if (!trip.endDate) {
+    return start;
+  }
+
+  const end = formatDate(trip.endDate);
+  const [startDay, startMonth, startYear] = String(start).split(".");
+  const [endDay, endMonth, endYear] = String(end).split(".");
+
+  if (startYear !== endYear) {
+    return `${start} – ${end}`;
+  }
+
+  if (startMonth !== endMonth) {
+    return `${startDay}.${startMonth}.–${endDay}.${endMonth}.${endYear}`;
+  }
+
+  return `${startDay}.–${endDay}.${endMonth}.${endYear}`;
+}
+
+// DESIGN: Dieselbe Hybrid-Logik, nach der auch surplusBasis umschaltet: sobald es
+// Anmeldungen gibt, zaehlt der Ist-Stand, sonst die Planung.
+function effectiveParticipants(trip) {
+  return trip.registeredParticipants > 0 ? trip.registeredParticipants : trip.plannedParticipants;
+}
+
+// DESIGN: Ueberschuss farbig, bei reiner Kalkulation zusaetzlich als "geplant" markiert.
+function tripSurplusCell(trip) {
+  if (trip.surplus === null || trip.surplus === undefined) {
+    return '<td class="r">–</td>';
+  }
+
+  const toneClass = trip.surplus < 0 ? "fuf-neg" : "fuf-pos";
+  const sign = trip.surplus < 0 ? "− " : "+ ";
+  const amount = formatCurrency(Math.abs(trip.surplus));
+  const plannedChip = trip.surplusBasis === "calculation"
+    ? ' <span class="chip c-grey">geplant</span>'
+    : "";
+
+  return `<td class="r"><span class="${toneClass}">${sign}${amount}</span>${plannedChip}</td>`;
+}
+
+function tripListRow(trip) {
+  const nightsInfo = trip.endDate
+    ? `<span class="help tb-sub">${trip.nights} ${trip.nights === 1 ? "Nacht" : "Nächte"}</span>`
+    : "";
+
+  return `
+      <td class="help fuf-num">#${trip.id}</td>
+      <td><button class="tb-title" type="button" data-trip-id="${trip.id}">${escapeHtml(trip.name)}</button></td>
+      <td class="fuf-num">${formatTripPeriod(trip)}${nightsInfo}</td>
+      <td class="r">${trip.registeredParticipants} / ${trip.plannedParticipants}</td>
+      ${tripSurplusCell(trip)}
+      <td class="r">
+        <span class="fuf-actions">
+          <button class="btn btn-o btn-s" type="button" data-trip-id="${trip.id}">Öffnen</button>
+          <button class="ib ib-danger" type="button" disabled aria-label="Löschen"
+                  title="Löschen ist noch nicht möglich – es gibt keinen Endpunkt dafür.">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </span>
+      </td>
+    `;
+}
+
+// DESIGN: Rendert aus state.trips, damit die Suche ohne erneuten Request filtert.
+function renderTripList() {
+  const trips = state.trips;
+  const term = byId("trip-search").value.trim().toLowerCase();
+  const matches = term === ""
+    ? trips
+    : trips.filter((trip) => String(trip.name).toLowerCase().includes(term));
+
+  const tbody = byId("trip-list-body");
+  const emptyInfo = byId("trip-list-empty");
+  const card = byId("trip-list-card");
+  tbody.innerHTML = "";
+
+  // Gar keine Reise: nur die Anlegen-Karte. Kein Treffer: die Tabelle bleibt stehen
+  // und sagt es in einer Zeile, damit die Suche nicht ins Leere greift.
+  const hasTrips = trips.length > 0;
+  emptyInfo.classList.toggle("d-none", hasTrips);
+  card.classList.toggle("d-none", !hasTrips);
+
+  const tripWord = trips.length === 1 ? "Reise" : "Reisen";
+  const participants = trips.reduce((sum, trip) => sum + effectiveParticipants(trip), 0);
+  byId("trip-list-summary").textContent = hasTrips
+    ? `${trips.length} ${tripWord} · ${participants} Teilnehmer`
+    : "";
+  byId("trip-list-count").textContent = hasTrips
+    ? `${matches.length} von ${trips.length} ${tripWord}`
+    : "";
+
+  if (!hasTrips) {
+    return;
+  }
+
+  if (matches.length === 0) {
+    const tr = document.createElement("tr");
+    tr.className = "tb-empty";
+    tr.innerHTML = '<td colspan="6">Keine Reise gefunden.</td>';
+    tbody.appendChild(tr);
+  } else {
+    matches.forEach((trip) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = tripListRow(trip);
+      tbody.appendChild(tr);
+    });
+  }
+}
+
 async function loadTripList() {
   const trips = await api("/api/trips");
   trips.sort((left, right) => {
@@ -420,26 +535,8 @@ async function loadTripList() {
     return Number(right.id) - Number(left.id);
   });
 
-  const tbody = byId("trip-list-body");
-  const emptyInfo = byId("trip-list-empty");
-  tbody.innerHTML = "";
-
-  if (trips.length === 0) {
-    emptyInfo.classList.remove("d-none");
-    return;
-  }
-
-  emptyInfo.classList.add("d-none");
-  trips.forEach((trip) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${trip.id}</td>
-      <td>${trip.name}</td>
-      <td>${formatDate(trip.startDate)}</td>
-      <td class="text-end"><button class="btn btn-sm btn-outline-primary" data-trip-id="${trip.id}">Öffnen</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  state.trips = trips;
+  renderTripList();
 }
 
 async function openTrip(tripId) {
@@ -1053,7 +1150,7 @@ byId("settings-form").addEventListener("submit", async (event) => {
   }
 });
 
-byId("new-trip-btn").addEventListener("click", async () => {
+async function startNewTrip() {
   try {
     if (!state.settings) {
       await loadSettings();
@@ -1062,6 +1159,16 @@ byId("new-trip-btn").addEventListener("click", async () => {
   } catch (error) {
     alert("Defaults konnten nicht geladen werden: " + error.message);
   }
+}
+
+byId("new-trip-btn").addEventListener("click", startNewTrip);
+
+// DESIGN: Der Knopf in der Leerzustands-Karte macht dasselbe wie der in der Kopfleiste.
+byId("trip-list-empty-create-btn").addEventListener("click", startNewTrip);
+
+// DESIGN: Clientseitige Suche ueber den Reisenamen, ohne erneuten Request.
+byId("trip-search").addEventListener("input", () => {
+  renderTripList();
 });
 
 byId("back-to-list-btn").addEventListener("click", async () => {

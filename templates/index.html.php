@@ -118,23 +118,49 @@
         </div>
     </div>
 
-    <section id="trip-list-section" class="card mb-3">
-        <div class="card-header">Alle Reisen</div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th title="Sortierung: absteigend">Startdatum &darr;</th>
-                        <th class="text-end">Aktion</th>
-                    </tr>
-                    </thead>
-                    <tbody id="trip-list-body"></tbody>
-                </table>
+    <section id="trip-list-section">
+        <div class="page-head">
+            <div class="page-head-text">
+                <h1 class="fuf-display">Alle Reisen</h1>
+                <span id="trip-list-summary" class="help"></span>
             </div>
-            <p id="trip-list-empty" class="text-muted mb-0 d-none">Noch keine Reisen vorhanden.</p>
+            <div class="in in-search">
+                <span class="p">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                </span>
+                <input id="trip-search" type="search" placeholder="Reise suchen &hellip;" aria-label="Reise suchen">
+            </div>
+        </div>
+
+        <div id="trip-list-card" class="sec">
+            <table class="tb">
+                <thead>
+                <tr>
+                    <th class="tb-col-id">ID</th>
+                    <th>Reise</th>
+                    <th title="Sortierung: absteigend">Zeitraum <span class="tb-sort" aria-hidden="true">&darr;</span></th>
+                    <th class="r">Teilnehmer</th>
+                    <th class="r">&Uuml;berschuss / Defizit</th>
+                    <th class="r tb-col-action">Aktion</th>
+                </tr>
+                </thead>
+                <tbody id="trip-list-body"></tbody>
+            </table>
+            <div class="sec-f">
+                <span class="help">Sortiert nach Startdatum, neueste zuerst</span>
+                <span id="trip-list-count" class="help"></span>
+            </div>
+        </div>
+
+        <div id="trip-list-empty" class="fuf-empty d-none">
+            <div class="fuf-empty-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div class="fuf-empty-text">
+                <b>Neue Reise anlegen</b>
+                <span class="help">Aufschlag, Vereinsgeb&uuml;hr und Kurabgabe werden aus den globalen Settings vorbelegt.</span>
+            </div>
+            <button id="trip-list-empty-create-btn" class="btn btn-p" type="button">Reise erstellen</button>
         </div>
     </section>
 

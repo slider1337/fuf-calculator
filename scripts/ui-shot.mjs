@@ -12,6 +12,11 @@
  *   node scripts/ui-shot.mjs --base http://127.0.0.1:8123 --out build/screenshots \
  *     --email demo@fuf-erding.de --password demo12345 \
  *     / :liste /trips/1 :planung
+ *
+ * Mit --eval laeuft vor der Aufnahme noch JavaScript in der Seite. Nur so lassen
+ * sich Zustaende fotografieren, die erst durch eine Eingabe entstehen:
+ *   --eval "document.getElementById('trip-search').value='xy';
+ *           document.getElementById('trip-search').dispatchEvent(new Event('input'))"
  */
 
 import { spawn } from 'node:child_process';
@@ -43,6 +48,7 @@ function parseArgs(argv) {
     password: 'demo12345',
     width: 1440,
     height: 1200,
+    eval: null,
     targets: [],
   };
 
@@ -54,6 +60,7 @@ function parseArgs(argv) {
     if (arg === '--password') { opts.password = argv[++i]; continue; }
     if (arg === '--width') { opts.width = Number(argv[++i]); continue; }
     if (arg === '--height') { opts.height = Number(argv[++i]); continue; }
+    if (arg === '--eval') { opts.eval = argv[++i]; continue; }
     opts.targets.push(arg);
   }
 
@@ -201,6 +208,12 @@ async function main() {
         awaitPromise: true,
       });
       await sleep(1200);
+
+      // Optionaler Eingriff vor der Aufnahme: Feld fuellen, Section aufklappen.
+      if (opts.eval) {
+        await cdp.send('Runtime.evaluate', { expression: opts.eval, awaitPromise: true });
+        await sleep(300);
+      }
 
       const idCheck = await cdp.send('Runtime.evaluate', {
         expression: `JSON.stringify(${JSON.stringify(REQUIRED_IDS)}.filter((id) => !document.getElementById(id)))`,

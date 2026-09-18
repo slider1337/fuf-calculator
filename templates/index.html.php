@@ -55,39 +55,44 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Benutzerverwaltung</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-title-group">
+                        <h2 class="modal-title">Benutzerverwaltung</h2>
+                        <span class="help" id="users-modal-sub"></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-                        <div class="in" style="max-width: 260px;">
+                    <div class="modal-toolbar">
+                        <div class="in in-search in-sm">
                             <span class="p">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
                             </span>
-                            <input id="users-search" type="text" placeholder="Benutzer suchen &hellip;" aria-label="Benutzer suchen">
+                            <input id="users-search" type="search" placeholder="Benutzer suchen &hellip;" aria-label="Benutzer suchen">
                         </div>
                         <button id="open-invite-btn" class="btn btn-p btn-s" type="button">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
                             Nutzer einladen
                         </button>
                     </div>
-                    <div id="users-status" class="small mb-2"></div>
-                    <div class="table-responsive">
-                        <table class="table table-striped align-middle mb-0">
-                            <thead>
-                            <tr>
-                                <th>E-Mail</th>
-                                <th>Rolle</th>
-                                <th>Status</th>
-                                <th class="text-end">Aktion</th>
-                            </tr>
-                            </thead>
-                            <tbody id="users-table-body"></tbody>
-                        </table>
-                    </div>
+                    <div id="users-status" class="status-note d-none"></div>
+                    <table class="tb">
+                        <thead>
+                        <tr>
+                            <th>E-Mail</th>
+                            <th>Rolle</th>
+                            <th>Status</th>
+                            <th class="r">Aktion</th>
+                        </tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                    <span class="help calc-hint">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+                        Admins k&ouml;nnen Benutzer und globale Settings verwalten. Die Rolle wird derzeit nicht &uuml;ber die Oberfl&auml;che ge&auml;ndert.
+                    </span>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schliessen</button>
+                    <button type="button" class="btn btn-o" data-bs-dismiss="modal">Schlie&szlig;en</button>
                 </div>
             </div>
         </div>
@@ -97,22 +102,24 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Nutzer einladen</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-title-group">
+                        <h2 class="modal-title">Nutzer einladen</h2>
+                        <span class="help">Die Person erh&auml;lt einen Link, um ein Passwort zu vergeben.</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small">Die eingeladene Person bekommt einen Link, &uuml;ber den sie ein Passwort vergeben und sich anmelden kann.</p>
                     <form id="invite-form">
-                        <div class="mb-3">
-                            <label class="form-label" for="invite-email">E-Mail-Adresse</label>
-                            <input id="invite-email" class="form-control" type="email" required>
+                        <div class="f">
+                            <label for="invite-email">E-Mail-Adresse</label>
+                            <div class="in"><input id="invite-email" type="email" placeholder="name@beispiel.de" required></div>
                         </div>
-                        <div id="invite-status" class="small"></div>
                     </form>
+                    <div id="invite-status" class="status-note d-none"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schliessen</button>
-                    <button type="submit" form="invite-form" class="btn btn-primary">Einladung senden</button>
+                    <button type="button" class="btn btn-o" data-bs-dismiss="modal">Schlie&szlig;en</button>
+                    <button type="submit" form="invite-form" class="btn btn-p">Einladung senden</button>
                 </div>
             </div>
         </div>
@@ -924,43 +931,59 @@
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Globale Settings</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-title-group">
+                        <h2 class="modal-title">Globale Settings</h2>
+                        <span class="help">Vorbelegung f&uuml;r jede neue Reise &ndash; bestehende Reisen bleiben unver&auml;ndert.</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="settings-form" class="row g-2">
-                        <div class="col-md-4">
-                            <label class="form-label" for="defaultMarkupPercent">Aufschlag %</label>
-                            <input id="defaultMarkupPercent" class="form-control" name="defaultMarkupPercent" type="number" step="0.01" required>
+                    <form id="settings-form">
+                        <div class="settings-group">
+                            <b class="settings-group-label">Aufschl&auml;ge</b>
+                            <div class="fuf-grid fuf-grid-3">
+                                <div class="f">
+                                    <label for="defaultMarkupPercent">Aufschlag</label>
+                                    <div class="in"><input id="defaultMarkupPercent" name="defaultMarkupPercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="defaultClubFeePercent">Vereinsgeb&uuml;hr</label>
+                                    <div class="in"><input id="defaultClubFeePercent" name="defaultClubFeePercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="defaultDistributionMethod">Verteilung</label>
+                                    <div class="in">
+                                        <select id="defaultDistributionMethod" name="defaultDistributionMethod" required>
+                                            <option value="PER_PERSON">Per Person</option>
+                                            <option value="PER_CATEGORY_UNITS">Per Kategorieeinheit</option>
+                                        </select>
+                                        <span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="defaultClubFeePercent">Vereinsgebuehr %</label>
-                            <input id="defaultClubFeePercent" class="form-control" name="defaultClubFeePercent" type="number" step="0.01" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="defaultDistributionMethod">Verteilung</label>
-                            <select id="defaultDistributionMethod" class="form-select" name="defaultDistributionMethod" required>
-                                <option value="PER_PERSON">Per Person</option>
-                                <option value="PER_CATEGORY_UNITS">Per Kategorieeinheit</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="defaultSpaTaxPerPerson">Kurabgabe</label>
-                            <input id="defaultSpaTaxPerPerson" class="form-control" name="defaultSpaTaxPerPerson" type="number" step="0.01" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="defaultSpaTaxAgeThreshold">Kurabgabe ab Alter</label>
-                            <input id="defaultSpaTaxAgeThreshold" class="form-control" name="defaultSpaTaxAgeThreshold" type="number" step="1" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="defaultAdultAgeThreshold">Erwachsen ab Alter</label>
-                            <input id="defaultAdultAgeThreshold" class="form-control" name="defaultAdultAgeThreshold" type="number" step="1" min="0" required>
+                        <div class="settings-group settings-group-split">
+                            <b class="settings-group-label">Kurabgabe &amp; Altersgrenzen</b>
+                            <div class="fuf-grid fuf-grid-3">
+                                <div class="f">
+                                    <label for="defaultSpaTaxPerPerson">Kurabgabe pro Person &amp; Nacht</label>
+                                    <div class="in"><input id="defaultSpaTaxPerPerson" name="defaultSpaTaxPerPerson" type="number" step="0.01" required><span class="u">&euro;</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="defaultSpaTaxAgeThreshold">Kurabgabe ab Alter</label>
+                                    <div class="in"><input id="defaultSpaTaxAgeThreshold" name="defaultSpaTaxAgeThreshold" type="number" step="1" required><span class="u">Jahre</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="defaultAdultAgeThreshold">Erwachsen ab Alter</label>
+                                    <div class="in"><input id="defaultAdultAgeThreshold" name="defaultAdultAgeThreshold" type="number" step="1" min="0" required><span class="u">Jahre</span></div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Schliessen</button>
-                    <button type="submit" form="settings-form" class="btn btn-primary">Settings speichern</button>
+                    <button type="button" class="btn btn-o" data-bs-dismiss="modal">Schlie&szlig;en</button>
+                    <button type="submit" form="settings-form" class="btn btn-p">Settings speichern</button>
                 </div>
             </div>
         </div>

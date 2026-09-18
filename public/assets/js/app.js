@@ -17,6 +17,8 @@ const state = {
   currentSettlement: null,
   // DESIGN: Filter und Suche bei den Anmeldungen sind rein clientseitig.
   registrationFilter: { source: "all", query: "" },
+  users: [],
+  userSearch: "",
 };
 
 const categoryLabels = {
@@ -1961,48 +1963,90 @@ function escapeHtml(value) {
 }
 
 async function loadUsers() {
-  const body = byId("users-table-body");
-  const status = byId("users-status");
-  body.innerHTML = "";
-  status.textContent = "";
-  status.className = "small mb-2 text-muted";
+  byId("users-table-body").innerHTML = "";
+  setStatusNote("users-status", "", null);
 
   try {
     const data = await api("/api/users");
-    const users = data.users || [];
-    if (users.length === 0) {
-      body.innerHTML = '<tr><td colspan="4" class="text-muted text-center">Keine Benutzer.</td></tr>';
-      return;
-    }
-    body.innerHTML = users.map((user) => {
-      const roleBadge = user.role === "admin"
-        ? '<span class="badge bg-primary">Admin</span>'
-        : '<span class="badge bg-secondary">Benutzer</span>';
-      const statusText = user.hasPassword ? "Aktiv" : "Eingeladen";
-      const youMarker = user.isCurrentUser ? ' <span class="text-muted small">(Du)</span>' : "";
-      const actionCell = user.canDelete
-        ? `<button class="btn btn-sm btn-outline-danger" data-delete-user-id="${user.id}">L&ouml;schen</button>`
-        : '<span class="text-muted small">&mdash;</span>';
-      return `<tr>
-        <td>${escapeHtml(user.email)}${youMarker}</td>
-        <td>${roleBadge}</td>
-        <td><span class="text-muted small">${statusText}</span></td>
-        <td class="text-end">${actionCell}</td>
-      </tr>`;
-    }).join("");
+    state.users = data.users || [];
+    renderUsers();
   } catch (error) {
-    status.textContent = "Fehler beim Laden: " + error.message;
-    status.className = "small mb-2 text-danger";
+    state.users = [];
+    byId("users-modal-sub").textContent = "";
+    setStatusNote("users-status", "Fehler beim Laden: " + error.message, "error");
   }
 }
 
+// DESIGN: Rolle und Status als Chip, Loeschen als Icon. Das Rolle-Select des
+// Mockups bleibt weg - Rollenverwaltung ist gestrichen und es gibt keinen
+// Endpunkt dafuer.
+function renderUsers() {
+  const users = state.users || [];
+  const invited = users.filter((user) => !user.hasPassword).length;
+
+  byId("users-modal-sub").textContent = [
+    `${users.length} Benutzer`,
+    invited === 0 ? null : `${invited} offene ${invited === 1 ? "Einladung" : "Einladungen"}`,
+  ].filter(Boolean).join(" · ");
+
+  const needle = (state.userSearch || "").trim().toLowerCase();
+  const visible = needle === ""
+    ? users
+    : users.filter((user) => user.email.toLowerCase().includes(needle));
+
+  const body = byId("users-table-body");
+
+  if (visible.length === 0) {
+    body.innerHTML = `<tr class="tb-empty"><td colspan="4">${users.length === 0 ? "Keine Benutzer." : "Kein Benutzer passt zur Suche."}</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = visible.map((user) => {
+    const role = user.role === "admin"
+      ? '<span class="chip c-green">Admin</span>'
+      : '<span class="chip c-grey">Benutzer</span>';
+    const status = user.hasPassword
+      ? '<span class="chip c-green">Aktiv</span>'
+      : '<span class="chip c-amber">Eingeladen</span>';
+    const action = user.isCurrentUser
+      ? '<span class="help">Das bist du</span>'
+      : user.canDelete
+        ? `<button type="button" class="ib ib-danger" data-delete-user-id="${user.id}" aria-label="Benutzer entfernen" title="Benutzer entfernen">${iconTrash}</button>`
+        : '<span class="help">&mdash;</span>';
+
+    return `<tr>
+      <td>
+        <div class="user-cell">
+          <span class="user-avatar" aria-hidden="true">${escapeHtml(initialsFromEmail(user.email))}</span>
+          <b>${escapeHtml(user.email)}</b>
+        </div>
+      </td>
+      <td>${role}</td>
+      <td>${status}</td>
+      <td class="r">${action}</td>
+    </tr>`;
+  }).join("");
+}
+
+// DESIGN: Eine Meldungsbox fuer Benutzer- und Einladungs-Modal. tone ist
+// "ok", "error" oder null fuer neutral; ein leerer Text blendet sie aus.
+function setStatusNote(elementId, text, tone) {
+  const element = byId(elementId);
+  element.textContent = text;
+
+  if (text === "") {
+    element.className = "status-note d-none";
+    return;
+  }
+
+  element.className = tone === null ? "status-note" : `status-note is-${tone}`;
+}
+
 async function deleteUser(userId) {
-  const status = byId("users-status");
   try {
     await api(`/api/users/${userId}`, { method: "DELETE" });
-    status.textContent = "Benutzer geloescht.";
-    status.className = "small mb-2 text-success";
     await loadUsers();
+    setStatusNote("users-status", "Benutzer gelöscht.", "ok");
   } catch (error) {
     let message = error.message;
     try {
@@ -2011,8 +2055,7 @@ async function deleteUser(userId) {
         message = parsed.message;
       }
     } catch (_) {}
-    status.textContent = "Fehler: " + message;
-    status.className = "small mb-2 text-danger";
+    setStatusNote("users-status", "Fehler: " + message, "error");
   }
 }
 
@@ -2042,16 +2085,20 @@ async function bootstrapPage() {
 // --- Event Handlers ---
 
 byId("open-users-btn").addEventListener("click", async () => {
+  state.userSearch = "";
+  byId("users-search").value = "";
   state.usersModal.show();
   await loadUsers();
 });
 
 byId("users-table-body").addEventListener("click", async (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     return;
   }
-  const id = target.getAttribute("data-delete-user-id");
+  // DESIGN: Loeschen ist ein Icon-Button - geklickt wird oft das SVG darin.
+  const button = target.closest("[data-delete-user-id]");
+  const id = button ? button.getAttribute("data-delete-user-id") : null;
   if (!id) {
     return;
   }
@@ -2061,10 +2108,14 @@ byId("users-table-body").addEventListener("click", async (event) => {
   await deleteUser(Number(id));
 });
 
+byId("users-search").addEventListener("input", () => {
+  state.userSearch = byId("users-search").value;
+  renderUsers();
+});
+
 byId("open-invite-btn").addEventListener("click", () => {
   byId("invite-form").reset();
-  byId("invite-status").textContent = "";
-  byId("invite-status").className = "small";
+  setStatusNote("invite-status", "", null);
   // DESIGN: Der Button sitzt jetzt im Benutzer-Modal. Erst schliessen,
   // damit sich die beiden Dialoge nicht uebereinander stapeln.
   state.usersModal.hide();
@@ -2074,21 +2125,17 @@ byId("open-invite-btn").addEventListener("click", () => {
 byId("invite-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = byId("invite-email").value.trim();
-  const status = byId("invite-status");
-  status.textContent = "Sende Einladung...";
-  status.className = "small text-muted";
+  setStatusNote("invite-status", "Sende Einladung …", null);
 
   try {
     await api("/api/auth/invite", {
       method: "POST",
       body: JSON.stringify({ email }),
     });
-    status.textContent = "Einladung versendet.";
-    status.className = "small text-success";
+    setStatusNote("invite-status", `Einladung an ${email} gesendet.`, "ok");
     byId("invite-form").reset();
   } catch (error) {
-    status.textContent = "Fehler: " + error.message;
-    status.className = "small text-danger";
+    setStatusNote("invite-status", "Fehler: " + error.message, "error");
   }
 });
 

@@ -2064,16 +2064,112 @@ button.chip-btn.is-active {
     background: var(--fuf-sand-50);
     border-bottom: 1px solid var(--fuf-sand-300);
     padding: 16px 20px;
+    align-items: flex-start;
 }
 
-.modal-title {
+.modal-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+h2.modal-title {
+    margin: 0;
     font-family: var(--fuf-font-display);
     font-size: 20px;
     font-weight: 500;
 }
 
+.modal-title-group .help {
+    font-size: 13px;
+}
+
 .modal-body {
-    padding: 18px 20px;
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Suche links, Aktion rechts - im Kopf des Benutzer-Modals */
+.modal-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-toolbar .in-search {
+    width: 260px;
+    flex-shrink: 0;
+}
+
+/* Meldungsbox fuer Benutzer- und Einladungs-Modal */
+.status-note {
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--fuf-sand-100);
+    color: var(--fuf-brown-700);
+}
+
+.status-note.is-ok {
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-700);
+    font-weight: 600;
+}
+
+.status-note.is-error {
+    background: var(--fuf-red-100);
+    color: var(--fuf-red-700);
+    font-weight: 600;
+}
+
+/* Benutzerzeile: Initialen-Kreis vor der E-Mail */
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--fuf-green-100);
+    color: var(--fuf-brown-900);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Globale Settings: zwei beschriftete Gruppen */
+#settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settings-group-split {
+    border-top: 1px solid var(--fuf-sand-300);
+    padding-top: 14px;
+}
+
+.settings-group-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--fuf-brown-400);
 }
 
 .modal-footer {
@@ -2081,6 +2177,11 @@ button.chip-btn.is-active {
     border-top: 1px solid var(--fuf-sand-300);
     padding: 12px 20px;
     gap: 8px;
+}
+
+/* Die Modals bringen ihre eigenen Abstaende mit - der Rest kommt aus .tb. */
+.modal-body > .tb {
+    margin: 0;
 }
 
 /* ========================================================================

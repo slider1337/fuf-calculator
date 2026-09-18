@@ -33,7 +33,8 @@ const REQUIRED_IDS = [
   'csv-upload-form', 'delete-registrations-btn', 'invite-form',
   'manual-registration-form', 'new-trip-btn', 'open-invite-btn',
   'open-settings-btn', 'open-users-btn', 'recalculate-billings-btn',
-  'registrations-accordion', 'remove-participant-row-btn', 'retentionPercent',
+  'registrations-accordion', 'remove-participant-row-btn',
+  'result-breakdowns-container', 'retentionPercent',
   'sales-apply-btn', 'settings-form', 'tab-abrechnung', 'trip-form',
   'trip-list-body', 'users-table-body',
   // Modal-Wurzeln, die bootstrapPage() an new bootstrap.Modal(...) uebergibt

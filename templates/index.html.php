@@ -371,130 +371,66 @@
                 <div class="sec-h">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
                     <h2>Kalkulation &amp; Verkaufspreise</h2>
-                    <span class="sum" id="sum-kalkulation"></span>
+                    <span class="sum" id="sum-kalkulation">
+                        <span id="result-distribution-method">&ndash;</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Kurabgabe ab <span id="result-spa-tax-age">&ndash;</span></span>
+                        <span aria-hidden="true">·</span>
+                        <span>Erwachsen ab <span id="result-adult-age">&ndash;</span></span>
+                        <span aria-hidden="true">·</span>
+                        <span>Gruppenausgaben <span id="result-total-group-expenses">&ndash;</span></span>
+                    </span>
                     <button id="calculate-btn" class="btn btn-o btn-s" type="button">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
                         Neu berechnen
                     </button>
                 </div>
                 <div class="sec-b">
-            <section id="result-panel" class="d-none">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Teilnehmer</div>
-                                <div id="result-total-participants" class="fs-4 fw-semibold">-</div>
+                    <div id="result-panel" class="d-none calc-wrap">
+                        <div class="fuf-grid fuf-grid-4">
+                            <div class="kpi">
+                                <span>Teilnehmer</span>
+                                <b id="result-total-participants">&ndash;</b>
+                                <small class="help" id="result-participants-split"></small>
+                            </div>
+                            <div class="kpi">
+                                <span>Gesamteinnahmen</span>
+                                <b id="result-total-revenue">&ndash;</b>
+                                <small class="help">zu Verkaufspreisen</small>
+                            </div>
+                            <div class="kpi">
+                                <span>Gesamtkosten</span>
+                                <b id="result-total-costs">&ndash;</b>
+                                <small class="help">Unterkunft + Kurabgabe + Zusatzausgaben</small>
+                            </div>
+                            <div class="kpi" id="result-surplus-kpi">
+                                <span>Überschuss / Defizit</span>
+                                <b id="result-surplus">&ndash;</b>
+                                <small class="help" id="result-margin"></small>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Gesamteinnahmen</div>
-                                <div id="result-total-revenue" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Gesamtkosten</div>
-                                <div id="result-total-costs" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Ueberschuss / Defizit</div>
-                                <div id="result-surplus" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="row g-3">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white">Preisaufschl&uuml;sselung pro Kategorie</div>
-                            <div class="card-body p-0" id="result-breakdowns-container">
-                                <p class="text-muted text-center p-3 mb-0">Keine Aufschl&uuml;sselung vorhanden.</p>
-                            </div>
+                        <div class="fuf-grid fuf-grid-calc calc-head">
+                            <span class="col-head">Kategorie</span>
+                            <span class="col-head">Endpreis</span>
+                            <span class="col-head">Verkaufspreis</span>
+                            <span class="col-head calc-r">Einnahmen</span>
+                            <span></span>
                         </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-white">Berechnungsdetails</div>
-                            <div class="card-body">
-                                <dl class="row mb-0 small">
-                                    <dt class="col-6">Verteilung</dt>
-                                    <dd id="result-distribution-method" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Kurabgabe ab Alter</dt>
-                                    <dd id="result-spa-tax-age" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Erwachsen ab Alter</dt>
-                                    <dd id="result-adult-age" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Gruppenausgaben gesamt</dt>
-                                    <dd id="result-total-group-expenses" class="col-6 text-end mb-0">-</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-white">Kosten&uuml;bersicht</div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-sm mb-0">
-                                        <thead><tr><th>Kategorie</th><th class="text-end">Anzahl</th><th class="text-end">Preis/Pers.</th><th class="text-end">Summe</th></tr></thead>
-                                        <tbody id="result-category-prices-body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                <span>Verkaufspreis pro Person</span>
-                                <small class="text-muted">Vorbelegt mit dem auf 5er gerundeten Endpreis &mdash; bei Bedarf anpassen.</small>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-3">
-                                        <label class="form-label" for="salesAdultDouble">Erwachsene DZ</label>
-                                        <div class="input-group">
-                                            <input id="salesAdultDouble" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
-                                            <span class="input-group-text">&euro;</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label" for="salesAdultMulti">Erwachsene MBZ</label>
-                                        <div class="input-group">
-                                            <input id="salesAdultMulti" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
-                                            <span class="input-group-text">&euro;</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label" for="salesChild">Kinder</label>
-                                        <div class="input-group">
-                                            <input id="salesChild" class="form-control" type="number" step="0.01" min="0" placeholder="Auto">
-                                            <span class="input-group-text">&euro;</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3 d-grid">
-                                        <button id="sales-apply-btn" class="btn btn-primary" type="button">Verkaufspreise &uuml;bernehmen &amp; neu berechnen</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            <div id="result-placeholder" class="alert alert-light border mb-0">
-                Noch keine Berechnung vorhanden. Nach dem Speichern kannst du hier die Ergebnisse lesen.
-            </div>
+                        <div id="result-breakdowns-container" class="calc-rows"></div>
+                    </div>
+
+                    <p id="result-placeholder" class="calc-placeholder">
+                        Noch keine Berechnung vorhanden. Nach dem Speichern kannst du hier die Ergebnisse lesen.
+                    </p>
+                </div>
+                <div class="sec-f">
+                    <span class="help calc-hint">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+                        Der Verkaufspreis ist mit dem auf 5&nbsp;€ gerundeten Endpreis vorbelegt. Rechenweg je Kategorie über den Pfeil.
+                    </span>
+                    <button id="sales-apply-btn" class="btn btn-a" type="button">Verkaufspreise übernehmen &amp; neu berechnen</button>
                 </div>
             </section>
 

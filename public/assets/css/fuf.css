@@ -995,6 +995,139 @@ h1.fuf-display {
 }
 
 /* ========================================================================
+ * 8b. Kalkulationszeilen
+ *
+ * Je Kategorie eine Zeile mit Endpreis, Verkaufspreis und Einnahmen,
+ * aufgeklappt der Rechenweg zweispaltig.
+ * ======================================================================== */
+
+.calc-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.calc-head {
+    padding: 6px 16px 0 16px;
+    gap: 12px;
+}
+
+.calc-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.calc-row {
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.calc-row-head {
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    background: #FFFFFF;
+}
+
+/* Die aufgeklappte Zeile hebt sich vom Rest ab, so wie in Mockup 02. */
+.calc-row.is-open .calc-row-head {
+    background: var(--fuf-sand-50);
+}
+
+.calc-cell {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.calc-cell b {
+    font-size: 14px;
+}
+
+.calc-r {
+    text-align: right;
+}
+
+.calc-cell.calc-r {
+    align-items: flex-end;
+}
+
+.calc-sales {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calc-sales-input {
+    font-weight: 700;
+}
+
+.calc-dev {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.calc-dev-down {
+    color: var(--fuf-amber-700);
+}
+
+.calc-dev-up {
+    color: var(--fuf-green-600);
+}
+
+.calc-body {
+    border-top: 1px solid var(--fuf-sand-300);
+    padding: 10px 16px 12px 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 32px;
+}
+
+.calc-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.cl-total {
+    font-weight: 700;
+    border-top: 1px solid var(--fuf-sand-300);
+    margin-top: 4px;
+    padding-top: 6px;
+}
+
+.cl-note {
+    border-top: 1px solid var(--fuf-sand-300);
+    margin-top: 4px;
+    padding-top: 6px;
+}
+
+.calc-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.calc-empty,
+.calc-placeholder {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--fuf-sand-400);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--fuf-brown-400);
+}
+
+@media (max-width: 900px) {
+    .calc-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ========================================================================
  * 9. Sprungnavigation
  * ======================================================================== */
 

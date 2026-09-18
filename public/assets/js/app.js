@@ -776,6 +776,7 @@ function renderDirtyState() {
   byId("trip-dirty-note").textContent = changed === 0
     ? ""
     : `Ungespeicherte Änderungen: ${changed} ${changed === 1 ? "Feld" : "Felder"}`;
+  renderStaleNote(changed);
 }
 
 // DESIGN: Status-Punkt je Abschnitt - gefuellt, sobald der Abschnitt Inhalt hat.
@@ -872,6 +873,56 @@ function showTab(name) {
   } else {
     trigger.click();
   }
+
+  // Wer ueber die Karte am Seitenende wechselt, stuende sonst im neuen
+  // Bereich ganz unten.
+  window.scrollTo({ top: 0 });
+}
+
+// DESIGN: Derselbe Zielort, drei Einstiege - Tab-Chip, Karte am Seitenende und
+// Eintrag in der Sprungnavigation. Sie zeigen alle denselben Stand des jeweils
+// anderen Bereichs, also fuellt eine Funktion sie gemeinsam.
+function renderSwitchTargets() {
+  const registrations = state.currentRegistrations || [];
+  const settlement = state.currentSettlement;
+  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+  const expenses = settlement ? (settlement.expenses || []) : [];
+
+  setTabChip("tab-planung-count", registrations.length);
+  setTabChip("tab-abrechnung-count", expenses.length);
+
+  byId("jump-to-abrechnung-count").textContent = expenses.length === 0
+    ? ""
+    : `${expenses.length} ${expenses.length === 1 ? "Ausgabe" : "Ausgaben"}`;
+  byId("jump-to-planung-count").textContent = participants === 0 ? "" : `${participants} Pers.`;
+
+  byId("switch-to-abrechnung-sub").textContent = [
+    "Belege und tatsächliche Ausgaben erfassen",
+    expenses.length === 0 ? null : `${expenses.length} ${expenses.length === 1 ? "Posten" : "Posten"}`,
+    settlement === null ? null : formatCurrency(settlement.totalAdditionalExpenses),
+  ].filter(Boolean).join(" · ");
+
+  byId("switch-to-planung-sub").textContent = [
+    "Kalkulation, Verkaufspreise und Anmeldungen",
+    participants === 0 ? null : `${participants} Teilnehmer`,
+  ].filter(Boolean).join(" · ");
+}
+
+function setTabChip(elementId, count) {
+  const chip = byId(elementId);
+  chip.textContent = String(count);
+  chip.classList.toggle("d-none", count === 0);
+}
+
+// DESIGN: Der Tab-Wechsel verwirft nichts - die Feldwerte bleiben stehen. Die
+// Abrechnung rechnet aber mit dem gespeicherten Stand, zeigt also veraltete
+// Zahlen. Genau das sagt dieser Hinweis, statt vor einem Verlust zu warnen,
+// den es nicht gibt.
+function renderStaleNote(changed) {
+  byId("settlement-stale-note").classList.toggle("d-none", changed === 0);
+  byId("settlement-stale-text").textContent = changed === 0
+    ? ""
+    : `Die Planung hat ${changed} ungespeicherte ${changed === 1 ? "Änderung" : "Änderungen"}. Die Zahlen hier zeigen den gespeicherten Stand.`;
 }
 
 function writeTabHash(name) {
@@ -1320,6 +1371,7 @@ function resetRegistrations() {
   byId("sum-anmeldungen").textContent = "keine Anmeldungen";
   byId("jump-reg-count").className = "chip c-grey jump-chip d-none";
   resetRegistrationFilter();
+  renderSwitchTargets();
   renderJumpState();
   resetRoomSummary();
 }
@@ -1649,6 +1701,7 @@ function renderRegistrations(registrations) {
   });
 
   applyRegistrationFilter();
+  renderSwitchTargets();
   renderRoomSummary(registrations);
 }
 
@@ -1738,6 +1791,7 @@ function resetSettlement() {
   resetActualExpenseForm();
   resetRefundDistribution();
   resetSettlementPanel();
+  renderSwitchTargets();
   renderJumpState();
 }
 
@@ -1827,6 +1881,7 @@ function renderSettlement(settlement) {
   renderJumpState();
   renderRefundDistribution();
   renderSettlementPanel();
+  renderSwitchTargets();
   renderHeadKpi();
 }
 
@@ -2717,6 +2772,42 @@ byId("tab-abrechnung").addEventListener("shown.bs.tab", async () => {
 byId("tab-planung").addEventListener("shown.bs.tab", () => {
   writeTabHash("planung");
   renderHeadTabState();
+});
+
+// DESIGN: Die Wechsel-Einstiege am Seitenende und in der Sprungnavigation sind
+// echte Links auf #abrechnung bzw. #planung. Ein Fragmentsprung feuert
+// hashchange, aber kein popstate - ohne diesen Listener wuerde sich nur die
+// URL aendern und sonst nichts passieren.
+window.addEventListener("hashchange", () => {
+  if (byId("trip-editor-section").classList.contains("d-none")) {
+    return;
+  }
+  showTab(tabFromHash());
+});
+
+// DESIGN: 1 und 2 wechseln die Bereiche - aber nicht, waehrend jemand tippt
+// oder in einem Dialog steht.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "1" && event.key !== "2") {
+    return;
+  }
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+  if (byId("trip-editor-section").classList.contains("d-none")) {
+    return;
+  }
+  if (document.querySelector(".modal.show") !== null) {
+    return;
+  }
+
+  const active = document.activeElement;
+  if (active instanceof Element && active.closest("input, select, textarea, [contenteditable='true']") !== null) {
+    return;
+  }
+
+  event.preventDefault();
+  showTab(event.key === "1" ? "planung" : "abrechnung");
 });
 
 // Recalculate refund distribution when retention percent changes

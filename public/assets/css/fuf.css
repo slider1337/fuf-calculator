@@ -2173,6 +2173,127 @@ button.chip-btn.is-active {
 }
 
 /* ========================================================================
+ * 15d. Wechsel zwischen Planung und Abrechnung
+ * ======================================================================== */
+
+/* Zaehler am inaktiven Tab - der eigentliche Grund hinueberzuwechseln. */
+.tab-chip {
+    font-size: 10px;
+    padding: 1px 6px;
+    margin-left: 2px;
+}
+
+.nav-link.active .tab-chip {
+    display: none;
+}
+
+/* a) Volle Zeile am Seitenende */
+.switch-cta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    background: #FFFFFF;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+    text-decoration: none;
+    color: inherit;
+}
+
+.switch-cta:hover {
+    border-color: var(--fuf-sand-500);
+    color: inherit;
+}
+
+.switch-cta-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.switch-cta-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.switch-cta-text b {
+    font-size: 15px;
+}
+
+.switch-cta-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--fuf-brown-400);
+}
+
+/* Der ganze Block ist der Link; der Knopf darin ist nur Optik, sonst saesse
+   ein interaktiver Knoten im anderen. */
+.switch-cta-btn {
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.switch-cta-back .switch-cta-text {
+    text-align: right;
+}
+
+/* b) Letzter Eintrag der Sprungnavigation, hinter einer Trennlinie: er zeigt,
+   dass das kein Abschnitt dieser Seite mehr ist. */
+.jump-sep {
+    display: block;
+    height: 1px;
+    background: var(--fuf-sand-300);
+    margin: 6px 4px;
+}
+
+.jump-switch {
+    font-weight: 700;
+    color: var(--fuf-green-600);
+}
+
+.jump-switch:hover {
+    color: var(--fuf-green-700);
+}
+
+.jump-switch-count {
+    margin-left: auto;
+    font-size: 11px;
+}
+
+/* Hinweis in der Abrechnung, solange die Planung ungespeichert ist */
+.stale-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--fuf-amber-100);
+    border: 1px solid #E8CFA4;
+    color: #7A4A12;
+    font-size: 13px;
+}
+
+.stale-note svg {
+    flex-shrink: 0;
+}
+
+.stale-note .btn {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ========================================================================
  * 16. Modals
  * ======================================================================== */
 

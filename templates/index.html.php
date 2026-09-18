@@ -197,12 +197,14 @@
                     <button class="nav-link active" id="tab-planung" data-bs-toggle="tab" data-bs-target="#panel-planung" type="button" role="tab" aria-controls="panel-planung" aria-selected="true">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>
                         Planung
+                        <span class="chip c-amber tab-chip d-none" id="tab-planung-count"></span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-abrechnung" data-bs-toggle="tab" data-bs-target="#panel-abrechnung" type="button" role="tab" aria-controls="panel-abrechnung" aria-selected="false">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
                         Abrechnung
+                        <span class="chip c-amber tab-chip d-none" id="tab-abrechnung-count"></span>
                     </button>
                 </li>
                 </ul>
@@ -642,6 +644,17 @@
                     </div>
                 </div>
             </section>
+            <a class="switch-cta" href="#abrechnung" id="switch-to-abrechnung">
+                <span class="switch-cta-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
+                <span class="switch-cta-text">
+                    <span class="switch-cta-label">Anderer Bereich</span>
+                    <b>Abrechnung</b>
+                    <span class="help" id="switch-to-abrechnung-sub">Belege und tats&auml;chliche Ausgaben erfassen</span>
+                </span>
+                <span class="btn btn-o switch-cta-btn">&Ouml;ffnen
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </span>
+            </a>
         </div><!-- end pg-main -->
 
         <aside class="pg-side">
@@ -654,6 +667,8 @@
                 <a class="jump" href="#sec-kalkulation"><span class="dot"></span>Kalkulation &amp; Verkaufspreise</a>
                 <a class="jump" href="#registrations-section"><span class="dot"></span>Anmeldungen<span class="chip c-grey jump-chip d-none" id="jump-reg-count"></span></a>
                 <a class="jump" href="#room-summary-section"><span class="dot"></span>Zimmerbedarf</a>
+                <span class="jump-sep" aria-hidden="true"></span>
+                <a class="jump jump-switch" href="#abrechnung"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/></svg>Zur Abrechnung<span class="help jump-switch-count" id="jump-to-abrechnung-count"></span></a>
             </nav>
 
             <div class="pnl">
@@ -712,6 +727,12 @@
             <div class="tab-pane fade" id="panel-abrechnung" role="tabpanel" aria-labelledby="tab-abrechnung">
             <div class="pg">
             <div class="pg-main">
+
+                <div id="settlement-stale-note" class="stale-note d-none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                    <span id="settlement-stale-text"></span>
+                    <button class="btn btn-o btn-s" type="submit" form="trip-form">Planung speichern</button>
+                </div>
 
                 <div id="settlement-kpis" class="fuf-grid fuf-grid-4">
                     <div class="kpi">
@@ -888,6 +909,18 @@
                         </div>
                     </div>
                 </section>
+                <a class="switch-cta switch-cta-back" href="#planung" id="switch-to-planung">
+                    <span class="btn btn-o switch-cta-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        &Ouml;ffnen
+                    </span>
+                    <span class="switch-cta-text">
+                        <span class="switch-cta-label">Anderer Bereich</span>
+                        <b>Planung</b>
+                        <span class="help" id="switch-to-planung-sub">Kalkulation, Verkaufspreise und Anmeldungen</span>
+                    </span>
+                    <span class="switch-cta-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+                </a>
             </div><!-- end pg-main -->
 
             <aside class="pg-side">
@@ -897,6 +930,8 @@
                     <a class="jump" href="#sec-zusatzausgaben"><span class="dot"></span>Zus&auml;tzliche Ausgaben<span class="chip c-amber jump-chip d-none" id="jump-expense-count"></span></a>
                     <a class="jump" href="#sec-gesamtabrechnung"><span class="dot"></span>Gesamtabrechnung</a>
                     <a class="jump" href="#refund-section"><span class="dot"></span>R&uuml;ckerstattung / Nachzahlung</a>
+                    <span class="jump-sep" aria-hidden="true"></span>
+                    <a class="jump jump-switch" href="#planung"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>Zur Planung<span class="help jump-switch-count" id="jump-to-planung-count"></span></a>
                 </nav>
 
                 <div class="pnl" id="settlement-panel">

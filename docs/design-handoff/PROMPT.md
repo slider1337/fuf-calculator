@@ -6,7 +6,8 @@ Ordner `design-handoff/` ins Repo legen (z. B. `docs/design-handoff/`), dann:
 Setze das UI-Redesign aus docs/design-handoff/ um.
 
 Lies zuerst docs/design-handoff/DESIGN.md (Tokens, Komponenten, Seitenstruktur, Mapping auf
-bestehende Element-IDs). Die vier Dateien unter mockups/ sind statische HTML-Mockups mit
+bestehende Element-IDs) und danach NAVIGATION.md (sticky Kopfleiste, Wechsel zwischen Planung
+und Abrechnung, Plan/Ist-Kennzahlen). Die fünf Dateien unter mockups/ sind statische HTML-Mockups mit
 Beispieldaten – sie zeigen den Sollzustand; öffne sie und orientiere dich an ihren Styles,
 übernimm aber nicht die Beispieldaten und schreib keine Inline-Styles in unsere index.html.
 
@@ -25,3 +26,7 @@ Rahmenbedingungen:
 
 Fang mit fuf.css und der Kopfleiste an.
 ```
+
+Wenn nur die Navigation umgesetzt werden soll, reicht NAVIGATION.md allein – die drei
+Punkte dort sind unabhängig vom restlichen Redesign und in der dort genannten Reihenfolge
+einzeln lieferbar.

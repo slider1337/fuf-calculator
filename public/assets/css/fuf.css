@@ -1838,6 +1838,57 @@ button.chip-btn.is-active {
 }
 
 /* ========================================================================
+ * 15b. Zimmerbedarf
+ * ======================================================================== */
+
+.room-card {
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.room-card-h {
+    padding: 10px 14px;
+    background: var(--fuf-sand-50);
+    border-bottom: 1px solid var(--fuf-sand-300);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.room-card .tb {
+    font-size: 14px;
+}
+
+.room-bar-cell {
+    width: 40%;
+}
+
+/* Der Balken zeigt den Anteil an der groessten Kategorie. Die Breite kommt
+ * als Inline-Style aus dem Renderer - sie ist ein Datenwert, kein Stil. */
+.bar {
+    display: block;
+    height: 8px;
+    background: var(--fuf-sand-300);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar > span {
+    display: block;
+    height: 100%;
+    background: var(--fuf-green-600);
+}
+
+.cat-ist {
+    white-space: nowrap;
+}
+
+.cat-ist .chip {
+    margin-left: 6px;
+    padding: 1px 6px;
+}
+
+/* ========================================================================
  * 16. Modals
  * ======================================================================== */
 

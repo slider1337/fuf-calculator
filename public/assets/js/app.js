@@ -664,6 +664,7 @@ function renderLivePreview() {
   renderRoomSums();
   renderPanel(previewCalculation(), "preview");
   renderSectionSummaries();
+  renderRoomPlanTargets();
   renderDirtyState();
   renderJumpState();
 }
@@ -1205,14 +1206,52 @@ function resetRegistrationFilter() {
   });
 }
 
+const categorySummaryRows = [
+  ["cat-summary-adult-double", "cat-plan-adult-double", "cat-check-adult-double", "adultDoubleCount"],
+  ["cat-summary-adult-multi", "cat-plan-adult-multi", "cat-check-adult-multi", "adultMultiCount"],
+  ["cat-summary-child", "cat-plan-child", "cat-check-child", "childCount"],
+];
+
 function resetRoomSummary() {
   byId("room-summary-section").classList.add("d-none");
   byId("room-detail-body").innerHTML = "";
   byId("room-detail-total").textContent = "0";
-  byId("cat-summary-adult-double").textContent = "0";
-  byId("cat-summary-adult-multi").textContent = "0";
-  byId("cat-summary-child").textContent = "0";
+  byId("sum-zimmer").textContent = "";
+
+  categorySummaryRows.forEach(([istId, , checkId]) => {
+    byId(istId).textContent = "0";
+    byId(checkId).innerHTML = "";
+  });
   byId("cat-summary-total").textContent = "0";
+  renderRoomPlanTargets();
+}
+
+// DESIGN: Soll neben Ist. Das Soll steht in den Planfeldern, nicht in den
+// Anmeldungen - es muss deshalb auch bei einer Feldaenderung mitlaufen und
+// nicht erst beim naechsten Laden der Anmeldungen.
+function renderRoomPlanTargets() {
+  let total = 0;
+
+  categorySummaryRows.forEach(([, planId, , fieldId]) => {
+    const planned = numberFromField(fieldId);
+    total += planned;
+    byId(planId).textContent = `geplant ${planned}`;
+  });
+
+  byId("cat-plan-total").textContent = `geplant ${total}`;
+  renderCategoryChecks();
+}
+
+// Haekchen, solange Ist und Soll uebereinstimmen. Null gegen null ist keine
+// Uebereinstimmung, sondern schlicht noch nichts da.
+function renderCategoryChecks() {
+  categorySummaryRows.forEach(([istId, , checkId, fieldId]) => {
+    const actual = Number(byId(istId).textContent) || 0;
+    const planned = numberFromField(fieldId);
+    byId(checkId).innerHTML = planned > 0 && actual === planned
+      ? '<span class="chip c-green"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span>'
+      : "";
+  });
 }
 
 function renderRoomSummary(registrations) {
@@ -1237,16 +1276,23 @@ function renderRoomSummary(registrations) {
   detailBody.innerHTML = "";
   let totalRooms = 0;
 
+  // DESIGN: Der Balken bezieht sich auf die groesste Kategorie, nicht auf die
+  // Gesamtzahl - sonst bleiben alle Balken bei vielen Kategorien winzig.
+  const maxRooms = Math.max(...sortedCategories.map((cat) => roomCounts[cat]));
+
   sortedCategories.forEach((cat) => {
+    const share = maxRooms > 0 ? Math.round((roomCounts[cat] / maxRooms) * 100) : 0;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${cat}</td>
-      <td class="text-end">${roomCounts[cat]}</td>
+      <td>${escapeHtml(cat)}</td>
+      <td class="room-bar-cell"><span class="bar"><span style="width: ${share}%"></span></span></td>
+      <td class="r"><b>${roomCounts[cat]}</b></td>
     `;
     detailBody.appendChild(tr);
     totalRooms += roomCounts[cat];
   });
   byId("room-detail-total").textContent = String(totalRooms);
+  byId("sum-zimmer").textContent = `aus den Anmeldungen abgeleitet · ${totalRooms} Zimmer`;
 
   // Category summary from billing items
   let adultDouble = 0;
@@ -1267,6 +1313,7 @@ function renderRoomSummary(registrations) {
   byId("cat-summary-adult-multi").textContent = String(adultMulti);
   byId("cat-summary-child").textContent = String(child);
   byId("cat-summary-total").textContent = String(adultDouble + adultMulti + child);
+  renderRoomPlanTargets();
 }
 
 // DESIGN: Je Teilnehmer gehoert genau eine Hauptkategorie-Position und

@@ -564,67 +564,59 @@
                 </div>
             </section>
 
-            <section id="room-summary-section" class="d-none mt-3">
-                <h2 class="h5 mb-3">Zimmerbedarf</h2>
-                <div class="row g-3">
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-white">Zimmer nach Typ</div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-striped mb-0">
-                                        <thead>
-                                        <tr>
-                                            <th>Zimmerkategorie</th>
-                                            <th class="text-end">Anzahl</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody id="room-detail-body"></tbody>
-                                        <tfoot>
-                                        <tr class="table-light">
-                                            <td><strong>Gesamt</strong></td>
-                                            <td class="text-end"><strong id="room-detail-total">0</strong></td>
-                                        </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
+            <section class="sec d-none" id="room-summary-section">
+                <div class="sec-h">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-amber-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V4a1 1 0 011-1h9a1 1 0 011 1v17M14 12h.01"/></svg>
+                    <h2>Zimmerbedarf</h2>
+                    <span class="sum" id="sum-zimmer"></span>
+                    <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#room-summary-body" aria-expanded="true" aria-controls="room-summary-body" aria-label="Zimmerbedarf ein- oder ausklappen">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                </div>
+                <div class="collapse show" id="room-summary-body">
+                    <div class="sec-b">
+                        <div class="fuf-grid fuf-grid-2">
+                            <div class="room-card">
+                                <div class="room-card-h">Zimmer nach Typ</div>
+                                <table class="tb">
+                                    <tbody id="room-detail-body"></tbody>
+                                    <tfoot>
+                                    <tr class="sum-row">
+                                        <td>Gesamt</td>
+                                        <td></td>
+                                        <td class="r" id="room-detail-total">0</td>
+                                    </tr>
+                                    </tfoot>
+                                </table>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-white">Personen nach Abrechnungskategorie</div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-striped mb-0">
-                                        <thead>
-                                        <tr>
-                                            <th>Kategorie</th>
-                                            <th class="text-end">Anzahl</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>Erwachsener im Doppelzimmer</td>
-                                            <td class="text-end" id="cat-summary-adult-double">0</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Erwachsener im Mehrbettzimmer</td>
-                                            <td class="text-end" id="cat-summary-adult-multi">0</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Kind</td>
-                                            <td class="text-end" id="cat-summary-child">0</td>
-                                        </tr>
-                                        </tbody>
-                                        <tfoot>
-                                        <tr class="table-light">
-                                            <td><strong>Gesamt</strong></td>
-                                            <td class="text-end"><strong id="cat-summary-total">0</strong></td>
-                                        </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
+                            <div class="room-card">
+                                <div class="room-card-h">Personen nach Abrechnungskategorie</div>
+                                <table class="tb">
+                                    <tbody>
+                                    <tr>
+                                        <td>Erwachsene im Doppelzimmer</td>
+                                        <td class="help r" id="cat-plan-adult-double"></td>
+                                        <td class="r cat-ist"><b id="cat-summary-adult-double">0</b><span id="cat-check-adult-double"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Erwachsene im Mehrbettzimmer</td>
+                                        <td class="help r" id="cat-plan-adult-multi"></td>
+                                        <td class="r cat-ist"><b id="cat-summary-adult-multi">0</b><span id="cat-check-adult-multi"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Kinder</td>
+                                        <td class="help r" id="cat-plan-child"></td>
+                                        <td class="r cat-ist"><b id="cat-summary-child">0</b><span id="cat-check-child"></span></td>
+                                    </tr>
+                                    </tbody>
+                                    <tfoot>
+                                    <tr class="sum-row">
+                                        <td>Gesamt</td>
+                                        <td class="help r" id="cat-plan-total"></td>
+                                        <td class="r" id="cat-summary-total">0</td>
+                                    </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </div>
                     </div>

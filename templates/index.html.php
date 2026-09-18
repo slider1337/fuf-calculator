@@ -164,112 +164,220 @@
         </div>
     </section>
 
-    <section id="trip-editor-section" class="card mb-3 d-none">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span id="trip-editor-title">Reise</span>
-            <button id="back-to-list-btn" class="btn btn-sm btn-outline-secondary" type="button">Zur Liste</button>
-        </div>
-        <div class="card-body">
-            <ul class="nav nav-tabs mb-3" id="tripTabs" role="tablist">
+    <section id="trip-editor-section" class="d-none">
+        <div class="trip-head">
+            <div class="trip-head-text">
+                <nav class="bc" aria-label="Pfad">
+                    <a id="back-to-list-btn" href="/">Alle Reisen</a>
+                    <span class="bc-sep" aria-hidden="true">›</span>
+                    <span id="trip-editor-breadcrumb">Reise</span>
+                </nav>
+                <div class="trip-head-title">
+                    <h1 id="trip-editor-title">Reise</h1>
+                    <span class="help" id="trip-editor-meta"></span>
+                </div>
+            </div>
+            <ul class="nav nav-tabs trip-tabs" id="tripTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="tab-planung" data-bs-toggle="tab" data-bs-target="#panel-planung" type="button" role="tab" aria-controls="panel-planung" aria-selected="true">Planung</button>
+                    <button class="nav-link active" id="tab-planung" data-bs-toggle="tab" data-bs-target="#panel-planung" type="button" role="tab" aria-controls="panel-planung" aria-selected="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>
+                        Planung
+                    </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-abrechnung" data-bs-toggle="tab" data-bs-target="#panel-abrechnung" type="button" role="tab" aria-controls="panel-abrechnung" aria-selected="false">Abrechnung</button>
+                    <button class="nav-link" id="tab-abrechnung" data-bs-toggle="tab" data-bs-target="#panel-abrechnung" type="button" role="tab" aria-controls="panel-abrechnung" aria-selected="false">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                        Abrechnung
+                    </button>
                 </li>
             </ul>
+        </div>
 
-            <div class="tab-content" id="tripTabContent">
-            <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">
-            <form id="trip-form" class="row g-2">
+        <div class="tab-content" id="tripTabContent">
+        <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">
+        <div class="pg">
+        <div class="pg-main">
+            <form id="trip-form" class="pg-form">
                 <input id="tripFormId" type="hidden" name="tripFormId">
-                <div class="col-md-4">
-                    <label class="form-label" for="name">Reisename</label>
-                    <input id="name" class="form-control" name="name" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="startDate">Startdatum</label>
-                    <input id="startDate" class="form-control" name="startDate" type="date" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="endDate">Enddatum (Abreise)</label>
-                    <input id="endDate" class="form-control" name="endDate" type="date" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="markupPercent">Aufschlag %</label>
-                    <input id="markupPercent" class="form-control" name="markupPercent" type="number" step="0.01" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="clubFeePercent">Vereinsgebuehr %</label>
-                    <input id="clubFeePercent" class="form-control" name="clubFeePercent" type="number" step="0.01" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="distributionMethod">Verteilung</label>
-                    <select id="distributionMethod" class="form-select" name="distributionMethod" required>
-                        <option value="PER_PERSON">Per Person</option>
-                        <option value="PER_CATEGORY_UNITS">Per Kategorieeinheit</option>
-                    </select>
-                </div>
 
-                <div class="col-md-3">
-                    <label class="form-label" for="spaTaxPerPerson">Kurabgabe pro Person/Nacht</label>
-                    <input id="spaTaxPerPerson" class="form-control" name="spaTaxPerPerson" type="number" step="0.01" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="spaTaxAgeThreshold">Kurabgabe ab Alter</label>
-                    <input id="spaTaxAgeThreshold" class="form-control" name="spaTaxAgeThreshold" type="number" step="1" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="spaTaxCount">Kurabgabe Anzahl Personen</label>
-                    <input id="spaTaxCount" class="form-control" name="spaTaxCount" type="number" step="1" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="adultAgeThreshold">Erwachsen ab Alter</label>
-                    <input id="adultAgeThreshold" class="form-control" name="adultAgeThreshold" type="number" step="1" min="0" required>
-                </div>
+                <section class="sec" id="sec-eckdaten">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <h2>Eckdaten</h2>
+                        <span class="sum" id="sum-eckdaten"></span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-eckdaten-body" aria-expanded="true" aria-controls="sec-eckdaten-body" aria-label="Eckdaten ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-eckdaten-body">
+                        <div class="sec-b">
+                            <div class="fuf-grid fuf-grid-eck">
+                                <div class="f">
+                                    <label for="name">Reisename</label>
+                                    <div class="in"><input id="name" name="name" type="text" required></div>
+                                </div>
+                                <div class="f">
+                                    <label for="startDate">Anreise</label>
+                                    <div class="in"><input id="startDate" name="startDate" type="date" required></div>
+                                </div>
+                                <div class="f">
+                                    <label for="endDate">Abreise</label>
+                                    <div class="in"><input id="endDate" name="endDate" type="date" required></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-                <div class="col-12"><hr></div>
-                <div class="col-md-3">
-                    <label class="form-label" for="adultDoubleCount">Erwachsene DZ Anzahl</label>
-                    <input id="adultDoubleCount" class="form-control" name="adultDoubleCount" type="number" step="1" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="adultDoublePrice">Erwachsene DZ Preis/Nacht</label>
-                    <input id="adultDoublePrice" class="form-control" name="adultDoublePrice" type="number" step="0.01" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="adultMultiCount">Erwachsene MBZ Anzahl</label>
-                    <input id="adultMultiCount" class="form-control" name="adultMultiCount" type="number" step="1" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="adultMultiPrice">Erwachsene MBZ Preis/Nacht</label>
-                    <input id="adultMultiPrice" class="form-control" name="adultMultiPrice" type="number" step="0.01" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="childCount">Kinder Anzahl</label>
-                    <input id="childCount" class="form-control" name="childCount" type="number" step="1" min="0" value="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="childPrice">Kinder Preis/Nacht</label>
-                    <input id="childPrice" class="form-control" name="childPrice" type="number" step="0.01" min="0" value="0" required>
-                </div>
-                <div class="col-12"><hr></div>
-                <div class="col-md-5">
-                    <label class="form-label" for="expenseLabel">Zusatzausgabe (optional)</label>
-                    <input id="expenseLabel" class="form-control" name="expenseLabel">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="expenseAmount">Betrag</label>
-                    <input id="expenseAmount" class="form-control" name="expenseAmount" type="number" step="0.01" min="0">
-                </div>
-                <div class="col-md-4 d-grid"><button id="trip-save-btn" class="btn btn-success" type="submit">Reise speichern</button></div>
+                <section class="sec" id="sec-aufschlaege">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-amber-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                        <h2>Aufschläge &amp; Abgaben</h2>
+                        <span class="sum" id="sum-aufschlaege"></span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-aufschlaege-body" aria-expanded="true" aria-controls="sec-aufschlaege-body" aria-label="Aufschläge und Abgaben ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-aufschlaege-body">
+                        <div class="sec-b">
+                            <div class="fuf-grid fuf-grid-3">
+                                <div class="f">
+                                    <label for="markupPercent">Aufschlag</label>
+                                    <div class="in"><input id="markupPercent" name="markupPercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <span class="help">Puffer auf die Unterkunftskosten</span>
+                                </div>
+                                <div class="f">
+                                    <label for="clubFeePercent">Vereinsgebühr</label>
+                                    <div class="in"><input id="clubFeePercent" name="clubFeePercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <span class="help">Anteil für den Verein</span>
+                                </div>
+                                <div class="f">
+                                    <label for="distributionMethod">Verteilung</label>
+                                    <div class="in">
+                                        <select id="distributionMethod" name="distributionMethod" required>
+                                            <option value="PER_PERSON">Per Person</option>
+                                            <option value="PER_CATEGORY_UNITS">Per Kategorieeinheit</option>
+                                        </select>
+                                    </div>
+                                    <span class="help">Wie Gemeinkosten umgelegt werden</span>
+                                </div>
+                            </div>
+                            <div class="box-sand fuf-grid fuf-grid-spa">
+                                <div class="box-sand-label">
+                                    <b>Kurabgabe</b>
+                                    <span class="help">an die Gemeinde</span>
+                                </div>
+                                <div class="f">
+                                    <label for="spaTaxPerPerson">Pro Person &amp; Nacht</label>
+                                    <div class="in"><input id="spaTaxPerPerson" name="spaTaxPerPerson" type="number" step="0.01" required><span class="u">€</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="spaTaxAgeThreshold">Pflichtig ab</label>
+                                    <div class="in"><input id="spaTaxAgeThreshold" name="spaTaxAgeThreshold" type="number" step="1" required><span class="u">Jahre</span></div>
+                                </div>
+                                <div class="f">
+                                    <label for="spaTaxCount">Personen</label>
+                                    <div class="in"><input id="spaTaxCount" name="spaTaxCount" type="number" step="1" min="0" value="0" required><span class="u">Pers.</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sec" id="sec-unterkunft">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 22v-4h18v4M5 10V6a2 2 0 012-2h10a2 2 0 012 2v4"/></svg>
+                        <h2>Unterkunft &amp; Teilnehmer</h2>
+                        <span class="sum" id="sum-unterkunft"></span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-unterkunft-body" aria-expanded="true" aria-controls="sec-unterkunft-body" aria-label="Unterkunft und Teilnehmer ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-unterkunft-body">
+                        <div class="sec-b">
+                            <div class="fuf-grid fuf-grid-room room-table">
+                                <span class="col-head">Kategorie</span>
+                                <span class="col-head">Anzahl</span>
+                                <span class="col-head">Preis / Nacht</span>
+                                <span class="col-head room-sum">Summe (<span id="room-sum-nights">&ndash;</span> Nächte)</span>
+
+                                <div class="room-cat">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 20v-2a5 5 0 015-5h2a5 5 0 015 5v2M16 14h1a4 4 0 014 4v2"/></svg>
+                                    <span class="room-cat-text"><b>Erwachsene</b><span class="help">Doppelzimmer</span></span>
+                                </div>
+                                <div class="in"><input id="adultDoubleCount" name="adultDoubleCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Erwachsene im Doppelzimmer"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="adultDoublePrice" name="adultDoublePrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Erwachsene im Doppelzimmer"><span class="u">€</span></div>
+                                <b class="fuf-num room-sum" id="room-sum-adult-double">&ndash;</b>
+
+                                <div class="room-cat">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="17" cy="7" r="2.5"/><path d="M2 20v-1a4 4 0 014-4h12a4 4 0 014 4v1"/></svg>
+                                    <span class="room-cat-text"><b>Erwachsene</b><span class="help">Mehrbettzimmer</span></span>
+                                </div>
+                                <div class="in"><input id="adultMultiCount" name="adultMultiCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Erwachsene im Mehrbettzimmer"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="adultMultiPrice" name="adultMultiPrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Erwachsene im Mehrbettzimmer"><span class="u">€</span></div>
+                                <b class="fuf-num room-sum" id="room-sum-adult-multi">&ndash;</b>
+
+                                <div class="room-cat">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-orange-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0112 0v1"/></svg>
+                                    <span class="room-cat-text"><b>Kinder</b><span class="help" id="room-cat-child-sub">unter der Altersgrenze</span></span>
+                                </div>
+                                <div class="in"><input id="childCount" name="childCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Kinder"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="childPrice" name="childPrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Kinder"><span class="u">€</span></div>
+                                <b class="fuf-num room-sum" id="room-sum-child">&ndash;</b>
+                            </div>
+                            <div class="room-foot">
+                                <label for="adultAgeThreshold">Erwachsen ab</label>
+                                <div class="in in-sm"><input id="adultAgeThreshold" name="adultAgeThreshold" type="number" step="1" min="0" required><span class="u">J.</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sec" id="sec-zusatz">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-orange-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2 3-1 5 1 8 2-2 5 0 4 4 3-1 4 3 1 6H6c-3-3-2-7 1-6-1-4 2-6 4-4-1-3 1-5 1-8z"/></svg>
+                        <h2>Zusatzausgaben</h2>
+                        <span class="sum" id="sum-zusatz"></span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-zusatz-body" aria-expanded="true" aria-controls="sec-zusatz-body" aria-label="Zusatzausgaben ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-zusatz-body">
+                        <div class="sec-b">
+                            <div class="expense-row">
+                                <div class="f">
+                                    <label for="expenseLabel">Bezeichnung</label>
+                                    <div class="in"><input id="expenseLabel" name="expenseLabel" type="text"></div>
+                                </div>
+                                <div class="f f-amount">
+                                    <label for="expenseAmount">Betrag</label>
+                                    <div class="in"><input id="expenseAmount" name="expenseAmount" type="number" step="0.01" min="0"><span class="u">€</span></div>
+                                </div>
+                            </div>
+                            <span class="help">Ein Posten, der auf alle Teilnehmer umgelegt wird.</span>
+                        </div>
+                        <div class="sec-f">
+                            <span class="help" id="sum-zusatz-hint"></span>
+                            <button id="trip-save-btn" class="btn btn-p" type="submit">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                                <span id="trip-save-label">Reise speichern</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </form>
 
-            <hr>
-            <div class="d-flex gap-2 mb-3">
-                <button id="calculate-btn" class="btn btn-outline-primary" type="button">Berechnen</button>
-            </div>
-
+            <section class="sec" id="sec-kalkulation">
+                <div class="sec-h">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+                    <h2>Kalkulation &amp; Verkaufspreise</h2>
+                    <span class="sum" id="sum-kalkulation"></span>
+                    <button id="calculate-btn" class="btn btn-o btn-s" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
+                        Neu berechnen
+                    </button>
+                </div>
+                <div class="sec-b">
             <section id="result-panel" class="d-none">
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
@@ -326,12 +434,6 @@
                                     <dd id="result-spa-tax-age" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Erwachsen ab Alter</dt>
                                     <dd id="result-adult-age" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Reisebeginn</dt>
-                                    <dd id="result-start-date" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Abreise</dt>
-                                    <dd id="result-end-date" class="col-6 text-end mb-2">-</dd>
-                                    <dt class="col-6">Nächte</dt>
-                                    <dd id="result-nights" class="col-6 text-end mb-2">-</dd>
                                     <dt class="col-6">Gruppenausgaben gesamt</dt>
                                     <dd id="result-total-group-expenses" class="col-6 text-end mb-0">-</dd>
                                 </dl>
@@ -393,8 +495,8 @@
             <div id="result-placeholder" class="alert alert-light border mb-0">
                 Noch keine Berechnung vorhanden. Nach dem Speichern kannst du hier die Ergebnisse lesen.
             </div>
-
-            <hr>
+                </div>
+            </section>
 
             <section id="registrations-section">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -562,6 +664,70 @@
                     </div>
                 </div>
             </section>
+        </div><!-- end pg-main -->
+
+        <aside class="pg-side">
+            <nav class="jump-card" aria-label="Abschnitte dieser Seite">
+                <span class="jump-title">Auf dieser Seite</span>
+                <a class="jump" href="#sec-eckdaten"><span class="dot"></span>Eckdaten</a>
+                <a class="jump" href="#sec-aufschlaege"><span class="dot"></span>Aufschläge &amp; Abgaben</a>
+                <a class="jump" href="#sec-unterkunft"><span class="dot"></span>Unterkunft &amp; Teilnehmer</a>
+                <a class="jump" href="#sec-zusatz"><span class="dot"></span>Zusatzausgaben</a>
+                <a class="jump" href="#sec-kalkulation"><span class="dot"></span>Kalkulation &amp; Verkaufspreise</a>
+                <a class="jump" href="#registrations-section"><span class="dot"></span>Anmeldungen<span class="chip c-grey jump-chip d-none" id="jump-reg-count"></span></a>
+                <a class="jump" href="#room-summary-section"><span class="dot"></span>Zimmerbedarf</a>
+            </nav>
+
+            <div class="pnl">
+                <div class="pnl-h">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h2M12 18h6"/></svg>
+                    <h2>Kalkulation</h2>
+                </div>
+                <div class="fuf-grid fuf-grid-2">
+                    <div class="pnl-box">
+                        <span class="help">Teilnehmer</span>
+                        <b id="panel-participants">&ndash;</b>
+                        <span class="help" id="panel-participants-sub"></span>
+                    </div>
+                    <div class="pnl-box">
+                        <span class="help">Nächte</span>
+                        <b id="result-nights">&ndash;</b>
+                        <span class="help"><span id="result-start-date">&ndash;</span> &ndash; <span id="result-end-date">&ndash;</span></span>
+                    </div>
+                </div>
+                <div class="pnl-lines">
+                    <div class="k"><span id="panel-cost-lodging-label">Unterkunft</span><b id="panel-cost-lodging">&ndash;</b></div>
+                    <div class="k"><span id="panel-cost-spa-tax-label">Kurabgabe</span><b id="panel-cost-spa-tax">&ndash;</b></div>
+                    <div class="k"><span>Zusatzausgaben</span><b id="panel-cost-extra">&ndash;</b></div>
+                    <div class="k k-total"><span>Gesamtkosten</span><b id="panel-cost-total">&ndash;</b></div>
+                    <div class="k"><span>Einnahmen zu Verkaufspreisen</span><b id="panel-revenue">&ndash;</b></div>
+                </div>
+                <div class="pnl-bar">
+                    <div class="pnl-bar-track">
+                        <span class="pnl-bar-costs" id="panel-bar-costs"></span>
+                        <span class="pnl-bar-surplus" id="panel-bar-surplus"></span>
+                    </div>
+                    <div class="pnl-bar-legend">
+                        <span><span class="pnl-bar-key pnl-bar-costs"></span><span id="panel-bar-costs-label">Kosten</span></span>
+                        <span><span class="pnl-bar-key pnl-bar-surplus"></span><span id="panel-bar-surplus-label">Überschuss</span></span>
+                    </div>
+                </div>
+                <div class="pnl-green">
+                    <div class="pnl-green-head">
+                        <span>Überschuss</span>
+                        <b id="panel-surplus">&ndash;</b>
+                    </div>
+                    <div class="pnl-green-line"><span>Verkaufspreis Erwachsene</span><b id="panel-sales-adults">&ndash;</b></div>
+                    <div class="pnl-green-line"><span>Verkaufspreis Kind</span><b id="panel-sales-child">&ndash;</b></div>
+                </div>
+                <button id="trip-save-btn-sticky" class="btn btn-p btn-lg-save" type="submit" form="trip-form">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                    <span id="trip-save-label-sticky">Reise speichern</span>
+                </button>
+                <span class="help pnl-note" id="trip-dirty-note"></span>
+            </div>
+        </aside>
+        </div><!-- end pg -->
             </div><!-- end panel-planung -->
 
             <div class="tab-pane fade" id="panel-abrechnung" role="tabpanel" aria-labelledby="tab-abrechnung">

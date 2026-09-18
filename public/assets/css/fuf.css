@@ -421,7 +421,8 @@ h1.fuf-display {
     .fuf-grid-4,
     .fuf-grid-eck,
     .fuf-grid-room,
-    .fuf-grid-calc {
+    .fuf-grid-calc,
+    .fuf-grid-spa {
         grid-template-columns: minmax(0, 1fr);
     }
 
@@ -441,6 +442,333 @@ h1.fuf-display {
     .page-head .in-search {
         width: auto;
     }
+
+    .trip-head {
+        margin: -20px -16px 0 -16px;
+        padding: 14px 16px 0 16px;
+    }
+}
+
+/* ========================================================================
+ * 5b. Planungsseite: Kopfbereich, Sticky-Spalte, Panel
+ * ======================================================================== */
+
+/* Der Reisekopf sitzt randlos ueber der Seite. Die negativen Margins heben
+   das Padding von .app-main auf, damit die weisse Flaeche bis an die Kanten
+   reicht wie im Mockup. */
+.trip-head {
+    margin: -28px -32px 0 -32px;
+    padding: 18px 32px 0 32px;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--fuf-sand-400);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.trip-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 14px;
+}
+
+.trip-head-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.trip-head-title h1 {
+    margin: 0;
+    font-family: var(--fuf-font-display);
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.bc {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--fuf-brown-500);
+}
+
+.bc a {
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Die Tabs sitzen auf der Unterkante des Kopfes, ihr eigener Rahmen entfaellt. */
+.nav-tabs.trip-tabs {
+    border-bottom: 0;
+    gap: 0;
+    margin-bottom: -1px;
+}
+
+.nav-tabs.trip-tabs .nav-link {
+    padding: 12px 18px;
+}
+
+.pg-main,
+.pg-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Sprungnavigation in der Sticky-Spalte */
+.jump-card {
+    background: #FFFFFF;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.jump-title {
+    padding: 4px 10px 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--fuf-brown-400);
+}
+
+.jump-chip {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 1px 7px;
+}
+
+/* Kalkulationspanel in der Sticky-Spalte */
+.pnl {
+    background: #FFFFFF;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pnl-h {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pnl-h h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.pnl-box {
+    background: var(--fuf-sand-100);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pnl-box b {
+    font-family: var(--fuf-font-display);
+    font-size: 24px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.pnl-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    border-top: 1px solid var(--fuf-sand-300);
+    padding-top: 12px;
+}
+
+.k-total {
+    border-top: 1px dashed var(--fuf-sand-400);
+    padding-top: 9px;
+    font-weight: 700;
+}
+
+.pnl-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pnl-bar-track {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--fuf-sand-300);
+}
+
+.pnl-bar-costs {
+    background: var(--fuf-brown-900);
+}
+
+.pnl-bar-surplus {
+    background: var(--fuf-green-600);
+}
+
+.pnl-bar-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--fuf-brown-500);
+}
+
+.pnl-bar-key {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 5px;
+}
+
+.pnl-green {
+    background: var(--fuf-green-600);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--fuf-on-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pnl-green-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.pnl-green-head span {
+    font-size: 13px;
+    color: var(--fuf-amber-500);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.pnl-green-head b {
+    font-family: var(--fuf-font-display);
+    font-size: 24px;
+    font-weight: 500;
+    color: #FFFFFF;
+    font-variant-numeric: tabular-nums;
+}
+
+.pnl-green-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.pnl-note {
+    text-align: center;
+}
+
+/* Sand-Box fuer eine zusammengehoerige Feldgruppe, etwa die Kurabgabe */
+.box-sand {
+    background: var(--fuf-sand-100);
+    border-radius: 10px;
+    padding: 12px 14px;
+    align-items: end;
+}
+
+.box-sand-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 10px;
+    min-width: 120px;
+}
+
+.box-sand-label b {
+    font-size: 14px;
+}
+
+/* Kurabgabe: Beschriftung plus drei Felder */
+.fuf-grid-spa {
+    grid-template-columns: auto repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* Spaltenkopf in einem Raster, das keine Tabelle ist */
+.col-head {
+    font-size: 12px;
+    color: var(--fuf-brown-400);
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+/* Unterkunft: Kategoriezelle, Summenspalte, Fusszeile */
+.room-table {
+    align-items: center;
+    gap: 10px 16px;
+}
+
+.room-cat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.room-cat-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.room-cat-text b {
+    font-size: 14px;
+}
+
+.room-sum {
+    text-align: right;
+}
+
+.room-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 6px;
+}
+
+.room-foot label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fuf-brown-700);
+}
+
+.in-sm {
+    width: 110px;
+    height: 36px;
+}
+
+/* Zusatzausgabe: Bezeichnung breit, Betrag schmal */
+.expense-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.expense-row .f {
+    flex-grow: 1;
+}
+
+.expense-row .f-amount {
+    flex-grow: 0;
+    width: 180px;
 }
 
 /* ========================================================================
@@ -505,8 +833,10 @@ h1.fuf-display {
     transition: transform .15s ease;
 }
 
+/* Zugeklappt zeigt der Pfeil nach unten, so wie es Mockup 02 fuer die
+   eingeklappten Kalkulationszeilen zeigt. */
 .chev[aria-expanded="false"] svg {
-    transform: rotate(-90deg);
+    transform: rotate(180deg);
 }
 
 /* ========================================================================

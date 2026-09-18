@@ -65,7 +65,21 @@ function resetCalculationResult() {
   byId("result-spa-tax-age").textContent = "-";
   byId("result-start-date").textContent = "-";
   byId("result-total-group-expenses").textContent = "-";
+  // DESIGN: Diese drei stehen im Sticky-Panel, sind also auch ohne Ergebnis
+  // sichtbar - beim Reisewechsel duerfen keine alten Werte stehenbleiben.
+  byId("result-end-date").textContent = "-";
+  byId("result-nights").textContent = "-";
+  byId("trip-editor-meta").textContent = "";
   byId("result-breakdowns-container").innerHTML = '<p class="text-muted text-center p-3 mb-0">Keine Aufschlüsselung vorhanden.</p>';
+}
+
+// DESIGN: Mockup 02 zeigt "Reise speichern" zweimal - in der Fusszeile der
+// Zusatzausgaben und im Sticky-Panel. Beide Beschriftungen muessen gleich
+// lauten. Der Text sitzt je in einem eigenen Span, damit das Icon im Button
+// beim Umschreiben erhalten bleibt.
+function setTripSaveLabel(text) {
+  byId("trip-save-label").textContent = text;
+  byId("trip-save-label-sticky").textContent = text;
 }
 
 function salesInputValue(inputId) {
@@ -90,6 +104,18 @@ function prefillSalesPrices(breakdowns) {
   });
 }
 
+// DESIGN: "10.-14.02.2027 - 4 Naechte - 56 Teilnehmer" unter der Ueberschrift.
+function tripEditorMeta(result) {
+  const nights = Number(result.nights ?? 0);
+  const participants = Number(result.totalParticipants ?? 0);
+
+  return [
+    formatTripPeriod(result),
+    `${nights} ${nights === 1 ? "Nacht" : "Nächte"}`,
+    `${participants} Teilnehmer`,
+  ].join(" · ");
+}
+
 function renderCalculationResult(result) {
   byId("result-placeholder").classList.add("d-none");
   byId("result-panel").classList.remove("d-none");
@@ -97,6 +123,9 @@ function renderCalculationResult(result) {
   prefillSalesPrices(result.priceBreakdowns || {});
 
   byId("result-total-participants").textContent = String(result.totalParticipants ?? 0);
+  // DESIGN: Kurzinfo im Reisekopf. Zeitraum, Naechte und Teilnehmer kommen aus
+  // demselben Ergebnis, das auch das Sticky-Panel fuellt.
+  byId("trip-editor-meta").textContent = tripEditorMeta(result);
   byId("result-total-revenue").textContent = formatCurrency(result.totalCalculatedRevenue);
   byId("result-total-costs").textContent = formatCurrency(result.totalCalculatedCosts);
   byId("result-surplus").textContent = formatCurrency(result.surplus);
@@ -226,8 +255,10 @@ function showListSection() {
   byId("trip-editor-section").classList.add("d-none");
 }
 
-function showEditorSection(titleText) {
+function showEditorSection(titleText, breadcrumbText) {
   byId("trip-editor-title").textContent = titleText;
+  // DESIGN: Die Ueberschrift traegt den Reisenamen, der Breadcrumb die Nummer.
+  byId("trip-editor-breadcrumb").textContent = breadcrumbText;
   byId("trip-list-section").classList.add("d-none");
   byId("trip-editor-section").classList.remove("d-none");
 }
@@ -275,7 +306,7 @@ async function renderCurrentRoute() {
   if (route.name === "new-trip") {
     state.currentTripId = null;
     clearTripFormWithDefaults();
-    showEditorSection("Neue Reise erstellen");
+    showEditorSection("Neue Reise", "Neue Reise");
     return;
   }
 
@@ -300,7 +331,7 @@ function clearTripFormWithDefaults() {
   byId("tripFormId").value = "";
   resetCalculationResult();
   resetRegistrations();
-  byId("trip-save-btn").textContent = "Reise speichern";
+  setTripSaveLabel("Reise speichern");
 
   form.adultDoubleCount.value = 0;
   form.adultDoublePrice.value = 0;
@@ -402,7 +433,7 @@ function fillTripForm(trip) {
   form.expenseLabel.value = firstExpense ? firstExpense.label : "";
   form.expenseAmount.value = firstExpense ? firstExpense.amount : "";
 
-  byId("trip-save-btn").textContent = "Reise aktualisieren";
+  setTripSaveLabel("Reise aktualisieren");
 }
 
 async function loadSettings() {
@@ -543,7 +574,7 @@ async function openTrip(tripId) {
   const trip = await api(`/api/trips/${tripId}`);
   state.currentTripId = trip.id;
   fillTripForm(trip);
-  showEditorSection(`Reise #${trip.id}: ${trip.name}`);
+  showEditorSection(trip.name, `Reise #${trip.id}`);
   byId("retentionPercent").value = trip.clubFeePercent;
   await calculateTripResult(String(trip.id));
   await loadRegistrations(String(trip.id));
@@ -1171,7 +1202,9 @@ byId("trip-search").addEventListener("input", () => {
   renderTripList();
 });
 
-byId("back-to-list-btn").addEventListener("click", async () => {
+byId("back-to-list-btn").addEventListener("click", async (event) => {
+  // DESIGN: Der Breadcrumb-Link ersetzt den Button, das Routing bleibt clientseitig.
+  event.preventDefault();
   await navigateTo("/");
 });
 

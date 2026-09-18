@@ -618,6 +618,7 @@
                 <div class="pnl-h">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h2M12 18h6"/></svg>
                     <h2>Kalkulation</h2>
+                    <span class="pnl-state d-none" id="panel-state"></span>
                 </div>
                 <div class="fuf-grid fuf-grid-2">
                     <div class="pnl-box">
@@ -628,7 +629,7 @@
                     <div class="pnl-box">
                         <span class="help">Nächte</span>
                         <b id="result-nights">&ndash;</b>
-                        <span class="help"><span id="result-start-date">&ndash;</span> &ndash; <span id="result-end-date">&ndash;</span></span>
+                        <span class="help"><span id="result-start-date">&ndash;</span><span id="panel-range-sep" class="d-none"> &ndash; </span><span id="result-end-date" class="d-none">&ndash;</span></span>
                     </div>
                 </div>
                 <div class="pnl-lines">
@@ -648,7 +649,7 @@
                         <span><span class="pnl-bar-key pnl-bar-surplus"></span><span id="panel-bar-surplus-label">Überschuss</span></span>
                     </div>
                 </div>
-                <div class="pnl-green">
+                <div class="pnl-green" id="panel-green">
                     <div class="pnl-green-head">
                         <span>Überschuss</span>
                         <b id="panel-surplus">&ndash;</b>

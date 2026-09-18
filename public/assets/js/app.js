@@ -78,6 +78,7 @@ function resetCalculationResult() {
   byId("result-nights").textContent = "–";
   byId("trip-editor-meta").textContent = "";
   byId("result-breakdowns-container").innerHTML = "";
+  resetPanel();
   // Die Zusammenfassung im Section-Kopf fasst ein Ergebnis zusammen. Ohne
   // Ergebnis stuenden dort nur Gedankenstriche.
   byId("sum-kalkulation").classList.add("d-none");
@@ -278,7 +279,12 @@ function renderCalculationResult(result) {
   byId("result-start-date").textContent = formatDate(result.startDate);
   byId("result-end-date").textContent = result.endDate ? formatDate(result.endDate) : "-";
   byId("result-nights").textContent = String(result.nights ?? 0);
+  setPanelRangeVisible(Boolean(result.startDate && result.endDate));
   byId("result-total-group-expenses").textContent = formatCurrency(result.totalGroupExpenses);
+
+  // DESIGN: Panel und Summenspalte folgen dem Ergebnis, nicht der Vorschau.
+  renderPanel(result, "calculated");
+  renderRoomSums();
 
   const container = byId("result-breakdowns-container");
   const categories = Object.keys(breakdowns);
@@ -299,6 +305,325 @@ function renderCalculationResult(result) {
   container.innerHTML = categories
     .map((category, index) => calcRow(category, breakdowns[category], index === 0))
     .join("");
+}
+
+// DESIGN: Vorschau der Kalkulation aus den Feldwerten, damit das Sticky-Panel und
+// die Summenspalte beim Tippen mitlaufen. Spiegelt PriceCalculatorService:
+// Rundung nach jedem Schritt, Kategorien ohne Personen zaehlen nicht, Kinder
+// zahlen keine Kurabgabe. Nach einer echten Berechnung zeigt das Panel die Zahlen
+// des Backends - die Vorschau gilt nur fuer den ungespeicherten Zwischenstand und
+// ist im Panel-Kopf als solche gekennzeichnet.
+
+// PHP rundet mit Praezisionskorrektur. Ohne die liefert JS fuer Werte wie 1,005
+// einen Cent weniger.
+function round2(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.round(Number((value * 100).toPrecision(12))) / 100;
+}
+
+function roundToNearest5(value) {
+  return Math.round(value / 5) * 5;
+}
+
+function round4(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.round(Number((value * 10000).toPrecision(12))) / 10000;
+}
+
+// Die Wertobjekte der Domaene runden jeden Geldbetrag auf zwei Stellen
+// (RoomBooking::basePricePerPerson(), TripPricingPolicy::spaTaxPerPerson(),
+// GroupExpense::amount()). Die Vorschau muss vor dem Rechnen dasselbe tun, sonst
+// weicht sie bei Eingaben mit mehr Nachkommastellen ab.
+function moneyFromField(id) {
+  return round2(numberFromField(id));
+}
+
+// Percentage::factor() rundet auf vier Stellen.
+function percentFactor(percent) {
+  return round4(round2(percent) / 100);
+}
+
+function numberFromField(id) {
+  const value = byId(id).value;
+  const parsed = Number(value);
+  return value === "" || !Number.isFinite(parsed) ? 0 : parsed;
+}
+
+// Wie Trip::nights(): Differenz in Tagen, 0 ohne Abreisedatum.
+function nightsFromFields() {
+  const start = byId("startDate").value;
+  const end = byId("endDate").value;
+  if (!start || !end) {
+    return 0;
+  }
+
+  const diff = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000;
+  return Number.isFinite(diff) && diff > 0 ? Math.round(diff) : 0;
+}
+
+function bookingsFromFields() {
+  return [
+    { categoryType: "ADULT_DOUBLE", count: numberFromField("adultDoubleCount"), basePricePerPerson: moneyFromField("adultDoublePrice") },
+    { categoryType: "ADULT_MULTI", count: numberFromField("adultMultiCount"), basePricePerPerson: moneyFromField("adultMultiPrice") },
+    { categoryType: "CHILD", count: numberFromField("childCount"), basePricePerPerson: moneyFromField("childPrice") },
+  ];
+}
+
+function previewCalculation() {
+  const nights = nightsFromFields();
+  const bookings = bookingsFromFields();
+  const distributionMethod = byId("distributionMethod").value;
+  const markupPercent = round2(numberFromField("markupPercent"));
+  const clubFeePercent = round2(numberFromField("clubFeePercent"));
+  const spaTaxPerPerson = moneyFromField("spaTaxPerPerson");
+
+  const expenseLabel = byId("expenseLabel").value.trim();
+  const expenseAmount = byId("expenseAmount").value;
+  const totalGroupExpenses = expenseLabel !== "" && expenseAmount !== ""
+    ? moneyFromField("expenseAmount")
+    : 0;
+
+  // PerPersonDistributionStrategy summiert die Personen,
+  // PerCategoryUnitsDistributionStrategy zaehlt die belegten Kategorien.
+  const denominator = Math.max(1, distributionMethod === "PER_CATEGORY_UNITS"
+    ? bookings.filter((booking) => booking.count > 0).length
+    : bookings.reduce((sum, booking) => sum + booking.count, 0));
+  const sharedExpensePerUnit = round2(totalGroupExpenses / denominator);
+
+  const priceBreakdowns = {};
+  let totalParticipants = 0;
+  let totalCalculatedRevenue = 0;
+  let totalBaseCosts = 0;
+  let totalSpaTaxCosts = 0;
+
+  bookings.forEach((booking) => {
+    if (booking.count === 0) {
+      return;
+    }
+
+    const groupExpenseShare = distributionMethod === "PER_CATEGORY_UNITS"
+      ? round2(sharedExpensePerUnit / booking.count)
+      : sharedExpensePerUnit;
+    const spaTaxPerNight = booking.categoryType === "CHILD" ? 0 : spaTaxPerPerson;
+    const baseTotalPerPerson = round2(booking.basePricePerPerson * nights);
+    const spaTaxTotalPerPerson = round2(spaTaxPerNight * nights);
+    const subtotalBeforeMarkup = round2(round2(baseTotalPerPerson + spaTaxTotalPerPerson) + groupExpenseShare);
+    const markupAmount = round2(subtotalBeforeMarkup * percentFactor(markupPercent));
+    const subtotalBeforeClubFee = round2(subtotalBeforeMarkup + markupAmount);
+    const clubFeeAmount = round2(subtotalBeforeClubFee * percentFactor(clubFeePercent));
+    const finalPrice = round2(subtotalBeforeClubFee + clubFeeAmount);
+    const salesPriceDefault = roundToNearest5(finalPrice);
+    const salesPrice = state.salesPrices[booking.categoryType] != null
+      ? round2(state.salesPrices[booking.categoryType])
+      : salesPriceDefault;
+    const categoryRevenue = round2(salesPrice * booking.count);
+
+    priceBreakdowns[booking.categoryType] = {
+      basePricePerPerson: booking.basePricePerPerson,
+      spaTaxPerPerson: spaTaxPerNight,
+      nights,
+      baseTotalPerPerson,
+      spaTaxTotalPerPerson,
+      groupExpenseShare,
+      subtotalBeforeMarkup,
+      markupPercent,
+      markupAmount,
+      subtotalBeforeClubFee,
+      clubFeePercent,
+      clubFeeAmount,
+      finalPrice,
+      salesPricePerPerson: salesPrice,
+      salesPriceDefault,
+      salesPriceOverridden: state.salesPrices[booking.categoryType] != null,
+      count: booking.count,
+      categoryRevenue,
+    };
+
+    totalCalculatedRevenue = round2(totalCalculatedRevenue + categoryRevenue);
+    totalBaseCosts = round2(totalBaseCosts + round2(baseTotalPerPerson * booking.count));
+    totalSpaTaxCosts = round2(totalSpaTaxCosts + round2(spaTaxTotalPerPerson * booking.count));
+    totalParticipants += booking.count;
+  });
+
+  const totalCalculatedCosts = round2(totalBaseCosts + totalSpaTaxCosts + totalGroupExpenses);
+
+  return {
+    priceBreakdowns,
+    totalGroupExpenses,
+    totalParticipants,
+    totalCalculatedRevenue,
+    totalCalculatedCosts,
+    surplus: round2(totalCalculatedRevenue - totalCalculatedCosts),
+    distributionMethod,
+    spaTaxAgeThreshold: numberFromField("spaTaxAgeThreshold"),
+    adultAgeThreshold: numberFromField("adultAgeThreshold"),
+    startDate: byId("startDate").value || null,
+    endDate: byId("endDate").value || null,
+    nights,
+  };
+}
+
+// DESIGN: Zahlen im Sticky-Panel. Quelle ist entweder das Ergebnis des Backends
+// ("calculated") oder die Vorschau aus den Feldern ("preview"); der Punkt im
+// Panel-Kopf sagt, welche von beiden gerade zu sehen ist.
+function renderPanel(result, source) {
+  const breakdowns = result.priceBreakdowns || {};
+  const nights = Number(result.nights ?? 0);
+  const categories = Object.values(breakdowns);
+
+  const lodgingCosts = categories.reduce(
+    (sum, bd) => round2(sum + round2(Number(bd.baseTotalPerPerson ?? 0) * Number(bd.count ?? 0))),
+    0
+  );
+  const spaTaxCosts = categories.reduce(
+    (sum, bd) => round2(sum + round2(Number(bd.spaTaxTotalPerPerson ?? 0) * Number(bd.count ?? 0))),
+    0
+  );
+  const spaTaxPersons = categories.reduce(
+    (sum, bd) => sum + (Number(bd.spaTaxPerPerson ?? 0) > 0 ? Number(bd.count ?? 0) : 0),
+    0
+  );
+  const spaTaxPerPerson = categories.reduce(
+    (value, bd) => (Number(bd.spaTaxPerPerson ?? 0) > 0 ? Number(bd.spaTaxPerPerson) : value),
+    0
+  );
+
+  byId("panel-participants").textContent = String(result.totalParticipants ?? 0);
+  byId("panel-participants-sub").textContent = participantsSplit(breakdowns);
+  byId("result-nights").textContent = String(nights);
+  byId("result-start-date").textContent = result.startDate ? formatDate(result.startDate) : "–";
+  byId("result-end-date").textContent = result.endDate ? formatDate(result.endDate) : "–";
+  setPanelRangeVisible(Boolean(result.startDate && result.endDate));
+
+  byId("panel-cost-lodging-label").textContent = nights > 0
+    ? `Unterkunft (${nights} ${nights === 1 ? "Nacht" : "Nächte"})`
+    : "Unterkunft";
+  byId("panel-cost-lodging").textContent = formatCurrency(lodgingCosts);
+  byId("panel-cost-spa-tax-label").textContent = spaTaxPersons > 0
+    ? `Kurabgabe ${spaTaxPersons} × ${formatCurrency(spaTaxPerPerson)} × ${nights}`
+    : "Kurabgabe";
+  byId("panel-cost-spa-tax").textContent = formatCurrency(spaTaxCosts);
+  byId("panel-cost-extra").textContent = formatCurrency(result.totalGroupExpenses ?? 0);
+  byId("panel-cost-total").textContent = formatCurrency(result.totalCalculatedCosts ?? 0);
+  byId("panel-revenue").textContent = formatCurrency(result.totalCalculatedRevenue ?? 0);
+
+  renderPanelBar(Number(result.totalCalculatedCosts ?? 0), Number(result.surplus ?? 0));
+
+  const surplus = Number(result.surplus ?? 0);
+  byId("panel-surplus").textContent = signedCurrency(surplus);
+  byId("panel-green").className = surplus < 0 ? "pnl-green pnl-green-bad" : "pnl-green";
+
+  const adultDouble = breakdowns.ADULT_DOUBLE?.salesPricePerPerson;
+  const adultMulti = breakdowns.ADULT_MULTI?.salesPricePerPerson;
+  const child = breakdowns.CHILD?.salesPricePerPerson;
+  byId("panel-sales-adults").textContent = [adultDouble, adultMulti]
+    .filter((value) => value != null)
+    .map((value) => formatCurrency(value))
+    .join(" / ") || "–";
+  byId("panel-sales-child").textContent = child != null ? formatCurrency(child) : "–";
+
+  setPanelState(source);
+}
+
+// Der Balken zeigt, welchen Anteil der Einnahmen die Kosten ausmachen. Bei einem
+// Defizit gibt es keinen Ueberschussanteil - der Balken ist dann voll Kosten.
+function renderPanelBar(costs, surplus) {
+  const total = costs + Math.max(0, surplus);
+  const costShare = total > 0 ? (costs / total) * 100 : 0;
+  const surplusShare = total > 0 ? 100 - costShare : 0;
+
+  byId("panel-bar-costs").style.width = `${costShare}%`;
+  byId("panel-bar-surplus").style.width = `${surplusShare}%`;
+  byId("panel-bar-costs-label").textContent = total > 0
+    ? `Kosten ${formatPercentValue(costShare)}`
+    : "Kosten";
+  byId("panel-bar-surplus-label").textContent = surplus < 0
+    ? "Defizit"
+    : total > 0 ? `Überschuss ${formatPercentValue(surplusShare)}` : "Überschuss";
+}
+
+function formatPercentValue(value) {
+  return `${value.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
+}
+
+function setPanelState(source) {
+  const state_ = byId("panel-state");
+  if (source === "preview") {
+    state_.textContent = "Vorschau";
+    state_.className = "pnl-state pnl-state-preview";
+    return;
+  }
+
+  if (source === "calculated") {
+    state_.textContent = "berechnet";
+    state_.className = "pnl-state";
+    return;
+  }
+
+  state_.textContent = "";
+  state_.className = "pnl-state d-none";
+}
+
+function setPanelRangeVisible(visible) {
+  byId("panel-range-sep").classList.toggle("d-none", !visible);
+  byId("result-end-date").classList.toggle("d-none", !visible);
+}
+
+function resetPanel() {
+  byId("panel-participants").textContent = "–";
+  byId("panel-participants-sub").textContent = "";
+  byId("panel-cost-lodging-label").textContent = "Unterkunft";
+  byId("panel-cost-lodging").textContent = "–";
+  byId("panel-cost-spa-tax-label").textContent = "Kurabgabe";
+  byId("panel-cost-spa-tax").textContent = "–";
+  byId("panel-cost-extra").textContent = "–";
+  byId("panel-cost-total").textContent = "–";
+  byId("panel-revenue").textContent = "–";
+  byId("panel-bar-costs").style.width = "0%";
+  byId("panel-bar-surplus").style.width = "0%";
+  byId("panel-bar-costs-label").textContent = "Kosten";
+  byId("panel-bar-surplus-label").textContent = "Überschuss";
+  byId("panel-surplus").textContent = "–";
+  byId("panel-green").className = "pnl-green";
+  byId("panel-sales-adults").textContent = "–";
+  byId("panel-sales-child").textContent = "–";
+  setPanelRangeVisible(false);
+  setPanelState(null);
+}
+
+// DESIGN: Summenspalte im Unterkunft-Raster: Anzahl × Preis/Nacht × Naechte.
+function renderRoomSums() {
+  const nights = nightsFromFields();
+  byId("room-sum-nights").textContent = String(nights);
+
+  const rows = [
+    ["room-sum-adult-double", "adultDoubleCount", "adultDoublePrice"],
+    ["room-sum-adult-multi", "adultMultiCount", "adultMultiPrice"],
+    ["room-sum-child", "childCount", "childPrice"],
+  ];
+
+  rows.forEach(([target, countId, priceId]) => {
+    const total = round2(round2(numberFromField(priceId) * nights) * numberFromField(countId));
+    byId(target).textContent = formatCurrency(total);
+  });
+
+  const adultAge = byId("adultAgeThreshold").value;
+  byId("room-cat-child-sub").textContent = adultAge === ""
+    ? "unter der Altersgrenze"
+    : `unter ${adultAge} Jahren`;
+}
+
+// DESIGN: Ein Listener am Formular genuegt - er faengt jede Feldaenderung und
+// rechnet die Vorschau neu.
+function renderLivePreview() {
+  renderRoomSums();
+  renderPanel(previewCalculation(), "preview");
 }
 
 async function api(url, options = {}) {
@@ -1331,6 +1656,12 @@ byId("calculate-btn").addEventListener("click", async () => {
 
 // DESIGN: Die Verkaufspreis-Felder entstehen bei jeder Berechnung neu. Der
 // Listener haengt deshalb am statischen Container, nicht am Feld selbst.
+// DESIGN: Jede Feldaenderung rechnet die Vorschau neu. Ein Listener am Formular
+// reicht, weil input-Events von den Feldern hochblubbern.
+byId("trip-form").addEventListener("input", () => {
+  renderLivePreview();
+});
+
 byId("result-breakdowns-container").addEventListener("input", (event) => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement) || !input.dataset.salesCategory) {
@@ -1338,6 +1669,7 @@ byId("result-breakdowns-container").addEventListener("input", (event) => {
   }
 
   state.salesPrices[input.dataset.salesCategory] = input.value === "" ? null : Number(input.value);
+  renderLivePreview();
 });
 
 byId("sales-apply-btn").addEventListener("click", async () => {

@@ -616,6 +616,13 @@ h1.fuf-display {
     background: var(--fuf-sand-300);
 }
 
+/* Die Breite der beiden Segmente setzt renderPanelBar(). */
+.pnl-bar-track span {
+    display: block;
+    height: 100%;
+    width: 0;
+}
+
 .pnl-bar-costs {
     background: var(--fuf-brown-900);
 }
@@ -678,6 +685,39 @@ h1.fuf-display {
 
 .pnl-note {
     text-align: center;
+}
+
+/* Sagt, woher die Zahlen im Panel kommen: das Ergebnis der letzten Berechnung
+   oder die Vorschau aus den Feldern. */
+.pnl-state {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fuf-green-600);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pnl-state::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.pnl-state-preview {
+    color: var(--fuf-orange-600);
+}
+
+/* Defizit: die gruene Box wird braun, damit sie keinen Erfolg suggeriert. */
+.pnl-green-bad {
+    background: var(--fuf-brown-900);
+}
+
+.pnl-green-bad .pnl-green-head span {
+    color: var(--fuf-amber-500);
 }
 
 /* Sand-Box fuer eine zusammengehoerige Feldgruppe, etwa die Kurabgabe */

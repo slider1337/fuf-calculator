@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Reiseliste</title>
+</head>
+<body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Source Sans 3',system-ui,sans-serif;background:#F3EFE6;color:#3D2817}
+a{color:#2D5A3D}a:hover{color:#1A3D2A}
+.sec{background:#FFFFFF;border:1px solid #E2D9C8;border-radius:12px;overflow:hidden}
+.sec-h{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #EFE8DA;background:#FDFBF7}
+.sec-h h2{margin:0;font-size:16px;font-weight:700;flex-grow:1}
+.sec-h .sum{font-size:13px;color:#7A6651}
+.sec-b{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.f{display:flex;flex-direction:column;gap:5px}
+.f label{font-size:13px;font-weight:600;color:#5C4A3A;display:flex;align-items:center;gap:6px}
+.in{display:flex;align-items:center;height:42px;border:1px solid #D4CBB9;border-radius:8px;background:#FFFFFF;overflow:hidden}
+.in input,.in select{border:0;outline:0;background:transparent;height:100%;flex-grow:1;min-width:0;padding:0 12px;font:inherit;font-size:15px;color:#3D2817}
+.in .u{padding:0 12px;height:100%;display:flex;align-items:center;background:#F6F1E7;border-left:1px solid #E2D9C8;color:#7A6651;font-size:13px;font-weight:600;white-space:nowrap}
+.row{display:grid;gap:14px 16px}
+.help{font-size:12px;color:#8A7762}
+.k{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:#5C4A3A}
+.k b{color:#3D2817;font-variant-numeric:tabular-nums}
+.chev{color:#8A7762}
+.jump{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;font-size:13px;color:#5C4A3A;text-decoration:none}
+.jump .dot{width:8px;height:8px;border-radius:50%;background:#D4CBB9;flex-shrink:0}
+.cl{display:flex;justify-content:space-between;font-size:13px;color:#5C4A3A;padding:3px 0}
+.cl b{color:#3D2817;font-variant-numeric:tabular-nums}
+.kpi{background:#FFFFFF;border:1px solid #E2D9C8;border-radius:12px;padding:14px 18px;display:flex;flex-direction:column;gap:4px}
+.kpi span{font-size:12px;color:#8A7762;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+.kpi b{font-family:Georgia,serif;font-size:24px;font-weight:500;color:#3D2817;font-variant-numeric:tabular-nums}
+.tb{width:100%;border-collapse:collapse;font-size:14px}
+.tb th{text-align:left;font-size:12px;color:#8A7762;letter-spacing:.6px;text-transform:uppercase;padding:0 12px 8px 12px;border-bottom:2px solid #E2D9C8;font-weight:700}
+.tb td{padding:11px 12px;border-bottom:1px solid #EFE8DA;vertical-align:middle}
+.tb .r{text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.c-green{background:#E6EFE9;color:#1A3D2A}
+.c-amber{background:#FAEEDA;color:#7A4A12}
+.c-brown{background:#EFE8DA;color:#3D2817}
+.c-grey{background:#F3EFE6;color:#5C4A3A;border:1px solid #E2D9C8}
+.c-orange{background:#FCE3D0;color:#8A3E0B}
+.btn{height:40px;padding:0 16px;border-radius:8px;font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#2D5A3D;color:#FFFFFF;border:0}
+.btn-a{background:#E76F1E;color:#FFFFFF;border:0}
+.btn-o{background:#FFFFFF;color:#2D5A3D;border:1px solid #2D5A3D}
+.btn-g{background:#FFFFFF;color:#5C4A3A;border:1px solid #D4CBB9;font-weight:600}
+.btn-d{background:#FFFFFF;color:#9B2C2C;border:1px solid #E0B4B4;font-weight:600}
+.btn-s{height:34px;padding:0 12px;font-size:13px}
+.ib{width:34px;height:34px;border-radius:8px;border:1px solid #D4CBB9;background:#FFFFFF;color:#7A6651;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+</style>
+
+<div style="min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; background: #F3EFE6;">
+
+  <header style="background: #3D2817; background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 4px, rgba(255,255,255,0.04) 4px, rgba(255,255,255,0.04) 5px, transparent 5px, transparent 9px); border-bottom: 3px solid #2D5A3D; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 28px;">
+      <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none;"><img src="../assets/fuflogo.png" alt="FuF Erding" style="height: 34px; width: auto;"><span style="font-family: Georgia, serif; font-size: 17px; color: #F5EFE0; border-left: 1px solid rgba(245,239,224,0.3); padding-left: 12px;">Gruppenreise-Kalkulator</span></a>
+      <nav style="display: flex; gap: 4px;"><a href="#" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; color: #FFFFFF; background: rgba(255,255,255,0.12);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Reisen</a><a href="#" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; color: #F5EFE0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>Benutzer</a><a href="#" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; color: #F5EFE0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Globale Settings</a></nav>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="#" class="btn btn-a" style="height: 38px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Reise</a>
+      <div style="display: flex; align-items: center; gap: 10px; padding-left: 12px; border-left: 1px solid rgba(245,239,224,0.3);">
+        <div style="width: 34px; height: 34px; border-radius: 50%; background: #F5B547; color: #3D2817; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">BS</div>
+        <div style="display: flex; flex-direction: column; line-height: 1.2;"><span style="font-size: 13px; color: #FFFFFF; font-weight: 600;">benedikt@fuf-erding.de</span><span style="font-size: 11px; color: #F5B547; letter-spacing: .6px; text-transform: uppercase;">Admin</span></div>
+        <a href="#" aria-label="Abmelden" style="width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #F5EFE0; background: rgba(255,255,255,0.1);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></a>
+      </div>
+    </div>
+  </header>
+  <div style="padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; flex-grow: 1;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <h1 style="margin: 0; font-family: Georgia, serif; font-size: 28px; font-weight: 500;">Alle Reisen</h1>
+        <span class="help" style="font-size: 14px;">4 Reisen · 1 in Planung · 1 mit offener Anmeldung · 2 abgerechnet</span>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="in" style="width: 260px; height: 40px;"><span style="padding-left: 12px; color: #9A8770; display: flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><input type="text" placeholder="Reise suchen …" aria-label="Reise suchen"></div>
+        <div class="in" style="width: 170px; height: 40px;"><select aria-label="Status filtern"><option>Alle Status</option><option>In Planung</option><option>Anmeldung offen</option><option>Abgerechnet</option></select><span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+      <div class="kpi"><span>Nächste Reise</span><b>10.02.2027</b><small class="help">Winterfreizeit Lungau · in 145 Tagen</small></div>
+      <div class="kpi"><span>Offene Plätze</span><b>12</b><small class="help">Familienzelten 2026</small></div>
+      <div class="kpi"><span>Teilnehmer 2026/27</span><b>190</b><small class="help">über 4 Reisen</small></div>
+      <div class="kpi" style="background: #E6EFE9; border-color: #B9D3C2;"><span>Überschuss gesamt</span><b style="color: #1A3D2A;">+ 5.632,10 €</b><small class="help">aus 2 abgerechneten Reisen</small></div>
+    </div>
+
+    <section class="sec">
+      <table class="tb">
+        <thead><tr><th style="width: 60px;">ID</th><th>Reise</th><th>Zeitraum <span style="color: #2D5A3D;">↓</span></th><th>Status</th><th class="r">Teilnehmer</th><th class="r">Überschuss / Defizit</th><th class="r" style="width: 200px;">Aktion</th></tr></thead>
+        <tbody><tr>
+          <td class="help" style="font-variant-numeric: tabular-nums;">#1</td>
+          <td><a href="#" style="font-weight: 700; font-size: 15px; text-decoration: none; color: #3D2817;">Winterfreizeit Lungau 2027</a></td>
+          <td style="font-variant-numeric: tabular-nums;">10.–14.02.2027<span class="help" style="display: block;">4 Nächte</span></td>
+          <td><span class="chip c-green">In Planung</span></td>
+          <td class="r">56 / 56</td>
+          <td class="r" style="font-weight: 700; color: #2D5A3D;">+ 3.020,00 €</td>
+          <td class="r"><div style="display: inline-flex; gap: 6px;"><a href="#" class="btn btn-o btn-s">Öffnen</a><button type="button" class="ib" aria-label="Duplizieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button><button type="button" class="ib" aria-label="Löschen" style="color: #9B2C2C;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></td>
+        </tr><tr>
+          <td class="help" style="font-variant-numeric: tabular-nums;">#4</td>
+          <td><a href="#" style="font-weight: 700; font-size: 15px; text-decoration: none; color: #3D2817;">Familienzelten 2026</a></td>
+          <td style="font-variant-numeric: tabular-nums;">10.–12.07.2026<span class="help" style="display: block;">2 Nächte</span></td>
+          <td><span class="chip c-amber">Anmeldung offen</span></td>
+          <td class="r">48 / 60</td>
+          <td class="r" style="font-weight: 700; color: #2D5A3D;">+ 640,00 €</td>
+          <td class="r"><div style="display: inline-flex; gap: 6px;"><a href="#" class="btn btn-o btn-s">Öffnen</a><button type="button" class="ib" aria-label="Duplizieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button><button type="button" class="ib" aria-label="Löschen" style="color: #9B2C2C;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></td>
+        </tr><tr>
+          <td class="help" style="font-variant-numeric: tabular-nums;">#3</td>
+          <td><a href="#" style="font-weight: 700; font-size: 15px; text-decoration: none; color: #3D2817;">Vater-Kind-Zelten 2026</a></td>
+          <td style="font-variant-numeric: tabular-nums;">26.–28.06.2026<span class="help" style="display: block;">2 Nächte</span></td>
+          <td><span class="chip c-brown">Abgerechnet</span></td>
+          <td class="r">32 / 32</td>
+          <td class="r" style="font-weight: 700; color: #2D5A3D;">+ 2.284,50 €</td>
+          <td class="r"><div style="display: inline-flex; gap: 6px;"><a href="#" class="btn btn-o btn-s">Öffnen</a><button type="button" class="ib" aria-label="Duplizieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button><button type="button" class="ib" aria-label="Löschen" style="color: #9B2C2C;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></td>
+        </tr><tr>
+          <td class="help" style="font-variant-numeric: tabular-nums;">#2</td>
+          <td><a href="#" style="font-weight: 700; font-size: 15px; text-decoration: none; color: #3D2817;">Sommerfreizeit Chiemsee 2025</a></td>
+          <td style="font-variant-numeric: tabular-nums;">01.–06.08.2025<span class="help" style="display: block;">5 Nächte</span></td>
+          <td><span class="chip c-brown">Abgerechnet</span></td>
+          <td class="r">54 / 54</td>
+          <td class="r" style="font-weight: 700; color: #9B2C2C;">− 312,40 €</td>
+          <td class="r"><div style="display: inline-flex; gap: 6px;"><a href="#" class="btn btn-o btn-s">Öffnen</a><button type="button" class="ib" aria-label="Duplizieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button><button type="button" class="ib" aria-label="Löschen" style="color: #9B2C2C;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></td>
+        </tr></tbody>
+      </table>
+      <div style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background: #FDFBF7;"><span class="help">Sortiert nach Startdatum, neueste zuerst</span><span class="help">4 von 4 Reisen</span></div>
+    </section>
+
+    <div style="display: flex; align-items: center; gap: 14px; padding: 16px 20px; border: 2px dashed #C9BFAA; border-radius: 12px; background: #FDFBF7;">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: #FCE3D0; color: #E76F1E; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;"><b style="font-size: 15px;">Neue Reise anlegen</b><span class="help">Aufschlag, Vereinsgebühr und Kurabgabe werden aus den globalen Settings vorbelegt (10 % · 5 % · 2,85 €).</span></div>
+      <a href="#" class="btn btn-p">Reise erstellen</a>
+    </div>
+  </div>
+  <footer style="padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #8A7762; border-top: 1px solid #E2D9C8; margin-top: auto;">
+    <span>© 2026 Freizeit und Familie Erding e.V.</span>
+    <span style="display: flex; gap: 14px;"><a href="#" style="text-decoration: none; font-weight: 600;">API-Doku</a><a href="#" style="text-decoration: none; font-weight: 600;">OpenAPI YAML</a><span>Version 1.4.2</span></span>
+  </footer>
+</div>
+</body>
+</html>

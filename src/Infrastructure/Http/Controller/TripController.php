@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Controller;
 
 use App\Application\NotFoundException;
+use App\Application\TripListService;
 use App\Application\TripService;
 use App\Application\ValidationException;
 use App\Infrastructure\Http\JsonResponder;
@@ -14,8 +15,10 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class TripController
 {
-    public function __construct(private TripService $service)
-    {
+    public function __construct(
+        private TripService $service,
+        private TripListService $listService
+    ) {
     }
 
     /**
@@ -42,7 +45,7 @@ final readonly class TripController
      */
     public function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return JsonResponder::write($response, $this->service->listTrips());
+        return JsonResponder::write($response, $this->listService->listTrips());
     }
 
     /**

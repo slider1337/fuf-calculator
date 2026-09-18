@@ -14,7 +14,7 @@ interface TripRepositoryInterface
 
     public function getById(int $id): ?Trip;
 
-    /** @return array<int, array{id:int,name:string,startDate:string}> */
+    /** @return array<int, array{id:int,name:string,startDate:string,endDate:?string}> */
     public function findAll(): array;
 }
 

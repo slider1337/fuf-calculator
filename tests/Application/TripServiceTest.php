@@ -116,6 +116,7 @@ final class InMemoryTripRepository implements TripRepositoryInterface
                 'id' => (int) $trip->id(),
                 'name' => $trip->name(),
                 'startDate' => $trip->startDate()->format('Y-m-d'),
+                'endDate' => $trip->endDate()?->format('Y-m-d'),
             ];
         }
 

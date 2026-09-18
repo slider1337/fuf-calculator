@@ -54,6 +54,26 @@ final class OpenApiContractTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
+    public function testTripListResponseContainsAllRequiredSchemaFields(): void
+    {
+        self::assertSame(201, $this->dispatch('POST', '/api/trips', $this->validTripPayload())->getStatusCode());
+
+        $this->assertPathAndStatusDefined('/api/trips', 'get', '200');
+
+        $response = $this->dispatch('GET', '/api/trips');
+        self::assertSame(200, $response->getStatusCode());
+
+        $list = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertNotEmpty($list);
+
+        foreach ($this->requiredFieldsForSchema('TripListItem') as $requiredField) {
+            self::assertArrayHasKey($requiredField, $list[0]);
+        }
+    }
+
     private function assertPathAndStatusDefined(string $path, string $method, string $statusCode): void
     {
         self::assertArrayHasKey($path, $this->spec['paths']);

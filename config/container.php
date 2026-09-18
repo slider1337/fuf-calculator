@@ -13,6 +13,7 @@ use App\Application\Port\TripRepositoryInterface;
 use App\Application\Port\UserRepositoryInterface;
 use App\Application\RegistrationService;
 use App\Application\SettingsService;
+use App\Application\TripListService;
 use App\Application\TripService;
 use App\Application\UserService;
 use App\Domain\Service\PriceCalculatorService;
@@ -67,6 +68,7 @@ return static function (): ContainerInterface {
         }),
         SettingsService::class => autowire(),
         TripService::class => autowire(),
+        TripListService::class => autowire(),
         RegistrationService::class => autowire(),
         ActualExpenseService::class => autowire(),
         UserService::class => autowire(),

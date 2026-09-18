@@ -642,7 +642,9 @@ components:
 
     TripListItem:
       type: object
-      required: [id, name, startDate]
+      required:
+        [id, name, startDate, endDate, nights, plannedParticipants, registeredParticipants,
+         surplus, surplusBasis]
       properties:
         id:
           type: integer
@@ -651,6 +653,31 @@ components:
         startDate:
           type: string
           format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        nights:
+          type: integer
+        plannedParticipants:
+          type: integer
+          description: Summe der geplanten Teilnehmer ueber alle Zimmerbuchungen.
+        registeredParticipants:
+          type: integer
+          description: Summe der Teilnehmer ueber alle Anmeldungen.
+        surplus:
+          type: number
+          format: float
+          nullable: true
+          description: >-
+            Ueberschuss bzw. Defizit. null, wenn er fuer die Reise nicht bestimmbar ist.
+        surplusBasis:
+          type: string
+          nullable: true
+          enum: [calculation, settlement]
+          description: >-
+            Grundlage des Ueberschusses. "settlement", sobald Anmeldungen vorliegen, sonst
+            "calculation". null, wenn surplus null ist.
 
     CalculationResult:
       type: object

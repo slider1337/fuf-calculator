@@ -180,13 +180,18 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
     public function findAll(): array
     {
-        $rows = $this->pdo->query('SELECT id, name, start_date FROM trips ORDER BY start_date DESC, id DESC')->fetchAll();
+        $rows = $this->pdo
+            ->query('SELECT id, name, start_date, end_date FROM trips ORDER BY start_date DESC, id DESC')
+            ->fetchAll();
         $result = [];
         foreach ($rows as $row) {
             $result[] = [
                 'id' => (int) $row['id'],
                 'name' => (string) $row['name'],
                 'startDate' => (string) $row['start_date'],
+                'endDate' => isset($row['end_date']) && $row['end_date'] !== null
+                    ? (string) $row['end_date']
+                    : null,
             ];
         }
 

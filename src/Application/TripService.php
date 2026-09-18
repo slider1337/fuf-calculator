@@ -40,11 +40,6 @@ final readonly class TripService
         return $this->repository->update($this->mapPayloadToTrip($payload, $id));
     }
 
-    public function listTrips(): array
-    {
-        return $this->repository->findAll();
-    }
-
     private function mapPayloadToTrip(array $payload, ?int $id): Trip
     {
         $required = [

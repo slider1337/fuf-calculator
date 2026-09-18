@@ -846,12 +846,26 @@ async function loadSettlement(tripId) {
   }
 }
 
+// DESIGN: "benedikt.schaller@x.de" -> "BS", "admin@x.de" -> "AD"
+function initialsFromEmail(email) {
+  const local = String(email).split("@")[0];
+  const parts = local.split(/[._-]+/).filter((part) => part.length > 0);
+
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  return local.slice(0, 2).toUpperCase();
+}
+
 async function loadCurrentUser() {
   try {
     const me = await api("/api/auth/me");
     state.currentUser = me;
     if (me && me.email) {
       byId("current-user-email").textContent = me.email;
+      // DESIGN: Initialen fuer den Avatar in der Kopfleiste
+      byId("current-user-avatar").textContent = initialsFromEmail(me.email);
     }
     const badge = byId("current-user-role-badge");
     if (me && me.role === "admin") {
@@ -981,6 +995,9 @@ byId("open-invite-btn").addEventListener("click", () => {
   byId("invite-form").reset();
   byId("invite-status").textContent = "";
   byId("invite-status").className = "small";
+  // DESIGN: Der Button sitzt jetzt im Benutzer-Modal. Erst schliessen,
+  // damit sich die beiden Dialoge nicht uebereinander stapeln.
+  state.usersModal.hide();
   state.inviteModal.show();
 });
 

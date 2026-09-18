@@ -4,6 +4,7 @@
 
 .idea
 .phpunit.cache
-/build/logs/clover.xml
+/build/
+/design-handoff.zip
 
 /migration/output

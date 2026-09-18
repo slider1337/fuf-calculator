@@ -5,30 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/fuf.css">
 </head>
-<body class="bg-light">
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h1 class="h3 mb-1">FUF Gruppenreise Kalkulator</h1>
-            <div class="small text-muted">
-                API-Doku: <a href="/docs" target="_blank" rel="noopener">/docs</a>
-                &middot;
-                OpenAPI YAML: <a href="/openapi.yaml" target="_blank" rel="noopener">/openapi.yaml</a>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <div class="app-header-left">
+            <a class="app-brand" href="/">
+                <img src="/assets/img/fuflogo.png" alt="FuF Erding">
+                <span>Gruppenreise-Kalkulator</span>
+            </a>
+            <nav class="app-nav">
+                <a href="/" class="is-active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                    Reisen
+                </a>
+                <button id="open-users-btn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                    Benutzer
+                </button>
+                <button id="open-settings-btn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+                    Globale Settings
+                </button>
+            </nav>
+        </div>
+        <div class="app-header-right">
+            <button id="new-trip-btn" class="btn btn-a btn-hdr" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Neue Reise
+            </button>
+            <div class="app-user">
+                <div class="app-avatar" id="current-user-avatar" aria-hidden="true"></div>
+                <div class="app-user-meta">
+                    <span class="app-user-email" id="current-user-email"></span>
+                    <span class="app-user-role d-none" id="current-user-role-badge">Admin</span>
+                </div>
+                <form method="post" action="/logout" class="m-0">
+                    <button class="app-icon-link" type="submit" aria-label="Abmelden" title="Abmelden">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    </button>
+                </form>
             </div>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-            <span id="current-user-email" class="text-muted small"></span>
-            <span id="current-user-role-badge" class="badge bg-secondary d-none">Admin</span>
-            <button id="open-users-btn" class="btn btn-outline-secondary" type="button">Benutzer</button>
-            <button id="open-invite-btn" class="btn btn-outline-secondary" type="button">Nutzer einladen</button>
-            <button id="open-settings-btn" class="btn btn-outline-secondary" type="button">Globale Settings</button>
-            <button id="new-trip-btn" class="btn btn-primary" type="button">Neue Reise erstellen</button>
-            <form method="post" action="/logout" class="m-0">
-                <button class="btn btn-outline-danger" type="submit">Abmelden</button>
-            </form>
-        </div>
-    </div>
+    </header>
+    <div class="app-main">
 
     <div class="modal fade" id="users-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -38,6 +59,18 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div class="in" style="max-width: 260px;">
+                            <span class="p">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                            </span>
+                            <input id="users-search" type="text" placeholder="Benutzer suchen &hellip;" aria-label="Benutzer suchen">
+                        </div>
+                        <button id="open-invite-btn" class="btn btn-p btn-s" type="button">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                            Nutzer einladen
+                        </button>
+                    </div>
                     <div id="users-status" class="small mb-2"></div>
                     <div class="table-responsive">
                         <table class="table table-striped align-middle mb-0">
@@ -763,6 +796,14 @@
             </div>
         </div>
     </div>
+    </div>
+    <footer class="app-footer">
+        <span>&copy; <?= date('Y') ?> Freizeit und Familie Erding e.V.</span>
+        <span class="app-footer-links">
+            <a href="/docs" target="_blank" rel="noopener">API-Doku</a>
+            <a href="/openapi.yaml" target="_blank" rel="noopener">OpenAPI YAML</a>
+        </span>
+    </footer>
 </div>
 <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/app.js"></script>

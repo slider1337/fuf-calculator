@@ -1,0 +1,1145 @@
+/*
+ * FuF Gruppenreise-Kalkulator - Design-Layer
+ *
+ * Wird nach bootstrap.min.css geladen und uebersteuert Bootstrap per Custom
+ * Properties, statt es zu ersetzen. Bootstrap bleibt zustaendig fuer das
+ * JS-Verhalten (Modal, Collapse, Tab) und die Utility d-none.
+ *
+ * Grundlage: docs/design-handoff/DESIGN.md und die Mockups darunter.
+ */
+
+/* ========================================================================
+ * 1. Schrift
+ * ======================================================================== */
+
+/* Source Sans 3 ist ein Variable Font: eine Datei je Subset deckt 400-700 ab. */
+@font-face {
+    font-family: 'Source Sans 3';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/assets/fonts/source-sans-3-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Source Sans 3';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/assets/fonts/source-sans-3-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ========================================================================
+ * 2. Design-Tokens
+ * ======================================================================== */
+
+:root {
+    /* Farben */
+    --fuf-brown-900: #3D2817; /* Kopfleiste, Fliesstext */
+    --fuf-brown-700: #5C4A3A; /* Labels */
+    --fuf-brown-500: #7A6651; /* Sekundaertext */
+    --fuf-brown-400: #8A7762; /* Hilfetext, Tabellenkoepfe */
+    --fuf-green-700: #1A3D2A;
+    --fuf-green-600: #2D5A3D; /* Primaer: Buttons, Links, aktive Tabs, positive Werte */
+    --fuf-green-100: #E6EFE9; /* gruene Chips, Highlight-KPI */
+    --fuf-orange-600: #E76F1E; /* Akzent: Neue Reise, Uebernehmen, Kinder-Icon */
+    --fuf-orange-100: #FCE3D0;
+    --fuf-amber-700: #B45309; /* Warnhinweise, Abweichung nach unten */
+    --fuf-amber-500: #F5B547; /* Akzent auf dunklem Grund */
+    --fuf-amber-100: #FAEEDA; /* Chips Manuell, Kurabgabe-Box */
+    --fuf-red-700: #9B2C2C; /* Loeschen, Defizit */
+    --fuf-red-100: #FBE9E4; /* Defizit-KPI */
+    --fuf-sand-50: #FDFBF7; /* Section-Header, Zebra */
+    --fuf-sand-100: #F6F1E7; /* Input-Suffix, Summenzeilen */
+    --fuf-sand-200: #F3EFE6; /* Seitenhintergrund */
+    --fuf-sand-300: #EFE8DA; /* feine Trennlinien */
+    --fuf-sand-400: #E2D9C8; /* Card-Rahmen */
+    --fuf-sand-500: #D4CBB9; /* Input-Rahmen */
+
+    /* Auf dunklem Grund */
+    --fuf-on-dark: #F5EFE0;
+    --fuf-on-dark-dim: rgba(245, 239, 224, .3);
+
+    /* Typografie */
+    --fuf-font-body: 'Source Sans 3', system-ui, sans-serif;
+    --fuf-font-display: Georgia, serif;
+
+    /* Form */
+    --fuf-radius-card: 12px;
+    --fuf-radius-control: 8px;
+    --fuf-radius-chip: 999px;
+    --fuf-control-height: 42px;
+
+    /* Bootstrap-Mapping */
+    --bs-body-bg: var(--fuf-sand-200);
+    --bs-body-color: var(--fuf-brown-900);
+    --bs-body-font-family: var(--fuf-font-body);
+    --bs-primary: var(--fuf-green-600);
+    --bs-link-color: var(--fuf-green-600);
+    --bs-link-hover-color: var(--fuf-green-700);
+    --bs-border-color: var(--fuf-sand-400);
+    --bs-border-radius: var(--fuf-radius-control);
+}
+
+/* ========================================================================
+ * 3. Grundlagen
+ * ======================================================================== */
+
+body {
+    margin: 0;
+    font-family: var(--fuf-font-body);
+    background: var(--fuf-sand-200);
+    color: var(--fuf-brown-900);
+}
+
+/* Bootstrap setzt .bg-light auf ein kaltes Grau - hier soll Sand gelten. */
+body.bg-light {
+    background: var(--fuf-sand-200) !important;
+}
+
+a {
+    color: var(--fuf-green-600);
+}
+
+a:hover {
+    color: var(--fuf-green-700);
+}
+
+h1, h2, h3 {
+    color: var(--fuf-brown-900);
+}
+
+.fuf-display {
+    font-family: var(--fuf-font-display);
+    font-weight: 500;
+}
+
+h1.fuf-display {
+    font-size: 28px;
+    margin: 0;
+}
+
+.help {
+    font-size: 12px;
+    color: var(--fuf-brown-400);
+}
+
+.fuf-num {
+    font-variant-numeric: tabular-nums;
+}
+
+.fuf-pos {
+    color: var(--fuf-green-600);
+    font-weight: 700;
+}
+
+.fuf-neg {
+    color: var(--fuf-red-700);
+    font-weight: 700;
+}
+
+/* ========================================================================
+ * 4. App-Shell
+ * ======================================================================== */
+
+.app-shell {
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    background: var(--fuf-sand-200);
+}
+
+.app-header {
+    background: var(--fuf-brown-900);
+    /* feine vertikale Holzmaserung */
+    background-image: repeating-linear-gradient(90deg,
+    rgba(0, 0, 0, .08) 0px, rgba(0, 0, 0, .08) 1px,
+    transparent 1px, transparent 4px,
+    rgba(255, 255, 255, .04) 4px, rgba(255, 255, 255, .04) 5px,
+    transparent 5px, transparent 9px);
+    border-bottom: 3px solid var(--fuf-green-600);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.app-brand img {
+    height: 34px;
+    width: auto;
+}
+
+.app-brand span {
+    font-family: var(--fuf-font-display);
+    font-size: 17px;
+    color: var(--fuf-on-dark);
+    border-left: 1px solid var(--fuf-on-dark-dim);
+    padding-left: 12px;
+    white-space: nowrap;
+}
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    min-width: 0;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-nav {
+    display: flex;
+    gap: 4px;
+}
+
+.app-nav a,
+.app-nav button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: var(--fuf-radius-control);
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--fuf-on-dark);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.app-nav a:hover,
+.app-nav button:hover {
+    background: rgba(255, 255, 255, .08);
+    color: #FFFFFF;
+}
+
+.app-nav .is-active {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, .12);
+}
+
+.app-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 12px;
+    border-left: 1px solid var(--fuf-on-dark-dim);
+}
+
+.app-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--fuf-amber-500);
+    color: var(--fuf-brown-900);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.app-user-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.app-user-meta .app-user-email {
+    font-size: 13px;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.app-user-meta .app-user-role {
+    font-size: 11px;
+    color: var(--fuf-amber-500);
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+.app-icon-link {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: var(--fuf-radius-control);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fuf-on-dark);
+    background: rgba(255, 255, 255, .1);
+    cursor: pointer;
+}
+
+.app-icon-link:hover {
+    background: rgba(255, 255, 255, .18);
+    color: #FFFFFF;
+}
+
+.app-main {
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-grow: 1;
+}
+
+.app-footer {
+    padding: 14px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--fuf-brown-400);
+    border-top: 1px solid var(--fuf-sand-400);
+    margin-top: auto;
+}
+
+.app-footer a {
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.app-footer-links {
+    display: flex;
+    gap: 14px;
+}
+
+/* ========================================================================
+ * 5. Raster
+ *
+ * Bootstrap besitzt .row (Flex-Grid). Das Grid des Designs heisst deshalb
+ * .fuf-grid, sonst kollidieren die beiden.
+ * ======================================================================== */
+
+.fuf-grid {
+    display: grid;
+    gap: 14px 16px;
+}
+
+.fuf-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fuf-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fuf-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Eckdaten: Name breiter als die beiden Datumsfelder */
+.fuf-grid-eck {
+    grid-template-columns: 2fr 1fr 1fr;
+}
+
+/* Unterkunft: Kategorie, Anzahl, Preis/Nacht, Summe */
+.fuf-grid-room {
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+}
+
+/* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron */
+.fuf-grid-calc {
+    grid-template-columns: 1.6fr 1fr 1.2fr 1fr 24px;
+}
+
+/* Planungsseite: Inhalt + Sticky-Spalte */
+.pg {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+}
+
+.pg-side {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (max-width: 1100px) {
+    .pg {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pg-side {
+        position: static;
+    }
+}
+
+@media (max-width: 900px) {
+    .fuf-grid-2,
+    .fuf-grid-3,
+    .fuf-grid-4,
+    .fuf-grid-eck,
+    .fuf-grid-room,
+    .fuf-grid-calc {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app-header {
+        padding: 0 16px;
+    }
+
+    .app-main {
+        padding: 20px 16px;
+    }
+}
+
+/* ========================================================================
+ * 6. Section-Card
+ * ======================================================================== */
+
+.sec {
+    background: #FFFFFF;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+    overflow: hidden;
+}
+
+.sec-h {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--fuf-sand-300);
+    background: var(--fuf-sand-50);
+}
+
+.sec-h h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    flex-grow: 1;
+}
+
+.sec-h .sum {
+    font-size: 13px;
+    color: var(--fuf-brown-500);
+}
+
+.sec-b {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sec-f {
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--fuf-sand-50);
+    border-top: 1px solid var(--fuf-sand-300);
+}
+
+.chev {
+    color: var(--fuf-brown-400);
+    background: transparent;
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.chev svg {
+    transition: transform .15s ease;
+}
+
+.chev[aria-expanded="false"] svg {
+    transform: rotate(-90deg);
+}
+
+/* ========================================================================
+ * 7. Felder
+ * ======================================================================== */
+
+.f {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.f label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fuf-brown-700);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.in {
+    display: flex;
+    align-items: center;
+    height: var(--fuf-control-height);
+    border: 1px solid var(--fuf-sand-500);
+    border-radius: var(--fuf-radius-control);
+    background: #FFFFFF;
+    overflow: hidden;
+}
+
+.in:focus-within {
+    border-color: var(--fuf-green-600);
+    box-shadow: 0 0 0 3px rgba(45, 90, 61, .12);
+}
+
+.in input,
+.in select,
+.in textarea {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    height: 100%;
+    flex-grow: 1;
+    min-width: 0;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--fuf-brown-900);
+}
+
+.in select {
+    appearance: none;
+    cursor: pointer;
+}
+
+.in .u {
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: var(--fuf-sand-100);
+    border-left: 1px solid var(--fuf-sand-400);
+    color: var(--fuf-brown-500);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.in .p {
+    padding-left: 12px;
+    color: #9A8770;
+    display: flex;
+    align-items: center;
+}
+
+/* Geaenderter, noch nicht gespeicherter Wert */
+.in.is-dirty {
+    border-color: var(--fuf-orange-600);
+    box-shadow: 0 0 0 3px rgba(231, 111, 30, .15);
+}
+
+/* ========================================================================
+ * 8. Kennzahlen
+ * ======================================================================== */
+
+.kpi {
+    background: #FFFFFF;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kpi span {
+    font-size: 12px;
+    color: var(--fuf-brown-400);
+    font-weight: 600;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+.kpi b {
+    font-family: var(--fuf-font-display);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--fuf-brown-900);
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-good {
+    background: var(--fuf-green-100);
+    border-color: #B9D3C2;
+}
+
+.kpi-good b {
+    color: var(--fuf-green-700);
+}
+
+.kpi-bad {
+    background: var(--fuf-red-100);
+    border-color: #E9C9C2;
+}
+
+.kpi-bad b {
+    color: var(--fuf-red-700);
+}
+
+/* Zeile im Kalkulationspanel */
+.k {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    color: var(--fuf-brown-700);
+}
+
+.k b {
+    color: var(--fuf-brown-900);
+    font-variant-numeric: tabular-nums;
+}
+
+.cl {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--fuf-brown-700);
+    padding: 3px 0;
+}
+
+.cl b {
+    color: var(--fuf-brown-900);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================
+ * 9. Sprungnavigation
+ * ======================================================================== */
+
+.jump {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: var(--fuf-radius-control);
+    font-size: 13px;
+    color: var(--fuf-brown-700);
+    text-decoration: none;
+}
+
+.jump:hover {
+    background: var(--fuf-sand-50);
+    color: var(--fuf-brown-900);
+}
+
+.jump.is-active {
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-700);
+    font-weight: 600;
+}
+
+.jump .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--fuf-sand-500);
+    flex-shrink: 0;
+}
+
+.jump .dot.is-set {
+    background: var(--fuf-green-600);
+}
+
+/* ========================================================================
+ * 10. Tabelle
+ * ======================================================================== */
+
+.tb {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tb th {
+    text-align: left;
+    font-size: 12px;
+    color: var(--fuf-brown-400);
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    padding: 0 12px 8px 12px;
+    border-bottom: 2px solid var(--fuf-sand-400);
+    font-weight: 700;
+}
+
+.tb td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--fuf-sand-300);
+    vertical-align: middle;
+}
+
+.tb .r,
+.tb th.r {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tb tfoot td,
+.tb tr.sum-row td {
+    background: var(--fuf-sand-100);
+    border-bottom: 0;
+    font-weight: 700;
+}
+
+.tb-empty td {
+    color: var(--fuf-brown-400);
+    text-align: center;
+}
+
+/* ========================================================================
+ * 11. Chips
+ * ======================================================================== */
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: var(--fuf-radius-chip);
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.c-green {
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-700);
+}
+
+.c-amber {
+    background: var(--fuf-amber-100);
+    color: #7A4A12;
+}
+
+.c-brown {
+    background: var(--fuf-sand-300);
+    color: var(--fuf-brown-900);
+}
+
+.c-grey {
+    background: var(--fuf-sand-200);
+    color: var(--fuf-brown-700);
+    border: 1px solid var(--fuf-sand-400);
+}
+
+.c-orange {
+    background: var(--fuf-orange-100);
+    color: #8A3E0B;
+}
+
+.c-red {
+    background: var(--fuf-red-100);
+    color: var(--fuf-red-700);
+}
+
+/* ========================================================================
+ * 12. Buttons
+ *
+ * .btn gehoert auch Bootstrap. Die Kollision ist gewollt: so erben noch nicht
+ * umgebaute Buttons bereits die neue Form, statt als Fremdkoerper zu wirken.
+ * Die Modifier .btn-p/.btn-a/.btn-o/.btn-g/.btn-d kollidieren nicht.
+ * ======================================================================== */
+
+.btn {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--fuf-radius-control);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-p {
+    background: var(--fuf-green-600);
+    color: #FFFFFF;
+    border: 0;
+}
+
+.btn-p:hover {
+    background: var(--fuf-green-700);
+    color: #FFFFFF;
+}
+
+.btn-a {
+    background: var(--fuf-orange-600);
+    color: #FFFFFF;
+    border: 0;
+}
+
+.btn-a:hover {
+    background: #CF5F14;
+    color: #FFFFFF;
+}
+
+.btn-o {
+    background: #FFFFFF;
+    color: var(--fuf-green-600);
+    border: 1px solid var(--fuf-green-600);
+}
+
+.btn-o:hover {
+    background: var(--fuf-green-100);
+    color: var(--fuf-green-700);
+}
+
+.btn-g {
+    background: #FFFFFF;
+    color: var(--fuf-brown-700);
+    border: 1px solid var(--fuf-sand-500);
+    font-weight: 600;
+}
+
+.btn-g:hover {
+    background: var(--fuf-sand-50);
+    color: var(--fuf-brown-900);
+}
+
+.btn-d {
+    background: #FFFFFF;
+    color: var(--fuf-red-700);
+    border: 1px solid #E0B4B4;
+    font-weight: 600;
+}
+
+.btn-d:hover {
+    background: var(--fuf-red-100);
+    color: var(--fuf-red-700);
+}
+
+.btn-s {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+}
+
+.btn-lg-save {
+    height: 46px;
+    font-size: 15px;
+}
+
+/* Button in der Kopfleiste */
+.btn-hdr {
+    height: 38px;
+}
+
+.btn:disabled,
+.btn.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* Icon-only */
+.ib {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--fuf-radius-control);
+    border: 1px solid var(--fuf-sand-500);
+    background: #FFFFFF;
+    color: var(--fuf-brown-500);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.ib:hover {
+    background: var(--fuf-sand-50);
+    color: var(--fuf-brown-900);
+}
+
+.ib-danger {
+    color: var(--fuf-red-700);
+}
+
+.ib:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.fuf-actions {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* ========================================================================
+ * 13. Tabs
+ * ======================================================================== */
+
+.nav-tabs {
+    border-bottom: 1px solid var(--fuf-sand-400);
+    gap: 4px;
+}
+
+.nav-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--fuf-brown-500);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 10px 16px;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: var(--fuf-brown-900);
+    background: transparent;
+    isolation: auto;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--fuf-green-700);
+    background: transparent;
+    border-bottom-color: var(--fuf-green-600);
+}
+
+/* ========================================================================
+ * 14. Leerzustand
+ * ======================================================================== */
+
+.fuf-empty {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border: 2px dashed #C9BFAA;
+    border-radius: var(--fuf-radius-card);
+    background: var(--fuf-sand-50);
+}
+
+.fuf-empty-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--fuf-orange-100);
+    color: var(--fuf-orange-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fuf-empty-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+}
+
+.fuf-empty-text b {
+    font-size: 15px;
+}
+
+/* ========================================================================
+ * 15. Modals
+ * ======================================================================== */
+
+.modal-content {
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--fuf-sand-50);
+    border-bottom: 1px solid var(--fuf-sand-300);
+    padding: 16px 20px;
+}
+
+.modal-title {
+    font-family: var(--fuf-font-display);
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.modal-body {
+    padding: 18px 20px;
+}
+
+.modal-footer {
+    background: var(--fuf-sand-50);
+    border-top: 1px solid var(--fuf-sand-300);
+    padding: 12px 20px;
+    gap: 8px;
+}
+
+/* ========================================================================
+ * 16. Bootstrap-Varianten-Bruecke
+ *
+ * --bs-primary allein genuegt nicht: Bootstrap 5.3 faerbt Buttons ueber
+ * eigene --bs-btn-*-Properties je Variante, und der Fokusring von
+ * .form-control ist fest verdrahtet. Ohne diese Bruecke bleiben noch nicht
+ * umgebaute Controls und die Auth-Seiten Bootstrap-blau.
+ * ======================================================================== */
+
+.btn-primary,
+.btn-success {
+    --bs-btn-color: #FFFFFF;
+    --bs-btn-bg: var(--fuf-green-600);
+    --bs-btn-border-color: var(--fuf-green-600);
+    --bs-btn-hover-color: #FFFFFF;
+    --bs-btn-hover-bg: var(--fuf-green-700);
+    --bs-btn-hover-border-color: var(--fuf-green-700);
+    --bs-btn-active-color: #FFFFFF;
+    --bs-btn-active-bg: var(--fuf-green-700);
+    --bs-btn-active-border-color: var(--fuf-green-700);
+    --bs-btn-disabled-color: #FFFFFF;
+    --bs-btn-disabled-bg: var(--fuf-green-600);
+    --bs-btn-disabled-border-color: var(--fuf-green-600);
+    --bs-btn-focus-shadow-rgb: 45, 90, 61;
+}
+
+.btn-outline-primary,
+.btn-outline-success {
+    --bs-btn-color: var(--fuf-green-600);
+    --bs-btn-border-color: var(--fuf-green-600);
+    --bs-btn-hover-color: var(--fuf-green-700);
+    --bs-btn-hover-bg: var(--fuf-green-100);
+    --bs-btn-hover-border-color: var(--fuf-green-600);
+    --bs-btn-active-color: var(--fuf-green-700);
+    --bs-btn-active-bg: var(--fuf-green-100);
+    --bs-btn-active-border-color: var(--fuf-green-600);
+    --bs-btn-disabled-color: var(--fuf-green-600);
+    --bs-btn-disabled-border-color: var(--fuf-green-600);
+    --bs-btn-focus-shadow-rgb: 45, 90, 61;
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--fuf-brown-700);
+    --bs-btn-border-color: var(--fuf-sand-500);
+    --bs-btn-hover-color: var(--fuf-brown-900);
+    --bs-btn-hover-bg: var(--fuf-sand-50);
+    --bs-btn-hover-border-color: var(--fuf-sand-500);
+    --bs-btn-active-color: var(--fuf-brown-900);
+    --bs-btn-active-bg: var(--fuf-sand-100);
+    --bs-btn-active-border-color: var(--fuf-sand-500);
+    --bs-btn-disabled-color: var(--fuf-brown-500);
+    --bs-btn-disabled-border-color: var(--fuf-sand-500);
+    --bs-btn-focus-shadow-rgb: 122, 102, 81;
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--fuf-red-700);
+    --bs-btn-border-color: #E0B4B4;
+    --bs-btn-hover-color: var(--fuf-red-700);
+    --bs-btn-hover-bg: var(--fuf-red-100);
+    --bs-btn-hover-border-color: #E0B4B4;
+    --bs-btn-active-color: var(--fuf-red-700);
+    --bs-btn-active-bg: var(--fuf-red-100);
+    --bs-btn-active-border-color: #E0B4B4;
+    --bs-btn-disabled-color: var(--fuf-red-700);
+    --bs-btn-disabled-border-color: #E0B4B4;
+    --bs-btn-focus-shadow-rgb: 155, 44, 44;
+}
+
+.btn-outline-warning {
+    --bs-btn-color: var(--fuf-amber-700);
+    --bs-btn-border-color: #E8C98F;
+    --bs-btn-hover-color: var(--fuf-amber-700);
+    --bs-btn-hover-bg: var(--fuf-amber-100);
+    --bs-btn-hover-border-color: #E8C98F;
+    --bs-btn-active-color: var(--fuf-amber-700);
+    --bs-btn-active-bg: var(--fuf-amber-100);
+    --bs-btn-active-border-color: #E8C98F;
+    --bs-btn-focus-shadow-rgb: 180, 83, 9;
+}
+
+/* Fokusring: Bootstrap verdrahtet hier feste Blauwerte. */
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--fuf-green-600);
+    box-shadow: 0 0 0 3px rgba(45, 90, 61, .15);
+}
+
+.form-check-input:checked {
+    background-color: var(--fuf-green-600);
+    border-color: var(--fuf-green-600);
+}
+
+.form-control,
+.form-select {
+    border-color: var(--fuf-sand-500);
+    color: var(--fuf-brown-900);
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fuf-brown-700);
+}
+
+/* Bootstrap-Tabellen, solange sie noch nicht auf .tb umgestellt sind */
+.table {
+    --bs-table-striped-bg: var(--fuf-sand-50);
+    --bs-table-hover-bg: var(--fuf-sand-100);
+    --bs-table-border-color: var(--fuf-sand-300);
+}
+
+.card {
+    border-color: var(--fuf-sand-400);
+    border-radius: var(--fuf-radius-card);
+}
+
+.card-header {
+    background: var(--fuf-sand-50);
+    border-bottom-color: var(--fuf-sand-300);
+    font-weight: 700;
+}
+
+.text-muted {
+    color: var(--fuf-brown-500) !important;
+}
+
+.text-success {
+    color: var(--fuf-green-600) !important;
+}
+
+.text-danger {
+    color: var(--fuf-red-700) !important;
+}

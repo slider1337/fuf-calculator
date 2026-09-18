@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Passwort vergessen &mdash; FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/fuf.css">
 </head>
 <body class="bg-light">
 <div class="container py-5" style="max-width: 480px;">

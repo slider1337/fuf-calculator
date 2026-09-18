@@ -31,7 +31,7 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(200, $response->getStatusCode());
         $html = (string) $response->getBody();
         self::assertStringContainsString('trip-editor-section', $html);
-        self::assertStringContainsString('Neue Reise erstellen', $html);
+        self::assertStringContainsString('Neue Reise', $html);
     }
 
     /**

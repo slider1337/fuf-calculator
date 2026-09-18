@@ -729,6 +729,16 @@ h1.fuf-display {
     vertical-align: middle;
 }
 
+/* Tabelle ohne .sec-b dazwischen: die Karte bringt keine Innenabstaende mit.
+ * Die Kopfzeile braucht Luft nach oben, die Zellen fluchten mit der Fusszeile. */
+.sec > .tb th {
+    padding: 14px 20px 8px 20px;
+}
+
+.sec > .tb td {
+    padding: 11px 20px;
+}
+
 .tb .r,
 .tb th.r {
     text-align: right;

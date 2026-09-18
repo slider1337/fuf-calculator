@@ -690,213 +690,196 @@
             </div><!-- end panel-planung -->
 
             <div class="tab-pane fade" id="panel-abrechnung" role="tabpanel" aria-labelledby="tab-abrechnung">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Einnahmen (Billing)</div>
-                                <div id="settlement-total-revenue" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
+            <div class="pg">
+            <div class="pg-main">
+
+                <div id="settlement-kpis" class="fuf-grid fuf-grid-4">
+                    <div class="kpi">
+                        <span>Einnahmen</span>
+                        <div class="kpi-line"><b id="settlement-total-revenue">&ndash;</b><span class="kpi-dev" id="settlement-revenue-dev"></span></div>
+                        <small class="help" id="settlement-revenue-plan"></small>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Geplante Kosten</div>
-                                <div id="settlement-planned-costs" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
+                    <div class="kpi">
+                        <span>Kosten</span>
+                        <div class="kpi-line"><b id="settlement-total-expenses">&ndash;</b><span class="kpi-dev" id="settlement-expenses-dev"></span></div>
+                        <small class="help" id="settlement-expenses-plan"></small>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">Gesamtausgaben</div>
-                                <div id="settlement-total-expenses" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
+                    <div class="kpi">
+                        <span>Teilnehmer</span>
+                        <div class="kpi-line"><b id="settlement-participants">&ndash;</b><span class="kpi-dev" id="settlement-participants-dev"></span></div>
+                        <small class="help" id="settlement-participants-plan"></small>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="text-muted small">&Uuml;berschuss / Defizit</div>
-                                <div id="settlement-surplus" class="fs-4 fw-semibold">-</div>
-                            </div>
-                        </div>
+                    <div class="kpi" id="settlement-surplus-kpi">
+                        <span>&Uuml;berschuss / Defizit</span>
+                        <div class="kpi-line"><b id="settlement-surplus">&ndash;</b><span class="kpi-dev" id="settlement-surplus-dev"></span></div>
+                        <small class="help" id="settlement-surplus-plan"></small>
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-white"><strong>Geplante Kosten</strong> <span class="text-muted small">(aus Reisedaten berechnet)</span></div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-striped align-middle mb-0">
-                                <thead>
-                                <tr>
-                                    <th>Position</th>
-                                    <th class="text-end">Betrag</th>
-                                </tr>
-                                </thead>
-                                <tbody id="planned-costs-body"></tbody>
-                                <tfoot>
-                                <tr class="table-light">
-                                    <td><strong>Summe geplante Kosten</strong></td>
-                                    <td class="text-end"><strong id="planned-costs-sum">-</strong></td>
-                                </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                <section class="sec" id="sec-geplante-kosten">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h2M12 18h6"/></svg>
+                        <h2>Geplante Kosten</h2>
+                        <span class="sum">aus Reisedaten berechnet</span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-geplante-kosten-body" aria-expanded="true" aria-controls="sec-geplante-kosten-body" aria-label="Geplante Kosten ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
                     </div>
-                </div>
+                    <div class="collapse show" id="sec-geplante-kosten-body">
+                        <table class="tb">
+                            <thead>
+                            <tr>
+                                <th>Position</th>
+                                <th class="r">Betrag</th>
+                            </tr>
+                            </thead>
+                            <tbody id="planned-costs-body"></tbody>
+                            <tfoot>
+                            <tr class="sum-row">
+                                <td>Summe geplante Kosten</td>
+                                <td class="r" id="planned-costs-sum">&ndash;</td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </section>
 
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-white"><strong>Zus&auml;tzliche Ausgaben</strong> <span class="text-muted small">(manuell erfasst)</span></div>
-                    <div class="card-body">
-                        <form id="actual-expense-form" class="row g-2 align-items-end mb-3">
-                            <input id="actualExpenseId" type="hidden" value="">
-                            <div class="col-md-5">
-                                <label class="form-label" for="actualExpenseLabel">Bezeichnung</label>
-                                <input id="actualExpenseLabel" class="form-control" name="label" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label" for="actualExpenseAmount">Betrag (&euro;)</label>
-                                <input id="actualExpenseAmount" class="form-control" name="amount" type="number" step="0.01" min="0" required>
-                            </div>
-                            <div class="col-md-2 d-grid">
-                                <button id="actual-expense-save-btn" class="btn btn-success" type="submit">Hinzuf&uuml;gen</button>
-                            </div>
-                            <div class="col-md-2 d-grid">
-                                <button id="actual-expense-cancel-btn" class="btn btn-outline-secondary d-none" type="button">Abbrechen</button>
-                            </div>
-                        </form>
+                <section class="sec" id="sec-zusatzausgaben">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-amber-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="16" cy="14" r="1.5"/></svg>
+                        <h2>Zus&auml;tzliche Ausgaben</h2>
+                        <span class="sum" id="sum-zusatzausgaben">manuell erfasst</span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-zusatzausgaben-body" aria-expanded="true" aria-controls="sec-zusatzausgaben-body" aria-label="Zus&auml;tzliche Ausgaben ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-zusatzausgaben-body">
+                        <div class="sec-b">
+                            <form id="actual-expense-form" class="expense-form box-sand">
+                                <input id="actualExpenseId" type="hidden" value="">
+                                <div class="f">
+                                    <label for="actualExpenseLabel">Bezeichnung</label>
+                                    <div class="in"><input id="actualExpenseLabel" name="label" type="text" placeholder="z.&nbsp;B. Verpflegung Anreisetag" required></div>
+                                </div>
+                                <div class="f f-amount">
+                                    <label for="actualExpenseAmount">Betrag</label>
+                                    <div class="in"><input id="actualExpenseAmount" name="amount" type="number" step="0.01" min="0" required><span class="u">&euro;</span></div>
+                                </div>
+                                <button id="actual-expense-save-btn" class="btn btn-p" type="submit">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    <span id="actual-expense-save-label">Hinzuf&uuml;gen</span>
+                                </button>
+                                <button id="actual-expense-cancel-btn" class="btn btn-o d-none" type="button">Abbrechen</button>
+                            </form>
 
-                        <div class="table-responsive">
-                            <table class="table table-striped align-middle mb-0">
+                            <table class="tb">
                                 <thead>
                                 <tr>
                                     <th>Bezeichnung</th>
-                                    <th class="text-end">Betrag</th>
-                                    <th class="text-end">Aktionen</th>
+                                    <th class="r">Betrag</th>
+                                    <th class="r tb-col-action">Aktionen</th>
                                 </tr>
                                 </thead>
                                 <tbody id="actual-expenses-body"></tbody>
                                 <tfoot>
-                                <tr class="table-light">
-                                    <td><strong>Summe zus&auml;tzliche Ausgaben</strong></td>
-                                    <td class="text-end"><strong id="additional-expenses-sum">-</strong></td>
+                                <tr class="sum-row">
+                                    <td>Summe zus&auml;tzliche Ausgaben</td>
+                                    <td class="r" id="additional-expenses-sum">&ndash;</td>
                                     <td></td>
                                 </tr>
                                 </tfoot>
                             </table>
-                        </div>
-                        <p id="actual-expenses-empty" class="text-muted mt-2 mb-0">Noch keine zus&auml;tzlichen Ausgaben erfasst.</p>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-white"><strong>Gesamtabrechnung</strong></div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table mb-0">
-                                <tbody>
-                                <tr>
-                                    <td>Einnahmen (Abrechnungssumme Anmeldungen)</td>
-                                    <td class="text-end fw-semibold" id="settlement-summary-revenue">-</td>
-                                </tr>
-                                <tr>
-                                    <td>− Geplante Kosten (Zimmer, Kurabgabe, Gruppenausgaben)</td>
-                                    <td class="text-end" id="settlement-summary-planned">-</td>
-                                </tr>
-                                <tr>
-                                    <td>− Zus&auml;tzliche Ausgaben</td>
-                                    <td class="text-end" id="settlement-summary-additional">-</td>
-                                </tr>
-                                <tr class="table-light">
-                                    <td><strong>= Gesamtausgaben</strong></td>
-                                    <td class="text-end"><strong id="settlement-summary-total-expenses">-</strong></td>
-                                </tr>
-                                <tr class="table-dark">
-                                    <td><strong>= &Uuml;berschuss / Defizit</strong></td>
-                                    <td class="text-end"><strong id="settlement-summary-surplus">-</strong></td>
-                                </tr>
-                                </tbody>
-                            </table>
+                            <span class="help" id="actual-expenses-empty">Noch keine zus&auml;tzlichen Ausgaben erfasst.</span>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div class="card border-0 shadow-sm mb-3" id="refund-section">
-                    <div class="card-header bg-white"><strong>R&uuml;ckerstattung / Nachzahlung pro Anmeldung</strong></div>
-                    <div class="card-body">
-                        <div class="row g-2 align-items-end mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label" for="retentionPercent">Einbehalt (%)</label>
-                                <input id="retentionPercent" class="form-control" type="number" step="0.01" min="0" max="100" value="5">
-                            </div>
+                <section class="sec" id="sec-gesamtabrechnung">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                        <h2>Gesamtabrechnung</h2>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#sec-gesamtabrechnung-body" aria-expanded="true" aria-controls="sec-gesamtabrechnung-body" aria-label="Gesamtabrechnung ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="sec-gesamtabrechnung-body">
+                        <div class="sec-b chain">
+                            <div class="k chain-row"><span>Einnahmen (Abrechnungssumme Anmeldungen)</span><b id="settlement-summary-revenue">&ndash;</b></div>
+                            <div class="k chain-row"><span>&minus; Geplante Kosten (Zimmer, Kurabgabe, Gruppenausgaben)</span><b id="settlement-summary-planned">&ndash;</b></div>
+                            <div class="k chain-row"><span>&minus; Zus&auml;tzliche Ausgaben</span><b id="settlement-summary-additional">&ndash;</b></div>
+                            <div class="k chain-total"><span>= Gesamtausgaben</span><b id="settlement-summary-total-expenses">&ndash;</b></div>
+                            <div class="k chain-surplus" id="settlement-summary-chain"><span>= &Uuml;berschuss / Defizit</span><b id="settlement-summary-surplus">&ndash;</b></div>
                         </div>
+                    </div>
+                </section>
 
-                        <div class="card bg-light border mb-3">
-                            <div class="card-body p-0">
-                                <table class="table table-sm mb-0 small">
-                                    <tbody>
-                                    <tr>
-                                        <td>&Uuml;berschuss / Defizit</td>
-                                        <td class="text-end fw-semibold" id="refund-surplus">-</td>
-                                    </tr>
-                                    <tr class="table-light">
-                                        <td colspan="2" class="text-muted fst-italic pt-2 pb-1">Berechnung Einbehalt:</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-4">Gesamteinnahmen (Billing)</td>
-                                        <td class="text-end" id="refund-revenue-base">-</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-4">&times; Einbehalt-Prozentsatz</td>
-                                        <td class="text-end" id="refund-retention-percent-display">-</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-4" id="refund-retention-label">= Einbehalt</td>
-                                        <td class="text-end fw-semibold" id="refund-retention">-</td>
-                                    </tr>
-                                    <tr class="table-light">
-                                        <td colspan="2" class="pt-2 pb-1"></td>
-                                    </tr>
-                                    <tr>
-                                        <td id="refund-distributable-formula">&Uuml;berschuss &minus; Einbehalt</td>
-                                        <td class="text-end"></td>
-                                    </tr>
-                                    <tr class="table-dark">
-                                        <td><strong>= Verteilbarer Betrag</strong></td>
-                                        <td class="text-end"><strong id="refund-distributable">-</strong></td>
-                                    </tr>
-                                    </tbody>
-                                </table>
+                <section class="sec" id="refund-section">
+                    <div class="sec-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-orange-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-15-6.7L3 13"/></svg>
+                        <h2>R&uuml;ckerstattung / Nachzahlung</h2>
+                        <span class="sum">&Uuml;berschuss anteilig nach gezahltem Betrag</span>
+                        <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#refund-section-body" aria-expanded="true" aria-controls="refund-section-body" aria-label="R&uuml;ckerstattung ein- oder ausklappen">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="refund-section-body">
+                        <div class="sec-b">
+                            <div class="fuf-grid fuf-grid-refund">
+                                <div class="box-amber">
+                                    <div class="f">
+                                        <label for="retentionPercent">Einbehalt</label>
+                                        <div class="in"><input id="retentionPercent" type="number" step="0.01" min="0" max="100" value="5"><span class="u">%</span></div>
+                                    </div>
+                                    <span class="help">R&uuml;cklage f&uuml;r den Verein, wird vor der Verteilung abgezogen.</span>
+                                </div>
+                                <div class="refund-calc">
+                                    <div class="cl"><span>&Uuml;berschuss / Defizit</span><b id="refund-surplus">&ndash;</b></div>
+                                    <div class="cl"><span>Gesamteinnahmen (Billing)</span><b id="refund-revenue-base">&ndash;</b></div>
+                                    <div class="cl"><span>&times; Einbehalt-Prozentsatz</span><b id="refund-retention-percent-display">&ndash;</b></div>
+                                    <div class="cl"><span class="help" id="refund-retention-label">= Einbehalt</span><b id="refund-retention">&ndash;</b></div>
+                                    <div class="cl cl-total"><span>= Verteilbarer Betrag<span class="help refund-formula" id="refund-distributable-formula"></span></span><b id="refund-distributable">&ndash;</b></div>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-striped table-sm align-middle mb-0">
+                            <table class="tb">
                                 <thead>
                                 <tr>
                                     <th>Anmeldung</th>
-                                    <th class="text-end">Gezahlt (Billing)</th>
-                                    <th class="text-end">Anteil</th>
-                                    <th class="text-end">R&uuml;ckerstattung / Nachzahlung</th>
+                                    <th class="r">Gezahlt (Billing)</th>
+                                    <th class="r">Anteil</th>
+                                    <th class="r">R&uuml;ckerstattung / Nachzahlung</th>
                                 </tr>
                                 </thead>
                                 <tbody id="refund-body"></tbody>
                                 <tfoot>
-                                <tr class="table-light">
-                                    <td><strong>Summe</strong></td>
-                                    <td class="text-end"><strong id="refund-total-billing">-</strong></td>
-                                    <td class="text-end">100%</td>
-                                    <td class="text-end"><strong id="refund-total-amount">-</strong></td>
+                                <tr class="sum-row">
+                                    <td>Summe</td>
+                                    <td class="r" id="refund-total-billing">&ndash;</td>
+                                    <td class="r help">100 %</td>
+                                    <td class="r" id="refund-total-amount">&ndash;</td>
                                 </tr>
                                 </tfoot>
                             </table>
+                            <span class="help calc-hint">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+                                Positive Betr&auml;ge sind R&uuml;ckerstattungen an die Anmeldung, negative w&auml;ren Nachzahlungen (bei Defizit).
+                            </span>
+                            <span class="help" id="refund-empty">Keine Anmeldungen mit Abrechnung vorhanden.</span>
                         </div>
-                        <p id="refund-empty" class="text-muted mt-2 mb-0">Keine Anmeldungen mit Abrechnung vorhanden.</p>
                     </div>
-                </div>
+                </section>
+            </div><!-- end pg-main -->
+
+            <aside class="pg-side">
+                <nav class="jump-card" aria-label="Abschnitte dieser Seite">
+                    <span class="jump-title">Auf dieser Seite</span>
+                    <a class="jump" href="#sec-geplante-kosten"><span class="dot"></span>Geplante Kosten</a>
+                    <a class="jump" href="#sec-zusatzausgaben"><span class="dot"></span>Zus&auml;tzliche Ausgaben<span class="chip c-amber jump-chip d-none" id="jump-expense-count"></span></a>
+                    <a class="jump" href="#sec-gesamtabrechnung"><span class="dot"></span>Gesamtabrechnung</a>
+                    <a class="jump" href="#refund-section"><span class="dot"></span>R&uuml;ckerstattung / Nachzahlung</a>
+                </nav>
+            </aside>
+            </div><!-- end pg -->
             </div><!-- end panel-abrechnung -->
             </div><!-- end tab-content -->
         </div>

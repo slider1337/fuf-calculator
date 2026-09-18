@@ -752,6 +752,7 @@ function renderDirtyState() {
 // DESIGN: Status-Punkt je Abschnitt - gefuellt, sobald der Abschnitt Inhalt hat.
 function renderJumpState() {
   const registrations = state.currentRegistrations || [];
+  const settlement = state.currentSettlement;
   const filled = {
     "sec-eckdaten": byId("name").value.trim() !== "" && byId("startDate").value !== "",
     "sec-aufschlaege": byId("markupPercent").value !== "",
@@ -760,6 +761,11 @@ function renderJumpState() {
     "sec-kalkulation": !byId("result-panel").classList.contains("d-none"),
     "registrations-section": registrations.length > 0,
     "room-summary-section": registrations.length > 0,
+    // Abrechnung: derselbe Mechanismus, nur aus dem Settlement gespeist.
+    "sec-geplante-kosten": settlement !== null && (settlement.plannedCostItems || []).length > 0,
+    "sec-zusatzausgaben": settlement !== null && (settlement.expenses || []).length > 0,
+    "sec-gesamtabrechnung": settlement !== null,
+    "refund-section": settlement !== null && registrations.some((reg) => reg.billingTotal !== null && reg.billingTotal > 0),
   };
 
   Object.entries(filled).forEach(([sectionId, isFilled]) => {
@@ -1586,42 +1592,56 @@ async function loadRegistrations(tripId) {
 
 function resetSettlement() {
   state.currentSettlement = null;
-  byId("settlement-total-revenue").textContent = "-";
-  byId("settlement-planned-costs").textContent = "-";
-  byId("settlement-total-expenses").textContent = "-";
-  byId("settlement-surplus").textContent = "-";
-  byId("settlement-surplus").className = "fs-4 fw-semibold";
+  byId("settlement-total-revenue").textContent = "–";
+  byId("settlement-total-expenses").textContent = "–";
+  byId("settlement-participants").textContent = "–";
+  byId("settlement-surplus").textContent = "–";
+  byId("settlement-surplus-kpi").className = "kpi";
+  ["settlement-revenue-dev", "settlement-expenses-dev", "settlement-participants-dev", "settlement-surplus-dev",
+    "settlement-revenue-plan", "settlement-expenses-plan", "settlement-participants-plan", "settlement-surplus-plan"]
+    .forEach((id) => {
+      byId(id).textContent = "";
+    });
   byId("planned-costs-body").innerHTML = "";
-  byId("planned-costs-sum").textContent = "-";
+  byId("planned-costs-sum").textContent = "–";
   byId("actual-expenses-body").innerHTML = "";
-  byId("additional-expenses-sum").textContent = "-";
+  byId("additional-expenses-sum").textContent = "–";
   byId("actual-expenses-empty").classList.remove("d-none");
-  byId("settlement-summary-revenue").textContent = "-";
-  byId("settlement-summary-planned").textContent = "-";
-  byId("settlement-summary-additional").textContent = "-";
-  byId("settlement-summary-total-expenses").textContent = "-";
-  byId("settlement-summary-surplus").textContent = "-";
+  byId("sum-zusatzausgaben").textContent = "manuell erfasst";
+  byId("jump-expense-count").className = "chip c-amber jump-chip d-none";
+  byId("settlement-summary-revenue").textContent = "–";
+  byId("settlement-summary-planned").textContent = "–";
+  byId("settlement-summary-additional").textContent = "–";
+  byId("settlement-summary-total-expenses").textContent = "–";
+  byId("settlement-summary-surplus").textContent = "–";
+  byId("settlement-summary-chain").className = "k chain-surplus";
   resetActualExpenseForm();
   resetRefundDistribution();
+  renderJumpState();
 }
 
 function resetActualExpenseForm() {
   byId("actualExpenseId").value = "";
   byId("actualExpenseLabel").value = "";
   byId("actualExpenseAmount").value = "";
-  byId("actual-expense-save-btn").textContent = "Hinzufügen";
+  byId("actual-expense-save-label").textContent = "Hinzufügen";
   byId("actual-expense-cancel-btn").classList.add("d-none");
 }
+
+const iconEdit = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>';
+const iconTrash = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
 
 function renderSettlement(settlement) {
   state.currentSettlement = settlement;
 
-  // Summary cards
+  const registrations = state.currentRegistrations || [];
+  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+
   byId("settlement-total-revenue").textContent = formatCurrency(settlement.totalRevenue);
-  byId("settlement-planned-costs").textContent = formatCurrency(settlement.totalPlannedCosts);
   byId("settlement-total-expenses").textContent = formatCurrency(settlement.totalAllExpenses);
+  byId("settlement-participants").textContent = String(participants);
   byId("settlement-surplus").textContent = formatCurrency(settlement.surplus);
-  byId("settlement-surplus").className = `fs-4 fw-semibold ${Number(settlement.surplus) >= 0 ? "text-success" : "text-danger"}`;
+  byId("settlement-surplus-kpi").className = Number(settlement.surplus) >= 0 ? "kpi kpi-good" : "kpi kpi-bad";
 
   // Planned costs table
   const plannedBody = byId("planned-costs-body");
@@ -1629,65 +1649,80 @@ function renderSettlement(settlement) {
   (settlement.plannedCostItems || []).forEach((item) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${item.label}</td>
-      <td class="text-end">${formatCurrency(item.amount)}</td>
+      <td>${escapeHtml(item.label)}</td>
+      <td class="r">${formatCurrency(item.amount)}</td>
     `;
     plannedBody.appendChild(tr);
   });
   if (plannedBody.children.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = '<td colspan="2" class="text-muted text-center">Keine geplanten Kosten (Buchungen mit Anzahl 0).</td>';
+    tr.className = "tb-empty";
+    tr.innerHTML = '<td colspan="2">Keine geplanten Kosten (Buchungen mit Anzahl 0).</td>';
     plannedBody.appendChild(tr);
   }
   byId("planned-costs-sum").textContent = formatCurrency(settlement.totalPlannedCosts);
 
   // Additional expenses table
+  const expenses = settlement.expenses || [];
   const tbody = byId("actual-expenses-body");
   tbody.innerHTML = "";
+  byId("actual-expenses-empty").classList.toggle("d-none", expenses.length > 0);
 
-  if (!settlement.expenses || settlement.expenses.length === 0) {
-    byId("actual-expenses-empty").classList.remove("d-none");
-  } else {
-    byId("actual-expenses-empty").classList.add("d-none");
-    settlement.expenses.forEach((expense) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${expense.label}</td>
-        <td class="text-end">${formatCurrency(expense.amount)}</td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-outline-primary me-1" data-edit-expense="${expense.id}" data-label="${expense.label}" data-amount="${expense.amount}">Bearbeiten</button>
-          <button class="btn btn-sm btn-outline-danger" data-delete-expense="${expense.id}">L&ouml;schen</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+  expenses.forEach((expense) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${escapeHtml(expense.label)}</b></td>
+      <td class="r">${formatCurrency(expense.amount)}</td>
+      <td class="r">
+        <div class="tb-actions">
+          <button type="button" class="ib" data-edit-expense="${expense.id}" data-label="${escapeHtml(expense.label)}" data-amount="${expense.amount}" aria-label="Ausgabe bearbeiten" title="Bearbeiten">${iconEdit}</button>
+          <button type="button" class="ib ib-danger" data-delete-expense="${expense.id}" aria-label="Ausgabe löschen" title="Löschen">${iconTrash}</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
   byId("additional-expenses-sum").textContent = formatCurrency(settlement.totalAdditionalExpenses);
 
-  // Summary table
+  byId("sum-zusatzausgaben").textContent = expenses.length === 0
+    ? "manuell erfasst"
+    : `manuell erfasst · ${expenses.length} Posten · ${formatCurrency(settlement.totalAdditionalExpenses)}`;
+  const expenseChip = byId("jump-expense-count");
+  expenseChip.textContent = String(expenses.length);
+  expenseChip.className = expenses.length > 0 ? "chip c-amber jump-chip" : "chip c-amber jump-chip d-none";
+
+  // Summary chain
   byId("settlement-summary-revenue").textContent = formatCurrency(settlement.totalRevenue);
   byId("settlement-summary-planned").textContent = "− " + formatCurrency(settlement.totalPlannedCosts);
   byId("settlement-summary-additional").textContent = "− " + formatCurrency(settlement.totalAdditionalExpenses);
   byId("settlement-summary-total-expenses").textContent = formatCurrency(settlement.totalAllExpenses);
-  const surplusEl = byId("settlement-summary-surplus");
-  surplusEl.textContent = formatCurrency(settlement.surplus);
-  surplusEl.className = Number(settlement.surplus) >= 0 ? "text-success" : "text-danger";
+  byId("settlement-summary-surplus").textContent = formatCurrency(settlement.surplus);
+  byId("settlement-summary-chain").className = Number(settlement.surplus) < 0
+    ? "k chain-surplus chain-surplus-bad"
+    : "k chain-surplus";
 
+  renderJumpState();
   renderRefundDistribution();
 }
 
 function resetRefundDistribution() {
-  byId("refund-surplus").textContent = "-";
-  byId("refund-revenue-base").textContent = "-";
-  byId("refund-retention-percent-display").textContent = "-";
-  byId("refund-retention").textContent = "-";
+  byId("refund-surplus").textContent = "–";
+  byId("refund-revenue-base").textContent = "–";
+  byId("refund-retention-percent-display").textContent = "–";
   byId("refund-retention-label").textContent = "= Einbehalt";
-  byId("refund-distributable-formula").textContent = "Überschuss − Einbehalt";
-  byId("refund-distributable").textContent = "-";
+  byId("refund-retention").textContent = "–";
+  byId("refund-distributable-formula").textContent = "";
+  byId("refund-distributable").textContent = "–";
+  byId("refund-distributable").className = "";
   byId("refund-body").innerHTML = "";
-  byId("refund-total-billing").textContent = "-";
-  byId("refund-total-amount").textContent = "-";
+  byId("refund-total-billing").textContent = "–";
+  byId("refund-total-amount").textContent = "–";
+  byId("refund-total-amount").className = "r";
   byId("refund-empty").classList.remove("d-none");
+}
+
+function formatPercentTwo(value) {
+  return `${value.toFixed(2).replace(".", ",")} %`;
 }
 
 function renderRefundDistribution() {
@@ -1712,19 +1747,19 @@ function renderRefundDistribution() {
   const totalRevenue = Number(settlement.totalRevenue);
   const retentionPercent = Number(byId("retentionPercent").value) || 0;
 
-  const retention = Math.round(totalRevenue * (retentionPercent / 100) * 100) / 100;
-  const distributable = Math.round((surplus - retention) * 100) / 100;
+  const retention = round2(totalRevenue * (retentionPercent / 100));
+  const distributable = round2(surplus - retention);
 
   byId("refund-surplus").textContent = formatCurrency(surplus);
   byId("refund-revenue-base").textContent = formatCurrency(totalRevenue);
-  byId("refund-retention-percent-display").textContent =
-    retentionPercent.toFixed(2).replace(".", ",") + " %";
+  byId("refund-retention-percent-display").textContent = formatPercentTwo(retentionPercent);
   byId("refund-retention-label").textContent =
-    `= Einbehalt (${formatCurrency(totalRevenue)} × ${retentionPercent.toFixed(2).replace(".", ",")}%)`;
+    `= ${formatCurrency(totalRevenue)} × ${formatPercentTwo(retentionPercent)}`;
   byId("refund-retention").textContent = formatCurrency(retention);
   byId("refund-distributable-formula").textContent =
     `${formatCurrency(surplus)} − ${formatCurrency(retention)}`;
   byId("refund-distributable").textContent = formatCurrency(distributable);
+  byId("refund-distributable").className = distributable >= 0 ? "fuf-pos" : "fuf-neg";
 
   const totalBilling = billedRegs.reduce((sum, r) => sum + r.billingTotal, 0);
 
@@ -1736,26 +1771,23 @@ function renderRefundDistribution() {
     const primaryName = reg.participants.length > 0 ? reg.participants[0].name : "Unbekannt";
     const share = totalBilling > 0 ? reg.billingTotal / totalBilling : 0;
     const sharePercent = Math.round(share * 10000) / 100;
-    const refundAmount = Math.round(distributable * share * 100) / 100;
-    totalRefund += refundAmount;
+    const refundAmount = round2(distributable * share);
+    totalRefund = round2(totalRefund + refundAmount);
 
     const tr = document.createElement("tr");
-    const refundClass = refundAmount >= 0 ? "text-success" : "text-danger";
-    const refundLabel = refundAmount >= 0 ? "Rückerstattung" : "Nachzahlung";
     tr.innerHTML = `
-      <td>${primaryName} <span class="text-muted small">(${reg.roomCategory})</span></td>
-      <td class="text-end">${formatCurrency(reg.billingTotal)}</td>
-      <td class="text-end">${sharePercent.toFixed(2)}%</td>
-      <td class="text-end ${refundClass}">${formatCurrency(Math.abs(refundAmount))} <span class="small">(${refundLabel})</span></td>
+      <td><b>${escapeHtml(primaryName)}</b><span class="help reg-age">${escapeHtml(reg.roomCategory)}</span></td>
+      <td class="r">${formatCurrency(reg.billingTotal)}</td>
+      <td class="r help">${formatPercentTwo(sharePercent)}</td>
+      <td class="r ${refundAmount >= 0 ? "fuf-pos" : "fuf-neg"}">${signedCurrency(refundAmount)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  totalRefund = Math.round(totalRefund * 100) / 100;
   byId("refund-total-billing").textContent = formatCurrency(totalBilling);
   const totalEl = byId("refund-total-amount");
-  totalEl.textContent = formatCurrency(Math.abs(totalRefund));
-  totalEl.className = `text-end ${totalRefund >= 0 ? "text-success" : "text-danger"}`;
+  totalEl.textContent = signedCurrency(totalRefund);
+  totalEl.className = `r ${totalRefund >= 0 ? "fuf-pos" : "fuf-neg"}`;
 }
 
 async function loadSettlement(tripId) {
@@ -2376,22 +2408,25 @@ byId("actual-expense-cancel-btn").addEventListener("click", () => {
 
 byId("actual-expenses-body").addEventListener("click", async (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLElement)) return;
+  if (!(target instanceof Element)) return;
 
   const tripId = byId("tripFormId").value;
   if (!tripId) return;
 
-  const editId = target.getAttribute("data-edit-expense");
-  if (editId) {
-    byId("actualExpenseId").value = editId;
-    byId("actualExpenseLabel").value = target.getAttribute("data-label") || "";
-    byId("actualExpenseAmount").value = target.getAttribute("data-amount") || "";
-    byId("actual-expense-save-btn").textContent = "Aktualisieren";
+  // DESIGN: Bearbeiten und Loeschen sind jetzt Icon-Buttons - geklickt wird oft
+  // das SVG darin, deshalb ueber closest() statt direkt am Ziel.
+  const editButton = target.closest("[data-edit-expense]");
+  if (editButton) {
+    byId("actualExpenseId").value = editButton.getAttribute("data-edit-expense");
+    byId("actualExpenseLabel").value = editButton.getAttribute("data-label") || "";
+    byId("actualExpenseAmount").value = editButton.getAttribute("data-amount") || "";
+    byId("actual-expense-save-label").textContent = "Aktualisieren";
     byId("actual-expense-cancel-btn").classList.remove("d-none");
     return;
   }
 
-  const deleteId = target.getAttribute("data-delete-expense");
+  const deleteButton = target.closest("[data-delete-expense]");
+  const deleteId = deleteButton ? deleteButton.getAttribute("data-delete-expense") : null;
   if (deleteId) {
     if (!confirm("Ausgabe wirklich löschen?")) return;
     try {

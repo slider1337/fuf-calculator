@@ -12,6 +12,8 @@ const state = {
   // einer Berechnung - tripPayloadFromForm() braucht die Werte aber bei jedem
   // Speichern. Deshalb liegt der Stand hier und nicht nur im DOM.
   salesPrices: { ADULT_DOUBLE: null, ADULT_MULTI: null, CHILD: null },
+  formSnapshot: null,
+  sectionObserver: null,
   currentSettlement: null,
 };
 
@@ -285,6 +287,8 @@ function renderCalculationResult(result) {
   // DESIGN: Panel und Summenspalte folgen dem Ergebnis, nicht der Vorschau.
   renderPanel(result, "calculated");
   renderRoomSums();
+  renderSectionSummaries();
+  renderJumpState();
 
   const container = byId("result-breakdowns-container");
   const categories = Object.keys(breakdowns);
@@ -624,6 +628,145 @@ function renderRoomSums() {
 function renderLivePreview() {
   renderRoomSums();
   renderPanel(previewCalculation(), "preview");
+  renderSectionSummaries();
+  renderDirtyState();
+  renderJumpState();
+}
+
+
+// DESIGN: Zusammenfassung im Kopf jeder Section. Sie bleibt zugeklappt sichtbar
+// und muss deshalb aus den Feldwerten kommen, nicht aus einem Ergebnis.
+function renderSectionSummaries() {
+  const nights = nightsFromFields();
+  const participants = numberFromField("adultDoubleCount")
+    + numberFromField("adultMultiCount")
+    + numberFromField("childCount");
+
+  const startDate = byId("startDate").value;
+  const endDate = byId("endDate").value;
+  byId("sum-eckdaten").textContent = startDate
+    ? [formatTripPeriod({ startDate, endDate: endDate || null }), nights > 0 ? `${nights} ${nights === 1 ? "Nacht" : "Nächte"}` : null]
+      .filter(Boolean)
+      .join(" · ")
+    : "";
+
+  byId("sum-aufschlaege").textContent = [
+    formatPercent(round2(numberFromField("markupPercent"))),
+    formatPercent(round2(numberFromField("clubFeePercent"))),
+    `Kurabgabe ${formatCurrency(moneyFromField("spaTaxPerPerson"))}`,
+  ].join(" · ");
+
+  const adultAge = byId("adultAgeThreshold").value;
+  byId("sum-unterkunft").textContent = [
+    `${participants} ${participants === 1 ? "Person" : "Personen"}`,
+    adultAge === "" ? null : `Erwachsen ab ${adultAge} J.`,
+  ].filter(Boolean).join(" · ");
+
+  const expenseLabel = byId("expenseLabel").value.trim();
+  const expenseAmount = byId("expenseAmount").value;
+  if (expenseLabel === "" || expenseAmount === "") {
+    byId("sum-zusatz").textContent = "kein Posten";
+  } else {
+    byId("sum-zusatz").textContent = [
+      "1 Posten",
+      formatCurrency(moneyFromField("expenseAmount")),
+      participants > 0 ? `wird auf alle ${participants} Teilnehmer umgelegt` : null,
+    ].filter(Boolean).join(" · ");
+  }
+}
+
+// DESIGN: Ungespeicherte Aenderungen. Verglichen wird gegen einen Schnappschuss
+// der Feldwerte vom letzten Laden oder Speichern - "einmal angefasst" reicht
+// nicht, ein auf den Ausgangswert zurueckgesetztes Feld gilt wieder als sauber.
+function tripFormFields() {
+  return Array.from(byId("trip-form").querySelectorAll("input, select"))
+    .filter((field) => field.type !== "hidden");
+}
+
+function snapshotTripForm() {
+  const snapshot = {};
+  tripFormFields().forEach((field) => {
+    snapshot[field.id] = field.value;
+  });
+  state.formSnapshot = snapshot;
+  renderDirtyState();
+}
+
+function renderDirtyState() {
+  const snapshot = state.formSnapshot;
+  let changed = 0;
+
+  tripFormFields().forEach((field) => {
+    const isDirty = snapshot !== null && snapshot[field.id] !== undefined && field.value !== snapshot[field.id];
+    if (isDirty) {
+      changed += 1;
+    }
+
+    const wrapper = field.closest(".in");
+    if (wrapper) {
+      wrapper.classList.toggle("is-dirty", isDirty);
+    }
+  });
+
+  byId("trip-dirty-note").textContent = changed === 0
+    ? ""
+    : `Ungespeicherte Änderungen: ${changed} ${changed === 1 ? "Feld" : "Felder"}`;
+}
+
+// DESIGN: Status-Punkt je Abschnitt - gefuellt, sobald der Abschnitt Inhalt hat.
+function renderJumpState() {
+  const registrations = state.currentRegistrations || [];
+  const filled = {
+    "sec-eckdaten": byId("name").value.trim() !== "" && byId("startDate").value !== "",
+    "sec-aufschlaege": byId("markupPercent").value !== "",
+    "sec-unterkunft": numberFromField("adultDoubleCount") + numberFromField("adultMultiCount") + numberFromField("childCount") > 0,
+    "sec-zusatz": byId("expenseLabel").value.trim() !== "" && byId("expenseAmount").value !== "",
+    "sec-kalkulation": !byId("result-panel").classList.contains("d-none"),
+    "registrations-section": registrations.length > 0,
+    "room-summary-section": registrations.length > 0,
+  };
+
+  Object.entries(filled).forEach(([sectionId, isFilled]) => {
+    const dot = document.querySelector(`.jump[href="#${sectionId}"] .dot`);
+    if (dot) {
+      dot.classList.toggle("is-set", isFilled);
+    }
+  });
+}
+
+// DESIGN: Der aktive Eintrag folgt dem Abschnitt, der gerade oben im Blickfeld
+// steht. Der Observer wird beim Oeffnen des Editors aufgebaut.
+function observeSections() {
+  if (state.sectionObserver) {
+    state.sectionObserver.disconnect();
+  }
+
+  const links = Array.from(document.querySelectorAll(".jump"));
+  const sections = links
+    .map((link) => document.getElementById(link.getAttribute("href").slice(1)))
+    .filter(Boolean);
+
+  if (sections.length === 0 || typeof IntersectionObserver !== "function") {
+    return;
+  }
+
+  const visible = new Set();
+  state.sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        visible.add(entry.target.id);
+      } else {
+        visible.delete(entry.target.id);
+      }
+    });
+
+    const activeId = sections.map((section) => section.id).find((id) => visible.has(id));
+    links.forEach((link) => {
+      link.classList.toggle("is-active", link.getAttribute("href") === `#${activeId}`);
+    });
+  }, { rootMargin: "-80px 0px -60% 0px" });
+
+  sections.forEach((section) => state.sectionObserver.observe(section));
 }
 
 async function api(url, options = {}) {
@@ -645,6 +788,10 @@ async function api(url, options = {}) {
 function showListSection() {
   byId("trip-list-section").classList.remove("d-none");
   byId("trip-editor-section").classList.add("d-none");
+  if (state.sectionObserver) {
+    state.sectionObserver.disconnect();
+    state.sectionObserver = null;
+  }
 }
 
 function showEditorSection(titleText, breadcrumbText) {
@@ -653,6 +800,7 @@ function showEditorSection(titleText, breadcrumbText) {
   byId("trip-editor-breadcrumb").textContent = breadcrumbText;
   byId("trip-list-section").classList.add("d-none");
   byId("trip-editor-section").classList.remove("d-none");
+  observeSections();
 }
 
 function matchRoute(pathname) {
@@ -743,6 +891,10 @@ function clearTripFormWithDefaults() {
   }
 
   resetSettlement();
+  snapshotTripForm();
+  renderSectionSummaries();
+  renderRoomSums();
+  renderJumpState();
 }
 
 function tripPayloadFromForm() {
@@ -829,6 +981,12 @@ function fillTripForm(trip) {
   form.expenseAmount.value = firstExpense ? firstExpense.amount : "";
 
   setTripSaveLabel("Reise aktualisieren");
+  // DESIGN: Der gefuellte Stand ist der gespeicherte - ab hier zaehlt jede
+  // Abweichung als ungespeicherte Aenderung.
+  snapshotTripForm();
+  renderSectionSummaries();
+  renderRoomSums();
+  renderJumpState();
 }
 
 async function loadSettings() {
@@ -991,6 +1149,8 @@ function resetRegistrations() {
   byId("reg-count").textContent = "-";
   byId("reg-participant-count").textContent = "-";
   byId("reg-billing-total").textContent = "-";
+  byId("jump-reg-count").className = "chip c-grey jump-chip d-none";
+  renderJumpState();
   resetRoomSummary();
 }
 
@@ -1085,6 +1245,16 @@ function renderRegistrations(registrations) {
 
   byId("reg-count").textContent = String(registrations.length);
   byId("reg-participant-count").textContent = String(totalParticipants);
+  // DESIGN: Chip in der Sprungnavigation: angemeldete gegen geplante Teilnehmer.
+  const planned = numberFromField("adultDoubleCount")
+    + numberFromField("adultMultiCount")
+    + numberFromField("childCount");
+  const chip = byId("jump-reg-count");
+  chip.textContent = `${totalParticipants} / ${planned}`;
+  chip.className = totalParticipants === planned && planned > 0
+    ? "chip c-green jump-chip"
+    : "chip c-grey jump-chip";
+  renderJumpState();
   byId("reg-billing-total").textContent = formatCurrency(totalBilling);
 
   const accordion = byId("registrations-accordion");

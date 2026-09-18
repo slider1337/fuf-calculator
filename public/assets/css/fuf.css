@@ -687,6 +687,12 @@ h1.fuf-display {
     text-align: center;
 }
 
+/* Hinweis auf ungespeicherte Aenderungen unter dem Speichern-Button */
+#trip-dirty-note:not(:empty) {
+    color: var(--fuf-orange-600);
+    font-weight: 600;
+}
+
 /* Sagt, woher die Zahlen im Panel kommen: das Ergebnis der letzten Berechnung
    oder die Vorschau aus den Feldern. */
 .pnl-state {

@@ -386,5 +386,101 @@ Reihenfolge aus `DESIGN.md`, Commit nach jedem Schritt:
    Kalkulation als Akkordeon, dann Anmeldungen und Zimmerbedarf.
 4. Abrechnung.
 5. Modals.
+6. Navigation (Abschnitt 7) — kam als Nachtrag zum Handoff dazu und wurde nach dem
+   Redesign umgesetzt.
 
 Nach jedem Schritt muss `app.js` ohne Änderung an seinen `getElementById`-Aufrufen weiterlaufen.
+
+## 7. Navigation
+
+Nachtrag zum Handoff: `docs/design-handoff/NAVIGATION.md` und
+`mockups/05-navigation.html`. Das Problem ist rein mechanisch — der Tab-Umschalter sitzt
+oben auf einer rund 3.100 px hohen Seite, und dem inaktiven Tab sieht man nicht an, ob dort
+etwas liegt. Fachlich ändert sich nichts: Planung und Abrechnung laufen parallel, der
+Wechsel ist ein Sprung zwischen zwei Arbeitsbereichen und kein Übergabemoment.
+
+### Sticky Kontextleiste
+
+`.trip-head` ist `position: sticky; top: 0; z-index: 30` und hat zwei Zustände: 64 px im
+Ruhezustand, 52 px gescrollt. Gescrollt entfallen Breadcrumb und Kurzinfo; dafür kommen ein
+Zurück-Pfeil, die wichtigste Kennzahl des Bereichs (Planung: Überschuss, Abrechnung:
+Überschuss Ist) und ein Speichern-Knopf dazu. Die App-Kopfleiste darüber scrollt normal weg.
+
+Umschaltpunkt ist `window.scrollY > 120`, gedrosselt über `requestAnimationFrame`.
+`NAVIGATION.md` stellt das als gleichwertige Alternative zum Sentinel frei; hier ist es die
+robustere, weil `.trip-head` sich mit negativen Rändern aus dem Innenabstand von `.app-main`
+herauszieht.
+
+Gescrollt wird aus dem Unterstrich- ein Segment-Umschalter: in einer 52-px-Zeile hat ein
+Unterstrich keine Kante, auf der er sitzen kann.
+
+`#trip-save-btn-head` erscheint nur gescrollt und nur in der Planung — in der Abrechnung gibt
+es kein Formular, das er abschicken könnte. Wie `#trip-save-btn-sticky` ist er
+`type="submit"` mit `form="trip-form"` und braucht keine Zeile JS.
+
+Die rechte Spalte rückt auf `top: 76px`, und ein Seitenwechsel setzt die Scrollposition
+zurück — sonst landet man mitten in der Seite mit bereits geschrumpfter Leiste.
+
+### Hash-Routing
+
+Der Pfad-Router (`/`, `/trips/new`, `/trips/{id}`) bleibt; der Tab steht zusätzlich als
+`#planung` / `#abrechnung` im Hash. `shown.bs.tab` schreibt ihn per `history.pushState`,
+`openTrip` liest ihn beim Laden aus. Damit funktionieren Zurück-Button, Neuladen und geteilte
+Links.
+
+Zwei Fallstricke, die dabei zu bedienen sind:
+
+- `renderCurrentRoute` kürzt ab, wenn die Reise-ID dieselbe bleibt, und wechselt nur den Tab.
+  Ohne das würde jeder Zurück-Schritt zwischen zwei Tabs die Reise komplett neu laden.
+- Ein Fragmentsprung über einen Link feuert `hashchange`, aber kein `popstate`. Ohne einen
+  eigenen `hashchange`-Listener würde sich beim Klick auf die Wechsel-Einstiege nur die URL
+  ändern und sonst nichts passieren.
+
+### Drei Einstiege zum Wechseln
+
+Immer derselbe Zielort, drei Situationen:
+
+- **unterwegs** — Zähler-Chip am inaktiven Tab (`.tab-chip`, `c-amber`): Anmeldungen bzw.
+  Zusatzposten des anderen Bereichs. Ist er leer, entfällt der Chip; am aktiven Tab steht er
+  nie.
+- **fertig mit der Seite** — `.switch-cta` als volle Zeile am Ende beider Panels, mit dem
+  aktuellen Stand des Ziels im Untertitel. Auf der Abrechnung spiegelverkehrt. Der ganze Block
+  ist der Link; der „Öffnen"-Knopf darin ist ein `<span>` mit `pointer-events: none`, damit
+  kein interaktiver Knoten im anderen sitzt.
+- **gezielt suchend** — `.jump-switch` als letzter Eintrag beider Sprungnavigationen, hinter
+  einer 1-px-Trennlinie. Die Trennlinie zeigt, dass das kein Abschnitt dieser Seite mehr ist.
+  Die Einträge zeigen auf kein Section-Element und fallen deshalb von selbst aus
+  `observeSections` und `renderJumpState` heraus.
+
+Dazu wechseln die Tasten `1` und `2` die Bereiche, solange der Fokus nicht in einem
+Eingabefeld, einem Select oder einem offenen Dialog liegt. Jeder Wechsel scrollt nach oben —
+sonst stünde man nach dem Klick auf die Karte am Seitenende im neuen Bereich ganz unten.
+
+### Ungespeicherte Änderungen: Hinweisleiste statt Dialog
+
+`NAVIGATION.md` sieht beim Wechsel mit „dirty" Formular einen Dialog
+*Speichern / Verwerfen / Abbrechen* vor, „nicht still verwerfen". **Der Wechsel verwirft aber
+nichts**: Bootstrap blendet das Panel nur aus, die Feldwerte bleiben stehen. Ein Dialog würde
+also vor einem Verlust warnen, den es nicht gibt.
+
+Das echte Problem ist ein anderes: Die Abrechnung rechnet mit dem **gespeicherten** Stand und
+zeigt damit stillschweigend veraltete Zahlen. Deshalb steht dort `#settlement-stale-note`,
+solange die Planung ungespeicherte Änderungen hat — mit der Zahl der geänderten Felder und
+einem Knopf „Planung speichern". Gespeist wird sie aus dem vorhandenen Dirty-Tracking in
+`renderDirtyState`.
+
+### Plan und Ist nebeneinander
+
+Punkt 3 aus `NAVIGATION.md` steckt in Abschnitt 3.3: Die KPI-Kacheln der Abrechnung zeigen den
+Ist-Wert groß, die Abweichung farbig daneben und den Planwert klein darunter. Die geplanten
+Kosten liefert die Settlement-Response; geplante Einnahmen, Teilnehmer und Überschuss kommen
+aus `previewCalculation()`, derselben Quelle wie das Kalkulationspanel der Planung. Folge,
+bewusst in Kauf genommen: Ungespeicherte Änderungen in der Planung schlagen auf „geplant"
+durch — genau wie im Panel der Planungsseite.
+
+### Was nicht umgesetzt wurde
+
+Die Phasenleiste (Planung → Anmeldungen → Abrechnung) und die Übergabe-Karte „Die Reise ist
+vorbei – jetzt abrechnen" entfallen, wie `NAVIGATION.md` selbst festhält: Sie unterstellen
+einen zeitlichen Ablauf, den es hier nicht gibt. Der Status-Chip der Leiste entfällt mit dem
+Status-Konzept aus Abschnitt „Getroffene Entscheidungen".

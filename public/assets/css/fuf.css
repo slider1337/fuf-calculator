@@ -637,11 +637,34 @@ h1.fuf-display {
     background: var(--fuf-green-600);
 }
 
+.pnl-bar-planned {
+    background: var(--fuf-brown-900);
+}
+
+.pnl-bar-additional {
+    background: var(--fuf-amber-700);
+}
+
+.pnl-bar-retention {
+    background: var(--fuf-amber-500);
+}
+
+.pnl-bar-distributable {
+    background: var(--fuf-green-600);
+}
+
 .pnl-bar-legend {
     display: flex;
     justify-content: space-between;
     font-size: 12px;
     color: var(--fuf-brown-500);
+}
+
+/* Vier Eintraege passen nicht mehr in eine Zeile. */
+.pnl-bar-legend-wrap {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 4px 12px;
 }
 
 .pnl-bar-key {

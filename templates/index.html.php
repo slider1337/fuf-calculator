@@ -878,6 +878,41 @@
                     <a class="jump" href="#sec-gesamtabrechnung"><span class="dot"></span>Gesamtabrechnung</a>
                     <a class="jump" href="#refund-section"><span class="dot"></span>R&uuml;ckerstattung / Nachzahlung</a>
                 </nav>
+
+                <div class="pnl" id="settlement-panel">
+                    <div class="pnl-h">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                        <h2>Abrechnung</h2>
+                    </div>
+                    <div class="pnl-bar">
+                        <div class="pnl-bar-track">
+                            <span class="pnl-bar-planned" id="settlement-bar-planned"></span>
+                            <span class="pnl-bar-additional" id="settlement-bar-additional"></span>
+                            <span class="pnl-bar-retention" id="settlement-bar-retention"></span>
+                            <span class="pnl-bar-distributable" id="settlement-bar-distributable"></span>
+                        </div>
+                        <div class="pnl-bar-legend pnl-bar-legend-wrap">
+                            <span><span class="pnl-bar-key pnl-bar-planned"></span>Geplant</span>
+                            <span><span class="pnl-bar-key pnl-bar-additional"></span>Zus&auml;tzlich</span>
+                            <span><span class="pnl-bar-key pnl-bar-retention"></span>Einbehalt</span>
+                            <span><span class="pnl-bar-key pnl-bar-distributable"></span>Verteilbar</span>
+                        </div>
+                    </div>
+                    <div class="pnl-lines">
+                        <div class="k"><span>Einnahmen</span><b id="panel-settlement-revenue">&ndash;</b></div>
+                        <div class="k"><span>Gesamtausgaben</span><b id="panel-settlement-expenses">&ndash;</b></div>
+                        <div class="k k-total"><span>&Uuml;berschuss / Defizit</span><b id="panel-settlement-surplus">&ndash;</b></div>
+                        <div class="k"><span id="panel-settlement-retention-label">Einbehalt</span><b id="panel-settlement-retention">&ndash;</b></div>
+                    </div>
+                    <div class="pnl-green" id="panel-settlement-green">
+                        <div class="pnl-green-head">
+                            <span>Verteilbar</span>
+                            <b id="panel-settlement-distributable">&ndash;</b>
+                        </div>
+                        <div class="pnl-green-line"><span>&Oslash; pro Anmeldung</span><b id="panel-settlement-per-registration">&ndash;</b></div>
+                        <div class="pnl-green-line"><span>&Oslash; pro Teilnehmer</span><b id="panel-settlement-per-participant">&ndash;</b></div>
+                    </div>
+                </div>
             </aside>
             </div><!-- end pg -->
             </div><!-- end panel-abrechnung -->

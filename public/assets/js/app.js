@@ -206,6 +206,29 @@ function signedCurrency(value) {
 
 // DESIGN: Abweichung des Verkaufspreises vom berechneten Endpreis. Nach unten
 // amber, weil dann weniger eingenommen wird als die Kalkulation vorsieht.
+// DESIGN: Abweichung in den Plan/Ist-Kacheln. Bei exakter Uebereinstimmung
+// steht "± 0,00 €" - ein "+ 0,00 €" liest sich wie eine Abweichung nach oben.
+function deviationCurrency(value) {
+  return value === 0 ? `± ${formatCurrency(0)}` : signedCurrency(value);
+}
+
+function deviationCount(value) {
+  if (value === 0) {
+    return "± 0";
+  }
+  return `${value < 0 ? "− " : "+ "}${Math.abs(value)}`;
+}
+
+// Guenstig oder unguenstig haengt von der Kachel ab: mehr Einnahmen ist gut,
+// mehr Kosten ist schlecht. Deshalb kommt die Richtung von aussen.
+function renderDeviation(elementId, deviation, text) {
+  const element = byId(elementId);
+  element.textContent = text;
+  element.className = deviation === 0
+    ? "kpi-dev"
+    : `kpi-dev ${deviation > 0 ? "kpi-dev-good" : "kpi-dev-bad"}`;
+}
+
 function salesDeviation(salesPrice, finalPrice) {
   if (salesPrice == null) {
     return "";
@@ -1617,6 +1640,7 @@ function resetSettlement() {
   byId("settlement-summary-chain").className = "k chain-surplus";
   resetActualExpenseForm();
   resetRefundDistribution();
+  resetSettlementPanel();
   renderJumpState();
 }
 
@@ -1642,6 +1666,8 @@ function renderSettlement(settlement) {
   byId("settlement-participants").textContent = String(participants);
   byId("settlement-surplus").textContent = formatCurrency(settlement.surplus);
   byId("settlement-surplus-kpi").className = Number(settlement.surplus) >= 0 ? "kpi kpi-good" : "kpi kpi-bad";
+
+  renderSettlementComparison(settlement, participants);
 
   // Planned costs table
   const plannedBody = byId("planned-costs-body");
@@ -1703,6 +1729,97 @@ function renderSettlement(settlement) {
 
   renderJumpState();
   renderRefundDistribution();
+  renderSettlementPanel();
+}
+
+// DESIGN: Plan/Ist nach NAVIGATION.md. Die Planwerte fuer Einnahmen, Teilnehmer
+// und Ueberschuss kommen aus previewCalculation() - derselben Quelle wie das
+// Kalkulationspanel der Planung, also kein zweiter Rechenweg. Die geplanten
+// Kosten stehen dagegen schon in der Settlement-Response.
+function renderSettlementComparison(settlement, participants) {
+  const plan = previewCalculation();
+
+  const revenueDev = round2(Number(settlement.totalRevenue) - plan.totalCalculatedRevenue);
+  renderDeviation("settlement-revenue-dev", revenueDev, deviationCurrency(revenueDev));
+  byId("settlement-revenue-plan").textContent = `geplant ${formatCurrency(plan.totalCalculatedRevenue)}`;
+
+  // Mehr Kosten als geplant ist unguenstig - das Vorzeichen wird deshalb gedreht.
+  const costDev = round2(Number(settlement.totalAllExpenses) - Number(settlement.totalPlannedCosts));
+  renderDeviation("settlement-expenses-dev", -costDev, deviationCurrency(costDev));
+  byId("settlement-expenses-plan").textContent = `geplant ${formatCurrency(settlement.totalPlannedCosts)}`;
+
+  const participantDev = participants - plan.totalParticipants;
+  renderDeviation("settlement-participants-dev", participantDev, deviationCount(participantDev));
+  byId("settlement-participants-plan").textContent = `geplant ${plan.totalParticipants}`;
+
+  const surplusDev = round2(Number(settlement.surplus) - plan.surplus);
+  renderDeviation("settlement-surplus-dev", surplusDev, deviationCurrency(surplusDev));
+  byId("settlement-surplus-plan").textContent = `geplant ${formatCurrency(plan.surplus)}`;
+}
+
+// DESIGN: Sticky-Panel der Abrechnung. Die Segmente summieren sich immer auf
+// die Balkenbreite, weil die Bezugsgroesse ihre eigene Summe ist - bei einem
+// Defizit decken die Einnahmen die Ausgaben nicht und der Balken liefe sonst
+// ueber.
+function renderSettlementPanel() {
+  const settlement = state.currentSettlement;
+  if (!settlement) {
+    resetSettlementPanel();
+    return;
+  }
+
+  const retentionPercent = Number(byId("retentionPercent").value) || 0;
+  const retention = round2(Number(settlement.totalRevenue) * (retentionPercent / 100));
+  const distributable = round2(Number(settlement.surplus) - retention);
+
+  const registrations = state.currentRegistrations || [];
+  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+  const planned = Number(settlement.totalPlannedCosts);
+  const additional = Number(settlement.totalAdditionalExpenses);
+  const positiveRetention = Math.max(0, retention);
+  const positiveDistributable = Math.max(0, distributable);
+  const base = planned + additional + positiveRetention + positiveDistributable;
+
+  const segments = [
+    ["settlement-bar-planned", planned],
+    ["settlement-bar-additional", additional],
+    ["settlement-bar-retention", positiveRetention],
+    ["settlement-bar-distributable", positiveDistributable],
+  ];
+  segments.forEach(([id, value]) => {
+    byId(id).style.width = base > 0 ? `${(value / base) * 100}%` : "0";
+  });
+
+  byId("panel-settlement-revenue").textContent = formatCurrency(settlement.totalRevenue);
+  byId("panel-settlement-expenses").textContent = `− ${formatCurrency(settlement.totalAllExpenses)}`;
+  byId("panel-settlement-surplus").textContent = formatCurrency(settlement.surplus);
+  byId("panel-settlement-retention-label").textContent = `Einbehalt ${formatPercentTwo(retentionPercent)}`;
+  byId("panel-settlement-retention").textContent = `− ${formatCurrency(retention)}`;
+
+  byId("panel-settlement-green").className = distributable < 0 ? "pnl-green pnl-green-bad" : "pnl-green";
+  byId("panel-settlement-distributable").textContent = formatCurrency(distributable);
+  byId("panel-settlement-per-registration").textContent = registrations.length > 0
+    ? `≈ ${formatCurrency(distributable / registrations.length)}`
+    : "–";
+  byId("panel-settlement-per-participant").textContent = participants > 0
+    ? `≈ ${formatCurrency(distributable / participants)}`
+    : "–";
+}
+
+function resetSettlementPanel() {
+  ["settlement-bar-planned", "settlement-bar-additional", "settlement-bar-retention", "settlement-bar-distributable"]
+    .forEach((id) => {
+      byId(id).style.width = "0";
+    });
+  byId("panel-settlement-revenue").textContent = "–";
+  byId("panel-settlement-expenses").textContent = "–";
+  byId("panel-settlement-surplus").textContent = "–";
+  byId("panel-settlement-retention-label").textContent = "Einbehalt";
+  byId("panel-settlement-retention").textContent = "–";
+  byId("panel-settlement-green").className = "pnl-green";
+  byId("panel-settlement-distributable").textContent = "–";
+  byId("panel-settlement-per-registration").textContent = "–";
+  byId("panel-settlement-per-participant").textContent = "–";
 }
 
 function resetRefundDistribution() {
@@ -2449,6 +2566,7 @@ byId("tab-abrechnung").addEventListener("shown.bs.tab", async () => {
 // Recalculate refund distribution when retention percent changes
 byId("retentionPercent").addEventListener("input", () => {
   renderRefundDistribution();
+  renderSettlementPanel();
 });
 
 bootstrapPage().catch((error) => {

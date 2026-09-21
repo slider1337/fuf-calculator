@@ -74,7 +74,13 @@
     --fuf-radius-card: 12px;
     --fuf-radius-control: 8px;
     --fuf-radius-chip: 999px;
-    --fuf-control-height: 42px;
+
+    /* Mobile-first (RESPONSIVE.md Regel 1 und 3). Die Desktop-Masse stehen in
+     * Abschnitt 18 hinter @media (min-width: 992px). 16px ist keine Geschmacks-
+     * frage: darunter zoomt iOS Safari beim Fokus in das Feld hinein. */
+    --fuf-control-height: 48px;
+    --fuf-control-font: 16px;
+    --fuf-touch: 48px;
 
     /* Bootstrap-Mapping */
     --bs-body-bg: var(--fuf-sand-200);
@@ -284,8 +290,8 @@ h1.fuf-display {
 }
 
 .app-icon-link {
-    width: 34px;
-    height: 34px;
+    width: var(--fuf-touch);
+    height: var(--fuf-touch);
     border: 0;
     border-radius: var(--fuf-radius-control);
     display: flex;
@@ -356,22 +362,22 @@ h1.fuf-display {
 
 /* Eckdaten: Name breiter als die beiden Datumsfelder */
 .fuf-grid-eck {
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 /* Unterkunft: Kategorie, Anzahl, Preis/Nacht, Summe */
 .fuf-grid-room {
-    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 /* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron */
 .fuf-grid-calc {
-    grid-template-columns: 1.6fr 1fr 1.2fr 1fr 24px;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 24px;
 }
 
 /* Anmeldungen: CSV-Dropzone links, Manuell-Formular rechts */
 .fuf-grid-intake {
-    grid-template-columns: 1.3fr 1fr;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
     align-items: stretch;
 }
 
@@ -391,8 +397,8 @@ h1.fuf-display {
 }
 
 .page-head .in-search {
-    width: 260px;
-    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
 }
 
 /* Planungsseite: Inhalt + Sticky-Spalte */
@@ -445,10 +451,6 @@ h1.fuf-display {
         align-items: stretch;
     }
 
-    .page-head .in-search {
-        width: auto;
-    }
-
     .trip-head {
         margin: -20px -16px 20px -16px;
         padding: 14px 16px 0 16px;
@@ -498,8 +500,8 @@ h1.fuf-display {
 }
 
 .trip-head-back {
-    width: 32px;
-    height: 32px;
+    width: var(--fuf-touch);
+    height: var(--fuf-touch);
     border-radius: var(--fuf-radius-control);
     border: 1px solid var(--fuf-sand-500);
     color: var(--fuf-brown-700);
@@ -978,8 +980,8 @@ h1.fuf-display {
 }
 
 .in-sm {
-    width: 110px;
-    height: 36px;
+    width: 100%;
+    height: var(--fuf-control-height);
 }
 
 /* Zusatzausgabe: Bezeichnung breit, Betrag schmal */
@@ -1111,12 +1113,15 @@ h1.fuf-display {
     min-width: 0;
     padding: 0 12px;
     font: inherit;
-    font-size: 15px;
+    font-size: var(--fuf-control-font);
     color: var(--fuf-brown-900);
 }
 
+/* Regel 8: Das Suffix traegt bereits einen Chevron. Ohne -webkit-appearance
+ * zeichnet iOS Safari seinen eigenen daneben. */
 .in select {
     appearance: none;
+    -webkit-appearance: none;
     cursor: pointer;
 }
 
@@ -1580,7 +1585,7 @@ button.chip-btn.is-active {
  * ======================================================================== */
 
 .btn {
-    height: 40px;
+    height: var(--fuf-touch);
     padding: 0 16px;
     border-radius: var(--fuf-radius-control);
     font: inherit;
@@ -1653,19 +1658,19 @@ button.chip-btn.is-active {
 }
 
 .btn-s {
-    height: 34px;
+    height: var(--fuf-touch);
     padding: 0 12px;
     font-size: 13px;
 }
 
 .btn-lg-save {
-    height: 46px;
+    height: var(--fuf-touch);
     font-size: 15px;
 }
 
 /* Button in der Kopfleiste */
 .btn-hdr {
-    height: 38px;
+    height: var(--fuf-touch);
 }
 
 .btn:disabled,
@@ -1676,8 +1681,8 @@ button.chip-btn.is-active {
 
 /* Icon-only */
 .ib {
-    width: 34px;
-    height: 34px;
+    width: var(--fuf-touch);
+    height: var(--fuf-touch);
     border-radius: var(--fuf-radius-control);
     border: 1px solid var(--fuf-sand-500);
     background: #FFFFFF;
@@ -1919,9 +1924,8 @@ button.chip-btn.is-active {
 }
 
 .reg-controls .in-search {
-    width: 240px;
-    height: 36px;
-    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
 }
 
 .reg-no-match {
@@ -2392,8 +2396,8 @@ h2.modal-title {
 }
 
 .modal-toolbar .in-search {
-    width: 260px;
-    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
 }
 
 /* Meldungsbox fuer Benutzer- und Einladungs-Modal */
@@ -2610,4 +2614,75 @@ h2.modal-title {
 
 .text-danger {
     color: var(--fuf-red-700) !important;
+}
+
+/* ========================================================================
+ * 18. Mobile first
+ *
+ * Grundlage: docs/design-handoff/RESPONSIVE.md, Schritt 1. Die Werte ausserhalb
+ * dieses Abschnitts sind die Handy-Werte; hier stehen nur die Rueckstellungen
+ * fuer den Desktop. Wer eine Groesse aendert, aendert also zuerst die mobile.
+ *
+ * Die fuenf aelteren @media (max-width: ...)-Bloecke weiter oben schalten
+ * Spaltenlayouts. Sie bleiben stehen, bis Bottom-Bar und Sheet existieren
+ * (Schritt 3), und werden erst dann mit umgedreht.
+ * ======================================================================== */
+
+/* Regel 1: Felder ausserhalb von .in - Suche, Datei, freistehende Eingaben.
+ * Checkbox, Radio und Range haben keine Textzeile und bleiben unberuehrt. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+select,
+textarea {
+    font-size: var(--fuf-control-font);
+}
+
+/* Regel 3: mindestens 8px zwischen zwei Touch-Zielen. Bei 6px trifft der
+ * Daumen zwischen Bearbeiten und Loeschen regelmaessig daneben. */
+.reg-actions,
+.tb-actions {
+    gap: 8px;
+}
+
+@media (min-width: 992px) {
+    :root {
+        --fuf-control-height: 42px;
+        --fuf-control-font: 15px;
+        --fuf-touch: 34px;
+    }
+
+    /* Was sich nicht auf ein Token abbilden laesst, weil die Desktop-Werte
+     * je Button abweichen. */
+    .btn {
+        height: 40px;
+    }
+
+    .btn-lg-save {
+        height: 46px;
+    }
+
+    .btn-hdr {
+        height: 38px;
+    }
+
+    .trip-head-back {
+        width: 32px;
+        height: 32px;
+    }
+
+    .in-sm {
+        width: 110px;
+        height: 36px;
+    }
+
+    .page-head .in-search,
+    .modal-toolbar .in-search {
+        width: 260px;
+        flex-shrink: 0;
+    }
+
+    .reg-controls .in-search {
+        width: 240px;
+        height: 36px;
+        flex-shrink: 0;
+    }
 }

@@ -7,11 +7,15 @@ Setze das UI-Redesign aus docs/design-handoff/ um.
 
 Lies zuerst docs/design-handoff/DESIGN.md (Tokens, Komponenten, Seitenstruktur, Mapping auf
 bestehende Element-IDs) und danach NAVIGATION.md (sticky Kopfleiste, Wechsel zwischen Planung
-und Abrechnung, Plan/Ist-Kennzahlen). Die fünf Dateien unter mockups/ sind statische HTML-Mockups mit
+und Abrechnung, Plan/Ist-Kennzahlen) und RESPONSIVE.md. Die sechs Dateien unter mockups/ sind statische HTML-Mockups mit
 Beispieldaten – sie zeigen den Sollzustand; öffne sie und orientiere dich an ihren Styles,
 übernimm aber nicht die Beispieldaten und schreib keine Inline-Styles in unsere index.html.
 
 Rahmenbedingungen:
+- Mobile first: die App wird überwiegend am Handy benutzt. Baue und teste jede Section
+  zuerst bei 390 px Breite, ergänze Desktop über min-width-Queries. Die sechs Regeln in
+  RESPONSIVE.md („Eingabefelder 48 px / 16 px“ usw.) gelten global und kommen in Schritt 1
+  in fuf.css.
 - Bootstrap 5 bleibt, wird aber per CSS Custom Properties übersteuert (neue Datei
   assets/css/fuf.css, nach bootstrap.min.css laden). Google Font „Source Sans 3“ einbinden.
 - Alle bestehenden Element-IDs, Formular-Namen und data-bs-Attribute bleiben erhalten,

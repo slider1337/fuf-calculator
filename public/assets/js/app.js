@@ -319,7 +319,7 @@ function calcRow(category, bd, isOpen) {
         </div>
         <div class="calc-sales">
           <div class="in in-sm">
-            <input id="${inputId}" class="calc-sales-input" type="number" step="0.01" min="0" value="${salesPrice ?? ""}"
+            <input id="${inputId}" class="calc-sales-input" type="text" inputmode="decimal" value="${formatDecimal(salesPrice)}"
                    data-sales-category="${category}" placeholder="Auto" aria-label="Verkaufspreis ${names.title}">
             <span class="u">€</span>
           </div>
@@ -456,10 +456,37 @@ function percentFactor(percent) {
   return round4(round2(percent) / 100);
 }
 
+// DESIGN: Die Zahlenfelder sind type="text" mit inputmode, damit iOS die
+// richtige Tastatur zeigt und im deutschen Layout ein Komma moeglich ist
+// (RESPONSIVE.md, Regel 2). Dafuer muss das Parsen beide Schreibweisen kennen.
+//
+// Mit Komma gilt deutsch: Punkte sind Tausendertrenner, das Komma trennt die
+// Nachkommastellen ("1.234,56" -> 1234.56). Ohne Komma bleibt es beim bisherigen
+// Number(), sonst wuerde aus dem gespeicherten "12.50" die Zahl 1250.
+function parseDecimal(value) {
+  const text = String(value ?? "").trim();
+  if (text === "") {
+    return NaN;
+  }
+  const normalized = text.includes(",")
+    ? text.replace(/\./g, "").replace(",", ".")
+    : text;
+  return Number(normalized);
+}
+
+// DESIGN: Gegenstueck zu parseDecimal fuers Zurueckschreiben. Ein Feld, das
+// "12.5" zeigt, waehrend nebenan "12,5" erwartet wird, laedt zu Fehleingaben
+// ein. Ohne Tausenderpunkte - beim Tippen stoeren sie mehr als sie helfen.
+function formatDecimal(value) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+  return String(value).replace(".", ",");
+}
+
 function numberFromField(id) {
-  const value = byId(id).value;
-  const parsed = Number(value);
-  return value === "" || !Number.isFinite(parsed) ? 0 : parsed;
+  const parsed = parseDecimal(byId(id).value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 // Wie Trip::nights(): Differenz in Tagen, 0 ohne Abreisedatum.
@@ -1174,12 +1201,12 @@ async function renderCurrentRoute(options = {}) {
 
 function fillSettingsForm(settings) {
   const form = byId("settings-form");
-  form.defaultMarkupPercent.value = settings.defaultMarkupPercent;
-  form.defaultClubFeePercent.value = settings.defaultClubFeePercent;
+  form.defaultMarkupPercent.value = formatDecimal(settings.defaultMarkupPercent);
+  form.defaultClubFeePercent.value = formatDecimal(settings.defaultClubFeePercent);
   form.defaultDistributionMethod.value = settings.defaultDistributionMethod;
-  form.defaultSpaTaxPerPerson.value = settings.defaultSpaTaxPerPerson;
-  form.defaultSpaTaxAgeThreshold.value = settings.defaultSpaTaxAgeThreshold;
-  form.defaultAdultAgeThreshold.value = settings.defaultAdultAgeThreshold;
+  form.defaultSpaTaxPerPerson.value = formatDecimal(settings.defaultSpaTaxPerPerson);
+  form.defaultSpaTaxAgeThreshold.value = formatDecimal(settings.defaultSpaTaxAgeThreshold);
+  form.defaultAdultAgeThreshold.value = formatDecimal(settings.defaultAdultAgeThreshold);
 }
 
 function clearTripFormWithDefaults() {
@@ -1191,21 +1218,21 @@ function clearTripFormWithDefaults() {
   resetSalesPrices();
   setTripSaveLabel("Reise speichern");
 
-  form.adultDoubleCount.value = 0;
-  form.adultDoublePrice.value = 0;
-  form.adultMultiCount.value = 0;
-  form.adultMultiPrice.value = 0;
-  form.childCount.value = 0;
-  form.childPrice.value = 0;
+  form.adultDoubleCount.value = formatDecimal(0);
+  form.adultDoublePrice.value = formatDecimal(0);
+  form.adultMultiCount.value = formatDecimal(0);
+  form.adultMultiPrice.value = formatDecimal(0);
+  form.childCount.value = formatDecimal(0);
+  form.childPrice.value = formatDecimal(0);
   form.averageAdultPrice.checked = false;
 
   if (state.settings) {
-    form.markupPercent.value = state.settings.defaultMarkupPercent;
-    form.clubFeePercent.value = state.settings.defaultClubFeePercent;
+    form.markupPercent.value = formatDecimal(state.settings.defaultMarkupPercent);
+    form.clubFeePercent.value = formatDecimal(state.settings.defaultClubFeePercent);
     form.distributionMethod.value = state.settings.defaultDistributionMethod;
-    form.spaTaxPerPerson.value = state.settings.defaultSpaTaxPerPerson;
-    form.spaTaxAgeThreshold.value = state.settings.defaultSpaTaxAgeThreshold;
-    form.adultAgeThreshold.value = state.settings.defaultAdultAgeThreshold;
+    form.spaTaxPerPerson.value = formatDecimal(state.settings.defaultSpaTaxPerPerson);
+    form.spaTaxAgeThreshold.value = formatDecimal(state.settings.defaultSpaTaxAgeThreshold);
+    form.adultAgeThreshold.value = formatDecimal(state.settings.defaultAdultAgeThreshold);
   }
 
   resetSettlement();
@@ -1221,7 +1248,7 @@ function tripPayloadFromForm() {
   if (form.expenseLabel.value.trim() !== "" && form.expenseAmount.value !== "") {
     expenses.push({
       label: form.expenseLabel.value.trim(),
-      amount: Number(form.expenseAmount.value),
+      amount: parseDecimal(form.expenseAmount.value),
     });
   }
 
@@ -1234,31 +1261,31 @@ function tripPayloadFromForm() {
     name: form.name.value,
     startDate: form.startDate.value,
     endDate: form.endDate.value,
-    markupPercent: Number(form.markupPercent.value),
-    clubFeePercent: Number(form.clubFeePercent.value),
+    markupPercent: parseDecimal(form.markupPercent.value),
+    clubFeePercent: parseDecimal(form.clubFeePercent.value),
     distributionMethod: form.distributionMethod.value,
-    spaTaxPerPerson: Number(form.spaTaxPerPerson.value),
-    spaTaxAgeThreshold: Number(form.spaTaxAgeThreshold.value),
-    adultAgeThreshold: Number(form.adultAgeThreshold.value),
+    spaTaxPerPerson: parseDecimal(form.spaTaxPerPerson.value),
+    spaTaxAgeThreshold: parseDecimal(form.spaTaxAgeThreshold.value),
+    adultAgeThreshold: parseDecimal(form.adultAgeThreshold.value),
     averageAdultPrice,
-    spaTaxCount: Number(form.spaTaxCount.value),
+    spaTaxCount: parseDecimal(form.spaTaxCount.value),
     bookings: [
       {
         categoryType: "ADULT_DOUBLE",
-        count: Number(form.adultDoubleCount.value),
-        basePricePerPerson: Number(form.adultDoublePrice.value),
+        count: parseDecimal(form.adultDoubleCount.value),
+        basePricePerPerson: parseDecimal(form.adultDoublePrice.value),
         salesPricePerPerson: averageAdultPrice ? adultSalesPrice : state.salesPrices.ADULT_DOUBLE,
       },
       {
         categoryType: "ADULT_MULTI",
-        count: Number(form.adultMultiCount.value),
-        basePricePerPerson: Number(form.adultMultiPrice.value),
+        count: parseDecimal(form.adultMultiCount.value),
+        basePricePerPerson: parseDecimal(form.adultMultiPrice.value),
         salesPricePerPerson: averageAdultPrice ? adultSalesPrice : state.salesPrices.ADULT_MULTI,
       },
       {
         categoryType: "CHILD",
-        count: Number(form.childCount.value),
-        basePricePerPerson: Number(form.childPrice.value),
+        count: parseDecimal(form.childCount.value),
+        basePricePerPerson: parseDecimal(form.childPrice.value),
         salesPricePerPerson: state.salesPrices.CHILD,
       },
     ],
@@ -1272,26 +1299,26 @@ function fillTripForm(trip) {
   form.name.value = trip.name;
   form.startDate.value = trip.startDate;
   form.endDate.value = trip.endDate ?? "";
-  form.markupPercent.value = trip.markupPercent;
-  form.clubFeePercent.value = trip.clubFeePercent;
+  form.markupPercent.value = formatDecimal(trip.markupPercent);
+  form.clubFeePercent.value = formatDecimal(trip.clubFeePercent);
   form.distributionMethod.value = trip.distributionMethod;
-  form.spaTaxPerPerson.value = trip.spaTaxPerPerson;
-  form.spaTaxAgeThreshold.value = trip.spaTaxAgeThreshold;
-  form.adultAgeThreshold.value = trip.adultAgeThreshold ?? 16;
+  form.spaTaxPerPerson.value = formatDecimal(trip.spaTaxPerPerson);
+  form.spaTaxAgeThreshold.value = formatDecimal(trip.spaTaxAgeThreshold);
+  form.adultAgeThreshold.value = formatDecimal(trip.adultAgeThreshold ?? 16);
   form.averageAdultPrice.checked = Boolean(trip.averageAdultPrice);
-  form.spaTaxCount.value = trip.spaTaxCount ?? 0;
+  form.spaTaxCount.value = formatDecimal(trip.spaTaxCount ?? 0);
 
   const byType = {};
   trip.bookings.forEach((booking) => {
     byType[booking.categoryType] = booking;
   });
 
-  form.adultDoubleCount.value = byType.ADULT_DOUBLE ? byType.ADULT_DOUBLE.count : 0;
-  form.adultDoublePrice.value = byType.ADULT_DOUBLE ? byType.ADULT_DOUBLE.basePricePerPerson : 0;
-  form.adultMultiCount.value = byType.ADULT_MULTI ? byType.ADULT_MULTI.count : 0;
-  form.adultMultiPrice.value = byType.ADULT_MULTI ? byType.ADULT_MULTI.basePricePerPerson : 0;
-  form.childCount.value = byType.CHILD ? byType.CHILD.count : 0;
-  form.childPrice.value = byType.CHILD ? byType.CHILD.basePricePerPerson : 0;
+  form.adultDoubleCount.value = formatDecimal(byType.ADULT_DOUBLE ? byType.ADULT_DOUBLE.count : 0);
+  form.adultDoublePrice.value = formatDecimal(byType.ADULT_DOUBLE ? byType.ADULT_DOUBLE.basePricePerPerson : 0);
+  form.adultMultiCount.value = formatDecimal(byType.ADULT_MULTI ? byType.ADULT_MULTI.count : 0);
+  form.adultMultiPrice.value = formatDecimal(byType.ADULT_MULTI ? byType.ADULT_MULTI.basePricePerPerson : 0);
+  form.childCount.value = formatDecimal(byType.CHILD ? byType.CHILD.count : 0);
+  form.childPrice.value = formatDecimal(byType.CHILD ? byType.CHILD.basePricePerPerson : 0);
   // DESIGN: Gespeicherte Verkaufspreise in den Zustand, nicht ins DOM - die
   // Felder gibt es vor der ersten Berechnung noch nicht. Ohne das wuerde ein
   // Speichern die bereits gesetzten Verkaufspreise auf null zuruecksetzen.
@@ -1306,7 +1333,7 @@ function fillTripForm(trip) {
 
   const firstExpense = trip.groupExpenses.length > 0 ? trip.groupExpenses[0] : null;
   form.expenseLabel.value = firstExpense ? firstExpense.label : "";
-  form.expenseAmount.value = firstExpense ? firstExpense.amount : "";
+  form.expenseAmount.value = formatDecimal(firstExpense ? firstExpense.amount : "");
 
   setTripSaveLabel("Reise aktualisieren");
   // DESIGN: Der gefuellte Stand ist der gespeicherte - ab hier zaehlt jede
@@ -1457,7 +1484,7 @@ async function openTrip(tripId) {
   fillTripForm(trip);
   showEditorSection(trip.name, `Reise #${trip.id}`);
   showTab(tabFromHash());
-  byId("retentionPercent").value = trip.clubFeePercent;
+  byId("retentionPercent").value = formatDecimal(trip.clubFeePercent);
   await calculateTripResult(String(trip.id));
   await loadRegistrations(String(trip.id));
   await loadSettlement(String(trip.id));
@@ -1914,7 +1941,7 @@ function resetSettlement() {
 function resetActualExpenseForm() {
   byId("actualExpenseId").value = "";
   byId("actualExpenseLabel").value = "";
-  byId("actualExpenseAmount").value = "";
+  byId("actualExpenseAmount").value = formatDecimal("");
   byId("actual-expense-save-label").textContent = "Hinzufügen";
   byId("actual-expense-cancel-btn").classList.add("d-none");
 }
@@ -2037,7 +2064,7 @@ function renderSettlementPanel() {
     return;
   }
 
-  const retentionPercent = Number(byId("retentionPercent").value) || 0;
+  const retentionPercent = parseDecimal(byId("retentionPercent").value) || 0;
   const retention = round2(Number(settlement.totalRevenue) * (retentionPercent / 100));
   const distributable = round2(Number(settlement.surplus) - retention);
 
@@ -2131,7 +2158,7 @@ function renderRefundDistribution() {
 
   const surplus = Number(settlement.surplus);
   const totalRevenue = Number(settlement.totalRevenue);
-  const retentionPercent = Number(byId("retentionPercent").value) || 0;
+  const retentionPercent = parseDecimal(byId("retentionPercent").value) || 0;
 
   const retention = round2(totalRevenue * (retentionPercent / 100));
   const distributable = round2(surplus - retention);
@@ -2421,12 +2448,12 @@ byId("settings-form").addEventListener("submit", async (event) => {
   const form = event.currentTarget;
 
   const payload = {
-    defaultMarkupPercent: Number(form.defaultMarkupPercent.value),
-    defaultClubFeePercent: Number(form.defaultClubFeePercent.value),
+    defaultMarkupPercent: parseDecimal(form.defaultMarkupPercent.value),
+    defaultClubFeePercent: parseDecimal(form.defaultClubFeePercent.value),
     defaultDistributionMethod: form.defaultDistributionMethod.value,
-    defaultSpaTaxPerPerson: Number(form.defaultSpaTaxPerPerson.value),
-    defaultSpaTaxAgeThreshold: Number(form.defaultSpaTaxAgeThreshold.value),
-    defaultAdultAgeThreshold: Number(form.defaultAdultAgeThreshold.value),
+    defaultSpaTaxPerPerson: parseDecimal(form.defaultSpaTaxPerPerson.value),
+    defaultSpaTaxAgeThreshold: parseDecimal(form.defaultSpaTaxAgeThreshold.value),
+    defaultAdultAgeThreshold: parseDecimal(form.defaultAdultAgeThreshold.value),
   };
 
   try {
@@ -2535,7 +2562,7 @@ byId("result-breakdowns-container").addEventListener("input", (event) => {
     return;
   }
 
-  state.salesPrices[input.dataset.salesCategory] = input.value === "" ? null : Number(input.value);
+  state.salesPrices[input.dataset.salesCategory] = input.value.trim() === "" ? null : parseDecimal(input.value);
   renderLivePreview();
 });
 
@@ -2823,7 +2850,7 @@ byId("actual-expense-form").addEventListener("submit", async (event) => {
   const expenseId = byId("actualExpenseId").value;
   const payload = {
     label: byId("actualExpenseLabel").value,
-    amount: Number(byId("actualExpenseAmount").value),
+    amount: parseDecimal(byId("actualExpenseAmount").value),
   };
 
   try {
@@ -2856,7 +2883,7 @@ byId("actual-expenses-body").addEventListener("click", async (event) => {
   if (editButton) {
     byId("actualExpenseId").value = editButton.getAttribute("data-edit-expense");
     byId("actualExpenseLabel").value = editButton.getAttribute("data-label") || "";
-    byId("actualExpenseAmount").value = editButton.getAttribute("data-amount") || "";
+    byId("actualExpenseAmount").value = formatDecimal(editButton.getAttribute("data-amount") || "");
     byId("actual-expense-save-label").textContent = "Aktualisieren";
     byId("actual-expense-cancel-btn").classList.remove("d-none");
     return;
@@ -2931,6 +2958,19 @@ byId("retentionPercent").addEventListener("input", () => {
   renderRefundDistribution();
   renderSettlementPanel();
 });
+
+// DESIGN: Mit type="text" prueft der Browser nicht mehr, ob ueberhaupt eine
+// Zahl im Feld steht (RESPONSIVE.md, Regel 2). Ohne Rueckmeldung rechnet die
+// Vorschau still mit 0 weiter - deshalb hier eine sichtbare Markierung. blur
+// steigt nicht auf, also in der Capture-Phase.
+document.addEventListener("blur", (event) => {
+  const field = event.target;
+  if (!(field instanceof HTMLInputElement) || !field.hasAttribute("inputmode")) {
+    return;
+  }
+  const invalid = field.value.trim() !== "" && !Number.isFinite(parseDecimal(field.value));
+  field.classList.toggle("is-invalid", invalid);
+}, true);
 
 bootstrapPage().catch((error) => {
   byId("trip-list-empty").classList.remove("d-none");

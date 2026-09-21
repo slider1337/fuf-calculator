@@ -265,12 +265,12 @@
                             <div class="fuf-grid fuf-grid-3">
                                 <div class="f">
                                     <label for="markupPercent">Aufschlag</label>
-                                    <div class="in"><input id="markupPercent" name="markupPercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <div class="in"><input id="markupPercent" name="markupPercent" type="text" inputmode="decimal" required><span class="u">%</span></div>
                                     <span class="help">Puffer auf die Unterkunftskosten</span>
                                 </div>
                                 <div class="f">
                                     <label for="clubFeePercent">Vereinsgebühr</label>
-                                    <div class="in"><input id="clubFeePercent" name="clubFeePercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <div class="in"><input id="clubFeePercent" name="clubFeePercent" type="text" inputmode="decimal" required><span class="u">%</span></div>
                                     <span class="help">Anteil für den Verein</span>
                                 </div>
                                 <div class="f">
@@ -300,15 +300,15 @@
                                 </div>
                                 <div class="f">
                                     <label for="spaTaxPerPerson">Pro Person &amp; Nacht</label>
-                                    <div class="in"><input id="spaTaxPerPerson" name="spaTaxPerPerson" type="number" step="0.01" required><span class="u">€</span></div>
+                                    <div class="in"><input id="spaTaxPerPerson" name="spaTaxPerPerson" type="text" inputmode="decimal" required><span class="u">€</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="spaTaxAgeThreshold">Pflichtig ab</label>
-                                    <div class="in"><input id="spaTaxAgeThreshold" name="spaTaxAgeThreshold" type="number" step="1" required><span class="u">Jahre</span></div>
+                                    <div class="in"><input id="spaTaxAgeThreshold" name="spaTaxAgeThreshold" type="text" inputmode="numeric" required><span class="u">Jahre</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="spaTaxCount">Personen</label>
-                                    <div class="in"><input id="spaTaxCount" name="spaTaxCount" type="number" step="1" min="0" value="0" required><span class="u">Pers.</span></div>
+                                    <div class="in"><input id="spaTaxCount" name="spaTaxCount" type="text" inputmode="numeric" value="0" required><span class="u">Pers.</span></div>
                                 </div>
                             </div>
                         </div>
@@ -336,29 +336,29 @@
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 20v-2a5 5 0 015-5h2a5 5 0 015 5v2M16 14h1a4 4 0 014 4v2"/></svg>
                                     <span class="room-cat-text"><b>Erwachsene</b><span class="help">Doppelzimmer</span></span>
                                 </div>
-                                <div class="in"><input id="adultDoubleCount" name="adultDoubleCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Erwachsene im Doppelzimmer"><span class="u">Pers.</span></div>
-                                <div class="in"><input id="adultDoublePrice" name="adultDoublePrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Erwachsene im Doppelzimmer"><span class="u">€</span></div>
+                                <div class="in"><input id="adultDoubleCount" name="adultDoubleCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Doppelzimmer"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="adultDoublePrice" name="adultDoublePrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Erwachsene im Doppelzimmer"><span class="u">€</span></div>
                                 <b class="fuf-num room-sum" id="room-sum-adult-double">&ndash;</b>
 
                                 <div class="room-cat">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="17" cy="7" r="2.5"/><path d="M2 20v-1a4 4 0 014-4h12a4 4 0 014 4v1"/></svg>
                                     <span class="room-cat-text"><b>Erwachsene</b><span class="help">Mehrbettzimmer</span></span>
                                 </div>
-                                <div class="in"><input id="adultMultiCount" name="adultMultiCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Erwachsene im Mehrbettzimmer"><span class="u">Pers.</span></div>
-                                <div class="in"><input id="adultMultiPrice" name="adultMultiPrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Erwachsene im Mehrbettzimmer"><span class="u">€</span></div>
+                                <div class="in"><input id="adultMultiCount" name="adultMultiCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Mehrbettzimmer"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="adultMultiPrice" name="adultMultiPrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Erwachsene im Mehrbettzimmer"><span class="u">€</span></div>
                                 <b class="fuf-num room-sum" id="room-sum-adult-multi">&ndash;</b>
 
                                 <div class="room-cat">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-orange-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0112 0v1"/></svg>
                                     <span class="room-cat-text"><b>Kinder</b><span class="help" id="room-cat-child-sub">unter der Altersgrenze</span></span>
                                 </div>
-                                <div class="in"><input id="childCount" name="childCount" type="number" step="1" min="0" value="0" required aria-label="Anzahl Kinder"><span class="u">Pers.</span></div>
-                                <div class="in"><input id="childPrice" name="childPrice" type="number" step="0.01" min="0" value="0" required aria-label="Preis pro Nacht Kinder"><span class="u">€</span></div>
+                                <div class="in"><input id="childCount" name="childCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Kinder"><span class="u">Pers.</span></div>
+                                <div class="in"><input id="childPrice" name="childPrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Kinder"><span class="u">€</span></div>
                                 <b class="fuf-num room-sum" id="room-sum-child">&ndash;</b>
                             </div>
                             <div class="room-foot">
                                 <label for="adultAgeThreshold">Erwachsen ab</label>
-                                <div class="in in-sm"><input id="adultAgeThreshold" name="adultAgeThreshold" type="number" step="1" min="0" required><span class="u">J.</span></div>
+                                <div class="in in-sm"><input id="adultAgeThreshold" name="adultAgeThreshold" type="text" inputmode="numeric" required><span class="u">J.</span></div>
                             </div>
                         </div>
                     </div>
@@ -382,7 +382,7 @@
                                 </div>
                                 <div class="f f-amount">
                                     <label for="expenseAmount">Betrag</label>
-                                    <div class="in"><input id="expenseAmount" name="expenseAmount" type="number" step="0.01" min="0"><span class="u">€</span></div>
+                                    <div class="in"><input id="expenseAmount" name="expenseAmount" type="text" inputmode="decimal"><span class="u">€</span></div>
                                 </div>
                             </div>
                             <span class="help">Ein Posten, der auf alle Teilnehmer umgelegt wird.</span>
@@ -813,7 +813,7 @@
                                 </div>
                                 <div class="f f-amount">
                                     <label for="actualExpenseAmount">Betrag</label>
-                                    <div class="in"><input id="actualExpenseAmount" name="amount" type="number" step="0.01" min="0" required><span class="u">&euro;</span></div>
+                                    <div class="in"><input id="actualExpenseAmount" name="amount" type="text" inputmode="decimal" required><span class="u">&euro;</span></div>
                                 </div>
                                 <button id="actual-expense-save-btn" class="btn btn-p" type="submit">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -878,7 +878,7 @@
                                 <div class="box-amber">
                                     <div class="f">
                                         <label for="retentionPercent">Einbehalt</label>
-                                        <div class="in"><input id="retentionPercent" type="number" step="0.01" min="0" max="100" value="5"><span class="u">%</span></div>
+                                        <div class="in"><input id="retentionPercent" type="text" inputmode="decimal" value="5"><span class="u">%</span></div>
                                     </div>
                                     <span class="help">R&uuml;cklage f&uuml;r den Verein, wird vor der Verteilung abgezogen.</span>
                                 </div>
@@ -1001,11 +1001,11 @@
                             <div class="fuf-grid fuf-grid-3">
                                 <div class="f">
                                     <label for="defaultMarkupPercent">Aufschlag</label>
-                                    <div class="in"><input id="defaultMarkupPercent" name="defaultMarkupPercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <div class="in"><input id="defaultMarkupPercent" name="defaultMarkupPercent" type="text" inputmode="decimal" required><span class="u">%</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="defaultClubFeePercent">Vereinsgeb&uuml;hr</label>
-                                    <div class="in"><input id="defaultClubFeePercent" name="defaultClubFeePercent" type="number" step="0.01" required><span class="u">%</span></div>
+                                    <div class="in"><input id="defaultClubFeePercent" name="defaultClubFeePercent" type="text" inputmode="decimal" required><span class="u">%</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="defaultDistributionMethod">Verteilung</label>
@@ -1024,15 +1024,15 @@
                             <div class="fuf-grid fuf-grid-3">
                                 <div class="f">
                                     <label for="defaultSpaTaxPerPerson">Kurabgabe pro Person &amp; Nacht</label>
-                                    <div class="in"><input id="defaultSpaTaxPerPerson" name="defaultSpaTaxPerPerson" type="number" step="0.01" required><span class="u">&euro;</span></div>
+                                    <div class="in"><input id="defaultSpaTaxPerPerson" name="defaultSpaTaxPerPerson" type="text" inputmode="decimal" required><span class="u">&euro;</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="defaultSpaTaxAgeThreshold">Kurabgabe ab Alter</label>
-                                    <div class="in"><input id="defaultSpaTaxAgeThreshold" name="defaultSpaTaxAgeThreshold" type="number" step="1" required><span class="u">Jahre</span></div>
+                                    <div class="in"><input id="defaultSpaTaxAgeThreshold" name="defaultSpaTaxAgeThreshold" type="text" inputmode="numeric" required><span class="u">Jahre</span></div>
                                 </div>
                                 <div class="f">
                                     <label for="defaultAdultAgeThreshold">Erwachsen ab Alter</label>
-                                    <div class="in"><input id="defaultAdultAgeThreshold" name="defaultAdultAgeThreshold" type="number" step="1" min="0" required><span class="u">Jahre</span></div>
+                                    <div class="in"><input id="defaultAdultAgeThreshold" name="defaultAdultAgeThreshold" type="text" inputmode="numeric" required><span class="u">Jahre</span></div>
                                 </div>
                             </div>
                         </div>

@@ -2686,3 +2686,14 @@ textarea {
         flex-shrink: 0;
     }
 }
+
+/* Regel 2: Die Zahlenfelder sind type="text", also markiert app.js unbrauchbare
+ * Eingaben selbst. Der Rahmen sitzt am .in-Wrapper, nicht am input - dort ist
+ * er sichtbar. */
+.in:has(input.is-invalid) {
+    border-color: var(--fuf-red-700);
+}
+
+.in:has(input.is-invalid):focus-within {
+    box-shadow: 0 0 0 3px rgba(155, 44, 44, .12);
+}

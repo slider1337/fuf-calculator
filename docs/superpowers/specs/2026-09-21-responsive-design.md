@@ -67,7 +67,10 @@ Kein `maximum-scale`, kein `user-scalable=no`.
   `minmax(0, 1fr)`; `min-width: 0` an den schrumpfenden Flex-Kindern. Ohne `min-width: 0`
   wirkt auch `text-overflow: ellipsis` nicht.
 - **Regel 8 — Selects.** `appearance: none; -webkit-appearance: none;` auf `select` innerhalb
-  `.in` — die tragen bereits einen eigenen Suffix-Chevron.
+  `.in`. Die Voraussetzung dafür — ein eigener Chevron im Suffix — galt nur für zwei der drei
+  Selects; `#distributionMethod` hatte keinen und stand deshalb seit dem UI-Redesign ganz ohne
+  Aufklapp-Anzeige da (`appearance: none` war schon vorher gesetzt). Der `<span class="u">`
+  mit dem Lucide-Chevron aus `mockups/02-reise-planung.html` ist nachgetragen.
 
 `overflow-x: hidden` ist kein zulässiges Mittel; es kaschiert die Ursache.
 
@@ -129,7 +132,9 @@ node scripts/check-overflow.mjs --base http://127.0.0.1:8123 --width 390 --width
 Reihenfolge aus `RESPONSIVE.md`, Abschnitt „Reihenfolge". Details dort und in
 `mockups/06-mobil.html`; hier nur das, was beim Aufsetzen zu beachten ist.
 
-**Schritt 2 — Kopfleiste und Segmented Control.**
+**Schritt 2 — Kopfleiste und Segmented Control.** Im Screenshot bei 390 px ist die heutige
+Kopfleiste der auffälligste Schaden: Logo, `Neue Reise`, Avatar und Navigation überlagern
+sich. `nav.app-nav` ist mit +165 px auch der größte Einzelposten im Überlauf-Zähler.
 Kopfleiste mobil 52 px: Zurück-Pfeil, Reisename mit `text-overflow: ellipsis`, Status-Chip.
 Reisen/Benutzer/Settings wandern hinter ein Menü-Icon. Tab-Umschalter wird ein Segmented
 Control über die volle Breite direkt unter der Kopfleiste, inaktive Seite mit Zähler-Chip,
@@ -163,9 +168,9 @@ Schließen-Kreuz, Inhalt scrollt, Buttons in fester Leiste unten über volle Bre
 ## Status
 
 - [x] Handoff aktualisiert (`RESPONSIVE.md`, `mockups/06-mobil.html`, `tools/check-overflow.js`, `PROMPT.md`)
-- [ ] Schritt 1a — globale Regeln in `fuf.css`
-- [ ] Schritt 1b — Zahlenfelder mit `inputmode`
-- [ ] Schritt 1c — `scripts/check-overflow.mjs`
+- [x] Schritt 1a — globale Regeln in `fuf.css`
+- [x] Schritt 1b — Zahlenfelder mit `inputmode`
+- [x] Schritt 1c — `scripts/check-overflow.mjs`
 - [ ] Schritt 2 — Kopfleiste und Segmented Control
 - [ ] Schritt 3 — Bottom-Bar plus Sheet
 - [ ] Schritt 4 — Karten statt Tabellen

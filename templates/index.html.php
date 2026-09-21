@@ -279,7 +279,7 @@
                                         <select id="distributionMethod" name="distributionMethod" required>
                                             <option value="PER_PERSON">Per Person</option>
                                             <option value="PER_CATEGORY_UNITS">Per Kategorieeinheit</option>
-                                        </select>
+                                        </select><span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
                                     </div>
                                     <span class="help">Wie Gemeinkosten umgelegt werden</span>
                                 </div>

@@ -1,7 +1,22 @@
 services:
+  # Bringt das Schema auf den Stand des Images und beendet sich wieder. Laeuft
+  # vor app, damit ein Release mit neuer Migration nicht auf eine alte Tabelle
+  # trifft. Schlaegt die Migration fehl, startet app gar nicht erst.
+  migrate:
+    image: ghcr.io/slider1337/fuf-calculator:latest
+    command: ["php", "vendor/bin/phinx", "migrate"]
+    restart: "no"
+    volumes:
+      - sqlite-data:/app/database
+    environment:
+      - DB_PATH=/app/database/fuf.sqlite
+
   app:
     image: ghcr.io/slider1337/fuf-calculator:latest
     restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "80:80"
       - "443:443"

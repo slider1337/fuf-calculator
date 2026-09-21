@@ -259,6 +259,37 @@ function salesDeviation(salesPrice, finalPrice) {
 // DESIGN: Eine Kategoriezeile des Akkordeons - Kopfzeile plus Rechenweg.
 // Bootstrap uebernimmt das Auf- und Zuklappen ueber data-bs-toggle, auch in
 // diesem per innerHTML erzeugten Markup: die Klicks sind am Dokument delegiert.
+// DESIGN: Beim gemittelten Erwachsenenpreis ist der Naechtigungspreis selbst
+// schon ein Rechenergebnis. Der Block zeigt es her, bevor der eigentliche
+// Rechenweg damit weiterrechnet - abgesetzt, weil es eine Vorstufe ist und kein
+// weiterer Schritt der Preiskette.
+function averagedFromBlock(bd) {
+  const parts = bd.averagedFrom ?? [];
+  if (parts.length === 0) {
+    return "";
+  }
+
+  const persons = parts.reduce((sum, part) => sum + part.count, 0);
+  const rows = parts
+    .map((part) => `
+      <div class="cl">
+        <span>${part.count} × ${formatCurrency(part.basePricePerPerson)} · ${calcCategoryTitles[part.categoryType]?.sub ?? part.categoryType}</span>
+        <b>${formatCurrency(part.total)}</b>
+      </div>`)
+    .join("");
+
+  return `
+    <div class="calc-avg">
+      <div class="calc-avg-head">Gemittelter Nächtigungspreis</div>
+      ${rows}
+      <div class="cl cl-total">
+        <span>÷ ${persons} ${persons === 1 ? "Person" : "Personen"}</span>
+        <b>${formatCurrency(bd.basePricePerPerson)}</b>
+      </div>
+    </div>
+  `;
+}
+
 function calcRow(category, bd, isOpen) {
   const names = calcCategoryTitles[category] || { title: categoryLabels[category] || category, sub: "" };
   const bodyId = `calc-body-${category.toLowerCase().replace(/_/g, "-")}`;
@@ -306,6 +337,7 @@ function calcRow(category, bd, isOpen) {
       </div>
       <div class="collapse${isOpen ? " show" : ""}" id="${bodyId}">
         <div class="calc-body">
+          ${averagedFromBlock(bd)}
           <div class="calc-col">
             <div class="cl"><span>${formatCurrency(bd.basePricePerPerson)} × ${nights} ${nightsWord}</span><b>${formatCurrency(bd.baseTotalPerPerson ?? bd.basePricePerPerson * nights)}</b></div>
             <div class="cl"><span>+ Kurabgabe ${formatCurrency(bd.spaTaxPerPerson)} × ${nights}</span><b>${formatCurrency(bd.spaTaxTotalPerPerson ?? bd.spaTaxPerPerson * nights)}</b></div>
@@ -474,7 +506,8 @@ function pricingCategories(bookings, averageAdultPrice) {
 
   const count = adults.reduce((sum, booking) => sum + booking.count, 0);
   const weightedSum = adults.reduce((sum, booking) => sum + booking.basePricePerPerson * booking.count, 0);
-
+  // Die Herleitung fehlt hier bewusst: die Vorschau speist nur das Sticky-Panel,
+  // die Akkordeonzeilen kommen immer aus der Backend-Antwort.
   return [
     {
       key: "ADULT",

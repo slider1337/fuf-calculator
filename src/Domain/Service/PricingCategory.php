@@ -17,12 +17,14 @@ final readonly class PricingCategory
 {
     public const string KEY_ADULT = 'ADULT';
 
+    /** @param list<array{categoryType: string, count: int, basePricePerPerson: float, total: float}> $averagedFrom */
     private function __construct(
         private string $key,
         private int $count,
         private float $basePricePerPerson,
         private ?float $salesPricePerPerson,
-        private bool $spaTaxLiable
+        private bool $spaTaxLiable,
+        private array $averagedFrom = []
     ) {
     }
 
@@ -47,6 +49,7 @@ final readonly class PricingCategory
         $count = 0;
         $weightedSum = 0.0;
         $salesPricePerPerson = null;
+        $parts = [];
 
         foreach ($adultBookings as $booking) {
             $count += $booking->count();
@@ -54,13 +57,30 @@ final readonly class PricingCategory
             // Der Verkaufspreis wird auf beiden Zeilen gleich gespeichert; die erste
             // gesetzte gewinnt.
             $salesPricePerPerson ??= $booking->salesPricePerPerson();
+
+            if ($booking->count() > 0) {
+                $parts[] = [
+                    'categoryType' => $booking->categoryType()->value,
+                    'count' => $booking->count(),
+                    'basePricePerPerson' => $booking->basePricePerPerson(),
+                    'total' => round($booking->basePricePerPerson() * $booking->count(), 2, PHP_ROUND_HALF_UP),
+                ];
+            }
         }
 
         $average = $count === 0
             ? 0.0
             : round($weightedSum / $count, 2, PHP_ROUND_HALF_UP);
 
-        return new self(self::KEY_ADULT, $count, $average, $salesPricePerPerson, true);
+        // Ein einzelner Posten ist kein Durchschnitt - dann gibt es nichts herzuleiten.
+        return new self(
+            self::KEY_ADULT,
+            $count,
+            $average,
+            $salesPricePerPerson,
+            true,
+            count($parts) > 1 ? $parts : []
+        );
     }
 
     public function key(): string
@@ -86,5 +106,16 @@ final readonly class PricingCategory
     public function isSpaTaxLiable(): bool
     {
         return $this->spaTaxLiable;
+    }
+
+    /**
+     * Die Posten, aus denen der Preis gemittelt wurde - leer, wenn nicht gemittelt
+     * wurde oder nur ein Posten beigetragen hat.
+     *
+     * @return list<array{categoryType: string, count: int, basePricePerPerson: float, total: float}>
+     */
+    public function averagedFrom(): array
+    {
+        return $this->averagedFrom;
     }
 }

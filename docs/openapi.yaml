@@ -768,6 +768,28 @@ components:
         categoryRevenue:
           type: number
           format: float
+        averagedFrom:
+          type: array
+          description: >-
+            Nur beim Schluessel ADULT und nur, wenn mehr als eine Zimmerkategorie
+            beigetragen hat: die Posten, aus denen basePricePerPerson gemittelt
+            wurde. Erlaubt der Oberflaeche, den Durchschnitt herzuleiten.
+          items:
+            type: object
+            required: [categoryType, count, basePricePerPerson, total]
+            properties:
+              categoryType:
+                type: string
+                enum: [ADULT_DOUBLE, ADULT_MULTI]
+              count:
+                type: integer
+              basePricePerPerson:
+                type: number
+                format: float
+              total:
+                type: number
+                format: float
+                description: count multipliziert mit basePricePerPerson.
 
     RegistrationParticipant:
       type: object

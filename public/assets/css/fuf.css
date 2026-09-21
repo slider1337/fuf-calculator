@@ -1331,6 +1331,28 @@ h1.fuf-display {
     padding-top: 6px;
 }
 
+/* Herleitung des gemittelten Erwachsenenpreises. Steht ueber den beiden Spalten
+ * des Rechenwegs und ist als Sand-Box abgesetzt, weil es eine Vorstufe ist und
+ * kein weiterer Schritt der Preiskette. */
+.calc-avg {
+    grid-column: 1 / -1;
+    background: var(--fuf-sand-100);
+    border-radius: 10px;
+    padding: 8px 12px 10px 12px;
+    margin-bottom: 12px;
+}
+
+.calc-avg-head {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fuf-brown-700);
+    margin-bottom: 4px;
+}
+
+.calc-avg .cl-total {
+    border-top-color: var(--fuf-sand-400);
+}
+
 .calc-hint {
     display: inline-flex;
     align-items: center;

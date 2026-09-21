@@ -225,6 +225,40 @@ final class PriceCalculatorServiceTest extends TestCase
         self::assertSame(80.0, $result['priceBreakdowns']['ADULT_MULTI']['basePricePerPerson']);
     }
 
+    public function testAverageAdultPriceExposesTheCategoriesItWasAveragedFrom(): void
+    {
+        $trip = $this->tripWithAdults(true, DistributionMethod::PER_PERSON, []);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertSame(
+            [
+                ['categoryType' => 'ADULT_DOUBLE', 'count' => 8, 'basePricePerPerson' => 90.0, 'total' => 720.0],
+                ['categoryType' => 'ADULT_MULTI', 'count' => 22, 'basePricePerPerson' => 80.0, 'total' => 1760.0],
+            ],
+            $result['priceBreakdowns']['ADULT']['averagedFrom']
+        );
+    }
+
+    public function testAverageAdultPriceOmitsTheDerivationWhenOnlyOneCategoryContributes(): void
+    {
+        $trip = $this->tripWithAdults(true, DistributionMethod::PER_PERSON, [], doubleCount: 0);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertArrayNotHasKey('averagedFrom', $result['priceBreakdowns']['ADULT']);
+    }
+
+    public function testBreakdownsCarryNoDerivationWhenAveragingIsOff(): void
+    {
+        $trip = $this->tripWithAdults(false, DistributionMethod::PER_PERSON, []);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertArrayNotHasKey('averagedFrom', $result['priceBreakdowns']['ADULT_DOUBLE']);
+        self::assertArrayNotHasKey('averagedFrom', $result['priceBreakdowns']['ADULT_MULTI']);
+    }
+
     /** @param GroupExpense[] $groupExpenses */
     private function tripWithAdults(
         bool $averageAdultPrice,

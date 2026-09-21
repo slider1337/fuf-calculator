@@ -83,6 +83,12 @@ final class PriceCalculatorService
                 'categoryRevenue' => $categoryRevenue,
             ];
 
+            // Nur beim gemittelten Erwachsenenpreis: die Posten, aus denen sich der
+            // Naechtigungspreis ergibt, damit die Oberflaeche ihn herleiten kann.
+            if ($category->averagedFrom() !== []) {
+                $priceBreakdowns[$categoryKey]['averagedFrom'] = $category->averagedFrom();
+            }
+
             $totalCalculatedRevenue = $this->round2($totalCalculatedRevenue + $categoryRevenue);
             $totalParticipants += $category->count();
         }

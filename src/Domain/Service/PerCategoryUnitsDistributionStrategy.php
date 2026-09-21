@@ -6,9 +6,8 @@ namespace App\Domain\Service;
 
 final class PerCategoryUnitsDistributionStrategy implements ExpenseDistributionStrategy
 {
-    public function denominator(array $bookings): int
+    public function denominator(array $categories): int
     {
-        return count(array_filter($bookings, static fn ($booking) => $booking->count() > 0));
+        return count(array_filter($categories, static fn ($category) => $category->count() > 0));
     }
 }
-

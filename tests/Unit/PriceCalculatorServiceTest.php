@@ -121,5 +121,142 @@ final class PriceCalculatorServiceTest extends TestCase
             round($childBd['baseTotalPerPerson'] + $childBd['spaTaxTotalPerPerson'] + $childBd['groupExpenseShare'], 2, PHP_ROUND_HALF_UP)
         );
     }
-}
 
+    /**
+     * 8 Erwachsene im Doppelzimmer zu 90 EUR und 22 im Mehrbettzimmer zu 80 EUR ergeben
+     * (8*90 + 22*80) / 30 = 82,67 EUR pro Nacht fuer alle Erwachsenen.
+     */
+    public function testAverageAdultPriceMergesAdultCategoriesIntoWeightedAverage(): void
+    {
+        $trip = $this->tripWithAdults(true, DistributionMethod::PER_PERSON, []);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertArrayHasKey('ADULT', $result['priceBreakdowns']);
+        self::assertArrayNotHasKey('ADULT_DOUBLE', $result['priceBreakdowns']);
+        self::assertArrayNotHasKey('ADULT_MULTI', $result['priceBreakdowns']);
+
+        $adult = $result['priceBreakdowns']['ADULT'];
+        self::assertSame(82.67, $adult['basePricePerPerson']);
+        self::assertSame(30, $adult['count']);
+        self::assertSame(82.67, $adult['finalPrice']);
+    }
+
+    public function testAverageAdultPriceGivesBothAdultCategoriesTheSameSalesPrice(): void
+    {
+        $trip = $this->tripWithAdults(true, DistributionMethod::PER_PERSON, []);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertSame(85.0, $result['pricesPerCategory']['ADULT_DOUBLE']);
+        self::assertSame(85.0, $result['pricesPerCategory']['ADULT_MULTI']);
+    }
+
+    /**
+     * Der gemittelte Preis ist ein Verkaufspreis. Die Unterkunftskosten bleiben die
+     * echten 8*90 + 22*80 = 2480 EUR und nicht 30 * 82,67 = 2480,10 EUR.
+     */
+    public function testAverageAdultPriceLeavesLodgingCostsAtTheRealBasePrices(): void
+    {
+        $result = new PriceCalculatorService()->calculate(
+            $this->tripWithAdults(true, DistributionMethod::PER_PERSON, [])
+        );
+        $withoutAveraging = new PriceCalculatorService()->calculate(
+            $this->tripWithAdults(false, DistributionMethod::PER_PERSON, [])
+        );
+
+        self::assertSame(2480.0, $result['totalCalculatedCosts']);
+        self::assertSame($withoutAveraging['totalCalculatedCosts'], $result['totalCalculatedCosts']);
+    }
+
+    public function testAverageAdultPriceCountsAdultsAsOneUnitForPerCategoryDistribution(): void
+    {
+        $trip = $this->tripWithAdults(
+            true,
+            DistributionMethod::PER_CATEGORY_UNITS,
+            [new GroupExpense('Bus', 300.00)],
+            childCount: 10
+        );
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        // Nenner 2 statt 3: Erwachsene und Kinder. 300 / 2 = 150 je Einheit.
+        self::assertSame(5.00, $result['priceBreakdowns']['ADULT']['groupExpenseShare']);
+        self::assertSame(15.00, $result['priceBreakdowns']['CHILD']['groupExpenseShare']);
+    }
+
+    public function testAverageAdultPriceWithOnlyOneOccupiedAdultCategoryKeepsThatPrice(): void
+    {
+        $trip = $this->tripWithAdults(true, DistributionMethod::PER_PERSON, [], doubleCount: 0);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        $adult = $result['priceBreakdowns']['ADULT'];
+        self::assertSame(80.00, $adult['basePricePerPerson']);
+        self::assertSame(22, $adult['count']);
+    }
+
+    public function testAverageAdultPriceWithoutAdultsOmitsTheAdultBreakdown(): void
+    {
+        $trip = $this->tripWithAdults(
+            true,
+            DistributionMethod::PER_PERSON,
+            [],
+            doubleCount: 0,
+            multiCount: 0,
+            childCount: 4
+        );
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertArrayNotHasKey('ADULT', $result['priceBreakdowns']);
+        self::assertArrayHasKey('CHILD', $result['priceBreakdowns']);
+        self::assertSame(4, $result['totalParticipants']);
+    }
+
+    public function testAverageAdultPriceOffKeepsSeparateAdultBreakdowns(): void
+    {
+        $trip = $this->tripWithAdults(false, DistributionMethod::PER_PERSON, []);
+
+        $result = new PriceCalculatorService()->calculate($trip);
+
+        self::assertArrayNotHasKey('ADULT', $result['priceBreakdowns']);
+        self::assertSame(90.0, $result['priceBreakdowns']['ADULT_DOUBLE']['basePricePerPerson']);
+        self::assertSame(80.0, $result['priceBreakdowns']['ADULT_MULTI']['basePricePerPerson']);
+    }
+
+    /** @param GroupExpense[] $groupExpenses */
+    private function tripWithAdults(
+        bool $averageAdultPrice,
+        DistributionMethod $method,
+        array $groupExpenses,
+        int $doubleCount = 8,
+        int $multiCount = 22,
+        int $childCount = 0
+    ): Trip {
+        return new Trip(
+            null,
+            'Sommerlager',
+            new DateTimeImmutable('2026-07-01'),
+            new TripPricingPolicy(
+                new Percentage(0.0),
+                new Percentage(0.0),
+                $method,
+                0.0,
+                18,
+                16,
+                $averageAdultPrice
+            ),
+            [
+                new RoomBooking(RoomCategoryType::ADULT_DOUBLE, $doubleCount, 90.00),
+                new RoomBooking(RoomCategoryType::ADULT_MULTI, $multiCount, 80.00),
+                new RoomBooking(RoomCategoryType::CHILD, $childCount, 50.00),
+            ],
+            $groupExpenses,
+            0.0,
+            0.0,
+            0,
+            new DateTimeImmutable('2026-07-02')
+        );
+    }
+}

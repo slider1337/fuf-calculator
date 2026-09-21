@@ -110,6 +110,7 @@ final readonly class TripController
             'spaTaxPerPerson' => $trip->pricingPolicy()->spaTaxPerPerson(),
             'spaTaxAgeThreshold' => $trip->pricingPolicy()->spaTaxAgeThreshold(),
             'adultAgeThreshold' => $trip->pricingPolicy()->adultAgeThreshold(),
+            'averageAdultPrice' => $trip->pricingPolicy()->averageAdultPrice(),
             'spaTaxCount' => $trip->spaTaxCount(),
             'bookings' => array_map(static fn ($booking) => [
                 'categoryType' => $booking->categoryType()->value,

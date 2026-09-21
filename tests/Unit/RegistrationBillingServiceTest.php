@@ -91,6 +91,47 @@ final class RegistrationBillingServiceTest extends TestCase
         return new RegistrationBillingService(new PriceCalculatorService());
     }
 
+    /**
+     * Bei einheitlichem Erwachsenenpreis bleibt die Zimmerzuordnung erhalten, der
+     * abgerechnete Preis ist aber fuer beide derselbe.
+     */
+    public function testAverageAdultPriceBillsDoubleAndMultiRoomAdultsAlike(): void
+    {
+        $trip = new Trip(
+            1,
+            'Sommerlager',
+            new DateTimeImmutable('2026-07-01'),
+            new TripPricingPolicy(
+                new Percentage(10.0),
+                new Percentage(5.0),
+                DistributionMethod::PER_PERSON,
+                2.50,
+                18,
+                16,
+                true
+            ),
+            [
+                new RoomBooking(RoomCategoryType::ADULT_DOUBLE, 8, 90.00),
+                new RoomBooking(RoomCategoryType::ADULT_MULTI, 22, 80.00),
+                new RoomBooking(RoomCategoryType::CHILD, 0, 50.00),
+            ],
+            [new GroupExpense('Bus', 300.00)],
+            0.0,
+            0.0,
+            0,
+            new DateTimeImmutable('2026-07-02')
+        );
+        $birthDate = new DateTimeImmutable('1985-03-07');
+
+        $doubleItems = $this->billItemsFor($trip, '2-Bettzimmer', $birthDate);
+        $multiItems = $this->billItemsFor($trip, '4-Bettzimmer', $birthDate);
+
+        self::assertSame('ADULT_DOUBLE', $doubleItems[0]->categoryType());
+        self::assertSame('ADULT_MULTI', $multiItems[0]->categoryType());
+        self::assertSame($doubleItems[0]->price(), $multiItems[0]->price());
+        self::assertGreaterThan(0.0, $doubleItems[0]->price());
+    }
+
     public function testDetermineCategoryAdultInDoubleRoom(): void
     {
         $service = $this->createService();

@@ -14,7 +14,8 @@ final readonly class TripPricingPolicy
         private DistributionMethod $distributionMethod,
         private float $spaTaxPerPerson,
         private int $spaTaxAgeThreshold,
-        private int $adultAgeThreshold = 16
+        private int $adultAgeThreshold = 16,
+        private bool $averageAdultPrice = false
     ) {
     }
 
@@ -46,6 +47,15 @@ final readonly class TripPricingPolicy
     public function adultAgeThreshold(): int
     {
         return $this->adultAgeThreshold;
+    }
+
+    /**
+     * Ist die Option gesetzt, zahlen Erwachsene im Doppel- und im Mehrbettzimmer
+     * denselben Preis - den nach Personenzahl gewichteten Durchschnitt.
+     */
+    public function averageAdultPrice(): bool
+    {
+        return $this->averageAdultPrice;
     }
 }
 

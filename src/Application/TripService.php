@@ -122,7 +122,9 @@ final readonly class TripService
                     DistributionMethod::from((string) $payload['distributionMethod']),
                     (float) $payload['spaTaxPerPerson'],
                     (int) $payload['spaTaxAgeThreshold'],
-                    (int) $payload['adultAgeThreshold']
+                    (int) $payload['adultAgeThreshold'],
+                    // Optional, damit bestehende Clients unveraendert weiterlaufen.
+                    (bool) ($payload['averageAdultPrice'] ?? false)
                 ),
                 bookings: $bookings,
                 groupExpenses: $expenses,

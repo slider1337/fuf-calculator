@@ -11,7 +11,9 @@ const state = {
   // Markup, das renderCalculationResult() erzeugt. Sie existieren damit erst nach
   // einer Berechnung - tripPayloadFromForm() braucht die Werte aber bei jedem
   // Speichern. Deshalb liegt der Stand hier und nicht nur im DOM.
-  salesPrices: { ADULT_DOUBLE: null, ADULT_MULTI: null, CHILD: null },
+  // ADULT gilt beim einheitlichen Erwachsenenpreis und ersetzt dann die beiden
+  // Einzelkategorien.
+  salesPrices: { ADULT_DOUBLE: null, ADULT_MULTI: null, ADULT: null, CHILD: null },
   formSnapshot: null,
   sectionObserver: null,
   currentSettlement: null,
@@ -24,6 +26,7 @@ const state = {
 const categoryLabels = {
   ADULT_DOUBLE: "Erwachsener im Doppelzimmer",
   ADULT_MULTI: "Erwachsener im Mehrbettzimmer",
+  ADULT: "Erwachsener",
   CHILD: "Kind",
   SPA_TAX: "Kurabgabe",
   SPA_TAX_CREDIT: "Kurabgabe (nicht pflichtig)",
@@ -34,6 +37,7 @@ const categoryLabels = {
 const categoryShortLabels = {
   ADULT_DOUBLE: "Erw. DZ",
   ADULT_MULTI: "Erw. MBZ",
+  ADULT: "Erw.",
   CHILD: "Kind",
 };
 
@@ -140,11 +144,12 @@ function setTripSaveLabel(text) {
 const salesInputIds = {
   ADULT_DOUBLE: "salesAdultDouble",
   ADULT_MULTI: "salesAdultMulti",
+  ADULT: "salesAdult",
   CHILD: "salesChild",
 };
 
 function resetSalesPrices() {
-  state.salesPrices = { ADULT_DOUBLE: null, ADULT_MULTI: null, CHILD: null };
+  state.salesPrices = { ADULT_DOUBLE: null, ADULT_MULTI: null, ADULT: null, CHILD: null };
 }
 
 // Reihenfolge: eine manuelle Eingabe schlaegt den gespeicherten Verkaufspreis,
@@ -176,6 +181,7 @@ function tripEditorMeta(result) {
 const calcCategoryTitles = {
   ADULT_DOUBLE: { title: "Erwachsene · DZ", sub: "Doppelzimmer" },
   ADULT_MULTI: { title: "Erwachsene · MBZ", sub: "Mehrbettzimmer" },
+  ADULT: { title: "Erwachsene", sub: "Doppel- und Mehrbettzimmer · gemittelter Preis" },
   CHILD: { title: "Kinder", sub: "unter der Altersgrenze · keine Kurabgabe" },
 };
 
@@ -185,7 +191,9 @@ function formatPercent(value) {
 
 // DESIGN: Untertitel der Teilnehmer-KPI, z. B. "30 Erw. · 26 Kinder".
 function participantsSplit(breakdowns) {
-  const adults = (breakdowns.ADULT_DOUBLE?.count ?? 0) + (breakdowns.ADULT_MULTI?.count ?? 0);
+  const adults = (breakdowns.ADULT_DOUBLE?.count ?? 0)
+    + (breakdowns.ADULT_MULTI?.count ?? 0)
+    + (breakdowns.ADULT?.count ?? 0);
   const children = breakdowns.CHILD?.count ?? 0;
 
   if (adults === 0 && children === 0) {
@@ -442,10 +450,62 @@ function bookingsFromFields() {
   ];
 }
 
+// Spiegelt PricingCategory aus dem Backend: normalerweise eine Buchungszeile,
+// beim einheitlichen Erwachsenenpreis fallen DZ und MBZ zu einer Kategorie mit
+// gewichtetem Durchschnittspreis zusammen.
+function pricingCategories(bookings, averageAdultPrice) {
+  const asCategory = (booking) => ({
+    key: booking.categoryType,
+    count: booking.count,
+    basePricePerPerson: booking.basePricePerPerson,
+    spaTaxLiable: booking.categoryType !== "CHILD",
+  });
+
+  if (!averageAdultPrice) {
+    return bookings.map(asCategory);
+  }
+
+  const adults = bookings.filter((booking) => booking.categoryType !== "CHILD");
+  const others = bookings.filter((booking) => booking.categoryType === "CHILD").map(asCategory);
+
+  if (adults.length === 0) {
+    return others;
+  }
+
+  const count = adults.reduce((sum, booking) => sum + booking.count, 0);
+  const weightedSum = adults.reduce((sum, booking) => sum + booking.basePricePerPerson * booking.count, 0);
+
+  return [
+    {
+      key: "ADULT",
+      count,
+      basePricePerPerson: count === 0 ? 0 : round2(weightedSum / count),
+      spaTaxLiable: true,
+    },
+    ...others,
+  ];
+}
+
+// Kosten sind, was die Unterkunft tatsaechlich kostet - der gemittelte Preis ist
+// eine Frage der Preisbildung und aendert daran nichts.
+function lodgingCosts(bookings, nights, spaTaxPerPerson) {
+  let base = 0;
+  let spaTax = 0;
+
+  bookings.forEach((booking) => {
+    base = round2(base + round2(round2(booking.basePricePerPerson * nights) * booking.count));
+    const spaTaxPerNight = booking.categoryType === "CHILD" ? 0 : spaTaxPerPerson;
+    spaTax = round2(spaTax + round2(round2(spaTaxPerNight * nights) * booking.count));
+  });
+
+  return { base, spaTax };
+}
+
 function previewCalculation() {
   const nights = nightsFromFields();
   const bookings = bookingsFromFields();
   const distributionMethod = byId("distributionMethod").value;
+  const averageAdultPrice = byId("averageAdultPrice").checked;
   const markupPercent = round2(numberFromField("markupPercent"));
   const clubFeePercent = round2(numberFromField("clubFeePercent"));
   const spaTaxPerPerson = moneyFromField("spaTaxPerPerson");
@@ -456,29 +516,30 @@ function previewCalculation() {
     ? moneyFromField("expenseAmount")
     : 0;
 
+  const categories = pricingCategories(bookings, averageAdultPrice);
+
   // PerPersonDistributionStrategy summiert die Personen,
-  // PerCategoryUnitsDistributionStrategy zaehlt die belegten Kategorien.
+  // PerCategoryUnitsDistributionStrategy zaehlt die belegten Kategorien. Beim
+  // einheitlichen Erwachsenenpreis sind die Erwachsenen dabei eine Einheit.
   const denominator = Math.max(1, distributionMethod === "PER_CATEGORY_UNITS"
-    ? bookings.filter((booking) => booking.count > 0).length
-    : bookings.reduce((sum, booking) => sum + booking.count, 0));
+    ? categories.filter((category) => category.count > 0).length
+    : categories.reduce((sum, category) => sum + category.count, 0));
   const sharedExpensePerUnit = round2(totalGroupExpenses / denominator);
 
   const priceBreakdowns = {};
   let totalParticipants = 0;
   let totalCalculatedRevenue = 0;
-  let totalBaseCosts = 0;
-  let totalSpaTaxCosts = 0;
 
-  bookings.forEach((booking) => {
-    if (booking.count === 0) {
+  categories.forEach((category) => {
+    if (category.count === 0) {
       return;
     }
 
     const groupExpenseShare = distributionMethod === "PER_CATEGORY_UNITS"
-      ? round2(sharedExpensePerUnit / booking.count)
+      ? round2(sharedExpensePerUnit / category.count)
       : sharedExpensePerUnit;
-    const spaTaxPerNight = booking.categoryType === "CHILD" ? 0 : spaTaxPerPerson;
-    const baseTotalPerPerson = round2(booking.basePricePerPerson * nights);
+    const spaTaxPerNight = category.spaTaxLiable ? spaTaxPerPerson : 0;
+    const baseTotalPerPerson = round2(category.basePricePerPerson * nights);
     const spaTaxTotalPerPerson = round2(spaTaxPerNight * nights);
     const subtotalBeforeMarkup = round2(round2(baseTotalPerPerson + spaTaxTotalPerPerson) + groupExpenseShare);
     const markupAmount = round2(subtotalBeforeMarkup * percentFactor(markupPercent));
@@ -486,13 +547,13 @@ function previewCalculation() {
     const clubFeeAmount = round2(subtotalBeforeClubFee * percentFactor(clubFeePercent));
     const finalPrice = round2(subtotalBeforeClubFee + clubFeeAmount);
     const salesPriceDefault = roundToNearest5(finalPrice);
-    const salesPrice = state.salesPrices[booking.categoryType] != null
-      ? round2(state.salesPrices[booking.categoryType])
+    const salesPrice = state.salesPrices[category.key] != null
+      ? round2(state.salesPrices[category.key])
       : salesPriceDefault;
-    const categoryRevenue = round2(salesPrice * booking.count);
+    const categoryRevenue = round2(salesPrice * category.count);
 
-    priceBreakdowns[booking.categoryType] = {
-      basePricePerPerson: booking.basePricePerPerson,
+    priceBreakdowns[category.key] = {
+      basePricePerPerson: category.basePricePerPerson,
       spaTaxPerPerson: spaTaxPerNight,
       nights,
       baseTotalPerPerson,
@@ -507,18 +568,17 @@ function previewCalculation() {
       finalPrice,
       salesPricePerPerson: salesPrice,
       salesPriceDefault,
-      salesPriceOverridden: state.salesPrices[booking.categoryType] != null,
-      count: booking.count,
+      salesPriceOverridden: state.salesPrices[category.key] != null,
+      count: category.count,
       categoryRevenue,
     };
 
     totalCalculatedRevenue = round2(totalCalculatedRevenue + categoryRevenue);
-    totalBaseCosts = round2(totalBaseCosts + round2(baseTotalPerPerson * booking.count));
-    totalSpaTaxCosts = round2(totalSpaTaxCosts + round2(spaTaxTotalPerPerson * booking.count));
-    totalParticipants += booking.count;
+    totalParticipants += category.count;
   });
 
-  const totalCalculatedCosts = round2(totalBaseCosts + totalSpaTaxCosts + totalGroupExpenses);
+  const costs = lodgingCosts(bookings, nights, spaTaxPerPerson);
+  const totalCalculatedCosts = round2(costs.base + costs.spaTax + totalGroupExpenses);
 
   return {
     priceBreakdowns,
@@ -530,6 +590,7 @@ function previewCalculation() {
     distributionMethod,
     spaTaxAgeThreshold: numberFromField("spaTaxAgeThreshold"),
     adultAgeThreshold: numberFromField("adultAgeThreshold"),
+    averageAdultPrice,
     startDate: byId("startDate").value || null,
     endDate: byId("endDate").value || null,
     nights,
@@ -587,10 +648,13 @@ function renderPanel(result, source) {
   byId("panel-green").className = surplus < 0 ? "pnl-green pnl-green-bad" : "pnl-green";
   renderHeadKpi();
 
-  const adultDouble = breakdowns.ADULT_DOUBLE?.salesPricePerPerson;
-  const adultMulti = breakdowns.ADULT_MULTI?.salesPricePerPerson;
+  // Beim einheitlichen Erwachsenenpreis gibt es statt der beiden Zimmerkategorien
+  // nur noch eine Zahl.
+  const adultPrices = breakdowns.ADULT !== undefined
+    ? [breakdowns.ADULT.salesPricePerPerson]
+    : [breakdowns.ADULT_DOUBLE?.salesPricePerPerson, breakdowns.ADULT_MULTI?.salesPricePerPerson];
   const child = breakdowns.CHILD?.salesPricePerPerson;
-  byId("panel-sales-adults").textContent = [adultDouble, adultMulti]
+  byId("panel-sales-adults").textContent = adultPrices
     .filter((value) => value != null)
     .map((value) => formatCurrency(value))
     .join(" / ") || "–";
@@ -748,10 +812,15 @@ function tripFormFields() {
     .filter((field) => field.type !== "hidden");
 }
 
+// Bei einer Checkbox ist value konstant - hier zaehlt der Haken.
+function fieldState(field) {
+  return field.type === "checkbox" ? String(field.checked) : field.value;
+}
+
 function snapshotTripForm() {
   const snapshot = {};
   tripFormFields().forEach((field) => {
-    snapshot[field.id] = field.value;
+    snapshot[field.id] = fieldState(field);
   });
   state.formSnapshot = snapshot;
   renderDirtyState();
@@ -762,7 +831,7 @@ function renderDirtyState() {
   let changed = 0;
 
   tripFormFields().forEach((field) => {
-    const isDirty = snapshot !== null && snapshot[field.id] !== undefined && field.value !== snapshot[field.id];
+    const isDirty = snapshot !== null && snapshot[field.id] !== undefined && fieldState(field) !== snapshot[field.id];
     if (isDirty) {
       changed += 1;
     }
@@ -1095,6 +1164,7 @@ function clearTripFormWithDefaults() {
   form.adultMultiPrice.value = 0;
   form.childCount.value = 0;
   form.childPrice.value = 0;
+  form.averageAdultPrice.checked = false;
 
   if (state.settings) {
     form.markupPercent.value = state.settings.defaultMarkupPercent;
@@ -1122,6 +1192,11 @@ function tripPayloadFromForm() {
     });
   }
 
+  const averageAdultPrice = form.averageAdultPrice.checked;
+  // Beim einheitlichen Erwachsenenpreis gibt es nur ein Verkaufspreisfeld. Es geht
+  // auf beide Zimmerzeilen, damit der gespeicherte Stand zum angezeigten passt.
+  const adultSalesPrice = averageAdultPrice ? state.salesPrices.ADULT : null;
+
   return {
     name: form.name.value,
     startDate: form.startDate.value,
@@ -1132,19 +1207,20 @@ function tripPayloadFromForm() {
     spaTaxPerPerson: Number(form.spaTaxPerPerson.value),
     spaTaxAgeThreshold: Number(form.spaTaxAgeThreshold.value),
     adultAgeThreshold: Number(form.adultAgeThreshold.value),
+    averageAdultPrice,
     spaTaxCount: Number(form.spaTaxCount.value),
     bookings: [
       {
         categoryType: "ADULT_DOUBLE",
         count: Number(form.adultDoubleCount.value),
         basePricePerPerson: Number(form.adultDoublePrice.value),
-        salesPricePerPerson: state.salesPrices.ADULT_DOUBLE,
+        salesPricePerPerson: averageAdultPrice ? adultSalesPrice : state.salesPrices.ADULT_DOUBLE,
       },
       {
         categoryType: "ADULT_MULTI",
         count: Number(form.adultMultiCount.value),
         basePricePerPerson: Number(form.adultMultiPrice.value),
-        salesPricePerPerson: state.salesPrices.ADULT_MULTI,
+        salesPricePerPerson: averageAdultPrice ? adultSalesPrice : state.salesPrices.ADULT_MULTI,
       },
       {
         categoryType: "CHILD",
@@ -1169,6 +1245,7 @@ function fillTripForm(trip) {
   form.spaTaxPerPerson.value = trip.spaTaxPerPerson;
   form.spaTaxAgeThreshold.value = trip.spaTaxAgeThreshold;
   form.adultAgeThreshold.value = trip.adultAgeThreshold ?? 16;
+  form.averageAdultPrice.checked = Boolean(trip.averageAdultPrice);
   form.spaTaxCount.value = trip.spaTaxCount ?? 0;
 
   const byType = {};
@@ -1188,6 +1265,9 @@ function fillTripForm(trip) {
   state.salesPrices = {
     ADULT_DOUBLE: byType.ADULT_DOUBLE?.salesPricePerPerson ?? null,
     ADULT_MULTI: byType.ADULT_MULTI?.salesPricePerPerson ?? null,
+    // Bei einheitlichem Preis tragen beide Zeilen denselben Wert - die erste
+    // gesetzte gewinnt, genau wie im Backend.
+    ADULT: byType.ADULT_DOUBLE?.salesPricePerPerson ?? byType.ADULT_MULTI?.salesPricePerPerson ?? null,
     CHILD: byType.CHILD?.salesPricePerPerson ?? null,
   };
 

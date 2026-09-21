@@ -123,6 +123,36 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertSame(14, $trip['adultAgeThreshold']);
     }
 
+    /**
+     * @throws JsonException
+     */
+    public function testTripPersistsAverageAdultPrice(): void
+    {
+        $payload = $this->validTripPayload();
+        $payload['averageAdultPrice'] = true;
+
+        $createResponse = $this->dispatch('POST', '/api/trips', $payload);
+        self::assertSame(201, $createResponse->getStatusCode());
+        $created = json_decode((string) $createResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        $getResponse = $this->dispatch('GET', '/api/trips/' . $created['id']);
+        self::assertSame(200, $getResponse->getStatusCode());
+        $trip = json_decode((string) $getResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertTrue($trip['averageAdultPrice']);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testTripDefaultsAverageAdultPriceToFalse(): void
+    {
+        $createResponse = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
+        $created = json_decode((string) $createResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertFalse($created['averageAdultPrice']);
+    }
+
     public function testCreateTripWithMissingFieldsReturns422(): void
     {
         $response = $this->dispatch('POST', '/api/trips', ['name' => 'Fehlt']);

@@ -622,6 +622,14 @@ components:
         adultAgeThreshold:
           type: integer
           example: 16
+        averageAdultPrice:
+          type: boolean
+          default: false
+          description: >-
+            Ist die Option gesetzt, zahlen Erwachsene im Doppel- und im Mehrbettzimmer
+            denselben Preis: den nach Personenzahl gewichteten Durchschnitt der
+            Naechtigungspreise. Die ausgewiesenen Unterkunftskosten bleiben davon
+            unberuehrt.
         bookings:
           type: array
           items:
@@ -712,6 +720,12 @@ components:
           type: integer
         adultAgeThreshold:
           type: integer
+        averageAdultPrice:
+          type: boolean
+          description: >-
+            Bei true enthaelt priceBreakdowns statt ADULT_DOUBLE und ADULT_MULTI den
+            zusammengefassten Schluessel ADULT. pricesPerCategory fuehrt weiterhin
+            beide Zimmerkategorien, dann mit demselben Preis.
         startDate:
           type: string
           format: date

@@ -284,6 +284,15 @@
                                     <span class="help">Wie Gemeinkosten umgelegt werden</span>
                                 </div>
                             </div>
+                            <div class="opt-row">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="averageAdultPrice" name="averageAdultPrice">
+                                    <label class="form-check-label" for="averageAdultPrice">
+                                        <b>Einheitlicher Erwachsenenpreis</b>
+                                        <span class="help">Durchschnitt aus Doppel- und Mehrbettzimmer, gewichtet nach Personenzahl</span>
+                                    </label>
+                                </div>
+                            </div>
                             <div class="box-sand fuf-grid fuf-grid-spa">
                                 <div class="box-sand-label">
                                     <b>Kurabgabe</b>

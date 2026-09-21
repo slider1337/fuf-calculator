@@ -6,14 +6,13 @@ namespace App\Domain\Service;
 
 final class PerPersonDistributionStrategy implements ExpenseDistributionStrategy
 {
-    public function denominator(array $bookings): int
+    public function denominator(array $categories): int
     {
         $sum = 0;
-        foreach ($bookings as $booking) {
-            $sum += $booking->count();
+        foreach ($categories as $category) {
+            $sum += $category->count();
         }
 
         return $sum;
     }
 }
-

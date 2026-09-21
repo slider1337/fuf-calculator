@@ -42,6 +42,24 @@ final class TripServiceTest extends TestCase
         $service->createFromArray($payload);
     }
 
+    public function testCreateFromArrayMapsAverageAdultPrice(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        $trip = $service->createFromArray($this->validPayload(['averageAdultPrice' => true]));
+
+        self::assertTrue($trip->pricingPolicy()->averageAdultPrice());
+    }
+
+    public function testCreateFromArrayWithoutAverageAdultPriceDefaultsToOff(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        $trip = $service->createFromArray($this->validPayload());
+
+        self::assertFalse($trip->pricingPolicy()->averageAdultPrice());
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_merge([

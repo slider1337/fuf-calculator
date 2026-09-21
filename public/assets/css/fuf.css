@@ -877,6 +877,33 @@ h1.fuf-display {
     color: var(--fuf-amber-500);
 }
 
+/* Schalterzeile fuer eine Option, die kein Eingabefeld ist */
+.opt-row {
+    margin-top: 14px;
+}
+
+.opt-row .form-check {
+    margin: 0;
+    padding-left: 2.5em;
+}
+
+.opt-row .form-check-input {
+    margin-left: -2.5em;
+    margin-top: .15em;
+}
+
+.opt-row .form-check-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+}
+
+.opt-row .form-check-label b {
+    font-size: 14px;
+    color: var(--fuf-brown-900);
+}
+
 /* Sand-Box fuer eine zusammengehoerige Feldgruppe, etwa die Kurabgabe */
 .box-sand {
     background: var(--fuf-sand-100);

@@ -1037,7 +1037,8 @@ async function navigateTo(pathname, options = {}) {
   await renderCurrentRoute();
 }
 
-async function renderCurrentRoute() {
+async function renderCurrentRoute(options = {}) {
+  const { reuseLoadedTrip = false } = options;
   const route = matchRoute(window.location.pathname);
 
   if (route.name === "list") {
@@ -1057,8 +1058,10 @@ async function renderCurrentRoute() {
 
   if (route.name === "trip-detail") {
     // Zurueck zwischen zwei Tabs derselben Reise ist ein Hash-Wechsel. Ohne
-    // diese Abkuerzung wuerde jeder davon die Reise komplett neu laden.
-    if (state.currentTripId === route.tripId) {
+    // diese Abkuerzung wuerde jeder davon die Reise komplett neu laden. Sie
+    // gilt nur fuer die History-Navigation - wer hier absichtlich hinnavigiert,
+    // etwa nach dem Speichern, will den frisch geladenen Stand sehen.
+    if (reuseLoadedTrip && state.currentTripId === route.tripId) {
       showTab(tabFromHash());
       return;
     }
@@ -2224,7 +2227,7 @@ async function bootstrapPage() {
   await loadTripList();
   window.addEventListener("popstate", async () => {
     try {
-      await renderCurrentRoute();
+      await renderCurrentRoute({ reuseLoadedTrip: true });
     } catch (error) {
       alert("Route konnte nicht geladen werden: " + error.message);
     }

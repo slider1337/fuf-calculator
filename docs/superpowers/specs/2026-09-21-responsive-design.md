@@ -92,6 +92,34 @@ Kein `maximum-scale`, kein `user-scalable=no`.
   `docs/design-handoff/tools/check-overflow.js`, aber über den npm-freien CDP-Weg von
   `scripts/ui-shot.mjs` inklusive Login. Exit-Code 1 bei Überlauf.
 - Läuft gegen Liste, Planung und Abrechnung bei 390 px und 375 px.
+
+**Die Breite muss per `Emulation.setDeviceMetricsOverride` kommen, nicht per
+`--window-size`.** Chrome erzwingt eine Mindest-Fensterbreite von rund 500 px und ignoriert
+kleinere Werte stillschweigend: ein Lauf mit `--window-size=390` misst 500 px und behauptet,
+es seien 390. Genau die gesuchten Überläufe fallen dann durch. Das ist am 2026-09-21 einmal
+passiert; `scripts/lib/browser.mjs` trägt seitdem einen Kommentar dazu.
+
+#### Basiswert
+
+Der Check kann bei 390 px erst nach Schritt 4 grün werden — Tabellen und `app-nav` ragen
+konstruktionsbedingt heraus. Es gilt deshalb ein Basiswert: **Schritt 1 darf ihn nicht
+erhöhen, jeder spätere Schritt muss ihn senken, Schritt 4 muss ihn auf 0 bringen.**
+
+Gemessen mit der Fixture-DB (`scripts/ui-fixture.php`, Reise #1):
+
+| Route | vor Schritt 1 | nach Schritt 1a |
+|---|---|---|
+| `/` (390 und 375 px) | 50 | 50 |
+| `/trips/1` (390 und 375 px) | 37 | 35 |
+
+Reproduzieren:
+
+```
+DB_PATH=/tmp/fuf-ui.sqlite php vendor/bin/phinx migrate
+DB_PATH=/tmp/fuf-ui.sqlite php scripts/ui-fixture.php
+DB_PATH=/tmp/fuf-ui.sqlite php -S 127.0.0.1:8123 -t public public/router.php &
+node scripts/check-overflow.mjs --base http://127.0.0.1:8123 --width 390 --width 375 / /trips/1
+```
 - `composer test` bleibt grün (PHP unberührt).
 - `scripts/ui-shot.mjs` muss alle `REQUIRED_IDS` weiter finden — das ist der eigentliche
   Regressionsschutz für den Template-Umbau.

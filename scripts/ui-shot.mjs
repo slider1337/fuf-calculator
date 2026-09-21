@@ -19,11 +19,9 @@
  *           document.getElementById('trip-search').dispatchEvent(new Event('input'))"
  */
 
-import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { setTimeout as sleep } from 'node:timers/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+
+import { evalJson, login, navigate, prepareSession, sleep, withChrome } from './lib/browser.mjs';
 
 // Elemente, an die app.js beim Laden des Skripts Listener bindet. Fehlt eines,
 // ist der zugehoerige Bedienschritt tot - ohne jede Fehlermeldung.
@@ -75,108 +73,17 @@ function parseArgs(argv) {
   return opts;
 }
 
-async function login(base, email, password) {
-  const response = await fetch(`${base}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ email, password }).toString(),
-    redirect: 'manual',
-  });
-
-  const cookies = response.headers.getSetCookie();
-  const session = cookies.map((line) => line.split(';')[0]).find((pair) => pair.startsWith('fufsid='));
-
-  if (!session) {
-    throw new Error(`Login fehlgeschlagen (HTTP ${response.status}) - kein fufsid-Cookie erhalten.`);
-  }
-
-  return { name: 'fufsid', value: session.slice('fufsid='.length) };
-}
-
-class Cdp {
-  #ws;
-  #id = 0;
-  #pending = new Map();
-
-  static async connect(url) {
-    const cdp = new Cdp();
-    cdp.#ws = new WebSocket(url);
-
-    await new Promise((resolve, reject) => {
-      cdp.#ws.addEventListener('open', resolve, { once: true });
-      cdp.#ws.addEventListener('error', () => reject(new Error('CDP-Verbindung fehlgeschlagen')), { once: true });
-    });
-
-    cdp.#ws.addEventListener('message', (event) => {
-      const message = JSON.parse(event.data);
-      const pending = cdp.#pending.get(message.id);
-      if (!pending) return;
-      cdp.#pending.delete(message.id);
-      if (message.error) pending.reject(new Error(message.error.message));
-      else pending.resolve(message.result);
-    });
-
-    return cdp;
-  }
-
-  send(method, params = {}) {
-    const id = ++this.#id;
-    return new Promise((resolve, reject) => {
-      this.#pending.set(id, { resolve, reject });
-      this.#ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  close() {
-    this.#ws.close();
-  }
-}
-
-async function chromeWebSocketUrl(port) {
-  // Bewusst /json/list und nicht /json/version: Letzteres liefert den
-  // Browser-Endpunkt, der die Page-Domain nicht kennt. Gebraucht wird ein
-  // Page-Target.
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/list`);
-      const targets = await response.json();
-      const page = targets.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
-      if (page) return page.webSocketDebuggerUrl;
-    } catch {
-      // Chrome startet noch
-    }
-    await sleep(100);
-  }
-  throw new Error('Chrome hat kein Page-Target bereitgestellt.');
-}
-
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   await mkdir(opts.out, { recursive: true });
 
   const cookie = await login(opts.base, opts.email, opts.password);
-  const port = 9222 + Math.floor(Math.random() * 500);
-  const profile = await mkdtemp(join(tmpdir(), 'fuf-ui-chrome-'));
-
-  const chrome = spawn('google-chrome', [
-    '--headless=new',
-    `--remote-debugging-port=${port}`,
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--disable-gpu',
-    '--hide-scrollbars',
-    `--window-size=${opts.width},${opts.height}`,
-    `--user-data-dir=${profile}`,
-    'about:blank',
-  ], { stdio: 'ignore' });
+  const { origin } = new URL(opts.base);
 
   let failures = 0;
 
-  try {
-    const cdp = await Cdp.connect(await chromeWebSocketUrl(port));
-    await cdp.send('Page.enable');
-    await cdp.send('Runtime.enable');
-    await cdp.send('Network.enable');
+  await withChrome({ width: opts.width, height: opts.height }, async (cdp) => {
+    await prepareSession(cdp, opts.base, cookie, { width: opts.width, height: opts.height });
 
     // Laufzeitfehler einsammeln, bevor irgendein Skript der Seite laeuft
     await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
@@ -191,24 +98,8 @@ async function main() {
       `,
     });
 
-    const { origin, hostname } = new URL(opts.base);
-    await cdp.send('Network.setCookie', {
-      name: cookie.name,
-      value: cookie.value,
-      domain: hostname,
-      path: '/',
-    });
-
     for (const target of opts.targets) {
-      const url = `${origin}${target.path}`;
-      await cdp.send('Page.navigate', { url });
-
-      // Auf das Laden warten, dann den fetch-Kaskaden der SPA Zeit geben
-      await cdp.send('Runtime.evaluate', {
-        expression: 'new Promise((r) => document.readyState === "complete" ? r(1) : addEventListener("load", () => r(1)))',
-        awaitPromise: true,
-      });
-      await sleep(1200);
+      await navigate(cdp, `${origin}${target.path}`);
 
       // Optionaler Eingriff vor der Aufnahme: Feld fuellen, Section aufklappen.
       if (opts.eval) {
@@ -216,17 +107,11 @@ async function main() {
         await sleep(300);
       }
 
-      const idCheck = await cdp.send('Runtime.evaluate', {
-        expression: `JSON.stringify(${JSON.stringify(REQUIRED_IDS)}.filter((id) => !document.getElementById(id)))`,
-        returnByValue: true,
-      });
-      const missing = JSON.parse(idCheck.result.value);
-
-      const errorCheck = await cdp.send('Runtime.evaluate', {
-        expression: 'JSON.stringify(window.__fufErrors || [])',
-        returnByValue: true,
-      });
-      const jsErrors = JSON.parse(errorCheck.result.value);
+      const missing = await evalJson(
+        cdp,
+        `${JSON.stringify(REQUIRED_IDS)}.filter((id) => !document.getElementById(id))`,
+      );
+      const jsErrors = await evalJson(cdp, 'window.__fufErrors || []');
 
       const metrics = await cdp.send('Page.getLayoutMetrics');
       const full = metrics.cssContentSize;
@@ -249,15 +134,7 @@ async function main() {
         failures += 1;
       }
     }
-
-    cdp.close();
-  } finally {
-    chrome.kill();
-    // Chrome schreibt nach dem Signal noch kurz weiter; Aufraeumen ist Kosmetik
-    // und darf den Lauf nicht scheitern lassen.
-    await sleep(300);
-    await rm(profile, { recursive: true, force: true }).catch(() => {});
-  }
+  });
 
   if (failures > 0) {
     console.error(`\n${failures} Pruefung(en) fehlgeschlagen.`);

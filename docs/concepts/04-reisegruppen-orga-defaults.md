@@ -39,7 +39,7 @@ Alternative wäre dynamische Vererbung mit Ausnahmen; sie spart einzelne Änderu
 
 - Neue Reise erhält Teamvorschlag aus Gruppe; Änderung an einer einzelnen Reise bleibt lokal.
 - Wechsel der Gruppe oder Löschen der Gruppenzuordnung entzieht nicht stillschweigend bereits individuell erteilte Reiserechte; Admin bekommt vorher eine Vorschau.
-- Geschlossene Reisen und ihre Ausgaben bleiben unverändert, wenn sich das Standardteam ändert.
+- Als `abgerechnet` markierte Reisen und ihre Ausgaben bleiben unverändert, wenn sich das Standardteam ändert. Teamwechsel ändert weder historische Freigaben noch den eingefrorenen Abrechnungsstand.
 
 ## Noch zu entscheiden
 

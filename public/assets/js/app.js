@@ -1862,7 +1862,7 @@ function registrationItem(reg, index, startDate, adultAgeThreshold) {
     </div>
     <div id="${collapseId}" class="collapse" data-bs-parent="#registrations-accordion">
       <div class="reg-body">
-        <table class="tb">
+        <table class="tb tb-regs">
           <thead>
             <tr><th>Teilnehmer</th><th>Geburtsdatum</th><th>Abrechnungskategorie</th><th class="r">Preis</th></tr>
           </thead>

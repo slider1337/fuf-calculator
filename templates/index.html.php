@@ -156,7 +156,7 @@
             </div>
         </div>
 
-        <div id="trip-list-card" class="sec">
+        <div id="trip-list-card" class="sec sec-cards">
             <table class="tb tb-trips">
                 <thead>
                 <tr>

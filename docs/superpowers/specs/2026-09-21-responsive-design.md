@@ -465,6 +465,29 @@ Zusammenhangskomponenten darauf zeigten auf das rechte Sticky-Panel statt auf di
 Kopfzeile — eine Viertelstunde in die falsche Richtung. Mit `-compose src` bleibt nur die
 Abweichung übrig.
 
+### 4i. Nachbesserungen aus der Abnahme
+
+**Kein Rahmen im Rahmen.** Die Reiseliste stand als Kartenliste in der weißen `.sec`-Hülle,
+also ein Rahmen im Rahmen. Die Hülle trägt jetzt `.sec-cards` und ist unter 901 px selbst
+keine Karte mehr — die weißen Karten stehen direkt auf dem Sandgrund, wie in
+`mockups/06-mobil.html`. Die Fußzeile wird dabei zu schlichtem Hilfstext.
+
+Die Selektoren sind doppelt geschrieben (`.sec.sec-cards` statt `.sec-cards`), damit sie
+`.sec` und `.sec > .tb` **unabhängig von der Reihenfolge** in der Datei schlagen. Über die
+Reihenfolge ist in Schritt 4 dreimal etwas schiefgegangen; Spezifität ist hier das
+robustere Werkzeug.
+
+**Neue Reise startet mit zwei offenen Abschnitten.** `Eckdaten` und `Aufschläge & Abgaben`
+bleiben offen, damit man nicht erst zweimal tippen muss, um anfangen zu können.
+
+Aus `collapseSectionsOnMobile()` wird dabei `setSectionsOnMobile(openIds)`: die Funktion
+**setzt** den Stand, statt nur zuzuklappen. Wer erst eine bestehende Reise ansieht und dann
+`Neue Reise` drückt, fände die Abschnitte sonst zugeklappt vor — sie sind es aus dem vorigen
+Aufruf, und eine Regel, die nur schließt, bekommt sie nie wieder auf.
+
+Der frühe Ausstieg ab 992 px bleibt: am Desktop stehen ohnehin alle Abschnitte offen, und
+ein Eingriff dort würde die Pixelgleichheit kosten, ohne etwas zu gewinnen.
+
 ### Verifikation
 
 - Überlauf bei 390 und 375 px: **alle fünf Zustände bei 0** (siehe die Zustandstabelle unter
@@ -529,4 +552,5 @@ Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was f
 - [x] Schritt 4f — Anmeldungen
 - [x] Schritt 4g — zwei Desktop-first-Reste aus 3a
 - [x] Schritt 4h — `Kalkulation & Verkaufspreise` zuklappbar
+- [x] Schritt 4i — Kartenliste ohne Hülle, neue Reise mit zwei offenen Abschnitten
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

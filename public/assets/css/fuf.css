@@ -1668,6 +1668,49 @@ body.is-trip-view .app-head-title {
 /* Mobile first: der Kopf bricht um. Zugeklappt ist er alles, was von der
    Section zu sehen ist - ohne Umbruch schiebt ein Aktionsknopf den Chevron aus
    dem Bild und damit den einzigen Weg, den Abschnitt zu oeffnen. */
+/* Mobile first: eine Section, die unter 901 px nur noch Karten traegt, ist
+   selbst keine Karte mehr - sonst steht ein Rahmen im Rahmen. Die Reiseliste
+   ist der einzige Fall; in mockups/06-mobil.html stehen die Karten direkt auf
+   dem Sandgrund.
+
+   Die Selektoren sind doppelt geschrieben (.sec.sec-cards statt .sec-cards),
+   damit sie .sec und .sec > .tb unabhaengig von der Reihenfolge in der Datei
+   schlagen. Ueber die Reihenfolge ist in Schritt 4 dreimal etwas
+   schiefgegangen. */
+.sec.sec-cards {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+}
+
+/* Ohne Huelle brauchen die Karten keinen Innenabstand - .app-main bringt ihn
+   schon mit. */
+.sec.sec-cards > .tb {
+    padding: 0;
+}
+
+.sec.sec-cards > .sec-f {
+    padding: 4px 2px 0 2px;
+    background: transparent;
+    border-top: 0;
+}
+
+@media (min-width: 901px) {
+    .sec.sec-cards {
+        background: #FFFFFF;
+        border: 1px solid var(--fuf-sand-400);
+        border-radius: var(--fuf-radius-card);
+        overflow: hidden;
+    }
+
+    .sec.sec-cards > .sec-f {
+        padding: 12px 20px;
+        background: var(--fuf-sand-50);
+        border-top: 1px solid var(--fuf-sand-300);
+    }
+}
+
 .sec-h {
     display: flex;
     flex-wrap: wrap;

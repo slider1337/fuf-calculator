@@ -1219,24 +1219,34 @@ function showListSection() {
 // Wechsel auf eine andere Reise werden sie danach ohnehin neu aufgebaut.
 const SECTION_COLLAPSE_MAX_WIDTH = 992;
 
-function collapseSectionsOnMobile() {
+// DESIGN: Bei einer neuen Reise sind die beiden obersten Abschnitte der
+// Einstieg - Name und Zeitraum, dann Aufschlaege und Abgaben. Sie bleiben
+// offen, damit man nicht erst zweimal tippen muss, um anfangen zu koennen.
+const NEW_TRIP_OPEN_SECTIONS = ["sec-eckdaten-body", "sec-aufschlaege-body"];
+
+// Die Funktion setzt den Stand, statt nur zuzuklappen: wer erst eine
+// bestehende Reise ansieht und dann "Neue Reise" drueckt, findet die
+// Abschnitte sonst zugeklappt vor - sie sind es aus dem vorigen Aufruf, und
+// eine Regel, die nur schliesst, bekommt sie nie wieder auf.
+function setSectionsOnMobile(openIds = []) {
   if (window.innerWidth >= SECTION_COLLAPSE_MAX_WIDTH) {
     return;
   }
 
   document.querySelectorAll('.chev[data-bs-toggle="collapse"]').forEach((chev) => {
     const body = document.querySelector(chev.dataset.bsTarget);
-    if (!body || !body.classList.contains("show")) {
+    if (!body) {
       return;
     }
-    body.classList.remove("show");
-    chev.setAttribute("aria-expanded", "false");
+    const open = openIds.includes(body.id);
+    body.classList.toggle("show", open);
+    chev.setAttribute("aria-expanded", open ? "true" : "false");
     // Bootstrap markiert den zugeklappten Ausloeser selbst mit .collapsed.
-    chev.classList.add("collapsed");
+    chev.classList.toggle("collapsed", !open);
   });
 }
 
-function showEditorSection(titleText, breadcrumbText) {
+function showEditorSection(titleText, breadcrumbText, openSections = []) {
   byId("trip-editor-title").textContent = titleText;
   // DESIGN: Auf dem Handy traegt die App-Kopfleiste den Reisenamen, weil im
   // 52-px-Kopf darunter nur der Umschalter Platz hat.
@@ -1251,7 +1261,7 @@ function showEditorSection(titleText, breadcrumbText) {
   window.scrollTo({ top: 0 });
   renderHeadScrollState();
   renderHeadTabState();
-  collapseSectionsOnMobile();
+  setSectionsOnMobile(openSections);
   observeSections();
 }
 
@@ -1299,7 +1309,7 @@ async function renderCurrentRoute(options = {}) {
   if (route.name === "new-trip") {
     state.currentTripId = null;
     clearTripFormWithDefaults();
-    showEditorSection("Neue Reise", "Neue Reise");
+    showEditorSection("Neue Reise", "Neue Reise", NEW_TRIP_OPEN_SECTIONS);
     return;
   }
 

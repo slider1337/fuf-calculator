@@ -1187,6 +1187,37 @@ function showListSection() {
   }
 }
 
+// DESIGN: Die Sprungnavigation entfaellt auf dem Handy (Abschnitt 5c im CSS).
+// Statt einer Liste von Sprungzielen starten die Abschnitte zugeklappt und
+// zeigen nur ihre Zusammenfassung - man oeffnet, was man braucht.
+//
+// Gemessen wird einmal beim Oeffnen der Reise, nicht bei jedem Resize: wer am
+// Desktop das Fenster schmal zieht, soll nicht mitten in der Arbeit alles
+// zufallen sehen. Die Klassen werden direkt gesetzt, weil zu diesem Zeitpunkt
+// noch keine Collapse-Instanz existiert - Bootstrap liest den Stand beim
+// ersten Umschalten von der Klasse ab.
+//
+// sec-kalkulation hat keinen Chevron: die Section ist selbst das Akkordeon,
+// ihre Zeilen sind ohnehin zu. Sie bleibt deshalb offen.
+const SECTION_COLLAPSE_MAX_WIDTH = 992;
+
+function collapseSectionsOnMobile() {
+  if (window.innerWidth >= SECTION_COLLAPSE_MAX_WIDTH) {
+    return;
+  }
+
+  document.querySelectorAll('.chev[data-bs-toggle="collapse"]').forEach((chev) => {
+    const body = document.querySelector(chev.dataset.bsTarget);
+    if (!body || !body.classList.contains("show")) {
+      return;
+    }
+    body.classList.remove("show");
+    chev.setAttribute("aria-expanded", "false");
+    // Bootstrap markiert den zugeklappten Ausloeser selbst mit .collapsed.
+    chev.classList.add("collapsed");
+  });
+}
+
 function showEditorSection(titleText, breadcrumbText) {
   byId("trip-editor-title").textContent = titleText;
   // DESIGN: Auf dem Handy traegt die App-Kopfleiste den Reisenamen, weil im
@@ -1202,6 +1233,7 @@ function showEditorSection(titleText, breadcrumbText) {
   window.scrollTo({ top: 0 });
   renderHeadScrollState();
   renderHeadTabState();
+  collapseSectionsOnMobile();
   observeSections();
 }
 

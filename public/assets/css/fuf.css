@@ -1446,13 +1446,27 @@ body.is-trip-view .app-footer {
     overflow: hidden;
 }
 
+/* Mobile first: der Kopf bricht um. Zugeklappt ist er alles, was von der
+   Section zu sehen ist - ohne Umbruch schiebt ein Aktionsknopf den Chevron aus
+   dem Bild und damit den einzigen Weg, den Abschnitt zu oeffnen. */
 .sec-h {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    gap: 8px 12px;
     padding: 14px 20px;
     border-bottom: 1px solid var(--fuf-sand-300);
     background: var(--fuf-sand-50);
+}
+
+/* Titel und Chevron bilden die erste Zeile, Zusammenfassung und
+   Aktionsknoepfe ruecken dahinter und landen beim Umbruch darunter - dort
+   haben sie die volle Breite. Ohne den Sprung faellt der 48-px-Chevron allein
+   in die zweite Zeile, sobald die Zusammenfassung daneben nicht mehr passt.
+   Ab lg bricht nichts um, dann zaehlt die Reihenfolge des Markups wieder. */
+.sec-h .sum,
+.sec-h .btn {
+    order: 1;
 }
 
 .sec-h h2 {
@@ -1467,6 +1481,13 @@ body.is-trip-view .app-footer {
     color: var(--fuf-brown-500);
 }
 
+@media (min-width: 992px) {
+    .sec-h .sum,
+    .sec-h .btn {
+        order: 0;
+    }
+}
+
 .sec-b {
     padding: 18px 20px;
     display: flex;
@@ -1474,23 +1495,56 @@ body.is-trip-view .app-footer {
     gap: 14px;
 }
 
+/* Mobile first: Hinweis und Knopf stehen untereinander, der Knopf ueber die
+   volle Breite. Nebeneinander passt "Verkaufspreise uebernehmen & neu
+   berechnen" auf 375 px nicht - und .btn traegt white-space: nowrap. */
 .sec-f {
     padding: 12px 20px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
     background: var(--fuf-sand-50);
     border-top: 1px solid var(--fuf-sand-300);
 }
 
+@media (min-width: 992px) {
+    .sec-f {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0;
+    }
+}
+
+/* Mobile first, Regel 3: zugeklappt ist der Chevron der Weg in den Abschnitt
+   hinein, also braucht er 48 px. Auf dem Desktop bleibt er das 18-px-Icon von
+   Mockup 02 - dort klappt man ohnehin selten zu. */
 .chev {
     color: var(--fuf-brown-400);
     background: transparent;
     border: 0;
     display: inline-flex;
     align-items: center;
+    min-width: var(--fuf-touch);
+    min-height: var(--fuf-touch);
     cursor: pointer;
     padding: 0;
+}
+
+@media (min-width: 992px) {
+    .chev {
+        min-width: 0;
+        min-height: 0;
+    }
+}
+
+/* Im Section-Kopf sitzt er am rechten Rand, auch wenn die Zusammenfassung
+   vorher umgebrochen ist. Ab lg bleibt kein freier Platz uebrig, den das auto
+   aufnehmen koennte - h2 hat ihn schon. */
+.sec-h .chev {
+    justify-content: center;
+    margin-left: auto;
 }
 
 .chev svg {

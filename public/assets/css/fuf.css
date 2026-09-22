@@ -526,44 +526,31 @@ body.is-trip-view .app-head-title {
     gap: 14px 16px;
 }
 
-.fuf-grid-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.fuf-grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.fuf-grid-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-/* Eckdaten: Name breiter als die beiden Datumsfelder */
-.fuf-grid-eck {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-}
-
-/* Unterkunft: Kategorie, Anzahl, Preis/Nacht, Summe */
-.fuf-grid-room {
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-}
-
-/* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron */
+/* Mobile first: jedes Raster steht auf dem Handy in einer Spalte. Die
+   Spaltenzahl kommt erst ab 901 px dazu (Block am Ende dieses Abschnitts),
+   weil vier Spuren auf 390 px keine 90 px breit waeren. */
+.fuf-grid-2,
+.fuf-grid-3,
+.fuf-grid-4,
+.fuf-grid-eck,
+.fuf-grid-room,
 .fuf-grid-calc {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 24px;
+    grid-template-columns: minmax(0, 1fr);
 }
 
-/* Anmeldungen: CSV-Dropzone links, Manuell-Formular rechts */
+/* Anmeldungen: CSV-Dropzone links, Manuell-Formular rechts - erst ab 1101 px,
+   Rueckstellung in Abschnitt 15a. */
 .fuf-grid-intake {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
 }
 
 /* Seitenkopf ueber einer Liste: Titel und Hilfetext links, Suche rechts */
 .page-head {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: space-between;
-    align-items: flex-end;
     gap: 16px;
     margin-bottom: 16px;
 }
@@ -579,46 +566,66 @@ body.is-trip-view .app-head-title {
     min-width: 0;
 }
 
-/* Planungsseite: Inhalt + Sticky-Spalte */
+/* Planungsseite: Inhalt, darunter die Spalte mit dem Panel. Ab 1101 px steht
+   sie daneben und bleibt beim Scrollen stehen; unter lg steckt sie ohnehin im
+   Sheet (Abschnitt 5c). */
 .pg {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
     align-items: start;
 }
 
 .pg-side {
-    position: sticky;
-    top: 76px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1101px) {
     .pg {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) 340px;
     }
 
     .pg-side {
-        position: static;
+        position: sticky;
+        top: 76px;
     }
 }
 
-@media (max-width: 900px) {
-    .fuf-grid-2,
-    .fuf-grid-3,
-    .fuf-grid-4,
-    .fuf-grid-eck,
-    .fuf-grid-room,
-    .fuf-grid-calc,
-    .fuf-grid-spa {
-        grid-template-columns: minmax(0, 1fr);
+/* Die Spaltenzahl der Raster und der zweizeilige Seitenkopf. 901 px statt der
+   Bootstrap-Grenze, weil darunter schon die Feldbeschriftungen umbrechen. */
+@media (min-width: 901px) {
+    .fuf-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fuf-grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fuf-grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    /* Eckdaten: Name breiter als die beiden Datumsfelder */
+    .fuf-grid-eck {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    /* Unterkunft: Kategorie, Anzahl, Preis/Nacht, Summe */
+    .fuf-grid-room {
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    /* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron */
+    .fuf-grid-calc {
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 24px;
     }
 
     .page-head {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: flex-end;
     }
 }
 
@@ -1180,10 +1187,16 @@ body.is-trip-view .app-head-title {
     font-size: 14px;
 }
 
-/* Kurabgabe: Beschriftung plus drei Felder */
+/* Kurabgabe: Beschriftung plus drei Felder - auf dem Handy untereinander */
 .fuf-grid-spa {
-    grid-template-columns: auto repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+}
+
+@media (min-width: 901px) {
+    .fuf-grid-spa {
+        grid-template-columns: auto repeat(3, minmax(0, 1fr));
+    }
 }
 
 /* Spaltenkopf in einem Raster, das keine Tabelle ist */
@@ -1568,8 +1581,14 @@ body.is-trip-view .app-head-title {
     border-top: 1px solid var(--fuf-sand-300);
     padding: 10px 16px 12px 16px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0 32px;
+}
+
+@media (min-width: 901px) {
+    .calc-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .calc-col {
@@ -1627,12 +1646,6 @@ body.is-trip-view .app-head-title {
     text-align: center;
     font-size: 13px;
     color: var(--fuf-brown-400);
-}
-
-@media (max-width: 900px) {
-    .calc-body {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 
 /* ========================================================================
@@ -2284,9 +2297,9 @@ button.chip-btn.is-active {
     font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1101px) {
     .fuf-grid-intake {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
     }
 }
 
@@ -2437,9 +2450,10 @@ button.chip-btn.is-active {
     color: var(--fuf-amber-500);
 }
 
-/* Rueckerstattung: Einbehalt links, Herleitung rechts */
+/* Rueckerstattung: Einbehalt links, Herleitung rechts - erst ab 1101 px,
+   Rueckstellung am Ende dieses Abschnitts */
 .fuf-grid-refund {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
 }
 
@@ -2474,9 +2488,9 @@ button.chip-btn.is-active {
     font-weight: 400;
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 1101px) {
     .fuf-grid-refund {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: 220px minmax(0, 1fr);
     }
 }
 
@@ -2878,9 +2892,10 @@ h2.modal-title {
  * dieses Abschnitts sind die Handy-Werte; hier stehen nur die Rueckstellungen
  * fuer den Desktop. Wer eine Groesse aendert, aendert also zuerst die mobile.
  *
- * Die aelteren @media (max-width: ...)-Bloecke weiter oben schalten
- * Spaltenlayouts. Sie bleiben stehen, bis Bottom-Bar und Sheet existieren
- * (Schritt 3), und werden erst dann mit umgedreht.
+ * Seit Schritt 3 hat die Datei keine @media (max-width: ...) mehr. Die
+ * Spaltenlayouts, die vorher so geschaltet wurden, stehen jetzt einspaltig in
+ * der Basis; ihre Spaltenzahl kommt in @media (min-width: 901px) bzw.
+ * (min-width: 1101px) direkt beim Baustein dazu.
  *
  * Seit Schritt 2 stehen groessere Rueckstellungen nicht mehr hier, sondern in
  * einem eigenen @media (min-width: 992px) direkt beim Baustein - fuer die

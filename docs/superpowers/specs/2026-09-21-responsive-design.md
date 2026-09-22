@@ -495,8 +495,9 @@ Damit weicht die Umsetzung an zwei Stellen bewusst von `RESPONSIVE.md` ab: dort 
 „`Neue Reise` in der Bottom-Bar" und eine Filter-Chip-Leiste, die es im Datenmodell nicht
 gibt.
 
-**Neue Reise startet mit zwei offenen Abschnitten.** `Eckdaten` und `Aufschläge & Abgaben`
-bleiben offen, damit man nicht erst zweimal tippen muss, um anfangen zu können.
+**Neue Reise startet mit drei offenen Abschnitten.** `Eckdaten`, `Aufschläge & Abgaben` und
+`Unterkunft & Teilnehmer` bleiben offen, damit man nicht erst dreimal tippen muss, um
+anfangen zu können.
 
 Aus `collapseSectionsOnMobile()` wird dabei `setSectionsOnMobile(openIds)`: die Funktion
 **setzt** den Stand, statt nur zuzuklappen. Wer erst eine bestehende Reise ansieht und dann
@@ -571,5 +572,5 @@ Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was f
 - [x] Schritt 4g — zwei Desktop-first-Reste aus 3a
 - [x] Schritt 4h — `Kalkulation & Verkaufspreise` zuklappbar
 - [x] Schritt 4i — Kartenliste ohne Hülle, `Neue Reise` als `+` im Kopf, neue Reise mit
-      zwei offenen Abschnitten
+      drei offenen Abschnitten
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

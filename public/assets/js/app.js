@@ -1219,10 +1219,15 @@ function showListSection() {
 // Wechsel auf eine andere Reise werden sie danach ohnehin neu aufgebaut.
 const SECTION_COLLAPSE_MAX_WIDTH = 992;
 
-// DESIGN: Bei einer neuen Reise sind die beiden obersten Abschnitte der
-// Einstieg - Name und Zeitraum, dann Aufschlaege und Abgaben. Sie bleiben
-// offen, damit man nicht erst zweimal tippen muss, um anfangen zu koennen.
-const NEW_TRIP_OPEN_SECTIONS = ["sec-eckdaten-body", "sec-aufschlaege-body"];
+// DESIGN: Bei einer neuen Reise sind die drei obersten Abschnitte der
+// Einstieg - Name und Zeitraum, Aufschlaege und Abgaben, Unterkunft und
+// Teilnehmer. Sie bleiben offen, damit man nicht erst dreimal tippen muss,
+// um anfangen zu koennen.
+const NEW_TRIP_OPEN_SECTIONS = [
+  "sec-eckdaten-body",
+  "sec-aufschlaege-body",
+  "sec-unterkunft-body",
+];
 
 // Die Funktion setzt den Stand, statt nur zuzuklappen: wer erst eine
 // bestehende Reise ansieht und dann "Neue Reise" drueckt, findet die

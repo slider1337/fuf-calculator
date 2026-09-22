@@ -533,12 +533,30 @@ body.is-trip-view .app-head-title {
    Spaltenzahl kommt erst ab 901 px dazu (Block am Ende dieses Abschnitts),
    weil vier Spuren auf 390 px keine 90 px breit waeren. */
 .fuf-grid-2,
-.fuf-grid-3,
-.fuf-grid-4,
 .fuf-grid-eck,
 .fuf-grid-room,
 .fuf-grid-calc {
     grid-template-columns: minmax(0, 1fr);
+}
+
+/* Kennzahl-Kacheln sind die Ausnahme: sie stehen schon auf dem Handy 2 x 2,
+   wie RESPONSIVE.md es vorgibt. Eine Kachel traegt nur Beschriftung, Zahl und
+   einen Hilfstext - das passt auf 390 px auch in eine halbe Zeile, und vier
+   Kacheln uebereinander schieben den ersten Abschnitt aus dem Bild.
+
+   Die Betraege bleiben dabei genau. RESPONSIVE.md erlaubt sie mobil ohne
+   Nachkommastellen, aber die Formatierung haengt an einer Stelle in app.js;
+   eine breitenabhaengige zweite Variante liefe beim Resize auseinander und
+   gewinnt bei 390 px kaum Platz. */
+.fuf-grid-3,
+.fuf-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Drei Kacheln in zwei Spuren lassen unten eine Luecke - die dritte nimmt
+   deshalb beide Spuren. Ab 901 px stehen wieder alle drei nebeneinander. */
+.fuf-grid-3 > :last-child {
+    grid-column: span 2;
 }
 
 /* Anmeldungen: CSV-Dropzone links, Manuell-Formular rechts - erst ab 1101 px,
@@ -605,6 +623,10 @@ body.is-trip-view .app-head-title {
 
     .fuf-grid-3 {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fuf-grid-3 > :last-child {
+        grid-column: auto;
     }
 
     .fuf-grid-4 {
@@ -2923,8 +2945,12 @@ button.chip-btn.is-active {
  * ======================================================================== */
 
 /* KPI mit Vergleichswert: Ist gross, Abweichung daneben, Plan klein darunter */
+/* Mobile first: die Abweichung rutscht unter die Zahl, wenn sie nicht
+   danebenpasst. In der halben Zeile aus 4c ist neben "-11.649,80 €" kein
+   Platz mehr fuer "-13.784,20 €", und .kpi-dev traegt white-space: nowrap. */
 .kpi-line {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: 8px;
 }

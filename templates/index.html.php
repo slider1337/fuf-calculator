@@ -1027,7 +1027,6 @@
             </div><!-- end pg -->
             </div><!-- end panel-abrechnung -->
             </div><!-- end tab-content -->
-        </div>
 
         <!-- DESIGN: Regel 5 - wichtigste Zahl und Hauptaktion unten, in Daumenreichweite.
              Die Kennzahl zieht das Blatt des aktiven Bereichs auf; welches das ist,

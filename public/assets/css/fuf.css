@@ -84,6 +84,9 @@
     /* Hoehe der Bottom-Bar samt Home-Indicator-Leiste. Das Seitenende haelt
      * diesen Platz frei, sonst verdeckt die Bar seine letzte Zeile. */
     --fuf-bar-space: calc(64px + env(safe-area-inset-bottom));
+    /* Kalkulationszeile ab 901 px: Kategorie, Endpreis, Verkaufspreis,
+       Einnahmen, Chevron. Als Token, weil Raster und Zeile es brauchen. */
+    --fuf-calc-cols: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 24px;
 
     /* Bootstrap-Mapping */
     --bs-body-bg: var(--fuf-sand-200);
@@ -643,9 +646,12 @@ body.is-trip-view .app-head-title {
         grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     }
 
-    /* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron */
+    /* Kalkulationszeile: Kategorie, Endpreis, Verkaufspreis, Einnahmen, Chevron.
+       Das Mass steckt in --fuf-calc-cols, weil die Zeile selbst es in ihrer
+       Rueckstellung (Abschnitt 15b) noch einmal braucht - sie setzt mobil ein
+       eigenes Raster und muss hier auf genau dieses Mass zurueck. */
     .fuf-grid-calc {
-        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 24px;
+        grid-template-columns: var(--fuf-calc-cols);
     }
 
     .page-head {
@@ -1931,9 +1937,17 @@ body.is-trip-view .app-head-title {
     gap: 12px;
 }
 
+/* Die Spaltenkoepfe beschreiben Spalten - mobil gibt es keine. */
 .calc-head {
-    padding: 6px 16px 0 16px;
-    gap: 12px;
+    display: none;
+}
+
+@media (min-width: 901px) {
+    .calc-head {
+        display: grid;
+        padding: 6px 16px 0 16px;
+        gap: 12px;
+    }
 }
 
 .calc-rows {
@@ -1948,11 +1962,59 @@ body.is-trip-view .app-head-title {
     overflow: hidden;
 }
 
+/* Mobile first: die Zeile bricht auf zwei um - oben Kategorie und berechneter
+   Endpreis, darunter Verkaufspreis-Feld mit Abweichung und Einnahmen. Der
+   Chevron steht rechts ueber beide Zeilen. So gibt es RESPONSIVE.md vor;
+   fuenf Spalten waeren auf 390 px je 70 px breit. */
 .calc-row-head {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) 44px;
+    grid-template-areas:
+        "cat   price chev"
+        "sales rev   chev";
     align-items: center;
     padding: 12px 16px;
-    gap: 12px;
+    gap: 10px 12px;
     background: #FFFFFF;
+}
+
+.calc-row-head > :nth-child(1) {
+    grid-area: cat;
+}
+
+.calc-row-head > :nth-child(2) {
+    grid-area: price;
+}
+
+.calc-row-head > .calc-sales {
+    grid-area: sales;
+}
+
+.calc-row-head > .calc-cell.calc-r {
+    grid-area: rev;
+}
+
+.calc-row-head > .chev {
+    grid-area: chev;
+}
+
+/* Ab 901 px zurueck auf das Raster aus Abschnitt 5a. Der Block steht hier und
+   nicht dort: bei gleicher Spezifitaet gewinnt die spaetere Regel, und
+   .calc-row-head steht in der Datei hinter .fuf-grid-calc. Deshalb auch das
+   Token - so gibt es das Spaltenmass nur einmal. */
+@media (min-width: 901px) {
+    .calc-row-head {
+        grid-template-columns: var(--fuf-calc-cols);
+        grid-template-areas: none;
+        gap: 12px;
+    }
+
+    .calc-row-head > :nth-child(1),
+    .calc-row-head > :nth-child(2),
+    .calc-row-head > .calc-sales,
+    .calc-row-head > .calc-cell.calc-r,
+    .calc-row-head > .chev {
+        grid-area: auto;
+    }
 }
 
 /* Die aufgeklappte Zeile hebt sich vom Rest ab, so wie in Mockup 02. */

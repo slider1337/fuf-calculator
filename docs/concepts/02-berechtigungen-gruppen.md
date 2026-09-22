@@ -8,22 +8,22 @@
 
 ## Modell
 
-- **Globaler Admin:** Benutzer und Systemeinstellungen, Einladungen sowie alle Reisen; Eingriffe protokollieren.
+- **Globaler Admin:** Benutzer und Systemeinstellungen, Einladungen sowie technische Verwaltung; Eingriffe protokollieren. Für die fachliche Belegfreigabe wird ein expliziter Orga-Eintrag auf der betreffenden Reise benötigt.
 - **Reisegruppe:** eine wiederkehrende Reihe wie „Winterfreizeit“; enthält Standard-Orga-Team, keine pauschale Einsicht in alle späteren Belege.
 - **Reise/Event:** eigene Freigaben je Benutzer und Aufgabe. Eine Person kann für verschiedene Reisen verschiedene Rollen besitzen.
-- **Fähigkeiten statt grober Einzelrolle:** `trip.view`, `trip.manage`, `registration.manage`, `receipt.create`, `receipt.view_own`, `receipt.review`, `settlement.view`, `access.manage`. Rollen bündeln diese Rechte; ein Benutzer kann mehrere Rollen je Reise haben.
+- **Fähigkeiten statt grober Einzelrolle:** `trip.view`, `trip.manage`, `registration.manage`, `receipt.create`, `receipt.edit_own`, `receipt.delete_own`, `receipt.view_own`, `receipt.approve`, `settlement.view`, `access.manage`. Orga erhält `settlement.view` und `receipt.approve` automatisch für die eigene Reise. Ein Benutzer kann mehrere Rollen je Reise haben. Alle Belegänderungen und abrechnungswirksamen Schreibaktionen sind beim Reisestatus `abgerechnet` gesperrt.
 - **Deny by default:** Keine Freigabe = Reise erscheint nicht und API liefert 403/404 entsprechend gewünschter Informationspolitik. Jede Aktion wird serverseitig gegen **die konkrete Reise-ID** geprüft, auch Download/Export und einzelne Datensatz-IDs.
 
 ## Startmatrix
 
 | Rolle für genau eine Reise | Reise sehen | Reise/Anmeldungen ändern | Eigene Belege hochladen | Alle Belege prüfen | Abrechnung lesen | Team verwalten |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Orga | Ja | Ja | Ja | Optional* | Optional* | Ja |
-| Beleg-Einreicher | Eingeschränkte Ansicht | Nein | Ja | Nein | Nein | Nein |
-| Abrechnungsteam | Ja, reduzierte Stammdaten | Nein | Nein | Ja, lesend | Ja | Nein |
-| Globaler Admin | Ja | Ja | Ja | Ja | Ja | Ja |
+| Orga | Ja | Ja* | Ja | Ja, einschließlich Freigabe* | Ja | Ja |
+| Beleg-Einreicher | Eingeschränkte Ansicht | Nein | Ja, eigene Bearbeitung/Löschung* | Nein | Nein | Nein |
+| Abrechnungsteam | Ja, reduzierte Stammdaten | Nein | Nein | Ja, nur lesend | Ja | Nein |
+| Globaler Admin ohne Orga-Zuordnung | Administrative Sicht | Technische Verwaltung* | Nein | Keine fachliche Freigabe | Administrative Sicht | Ja |
 
-\* Empfehlung: Für sensible Abrechnungsdaten und Buchungsfreigabe eine eigene Befugnis vorsehen; Orga nicht stillschweigend alles geben. Ein Abrechnungsteam mit wirklich **nur** Leserechten darf Belege nicht freigeben oder bearbeiten. Diese Aufgabe liegt dann bei einem gesondert berechtigten Admin/Prüfer.
+\* Bei `abgerechnet` keine Änderungen an Belegen oder anderen abrechnungswirksamen Daten. Nur ein ausdrücklich zugewiesenes Orga-Mitglied darf vor Abschluss Belege freigeben; ein globaler Admin kann sich bei Bedarf nachvollziehbar als Orga zuordnen.
 
 ## Freigaben
 
@@ -42,8 +42,9 @@
 
 - Kein Zugriff auf fremde Reisen durch Ändern von URL/`tripId`/`expenseId`; insbesondere Update/Delete einer Ausgabe muss deren Eigentümerreise prüfen (heutige Ausgabe-Update-API nimmt nur die `expenseId` in der Service-Schicht).
 - Reiseliste, Suche, Abrechnungskennzahlen, CSV-Import, Export und Downloads werden konsistent gefiltert. Gerade die heutige Reiseliste enthält bereits Überschusswerte; diese für Uploadende nicht ausliefern.
+- Bearbeiten/Löschen nur eigener Belege und nur vor dem Abschluss. Nach `abgerechnet` sperrt die API auch direkte Schreibaufrufe; Orga-Abrechnung bleibt lesbar.
 - Nach Entzug auch laufende Sessions und Downloadlinks unbrauchbar; Audit enthält Wer/Wann/Was ohne Beleginhalt.
 
-## Offene Produktentscheidung
+## Festlegung
 
-Darf die Orga die Abrechnung sehen und Belege freigeben, oder soll das auf Admin/Finanzprüfer beschränkt sein? Die Matrix zeigt eine datensparsame Voreinstellung.
+Orga-Mitglieder sehen Abrechnungsdaten und dürfen Belege ihrer Reise freigeben. Das Abrechnungsteam hat ausschließlich Lesezugriff. Fachliche Freigaben durch globale Admins erfordern zusätzlich die Orga-Zuordnung auf dieser Reise.

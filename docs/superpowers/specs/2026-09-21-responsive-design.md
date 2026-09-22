@@ -268,8 +268,8 @@ Die Sprungnavigation entfällt unter `lg`; ihr Baum bleibt im DOM, damit `render
 und der Section-Observer unberührt weiterlaufen. Stattdessen klappt `app.js` beim Öffnen
 einer Reise alle Abschnitte mit Chevron zu. Gemessen wird `window.innerWidth` **einmal beim
 Öffnen, nicht bei jedem Resize** — wer am Desktop das Fenster schmal zieht, soll nicht
-mitten in der Arbeit alles zufallen sehen. `sec-kalkulation` bleibt offen, die Section ist
-selbst das Akkordeon.
+mitten in der Arbeit alles zufallen sehen. `sec-kalkulation` blieb zunächst offen, weil die
+Section selbst ein Akkordeon ist; **diese Ausnahme ist mit 4h aufgehoben** — siehe dort.
 
 Damit wird der Section-Kopf zur ganzen sichtbaren Oberfläche des Abschnitts, und drei Dinge
 daran waren dafür nicht tauglich:
@@ -439,6 +439,32 @@ Hülle hing sie hinter einem 100vh-Block, jede Seite war 47 px zu hoch. Die Seit
 bei 1440, 901 und 900 px von 1247 auf 1200 px. Das Template ist seitdem vollständig
 wohlgeformt.
 
+### 4h. `Kalkulation & Verkaufspreise` zuklappbar
+
+Die einzige Section ohne Chevron. Die Begründung aus 3d — die Section sei selbst das
+Akkordeon, ihre Zeilen ohnehin zu — trägt nicht mehr: mit vier Kennzahl-Kacheln, drei Zeilen
+und der Fußzeile ist sie auch mit zugeklappten Zeilen lang, und eine einzige Ausnahme unter
+sieben Abschnitten liest sich wie ein Fehler.
+
+Chevron in `.sec-h`, `.sec-b` **und** `.sec-f` in ein `<div class="collapse show">` — die
+Fußzeile gehört bei allen anderen Sections ebenfalls in den Collapse. Damit greift
+`collapseSectionsOnMobile()` ohne weiteres Zutun, es läuft über alle `.chev` mit
+collapse-Ziel. `renderJumpState` liest den Zustand an `#result-panel` ab, nicht am Collapse,
+und bleibt unberührt.
+
+Die Planung wird mobil von 2.519 auf 1.410 px kürzer.
+
+**Der Desktop ändert sich hier, und zwar gewollt:** der Chevron ist neue Sichtbarkeit, und
+die Zusammenfassung in der Kopfzeile rückt um seine Breite nach links. 6.998 Pixel,
+sämtlich in der Kopfzeile von `#sec-kalkulation` (y 1315–1339 bei 1440 px); Geometrie und
+Seitenhöhe sind unverändert.
+
+Beim Nachmessen eine Lehre zum Werkzeug: **`compare` ohne `-compose src` taugt nicht zur
+Ortung.** Die Voreinstellung zeichnet das unveränderte Bild blass durch, und die
+Zusammenhangskomponenten darauf zeigten auf das rechte Sticky-Panel statt auf die
+Kopfzeile — eine Viertelstunde in die falsche Richtung. Mit `-compose src` bleibt nur die
+Abweichung übrig.
+
 ### Verifikation
 
 - Überlauf bei 390 und 375 px: **alle fünf Zustände bei 0** (siehe die Zustandstabelle unter
@@ -502,4 +528,5 @@ Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was f
 - [x] Schritt 4e — Kalkulationszeile auf zwei Zeilen
 - [x] Schritt 4f — Anmeldungen
 - [x] Schritt 4g — zwei Desktop-first-Reste aus 3a
+- [x] Schritt 4h — `Kalkulation & Verkaufspreise` zuklappbar
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

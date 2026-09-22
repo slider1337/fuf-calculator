@@ -1207,8 +1207,16 @@ function showListSection() {
 // noch keine Collapse-Instanz existiert - Bootstrap liest den Stand beim
 // ersten Umschalten von der Klasse ab.
 //
-// sec-kalkulation hat keinen Chevron: die Section ist selbst das Akkordeon,
-// ihre Zeilen sind ohnehin zu. Sie bleibt deshalb offen.
+// sec-kalkulation war bis dahin ausgenommen, weil die Section selbst ein
+// Akkordeon ist und ihre Zeilen ohnehin zu sind. Sie hat seitdem einen
+// Chevron wie alle anderen: mit vier Kennzahl-Kacheln, drei Zeilen und der
+// Fusszeile ist sie auch mit zugeklappten Zeilen lang, und eine einzige
+// Ausnahme unter sieben Abschnitten liest sich wie ein Fehler.
+//
+// Die Schleife laeuft ueber alle .chev mit collapse-Ziel. Die Chevrons der
+// Kalkulations- und Anmeldungszeilen traegt sie damit theoretisch auch - zu
+// diesem Zeitpunkt sind beide Listen aber noch nicht gerendert, und beim
+// Wechsel auf eine andere Reise werden sie danach ohnehin neu aufgebaut.
 const SECTION_COLLAPSE_MAX_WIDTH = 992;
 
 function collapseSectionsOnMobile() {

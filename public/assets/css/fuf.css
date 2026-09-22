@@ -81,6 +81,9 @@
     --fuf-control-height: 48px;
     --fuf-control-font: 16px;
     --fuf-touch: 48px;
+    /* Hoehe der Bottom-Bar samt Home-Indicator-Leiste. Das Seitenende haelt
+     * diesen Platz frei, sonst verdeckt die Bar seine letzte Zeile. */
+    --fuf-bar-space: calc(64px + env(safe-area-inset-bottom));
 
     /* Bootstrap-Mapping */
     --bs-body-bg: var(--fuf-sand-200);
@@ -915,14 +918,24 @@ body.is-trip-view .app-head-title {
 }
 
 /* Sprungnavigation in der Sticky-Spalte */
+/* Die Sprungnavigation entfaellt auf dem Handy: bei einer Spalte ist Scrollen
+   schneller als eine Liste von Sprungzielen, und die Sections zeigen
+   zugeklappt ohnehin ihre Zusammenfassung. Der Baum bleibt im DOM, damit
+   renderJumpState und der Section-Observer unberuehrt weiterlaufen. */
 .jump-card {
     background: #FFFFFF;
     border: 1px solid var(--fuf-sand-400);
     border-radius: var(--fuf-radius-card);
     padding: 10px;
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 2px;
+}
+
+@media (min-width: 992px) {
+    .jump-card {
+        display: flex;
+    }
 }
 
 .jump-title {
@@ -941,14 +954,22 @@ body.is-trip-view .app-head-title {
 }
 
 /* Kalkulationspanel in der Sticky-Spalte */
+/* Mobile first: im Blatt ist das Panel kein Kaertchen - Rahmen, Grund und
+   Innenabstand gehoeren dort dem Blatt selbst, sonst stuende eine Karte in
+   einer Karte. Ab lg ist es die Karte der Sticky-Spalte. */
 .pnl {
-    background: #FFFFFF;
-    border: 1px solid var(--fuf-sand-400);
-    border-radius: var(--fuf-radius-card);
-    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+@media (min-width: 992px) {
+    .pnl {
+        background: #FFFFFF;
+        border: 1px solid var(--fuf-sand-400);
+        border-radius: var(--fuf-radius-card);
+        padding: 20px;
+    }
 }
 
 .pnl-h {
@@ -1265,6 +1286,153 @@ body.is-trip-view .app-head-title {
 .expense-row .f-amount {
     flex-grow: 0;
     width: 180px;
+}
+
+/* ========================================================================
+ * 5c. Kalkulation als Blatt
+ *
+ * Dasselbe Panel, zwei Erscheinungsformen: unter lg ein Blatt, das vom
+ * unteren Rand aufzieht, ab lg die rechte Sticky-Spalte. offcanvas-lg macht
+ * beides aus einem Markup - wie das Menue in Abschnitt 4. Ab lg loesen sich
+ * Huelle und Body per display: contents auf, damit .pnl wieder direktes Kind
+ * von .pg-side ist und deren gap greift.
+ * ======================================================================== */
+
+.calc-sheet {
+    --bs-offcanvas-height: auto;
+    --bs-offcanvas-padding-x: 0;
+    --bs-offcanvas-padding-y: 0;
+    --bs-offcanvas-border-width: 0;
+    --bs-offcanvas-bg: #FFFFFF;
+    max-height: 85vh;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -10px 30px -10px rgba(61, 40, 23, .4);
+}
+
+.calc-sheet .offcanvas-header {
+    padding: 0;
+}
+
+/* Der Grabber ist zugleich der Schliessen-Knopf und die Wischflaeche. Sichtbar
+   sind 38 x 4 px wie im Mockup, treffen kann man die ganze Kopfzeile - so
+   erfuellt das Ziel Regel 3, ohne dass der Balken klobig wird. */
+.sheet-grab {
+    width: 100%;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.sheet-grab::before {
+    content: "";
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--fuf-sand-400);
+}
+
+/* Der Inhalt scrollt, sobald er hoeher wird als max-height. Regel 6: der
+   Innenabstand unten muss die Home-Indicator-Leiste mitnehmen. */
+.calc-sheet .offcanvas-body {
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom)) 16px;
+}
+
+/* Teilnehmer und Naechte stehen im Panel bei jeder Breite nebeneinander - zwei
+   kurze Zahlen, die untereinander nur das Blatt verlaengern wuerden. Das ist
+   die Ausnahme von der einspaltigen Basis aus Abschnitt 5. */
+.pnl .fuf-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 992px) {
+    .calc-sheet,
+    .calc-sheet .offcanvas-body {
+        display: contents;
+    }
+}
+
+/* ========================================================================
+ * 5d. Bottom-Bar
+ *
+ * RESPONSIVE.md Regel 5: die wichtigste Zahl und die Hauptaktion unten, in
+ * Daumenreichweite. Die Bar traegt beides und ersetzt unter lg, was auf dem
+ * Desktop im Reisekopf und in der Sticky-Spalte steht. Ab lg ist sie weg.
+ * ======================================================================== */
+
+.trip-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Unter dem Offcanvas (1045) und seinem Backdrop (1040) - das Blatt deckt
+       die Bar zu, sobald es aufgezogen ist. */
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom)) 16px;
+    background: #FFFFFF;
+    border-top: 1px solid var(--fuf-sand-300);
+    box-shadow: 0 -6px 20px -12px rgba(61, 40, 23, .35);
+}
+
+.trip-bar-kpi {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: var(--fuf-touch);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.trip-bar-kpi .help {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trip-bar-kpi b {
+    font-family: var(--fuf-font-display);
+    font-size: 19px;
+    color: var(--fuf-green-600);
+    font-variant-numeric: tabular-nums;
+}
+
+.trip-bar-kpi b.fuf-neg {
+    color: var(--fuf-red-700);
+}
+
+/* Der Speichern-Knopf nimmt nur seine Textbreite ein - der Rest der Zeile
+   gehoert der Kennzahl. */
+.trip-bar .btn {
+    width: auto;
+    flex-shrink: 0;
+    padding: 0 20px;
+}
+
+/* Das Seitenende haelt den Platz der Bar frei. Ab lg ist --fuf-bar-space 0,
+   die Zeile stimmt dann wieder mit .app-footer ueberein. */
+body.is-trip-view .app-footer {
+    padding-bottom: calc(14px + var(--fuf-bar-space));
+}
+
+@media (min-width: 992px) {
+    .trip-bar {
+        display: none;
+    }
 }
 
 /* ========================================================================
@@ -2924,6 +3092,7 @@ textarea {
         --fuf-control-height: 42px;
         --fuf-control-font: 15px;
         --fuf-touch: 34px;
+        --fuf-bar-space: 0px;
     }
 
     /* Was sich nicht auf ein Token abbilden laesst, weil die Desktop-Werte

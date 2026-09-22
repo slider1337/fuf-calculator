@@ -702,54 +702,66 @@
                 <a class="jump jump-switch" href="#abrechnung"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/></svg>Zur Abrechnung<span class="help jump-switch-count" id="jump-to-abrechnung-count"></span></a>
             </nav>
 
-            <div class="pnl">
-                <div class="pnl-h">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h2M12 18h6"/></svg>
-                    <h2>Kalkulation</h2>
-                    <span class="pnl-state d-none" id="panel-state"></span>
+            <!-- DESIGN: Unter lg ist das Panel ein aufziehbares Blatt am unteren Rand,
+                 ab lg wieder die rechte Sticky-Spalte. offcanvas-lg leistet beides mit
+                 demselben Markup, also bleibt jede ID einmalig und an ihrem Platz.
+                 Backdrop, Escape und Scroll-Sperre kommen von Bootstrap, der Wisch nach
+                 unten von app.js. -->
+            <div class="calc-sheet offcanvas-lg offcanvas-bottom" id="calc-sheet-planung" tabindex="-1" aria-labelledby="panel-title">
+                <div class="offcanvas-header">
+                    <button class="sheet-grab" type="button" data-bs-dismiss="offcanvas" data-bs-target="#calc-sheet-planung" aria-label="Blatt schlie&szlig;en"></button>
                 </div>
-                <div class="fuf-grid fuf-grid-2">
-                    <div class="pnl-box">
-                        <span class="help">Teilnehmer</span>
-                        <b id="panel-participants">&ndash;</b>
-                        <span class="help" id="panel-participants-sub"></span>
-                    </div>
-                    <div class="pnl-box">
-                        <span class="help">Nächte</span>
-                        <b id="result-nights">&ndash;</b>
-                        <span class="help"><span id="result-start-date">&ndash;</span><span id="panel-range-sep" class="d-none"> &ndash; </span><span id="result-end-date" class="d-none">&ndash;</span></span>
+                <div class="offcanvas-body">
+                    <div class="pnl">
+                        <div class="pnl-h">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h2M12 18h6"/></svg>
+                            <h2 id="panel-title">Kalkulation</h2>
+                            <span class="pnl-state d-none" id="panel-state"></span>
+                        </div>
+                        <div class="fuf-grid fuf-grid-2">
+                            <div class="pnl-box">
+                                <span class="help">Teilnehmer</span>
+                                <b id="panel-participants">&ndash;</b>
+                                <span class="help" id="panel-participants-sub"></span>
+                            </div>
+                            <div class="pnl-box">
+                                <span class="help">Nächte</span>
+                                <b id="result-nights">&ndash;</b>
+                                <span class="help"><span id="result-start-date">&ndash;</span><span id="panel-range-sep" class="d-none"> &ndash; </span><span id="result-end-date" class="d-none">&ndash;</span></span>
+                            </div>
+                        </div>
+                        <div class="pnl-lines">
+                            <div class="k"><span id="panel-cost-lodging-label">Unterkunft</span><b id="panel-cost-lodging">&ndash;</b></div>
+                            <div class="k"><span id="panel-cost-spa-tax-label">Kurabgabe</span><b id="panel-cost-spa-tax">&ndash;</b></div>
+                            <div class="k"><span>Zusatzausgaben</span><b id="panel-cost-extra">&ndash;</b></div>
+                            <div class="k k-total"><span>Gesamtkosten</span><b id="panel-cost-total">&ndash;</b></div>
+                            <div class="k"><span>Einnahmen zu Verkaufspreisen</span><b id="panel-revenue">&ndash;</b></div>
+                        </div>
+                        <div class="pnl-bar">
+                            <div class="pnl-bar-track">
+                                <span class="pnl-bar-costs" id="panel-bar-costs"></span>
+                                <span class="pnl-bar-surplus" id="panel-bar-surplus"></span>
+                            </div>
+                            <div class="pnl-bar-legend">
+                                <span><span class="pnl-bar-key pnl-bar-costs"></span><span id="panel-bar-costs-label">Kosten</span></span>
+                                <span><span class="pnl-bar-key pnl-bar-surplus"></span><span id="panel-bar-surplus-label">Überschuss</span></span>
+                            </div>
+                        </div>
+                        <div class="pnl-green" id="panel-green">
+                            <div class="pnl-green-head">
+                                <span>Überschuss</span>
+                                <b id="panel-surplus">&ndash;</b>
+                            </div>
+                            <div class="pnl-green-line"><span>Verkaufspreis Erwachsene</span><b id="panel-sales-adults">&ndash;</b></div>
+                            <div class="pnl-green-line"><span>Verkaufspreis Kind</span><b id="panel-sales-child">&ndash;</b></div>
+                        </div>
+                        <button id="trip-save-btn-sticky" class="btn btn-p btn-lg-save" type="submit" form="trip-form">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                            <span id="trip-save-label-sticky">Reise speichern</span>
+                        </button>
+                        <span class="help pnl-note" id="trip-dirty-note"></span>
                     </div>
                 </div>
-                <div class="pnl-lines">
-                    <div class="k"><span id="panel-cost-lodging-label">Unterkunft</span><b id="panel-cost-lodging">&ndash;</b></div>
-                    <div class="k"><span id="panel-cost-spa-tax-label">Kurabgabe</span><b id="panel-cost-spa-tax">&ndash;</b></div>
-                    <div class="k"><span>Zusatzausgaben</span><b id="panel-cost-extra">&ndash;</b></div>
-                    <div class="k k-total"><span>Gesamtkosten</span><b id="panel-cost-total">&ndash;</b></div>
-                    <div class="k"><span>Einnahmen zu Verkaufspreisen</span><b id="panel-revenue">&ndash;</b></div>
-                </div>
-                <div class="pnl-bar">
-                    <div class="pnl-bar-track">
-                        <span class="pnl-bar-costs" id="panel-bar-costs"></span>
-                        <span class="pnl-bar-surplus" id="panel-bar-surplus"></span>
-                    </div>
-                    <div class="pnl-bar-legend">
-                        <span><span class="pnl-bar-key pnl-bar-costs"></span><span id="panel-bar-costs-label">Kosten</span></span>
-                        <span><span class="pnl-bar-key pnl-bar-surplus"></span><span id="panel-bar-surplus-label">Überschuss</span></span>
-                    </div>
-                </div>
-                <div class="pnl-green" id="panel-green">
-                    <div class="pnl-green-head">
-                        <span>Überschuss</span>
-                        <b id="panel-surplus">&ndash;</b>
-                    </div>
-                    <div class="pnl-green-line"><span>Verkaufspreis Erwachsene</span><b id="panel-sales-adults">&ndash;</b></div>
-                    <div class="pnl-green-line"><span>Verkaufspreis Kind</span><b id="panel-sales-child">&ndash;</b></div>
-                </div>
-                <button id="trip-save-btn-sticky" class="btn btn-p btn-lg-save" type="submit" form="trip-form">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-                    <span id="trip-save-label-sticky">Reise speichern</span>
-                </button>
-                <span class="help pnl-note" id="trip-dirty-note"></span>
             </div>
         </aside>
         </div><!-- end pg -->
@@ -965,44 +977,74 @@
                     <a class="jump jump-switch" href="#planung"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>Zur Planung<span class="help jump-switch-count" id="jump-to-planung-count"></span></a>
                 </nav>
 
-                <div class="pnl" id="settlement-panel">
-                    <div class="pnl-h">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
-                        <h2>Abrechnung</h2>
+                <!-- DESIGN: Unter lg ist das Panel ein aufziehbares Blatt am unteren Rand,
+                     ab lg wieder die rechte Sticky-Spalte. offcanvas-lg leistet beides mit
+                     demselben Markup, also bleibt jede ID einmalig und an ihrem Platz.
+                     Backdrop, Escape und Scroll-Sperre kommen von Bootstrap, der Wisch nach
+                     unten von app.js. -->
+                <div class="calc-sheet offcanvas-lg offcanvas-bottom" id="calc-sheet-abrechnung" tabindex="-1" aria-labelledby="settlement-panel-title">
+                    <div class="offcanvas-header">
+                        <button class="sheet-grab" type="button" data-bs-dismiss="offcanvas" data-bs-target="#calc-sheet-abrechnung" aria-label="Blatt schlie&szlig;en"></button>
                     </div>
-                    <div class="pnl-bar">
-                        <div class="pnl-bar-track">
-                            <span class="pnl-bar-planned" id="settlement-bar-planned"></span>
-                            <span class="pnl-bar-additional" id="settlement-bar-additional"></span>
-                            <span class="pnl-bar-retention" id="settlement-bar-retention"></span>
-                            <span class="pnl-bar-distributable" id="settlement-bar-distributable"></span>
+                    <div class="offcanvas-body">
+                        <div class="pnl" id="settlement-panel">
+                            <div class="pnl-h">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                                <h2 id="settlement-panel-title">Abrechnung</h2>
+                            </div>
+                            <div class="pnl-bar">
+                                <div class="pnl-bar-track">
+                                    <span class="pnl-bar-planned" id="settlement-bar-planned"></span>
+                                    <span class="pnl-bar-additional" id="settlement-bar-additional"></span>
+                                    <span class="pnl-bar-retention" id="settlement-bar-retention"></span>
+                                    <span class="pnl-bar-distributable" id="settlement-bar-distributable"></span>
+                                </div>
+                                <div class="pnl-bar-legend pnl-bar-legend-wrap">
+                                    <span><span class="pnl-bar-key pnl-bar-planned"></span>Geplant</span>
+                                    <span><span class="pnl-bar-key pnl-bar-additional"></span>Zus&auml;tzlich</span>
+                                    <span><span class="pnl-bar-key pnl-bar-retention"></span>Einbehalt</span>
+                                    <span><span class="pnl-bar-key pnl-bar-distributable"></span>Verteilbar</span>
+                                </div>
+                            </div>
+                            <div class="pnl-lines">
+                                <div class="k"><span>Einnahmen</span><b id="panel-settlement-revenue">&ndash;</b></div>
+                                <div class="k"><span>Gesamtausgaben</span><b id="panel-settlement-expenses">&ndash;</b></div>
+                                <div class="k k-total"><span>&Uuml;berschuss / Defizit</span><b id="panel-settlement-surplus">&ndash;</b></div>
+                                <div class="k"><span id="panel-settlement-retention-label">Einbehalt</span><b id="panel-settlement-retention">&ndash;</b></div>
+                            </div>
+                            <div class="pnl-green" id="panel-settlement-green">
+                                <div class="pnl-green-head">
+                                    <span>Verteilbar</span>
+                                    <b id="panel-settlement-distributable">&ndash;</b>
+                                </div>
+                                <div class="pnl-green-line"><span>&Oslash; pro Anmeldung</span><b id="panel-settlement-per-registration">&ndash;</b></div>
+                                <div class="pnl-green-line"><span>&Oslash; pro Teilnehmer</span><b id="panel-settlement-per-participant">&ndash;</b></div>
+                            </div>
                         </div>
-                        <div class="pnl-bar-legend pnl-bar-legend-wrap">
-                            <span><span class="pnl-bar-key pnl-bar-planned"></span>Geplant</span>
-                            <span><span class="pnl-bar-key pnl-bar-additional"></span>Zus&auml;tzlich</span>
-                            <span><span class="pnl-bar-key pnl-bar-retention"></span>Einbehalt</span>
-                            <span><span class="pnl-bar-key pnl-bar-distributable"></span>Verteilbar</span>
-                        </div>
-                    </div>
-                    <div class="pnl-lines">
-                        <div class="k"><span>Einnahmen</span><b id="panel-settlement-revenue">&ndash;</b></div>
-                        <div class="k"><span>Gesamtausgaben</span><b id="panel-settlement-expenses">&ndash;</b></div>
-                        <div class="k k-total"><span>&Uuml;berschuss / Defizit</span><b id="panel-settlement-surplus">&ndash;</b></div>
-                        <div class="k"><span id="panel-settlement-retention-label">Einbehalt</span><b id="panel-settlement-retention">&ndash;</b></div>
-                    </div>
-                    <div class="pnl-green" id="panel-settlement-green">
-                        <div class="pnl-green-head">
-                            <span>Verteilbar</span>
-                            <b id="panel-settlement-distributable">&ndash;</b>
-                        </div>
-                        <div class="pnl-green-line"><span>&Oslash; pro Anmeldung</span><b id="panel-settlement-per-registration">&ndash;</b></div>
-                        <div class="pnl-green-line"><span>&Oslash; pro Teilnehmer</span><b id="panel-settlement-per-participant">&ndash;</b></div>
                     </div>
                 </div>
             </aside>
             </div><!-- end pg -->
             </div><!-- end panel-abrechnung -->
             </div><!-- end tab-content -->
+        </div>
+
+        <!-- DESIGN: Regel 5 - wichtigste Zahl und Hauptaktion unten, in Daumenreichweite.
+             Die Kennzahl zieht das Blatt des aktiven Bereichs auf; welches das ist,
+             entscheidet app.js, damit der Tab-Wechsel nicht an einem Attribut haengt.
+             Ab lg tragen Reisekopf und Sticky-Spalte beides, dann ist die Bar weg. -->
+        <div class="trip-bar" id="trip-bar">
+            <button class="trip-bar-kpi" id="trip-bar-kpi" type="button" aria-haspopup="dialog">
+                <span class="help">
+                    <span id="trip-bar-kpi-label">&Uuml;berschuss</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                </span>
+                <b id="trip-bar-kpi-value">&ndash;</b>
+            </button>
+            <button id="trip-save-btn-bar" class="btn btn-p" type="submit" form="trip-form">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                <span id="trip-save-label-bar">Speichern</span>
+            </button>
         </div>
     </section>
 

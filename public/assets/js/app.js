@@ -134,9 +134,12 @@ function resetCalculationResult() {
 function setTripSaveLabel(text) {
   byId("trip-save-label").textContent = text;
   byId("trip-save-label-sticky").textContent = text;
-  // In der schmalen Kontextleiste ist nur Platz fuer das Verb.
+  // In der schmalen Kontextleiste und in der Bottom-Bar ist nur Platz fuer das
+  // Verb - dort steht die Kennzahl daneben.
   const short = text.replace(/^Reise /, "");
-  byId("trip-save-label-head").textContent = short.charAt(0).toUpperCase() + short.slice(1);
+  const verb = short.charAt(0).toUpperCase() + short.slice(1);
+  byId("trip-save-label-head").textContent = verb;
+  byId("trip-save-label-bar").textContent = verb;
 }
 
 // DESIGN: Eingabefeld je Kategorie in der Akkordeonzeile. Die ID bleibt, damit
@@ -979,12 +982,64 @@ function renderHeadKpi() {
   const isSettlement = activeTabName() === "abrechnung";
   const source = isSettlement ? byId("settlement-surplus") : byId("panel-surplus");
   const value = source.textContent.trim();
+  const label = isSettlement ? "Überschuss Ist" : "Überschuss";
+  const shown = value === "" ? "–" : value;
+  const isNegative = value.includes("−") || value.startsWith("-");
 
-  byId("trip-head-kpi-label").textContent = isSettlement ? "Überschuss Ist" : "Überschuss";
-  byId("trip-head-kpi-value").textContent = value === "" ? "–" : value;
-  byId("trip-head-kpi-value").className = value.includes("−") || value.startsWith("-")
-    ? "fuf-neg"
-    : "";
+  byId("trip-head-kpi-label").textContent = label;
+  byId("trip-head-kpi-value").textContent = shown;
+  byId("trip-head-kpi-value").className = isNegative ? "fuf-neg" : "";
+
+  // DESIGN: Auf dem Handy steht dieselbe Zahl in der Bottom-Bar. Sie wird an
+  // derselben Stelle abgelesen, damit es keine zweite Rechnung gibt, die
+  // auseinanderlaufen koennte.
+  byId("trip-bar-kpi-label").textContent = label;
+  byId("trip-bar-kpi-value").textContent = shown;
+  byId("trip-bar-kpi-value").className = isNegative ? "fuf-neg" : "";
+}
+
+// DESIGN: Das Blatt des aktiven Bereichs. Der Umweg ueber app.js statt
+// data-bs-toggle am Knopf haelt die Zuordnung an einer Stelle - sonst muesste
+// der Tab-Wechsel ein Attribut nachziehen.
+function openCalcSheet() {
+  if (!window.bootstrap || !window.bootstrap.Offcanvas) {
+    return;
+  }
+  const sheet = byId(activeTabName() === "abrechnung" ? "calc-sheet-abrechnung" : "calc-sheet-planung");
+  window.bootstrap.Offcanvas.getOrCreateInstance(sheet).show();
+}
+
+// DESIGN: Wisch nach unten schliesst das Blatt. Bootstrap kennt nur Backdrop,
+// Escape und den Knopf; der Griff ist die Flaeche, auf der ein Blatt
+// erwartungsgemaess nachgibt. 60 px trennen den Wisch vom Tipp, der ueber
+// data-bs-dismiss ohnehin schliesst.
+const SHEET_SWIPE_THRESHOLD = 60;
+
+function observeSheetSwipe() {
+  document.querySelectorAll(".sheet-grab").forEach((grab) => {
+    let startY = null;
+
+    grab.addEventListener("touchstart", (event) => {
+      startY = event.touches[0].clientY;
+    }, { passive: true });
+
+    grab.addEventListener("touchend", (event) => {
+      if (startY === null) {
+        return;
+      }
+      const moved = event.changedTouches[0].clientY - startY;
+      startY = null;
+      if (moved < SHEET_SWIPE_THRESHOLD) {
+        return;
+      }
+      // Der Tipp-Weg von data-bs-dismiss wuerde sonst gleich hinterher feuern.
+      event.preventDefault();
+      const sheet = grab.closest(".offcanvas-lg");
+      if (sheet && window.bootstrap && window.bootstrap.Offcanvas) {
+        window.bootstrap.Offcanvas.getOrCreateInstance(sheet).hide();
+      }
+    });
+  });
 }
 
 function renderHeadTabState() {
@@ -2387,6 +2442,7 @@ async function bootstrapPage() {
   });
 
   observeHeadScroll();
+  observeSheetSwipe();
   await renderCurrentRoute();
 }
 
@@ -2514,6 +2570,8 @@ async function backToList(event) {
 
 byId("trip-head-back-btn").addEventListener("click", backToList);
 byId("app-head-back-btn").addEventListener("click", backToList);
+
+byId("trip-bar-kpi").addEventListener("click", openCalcSheet);
 
 // DESIGN: Aus dem Menuepanel heraus geht es weiter - in ein Modal, in eine neue
 // Reise oder zurueck zur Liste. Das Panel muss vorher zu sein, sonst liegt es

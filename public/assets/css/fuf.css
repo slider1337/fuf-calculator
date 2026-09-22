@@ -1480,6 +1480,75 @@ body.is-trip-view .app-head-new {
     height: var(--fuf-control-height);
 }
 
+/* Reservierte Zimmer, mobile first: je Typ eine Karte wie in der
+   Unterkunft darueber - der Typ ueber die volle Breite, darunter Stepper und
+   Entfernen-Knopf. Ab 901 px eine Zeile - der Stepper
+   loest sich dort wie in der Unterkunftstabelle per `display: contents` auf,
+   uebrig bleiben drei Rasterkinder: Typ, Anzahl, Entfernen. */
+.room-res {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--fuf-sand-300);
+}
+
+.room-res-h {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.room-res-h b {
+    font-size: 14px;
+}
+
+.room-res-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.room-res-list:empty {
+    display: none;
+}
+
+.room-res-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 11px 12px;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+}
+
+.room-res-row > .room-res-type {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 901px) {
+    .room-res-h {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 10px;
+    }
+
+    /* Die Karte ist am Desktop nur noch eine Zeile im Formular. */
+    .room-res-row {
+        grid-template-columns: minmax(0, 1fr) 140px auto;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .room-res-row > .room-res-type {
+        grid-column: auto;
+    }
+}
+
 /* Zusatzausgabe: Bezeichnung breit, Betrag schmal */
 /* Mobile first: Bezeichnung und Betrag stehen untereinander. Nebeneinander
    nimmt der Betrag feste 180 px, und von 390 px bleiben der Bezeichnung
@@ -3394,22 +3463,48 @@ button.chip-btn.is-active {
     font-size: 14px;
 }
 
-/* Mobile first: der Balken entfaellt. Als Block hat er keine Inhaltsbreite
-   und faellt auf 0 zusammen; neben der Zahl im selben Block waere er ohnehin
-   nur Wiederholung. */
-.tb td.room-bar-cell {
-    display: none;
+/* Belegung je Zimmertyp: Balken und Zahl "angemeldet/reserviert" in einer
+   Zelle. Anders als frueher bleibt der Balken auf dem Handy stehen - er ist
+   jetzt die Aussage und keine Wiederholung der Zahl. Die Huelle .room-fill ist
+   ein eigenes Flex-Element, damit die Zelle am Desktop table-cell bleiben
+   kann. */
+.tb td.room-fill-cell {
+    display: block;
+}
+
+.room-fill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.room-fill .bar {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.room-fill-num {
+    flex-shrink: 0;
+    min-width: 3.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.room-fill-num.is-over {
+    color: var(--fuf-red-700);
 }
 
 @media (min-width: 901px) {
-    .tb td.room-bar-cell {
+    .tb td.room-fill-cell {
         display: table-cell;
-        width: 40%;
+        width: 60%;
     }
 }
 
-/* Der Balken zeigt den Anteil an der groessten Kategorie. Die Breite kommt
- * als Inline-Style aus dem Renderer - sie ist ein Datenwert, kein Stil. */
+/* Die Breite kommt als Inline-Style aus dem Renderer - sie ist ein
+ * Datenwert, kein Stil. Ohne Zustand (keine Reservierungen) zeigt der Balken
+ * den Anteil an der groessten Kategorie; mit Reservierungen die Belegung:
+ * teilweise gelb (Zimmer frei), genau voll gruen, Ueberlauf rot. */
 .bar {
     display: block;
     height: 8px;
@@ -3422,6 +3517,18 @@ button.chip-btn.is-active {
     display: block;
     height: 100%;
     background: var(--fuf-green-600);
+}
+
+.bar.is-partial > span {
+    background: var(--fuf-amber-500);
+}
+
+.bar.is-full > span {
+    background: var(--fuf-green-600);
+}
+
+.bar.is-over > span {
+    background: var(--fuf-red-700);
 }
 
 .cat-ist {

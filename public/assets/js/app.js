@@ -15,6 +15,9 @@ const state = {
   // Einzelkategorien.
   salesPrices: { ADULT_DOUBLE: null, ADULT_MULTI: null, ADULT: null, CHILD: null },
   formSnapshot: null,
+  // Zeilen der reservierten Zimmer beim letzten Laden/Speichern - hinzugefuegte
+  // Zeilen haben keinen Eintrag in formSnapshot und fielen sonst durch.
+  reservationRowsSnapshot: "",
   sectionObserver: null,
   currentSettlement: null,
   // DESIGN: Filter und Suche bei den Anmeldungen sind rein clientseitig.
@@ -837,7 +840,7 @@ function renderLivePreview() {
   renderRoomSums();
   renderPanel(previewCalculation(), "preview");
   renderSectionSummaries();
-  renderRoomPlanTargets();
+  renderRoomSummary();
   renderDirtyState();
   renderJumpState();
 }
@@ -866,9 +869,11 @@ function renderSectionSummaries() {
   ].join(" · ");
 
   const adultAge = byId("adultAgeThreshold").value;
+  const reservedRooms = reservedRoomTotal();
   byId("sum-unterkunft").textContent = [
     `${participants} ${participants === 1 ? "Person" : "Personen"}`,
     adultAge === "" ? null : `Erwachsen ab ${adultAge} J.`,
+    reservedRooms > 0 ? `${reservedRooms} Zimmer reserviert` : null,
   ].filter(Boolean).join(" · ");
 
   const expenseLabel = byId("expenseLabel").value.trim();
@@ -903,6 +908,7 @@ function snapshotTripForm() {
     snapshot[field.id] = fieldState(field);
   });
   state.formSnapshot = snapshot;
+  state.reservationRowsSnapshot = roomReservationRowIds();
   renderDirtyState();
 }
 
@@ -922,6 +928,12 @@ function renderDirtyState() {
     }
   });
 
+  // Zeile hinzugefuegt oder entfernt zaehlt als eine Aenderung; geaenderte
+  // Werte in bestehenden Zeilen zaehlen oben schon je Feld.
+  if (snapshot !== null && roomReservationRowIds() !== state.reservationRowsSnapshot) {
+    changed += 1;
+  }
+
   byId("trip-dirty-note").textContent = changed === 0
     ? ""
     : `Ungespeicherte Änderungen: ${changed} ${changed === 1 ? "Feld" : "Felder"}`;
@@ -935,11 +947,12 @@ function renderJumpState() {
   const filled = {
     "sec-eckdaten": byId("name").value.trim() !== "" && byId("startDate").value !== "",
     "sec-aufschlaege": byId("markupPercent").value !== "",
-    "sec-unterkunft": numberFromField("adultDoubleCount") + numberFromField("adultMultiCount") + numberFromField("childCount") > 0,
+    "sec-unterkunft": numberFromField("adultDoubleCount") + numberFromField("adultMultiCount") + numberFromField("childCount") > 0
+      || reservedRoomTotal() > 0,
     "sec-zusatz": byId("expenseLabel").value.trim() !== "" && byId("expenseAmount").value !== "",
     "sec-kalkulation": !byId("result-panel").classList.contains("d-none"),
     "registrations-section": registrations.length > 0,
-    "room-summary-section": registrations.length > 0,
+    "room-summary-section": !byId("room-summary-section").classList.contains("d-none"),
     // Abrechnung: derselbe Mechanismus, nur aus dem Settlement gespeist.
     "sec-geplante-kosten": settlement !== null && (settlement.plannedCostItems || []).length > 0,
     "sec-zusatzausgaben": settlement !== null && (settlement.expenses || []).length > 0,
@@ -1342,6 +1355,115 @@ function fillSettingsForm(settings) {
   form.defaultAdultAgeThreshold.value = formatDecimal(settings.defaultAdultAgeThreshold);
 }
 
+// DESIGN: Reservierte Zimmer - eine freie Liste aus Typ und Anzahl. Die IDs
+// kommen aus einem laufenden Zaehler, damit der Stepper-Listener
+// (data-step-target) und numberFromField() die Felder ohne Sonderweg finden.
+let roomReservationSeq = 0;
+
+const iconMinus = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
+const iconPlus = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+function roomReservationRow(roomType = "", count = 0) {
+  roomReservationSeq += 1;
+  const n = roomReservationSeq;
+  const row = document.createElement("div");
+  row.className = "room-res-row";
+  row.dataset.reservationRow = String(n);
+  row.innerHTML = `
+    <div class="in room-res-type"><input id="roomReservationType-${n}" class="room-res-type-input" type="text" list="room-type-suggestions" placeholder="z.&nbsp;B. 2-Bettzimmer" aria-label="Zimmertyp" value="${escapeHtml(roomType)}"></div>
+    <div class="stepper">
+      <button class="step" type="button" data-step="-1" data-step-target="roomReservationCount-${n}" aria-label="Anzahl reservierter Zimmer verringern">${iconMinus}</button>
+      <div class="in"><input id="roomReservationCount-${n}" class="room-res-count-input" type="text" inputmode="numeric" value="${escapeHtml(formatDecimal(count))}" aria-label="Anzahl reservierter Zimmer"><span class="u">Zi.</span></div>
+      <button class="step" type="button" data-step="1" data-step-target="roomReservationCount-${n}" aria-label="Anzahl reservierter Zimmer erh&ouml;hen">${iconPlus}</button>
+    </div>
+    <button type="button" class="ib ib-danger" data-remove-room-reservation aria-label="Zimmertyp entfernen" title="Zimmertyp entfernen">${iconTrash}</button>
+  `;
+  return row;
+}
+
+function roomReservationRows() {
+  return Array.from(byId("room-reservations-list").querySelectorAll(".room-res-row"));
+}
+
+function setRoomReservations(reservations) {
+  const list = byId("room-reservations-list");
+  list.innerHTML = "";
+  reservations.forEach((reservation) => {
+    list.appendChild(roomReservationRow(reservation.roomType, reservation.count));
+  });
+  renderRoomReservationsEmpty();
+  // Neue Liste, neuer Abgleich - sonst stuende unter Zimmerbedarf noch der
+  // Stand der vorigen Reise.
+  renderRoomSummary();
+}
+
+function renderRoomReservationsEmpty() {
+  byId("room-reservations-empty").classList.toggle("d-none", roomReservationRows().length > 0);
+}
+
+function roomReservationsFromForm() {
+  return roomReservationRows().map((row) => ({
+    roomType: row.querySelector(".room-res-type-input").value.trim(),
+    count: Math.max(0, Math.round(numberFromField(row.querySelector(".room-res-count-input").id))),
+  }));
+}
+
+// Wie RoomReservation::matchKeyFor() im Backend.
+function roomTypeKey(roomType) {
+  return String(roomType).trim().toLowerCase();
+}
+
+// Dieselben Regeln wie TripService::roomReservationPayloads(), nur mit
+// lesbarer Meldung statt des rohen 422-JSON.
+function roomReservationProblem(reservations) {
+  if (reservations.some((reservation) => reservation.roomType === "" && reservation.count > 0)) {
+    return "Bei den reservierten Zimmern fehlt in einer Zeile der Zimmertyp.";
+  }
+
+  const seen = new Set();
+  for (const reservation of reservations) {
+    if (reservation.roomType === "") {
+      continue;
+    }
+    const key = roomTypeKey(reservation.roomType);
+    if (seen.has(key)) {
+      return `Der Zimmertyp „${reservation.roomType}“ steht bei den reservierten Zimmern doppelt.`;
+    }
+    seen.add(key);
+  }
+
+  return null;
+}
+
+function reservedRoomTotal() {
+  return roomReservationsFromForm().reduce((sum, reservation) => sum + reservation.count, 0);
+}
+
+// DESIGN: Vorschlaege aus der Auswahl der manuellen Anmeldung plus allem, was
+// in den Anmeldungen dieser Reise steht - so passt der Typ meist schon beim
+// ersten Tippen zu dem, was der Abgleich unter Zimmerbedarf erwartet.
+function renderRoomTypeSuggestions() {
+  const byKey = new Map();
+  const add = (roomType) => {
+    const trimmed = String(roomType ?? "").trim();
+    if (trimmed !== "" && !byKey.has(roomTypeKey(trimmed))) {
+      byKey.set(roomTypeKey(trimmed), trimmed);
+    }
+  };
+
+  Array.from(byId("manualRoomCategory").options).forEach((option) => add(option.value));
+  (state.currentRegistrations || []).forEach((reg) => add(reg.roomCategory));
+
+  byId("room-type-suggestions").innerHTML = Array.from(byKey.values())
+    .sort((a, b) => a.localeCompare(b, "de"))
+    .map((roomType) => `<option value="${escapeHtml(roomType)}"></option>`)
+    .join("");
+}
+
+function roomReservationRowIds() {
+  return roomReservationRows().map((row) => row.dataset.reservationRow).join(",");
+}
+
 function clearTripFormWithDefaults() {
   const form = byId("trip-form");
   form.reset();
@@ -1358,6 +1480,7 @@ function clearTripFormWithDefaults() {
   form.childCount.value = formatDecimal(0);
   form.childPrice.value = formatDecimal(0);
   form.averageAdultPrice.checked = false;
+  setRoomReservations([]);
 
   if (state.settings) {
     form.markupPercent.value = formatDecimal(state.settings.defaultMarkupPercent);
@@ -1383,6 +1506,12 @@ function tripPayloadFromForm() {
       label: form.expenseLabel.value.trim(),
       amount: parseDecimal(form.expenseAmount.value),
     });
+  }
+
+  const roomReservations = roomReservationsFromForm();
+  const reservationProblem = roomReservationProblem(roomReservations);
+  if (reservationProblem !== null) {
+    throw new Error(reservationProblem);
   }
 
   const averageAdultPrice = form.averageAdultPrice.checked;
@@ -1423,6 +1552,7 @@ function tripPayloadFromForm() {
       },
     ],
     groupExpenses: expenses,
+    roomReservations,
   };
 }
 
@@ -1467,6 +1597,8 @@ function fillTripForm(trip) {
   const firstExpense = trip.groupExpenses.length > 0 ? trip.groupExpenses[0] : null;
   form.expenseLabel.value = firstExpense ? firstExpense.label : "";
   form.expenseAmount.value = formatDecimal(firstExpense ? firstExpense.amount : "");
+
+  setRoomReservations(trip.roomReservations || []);
 
   setTripSaveLabel("Reise aktualisieren");
   // DESIGN: Der gefuellte Stand ist der gespeicherte - ab hier zaehlt jede
@@ -1635,6 +1767,7 @@ async function calculateTripResult(tripId) {
 }
 
 function resetRegistrations() {
+  state.currentRegistrations = [];
   byId("registrations-summary").classList.add("d-none");
   byId("registrations-controls").classList.add("d-none");
   byId("registrations-table-wrapper").classList.add("d-none");
@@ -1653,9 +1786,10 @@ function resetRegistrations() {
   byId("sum-anmeldungen").textContent = "keine Anmeldungen";
   byId("jump-reg-count").className = "chip c-grey jump-chip d-none";
   resetRegistrationFilter();
+  renderRoomTypeSuggestions();
   renderSwitchTargets();
+  renderRoomSummary();
   renderJumpState();
-  resetRoomSummary();
 }
 
 function resetRegistrationFilter() {
@@ -1714,45 +1848,114 @@ function renderCategoryChecks() {
   });
 }
 
-function renderRoomSummary(registrations) {
-  if (!registrations || registrations.length === 0) {
+// DESIGN: Abgleich reserviert gegen angemeldet je Zimmertyp. Eine Anmeldung ist
+// ein Zimmer. Die Zuordnung ignoriert Gross-/Kleinschreibung und Rand-Leerzeichen
+// (roomTypeKey, wie im Backend); angezeigt wird der Name aus der Reservierung.
+// Die Reservierungen kommen aus dem Formular, nicht aus dem gespeicherten Stand -
+// so laeuft der Balken beim Tippen mit, wie das Soll neben dem Ist.
+function roomFillRows(registrations, reservations) {
+  const rows = new Map();
+  const rowFor = (roomType) => {
+    const key = roomTypeKey(roomType);
+    if (!rows.has(key)) {
+      rows.set(key, { roomType: String(roomType).trim(), reserved: 0, registered: 0 });
+    }
+    return rows.get(key);
+  };
+
+  reservations.forEach((reservation) => {
+    rowFor(reservation.roomType).reserved += reservation.count;
+  });
+  registrations.forEach((reg) => {
+    rowFor(reg.roomCategory).registered += 1;
+  });
+
+  return Array.from(rows.values())
+    .filter((row) => row.reserved > 0 || row.registered > 0)
+    .sort((a, b) => a.roomType.localeCompare(b.roomType, "de"));
+}
+
+// Teilweise gefuellt heisst Zimmer frei (gelb), genau voll passt (gruen),
+// darueber muss nachreserviert werden (rot, voll gefuellt).
+function roomFillState(row) {
+  if (row.registered > row.reserved) {
+    return "is-over";
+  }
+  return row.registered === row.reserved ? "is-full" : "is-partial";
+}
+
+function roomFillCell(row) {
+  const fillState = roomFillState(row);
+  const share = row.reserved > 0 ? Math.min(100, Math.round((row.registered / row.reserved) * 100)) : 100;
+  const label = `${row.registered} von ${row.reserved} reservierten Zimmern belegt`;
+
+  return `
+    <div class="room-fill">
+      <span class="bar ${fillState}" role="img" aria-label="${escapeHtml(label)}"><span style="width: ${share}%"></span></span>
+      <b class="room-fill-num ${fillState}">${row.registered}/${row.reserved}</b>
+    </div>
+  `;
+}
+
+// Ohne jede Reservierung bleibt es bei der bisherigen Zaehlung aus den
+// Anmeldungen - sonst stuende jede alte Reise komplett rot da.
+function roomCountCell(row, maxRooms) {
+  const share = maxRooms > 0 ? Math.round((row.registered / maxRooms) * 100) : 0;
+
+  return `
+    <div class="room-fill">
+      <span class="bar"><span style="width: ${share}%"></span></span>
+      <b class="room-fill-num">${row.registered}</b>
+    </div>
+  `;
+}
+
+function roomBalanceSummary(rows) {
+  const missing = rows.reduce((sum, row) => sum + Math.max(0, row.registered - row.reserved), 0);
+  const free = rows.reduce((sum, row) => sum + Math.max(0, row.reserved - row.registered), 0);
+
+  if (missing === 0 && free === 0) {
+    return "alles passt";
+  }
+
+  return [
+    missing > 0 ? `${missing} nachreservieren` : null,
+    free > 0 ? `${free} frei` : null,
+  ].filter(Boolean).join(" · ");
+}
+
+function renderRoomSummary() {
+  const registrations = state.currentRegistrations || [];
+  const reservations = roomReservationsFromForm().filter((reservation) => reservation.roomType !== "");
+  const rows = roomFillRows(registrations, reservations);
+
+  if (rows.length === 0) {
     resetRoomSummary();
     return;
   }
 
   byId("room-summary-section").classList.remove("d-none");
 
-  // Count rooms by exact category
-  const roomCounts = {};
-  registrations.forEach((reg) => {
-    const cat = reg.roomCategory;
-    roomCounts[cat] = (roomCounts[cat] || 0) + 1;
-  });
+  const hasReservations = rows.some((row) => row.reserved > 0);
+  const totalRegistered = rows.reduce((sum, row) => sum + row.registered, 0);
+  const totalReserved = rows.reduce((sum, row) => sum + row.reserved, 0);
+  // DESIGN: Ohne Reservierungen bezieht sich der Balken auf die groesste
+  // Kategorie, nicht auf die Gesamtzahl - sonst blieben alle Balken winzig.
+  const maxRooms = Math.max(...rows.map((row) => row.registered));
 
-  const sortedCategories = Object.keys(roomCounts).sort();
+  byId("room-detail-body").innerHTML = rows.map((row) => `
+    <tr>
+      <td class="tb-head">${escapeHtml(row.roomType)}</td>
+      <td class="room-fill-cell">${hasReservations ? roomFillCell(row) : roomCountCell(row, maxRooms)}</td>
+    </tr>
+  `).join("");
 
-  // Detail table: rooms by type
-  const detailBody = byId("room-detail-body");
-  detailBody.innerHTML = "";
-  let totalRooms = 0;
-
-  // DESIGN: Der Balken bezieht sich auf die groesste Kategorie, nicht auf die
-  // Gesamtzahl - sonst bleiben alle Balken bei vielen Kategorien winzig.
-  const maxRooms = Math.max(...sortedCategories.map((cat) => roomCounts[cat]));
-
-  sortedCategories.forEach((cat) => {
-    const share = maxRooms > 0 ? Math.round((roomCounts[cat] / maxRooms) * 100) : 0;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="tb-head">${escapeHtml(cat)}</td>
-      <td class="room-bar-cell"><span class="bar"><span style="width: ${share}%"></span></span></td>
-      <td class="r" data-col="Zimmer"><b>${roomCounts[cat]}</b></td>
-    `;
-    detailBody.appendChild(tr);
-    totalRooms += roomCounts[cat];
-  });
-  byId("room-detail-total").textContent = String(totalRooms);
-  byId("sum-zimmer").textContent = `aus den Anmeldungen abgeleitet · ${totalRooms} Zimmer`;
+  byId("room-detail-total").textContent = hasReservations
+    ? `${totalRegistered}/${totalReserved}`
+    : String(totalRegistered);
+  byId("sum-zimmer").textContent = hasReservations
+    ? roomBalanceSummary(rows)
+    : `aus den Anmeldungen abgeleitet · ${totalRegistered} Zimmer`;
 
   // Category summary from billing items
   let adultDouble = 0;
@@ -1911,6 +2114,7 @@ function renderRegistrations(registrations) {
   }
 
   state.currentRegistrations = registrations;
+  renderRoomTypeSuggestions();
 
   byId("registrations-empty").classList.add("d-none");
   byId("registrations-summary").classList.remove("d-none");
@@ -1984,7 +2188,7 @@ function renderRegistrations(registrations) {
 
   applyRegistrationFilter();
   renderSwitchTargets();
-  renderRoomSummary(registrations);
+  renderRoomSummary();
 }
 
 function participantGapNote(registered, planned) {
@@ -2636,6 +2840,27 @@ byId("sec-unterkunft-body").addEventListener("click", (event) => {
   field.dispatchEvent(new Event("input", { bubbles: true }));
 });
 
+// DESIGN: Hinzufuegen und Entfernen loesen ein input-Event am Formular aus,
+// damit Vorschau, Kopfzeilen und Dirty-State mitlaufen wie beim Tippen.
+byId("add-room-reservation-btn").addEventListener("click", () => {
+  const row = roomReservationRow();
+  byId("room-reservations-list").appendChild(row);
+  renderRoomReservationsEmpty();
+  row.querySelector(".room-res-type-input").focus();
+  row.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
+byId("room-reservations-list").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-room-reservation]");
+  if (!button) {
+    return;
+  }
+
+  button.closest(".room-res-row").remove();
+  renderRoomReservationsEmpty();
+  byId("trip-form").dispatchEvent(new Event("input", { bubbles: true }));
+});
+
 byId("new-trip-btn").addEventListener("click", startNewTrip);
 
 // DESIGN: Der Knopf in der Leerzustands-Karte macht dasselbe wie der in der Kopfleiste.
@@ -2699,9 +2924,9 @@ byId("trip-list-body").addEventListener("click", async (event) => {
 byId("trip-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const tripIdValue = byId("tripFormId").value;
-  const payload = tripPayloadFromForm();
 
   try {
+    const payload = tripPayloadFromForm();
     const trip = tripIdValue
       ? await api(`/api/trips/${tripIdValue}`, { method: "PUT", body: JSON.stringify(payload) })
       : await api("/api/trips", { method: "POST", body: JSON.stringify(payload) });

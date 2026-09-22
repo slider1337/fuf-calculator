@@ -75,6 +75,13 @@ $winter = $trips->createFromArray([
     'groupExpenses' => [
         ['label' => 'Busanreise', 'amount' => 2400.0],
     ],
+    // Gegen die Anmeldungen unten: 2-Bett passt, 3- und 5-Bett haben freie
+    // Zimmer, fuer das 4-Bettzimmer fehlt die Reservierung.
+    'roomReservations' => [
+        ['roomType' => '2-Bettzimmer', 'count' => 1],
+        ['roomType' => '3-Bettzimmer', 'count' => 3],
+        ['roomType' => '5-Bettzimmer', 'count' => 2],
+    ],
 ]);
 
 $zelten = $trips->createFromArray([

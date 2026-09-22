@@ -429,6 +429,24 @@
                                 <label for="adultAgeThreshold">Erwachsen ab</label>
                                 <div class="in in-sm"><input id="adultAgeThreshold" name="adultAgeThreshold" type="text" inputmode="numeric" required><span class="u">J.</span></div>
                             </div>
+                            <!-- DESIGN: Reservierte Zimmer sind Zimmer, nicht Personen - sie fliessen
+                                 nicht in die Kalkulation ein, sondern nur in den Abgleich unter
+                                 Zimmerbedarf. Die Zeilen erzeugt app.js (roomReservationRow). -->
+                            <div class="room-res">
+                                <div class="room-res-h">
+                                    <b>Reservierte Zimmer</b>
+                                    <span class="help">Anzahl Zimmer je Typ, nicht Personen</span>
+                                </div>
+                                <div id="room-reservations-list" class="room-res-list"></div>
+                                <span class="help" id="room-reservations-empty">Noch keine Zimmer reserviert.</span>
+                                <div>
+                                    <button type="button" id="add-room-reservation-btn" class="btn btn-o btn-s">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                        Zimmertyp hinzuf&uuml;gen
+                                    </button>
+                                </div>
+                                <datalist id="room-type-suggestions"></datalist>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -693,7 +711,6 @@
                                     <tfoot>
                                     <tr class="sum-row">
                                         <td>Gesamt</td>
-                                        <td></td>
                                         <td class="r" id="room-detail-total">0</td>
                                     </tr>
                                     </tfoot>

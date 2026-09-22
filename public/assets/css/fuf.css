@@ -1423,9 +1423,17 @@ body.is-trip-view .app-head-title {
     padding: 0 20px;
 }
 
+/* Die Bar der Reiseliste traegt nur die Hauptaktion - die nimmt dann die
+   ganze Breite ein, anders als der Speichern-Knopf neben der Kennzahl. */
+.trip-bar-list .btn {
+    flex-grow: 1;
+    width: 100%;
+}
+
 /* Das Seitenende haelt den Platz der Bar frei. Ab lg ist --fuf-bar-space 0,
-   die Zeile stimmt dann wieder mit .app-footer ueberein. */
-body.is-trip-view .app-footer {
+   die Zeile stimmt dann wieder mit .app-footer ueberein. Seit Schritt 4b hat
+   auch die Liste eine Bar, die Regel gilt deshalb fuer beide Ansichten. */
+.app-footer {
     padding-bottom: calc(14px + var(--fuf-bar-space));
 }
 
@@ -2107,6 +2115,78 @@ body.is-trip-view .app-footer {
     flex: 1 0 100%;
 }
 
+/* Reiseliste, mobile first: aus der Zeile wird eine Karte wie in
+   mockups/06-mobil.html - Name als Ueberschrift, Zeitraum und Teilnehmer als
+   eine Zeile mit Icons, Ueberschuss abgesetzt darunter, Aktionen zuletzt.
+   Die Spalte "ID" entfaellt, wie RESPONSIVE.md es vorgibt.
+
+   Status-Chip und Filter-Chip-Leiste aus dem Mockup entfallen ersatzlos: es
+   gibt keinen Reisestatus im Datenmodell und keinen Filter in der Liste -
+   dieselbe Begruendung wie beim Status-Chip in Schritt 2. */
+.tb-trips tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 14px;
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--fuf-sand-400);
+    border-bottom: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+}
+
+.tb td.tb-col-id {
+    display: none;
+}
+
+.tb-trips tbody td.tb-head {
+    flex: 1 0 100%;
+}
+
+/* Zeitraum und Teilnehmer stehen nebeneinander in einer Hilfstext-Zeile. */
+.tb-trips tbody td.tb-trip-meta {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    font-size: 13px;
+    color: var(--fuf-brown-400);
+}
+
+/* "4 Naechte" haengt sonst als eigene Zeile in der Karte. */
+.tb-trips tbody td.tb-trip-meta .tb-sub {
+    display: inline;
+}
+
+.tb-trips tbody td.tb-trip-meta .tb-sub::before {
+    content: "· ";
+}
+
+/* Der Ueberschuss ist die Zahl, um die es geht - eigene Zeile mit Trennlinie. */
+.tb-trips tbody td.tb-trip-sum {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+    margin-top: 9px;
+    padding: 7px 0 0 0;
+    border-top: 1px solid var(--fuf-sand-300);
+    font-weight: 700;
+}
+
+.tb-trips tbody td.tb-trip-sum::before {
+    margin-right: auto;
+}
+
+.tb-trips tbody td.tb-act {
+    flex: 1 0 100%;
+    justify-content: flex-start;
+}
+
+/* Die Icons gehoeren zur Karte, nicht zur Tabelle. */
+.tb-ico {
+    flex-shrink: 0;
+    color: var(--fuf-brown-400);
+}
+
 /* Ab 901 px wieder eine echte Tabelle - dieselbe Grenze wie bei den Rastern
    in Abschnitt 5a. Die feste Spaltenbreite steht hier und nicht in der Basis,
    weil width auf einem Block wirkt, auf einer Tabellenzelle aber nur als
@@ -2208,6 +2288,47 @@ body.is-trip-view .app-footer {
     .tb-refund tbody td.refund-share,
     .tb-refund tbody td[data-col="Erstattung"] {
         display: table-cell;
+    }
+
+    .tb-trips tbody tr {
+        display: table-row;
+        padding: 0;
+        margin-bottom: 0;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .tb td.tb-col-id,
+    .tb-trips tbody td.tb-head,
+    .tb-trips tbody td.tb-trip-meta,
+    .tb-trips tbody td.tb-trip-sum,
+    .tb-trips tbody td.tb-act {
+        display: table-cell;
+    }
+
+    .tb-trips tbody td.tb-trip-meta,
+    .tb-trips tbody td.tb-trip-sum {
+        margin-top: 0;
+        padding: 11px 20px;
+        border-top: 0;
+        font-size: inherit;
+        font-weight: 400;
+        color: inherit;
+    }
+
+    /* "4 Naechte" steht am Desktop wieder unter dem Zeitraum. Ohne diese
+       Rueckstellung rutscht es in die Zeile und verschiebt die ganze
+       Tabelle - 5.627 Pixel Unterschied bei 1440 px. */
+    .tb-trips tbody td.tb-trip-meta .tb-sub {
+        display: block;
+    }
+
+    .tb-trips tbody td.tb-trip-meta .tb-sub::before {
+        content: none;
+    }
+
+    .tb-ico {
+        display: none;
     }
 }
 

@@ -157,7 +157,7 @@
         </div>
 
         <div id="trip-list-card" class="sec">
-            <table class="tb">
+            <table class="tb tb-trips">
                 <thead>
                 <tr>
                     <th class="tb-col-id">ID</th>
@@ -185,6 +185,16 @@
                 <span class="help">Aufschlag, Vereinsgeb&uuml;hr und Kurabgabe werden aus den globalen Settings vorbelegt.</span>
             </div>
             <button id="trip-list-empty-create-btn" class="btn btn-p" type="button">Reise erstellen</button>
+        </div>
+
+        <!-- DESIGN: Regel 5 - die Hauptaktion der Liste liegt unter lg unten, in
+             Daumenreichweite. Dieselbe .trip-bar wie in der Reiseansicht; ab lg
+             ist sie weg und `Neue Reise` steht wieder in der Kopfleiste. -->
+        <div class="trip-bar trip-bar-list" id="trip-list-bar">
+            <button id="trip-list-bar-create-btn" class="btn btn-p" type="button">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Neue Reise
+            </button>
         </div>
     </section>
 

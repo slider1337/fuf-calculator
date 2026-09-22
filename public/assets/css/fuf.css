@@ -1251,10 +1251,165 @@ body.is-trip-view .app-head-title {
     text-transform: uppercase;
 }
 
-/* Unterkunft: Kategoriezelle, Summenspalte, Fusszeile */
+/* Unterkunft, mobile first: aus den vier Spalten wird pro Kategorie eine
+   Karte - Icon und Name, Zeile "Personen" mit - / + Stepper, Zeile
+   "EUR / Nacht", darunter Summe mit Rechenweg als Hilfstext. So gibt es
+   RESPONSIVE.md vor; der Stepper ist auf dem Handy wichtiger als am Desktop,
+   weil Zahlen tippen nervt.
+
+   Der Umbau haengt an `display: contents` ab 901 px - derselbe Griff wie beim
+   Blatt in Schritt 3b. Die Huellen .room-row, .stepper und .room-sum-line
+   loesen sich dort als Box auf, und die vier Zellen stehen wieder direkt im
+   Raster. Was nur zur Karte gehoert - Beschriftungen, Stepper-Knoepfe,
+   Rechenweg - ist ab 901 px `display: none`, sonst waeren es mehr als vier
+   Rasterkinder pro Zeile und die Spalten verrutschten. */
 .room-table {
     align-items: center;
     gap: 10px 16px;
+}
+
+/* Die Spaltenkoepfe beschreiben Spalten - in der Karte stehen die
+   Beschriftungen an den Zeilen. */
+.room-table .col-head {
+    display: none;
+}
+
+/* Zwei Spuren: Beschriftung links, Bedienelement rechts. Kategoriezeile und
+   Summenzeile nehmen beide. */
+.room-row {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px 10px;
+    padding: 13px 14px;
+    border: 1px solid var(--fuf-sand-400);
+    border-radius: 10px;
+}
+
+.room-row > .room-cat,
+.room-row > .room-sum-line {
+    grid-column: 1 / -1;
+}
+
+.room-lbl {
+    font-size: 13px;
+    color: var(--fuf-brown-400);
+}
+
+.room-sum-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--fuf-sand-300);
+}
+
+.room-calc {
+    min-width: 0;
+}
+
+/* Stepper: Minus, Feld, Plus mit zusammenlaufenden Kanten. Die Knoepfe sind
+   48 px breit - Regel 3. */
+.stepper {
+    display: flex;
+    min-width: 0;
+}
+
+.step {
+    flex-shrink: 0;
+    width: var(--fuf-touch);
+    min-width: 48px;
+    height: var(--fuf-control-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--fuf-sand-500);
+    background: var(--fuf-sand-100);
+    color: var(--fuf-brown-700);
+    cursor: pointer;
+}
+
+.step:first-child {
+    border-radius: var(--fuf-radius-control) 0 0 var(--fuf-radius-control);
+}
+
+.step:last-child {
+    border-radius: 0 var(--fuf-radius-control) var(--fuf-radius-control) 0;
+}
+
+.stepper .in {
+    flex-grow: 1;
+    min-width: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+}
+
+/* Die Zahl steht mittig und fett, das Suffix entfaellt - "Personen" sagt es
+   schon links, und auf 390 px ist der Platz besser in der Zahl angelegt. */
+.stepper .in input {
+    text-align: center;
+    font-weight: 700;
+}
+
+.stepper .in .u {
+    display: none;
+}
+
+/* Ab 901 px wieder das vierspaltige Raster. Der Block steht hier und nicht
+   bei .fuf-grid-room in Abschnitt 5a: dort stuende er VOR diesen
+   Definitionen, und bei gleicher Spezifitaet gewinnt die spaetere Regel.
+   Genau daran ist der erste Versuch gescheitert - der Desktop zeigte drei
+   Karten nebeneinander statt der Tabelle. Dieselbe Lehre wie in 3a. */
+@media (min-width: 901px) {
+    .room-table .col-head {
+        display: revert;
+    }
+
+    /* Die drei Huellen loesen sich als Box auf, damit die vier Zellen wieder
+       direkt im Raster stehen. Danach bleiben pro Zeile genau vier
+       Rasterkinder: Kategorie, Anzahl-Feld, Preis-Feld, Summe. */
+    .room-row,
+    .stepper,
+    .room-sum-line {
+        display: contents;
+    }
+
+    /* `display: contents` loest die Huelle als Box auf, nicht als Treffer im
+       Selektor: .room-row > .room-cat passt weiterhin, und das
+       `grid-column: 1 / -1` der Karte liess die Kategoriezelle alle vier
+       Spuren spannen. Dieselbe Lehre wie beim Blatt in 3b. */
+    .room-row > .room-cat,
+    .room-row > .room-sum-line {
+        grid-column: auto;
+    }
+
+    /* Was nur zur Karte gehoert, verschwindet - sonst waeren es sieben
+       Rasterkinder pro Zeile und die Spalten verrutschten. */
+    .room-lbl,
+    .step,
+    .room-calc {
+        display: none;
+    }
+
+    /* Das Anzahl-Feld ist wieder ein Feld wie jedes andere. */
+    .stepper .in {
+        border-radius: var(--fuf-radius-control);
+        border-left: 1px solid var(--fuf-sand-500);
+        border-right: 1px solid var(--fuf-sand-500);
+    }
+
+    .stepper .in input {
+        text-align: left;
+        font-weight: 400;
+    }
+
+    .stepper .in .u {
+        display: flex;
+    }
 }
 
 .room-cat {
@@ -1276,11 +1431,29 @@ body.is-trip-view .app-head-title {
     text-align: right;
 }
 
+/* Mobile first: "Erwachsen ab" steht ueber dem Feld. Nebeneinander bricht die
+   Beschriftung auf 390 px in zwei Zeilen und das Feld wird zusammengedrueckt. */
 .room-foot {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 6px 10px;
     padding-top: 6px;
+}
+
+.room-foot label {
+    flex: 1 0 100%;
+}
+
+@media (min-width: 901px) {
+    .room-foot {
+        flex-wrap: nowrap;
+        gap: 10px;
+    }
+
+    .room-foot label {
+        flex: 0 1 auto;
+    }
 }
 
 .room-foot label {

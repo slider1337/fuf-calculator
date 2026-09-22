@@ -810,9 +810,19 @@ function renderRoomSums() {
     ["room-sum-child", "childCount", "childPrice"],
   ];
 
+  const nightWord = nights === 1 ? "Nacht" : "Nächte";
+
   rows.forEach(([target, countId, priceId]) => {
-    const total = round2(round2(numberFromField(priceId) * nights) * numberFromField(countId));
+    const count = numberFromField(countId);
+    const price = numberFromField(priceId);
+    const total = round2(round2(price * nights) * count);
     byId(target).textContent = formatCurrency(total);
+
+    // DESIGN: Der Rechenweg steht am Desktop in der Spaltenueberschrift
+    // ("Summe (4 Naechte)"). In der Karte aus Schritt 4d gibt es keine
+    // Spaltenueberschrift, also steht er als Hilfstext in der Fusszeile.
+    byId(`${target}-calc`).textContent =
+      `${formatDecimal(count)} × ${formatCurrency(price)} × ${nights} ${nightWord}`;
   });
 
   const adultAge = byId("adultAgeThreshold").value;
@@ -2582,6 +2592,26 @@ async function startNewTrip() {
     alert("Defaults konnten nicht geladen werden: " + error.message);
   }
 }
+
+// DESIGN: Regel 3 und RESPONSIVE.md - auf dem Handy zaehlt der - / + Stepper,
+// nicht die Tastatur. Die Knoepfe stehen immer im DOM und sind ab 901 px
+// ausgeblendet, damit die Tabelle am Desktop unveraendert bleibt.
+//
+// Der Wert geht durch numberFromField(), damit "1.234,56" hier genauso gelesen
+// wird wie ueberall sonst, und loest danach ein input-Event aus - so laufen
+// Vorschau, Summenspalte und Dirty-State genauso mit wie beim Tippen.
+byId("sec-unterkunft-body").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-step]");
+
+  if (!button) {
+    return;
+  }
+
+  const field = byId(button.dataset.stepTarget);
+  const next = Math.max(0, Math.round(numberFromField(button.dataset.stepTarget)) + Number(button.dataset.step));
+  field.value = String(next);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+});
 
 byId("new-trip-btn").addEventListener("click", startNewTrip);
 

@@ -364,29 +364,62 @@
                                 <span class="col-head">Preis / Nacht</span>
                                 <span class="col-head room-sum">Summe (<span id="room-sum-nights">&ndash;</span> Nächte)</span>
 
-                                <div class="room-cat">
+                                <div class="room-row">
+                                    <div class="room-cat">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M3 20v-2a5 5 0 015-5h2a5 5 0 015 5v2M16 14h1a4 4 0 014 4v2"/></svg>
                                     <span class="room-cat-text"><b>Erwachsene</b><span class="help">Doppelzimmer</span></span>
                                 </div>
-                                <div class="in"><input id="adultDoubleCount" name="adultDoubleCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Doppelzimmer"><span class="u">Pers.</span></div>
+                                <span class="room-lbl">Personen</span>
+                                <div class="stepper">
+                                    <button class="step" type="button" data-step="-1" data-step-target="adultDoubleCount" aria-label="Anzahl Erwachsene im Doppelzimmer verringern"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+                                    <div class="in"><input id="adultDoubleCount" name="adultDoubleCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Doppelzimmer"><span class="u">Pers.</span></div>
+                                    <button class="step" type="button" data-step="1" data-step-target="adultDoubleCount" aria-label="Anzahl Erwachsene im Doppelzimmer erh&ouml;hen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                                </div>
+                                <span class="room-lbl">&euro; / Nacht</span>
                                 <div class="in"><input id="adultDoublePrice" name="adultDoublePrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Erwachsene im Doppelzimmer"><span class="u">€</span></div>
-                                <b class="fuf-num room-sum" id="room-sum-adult-double">&ndash;</b>
+                                <div class="room-sum-line">
+                                    <span class="help room-calc" id="room-sum-adult-double-calc"></span>
+                                    <b class="fuf-num room-sum" id="room-sum-adult-double">&ndash;</b>
+                                </div>
+                                </div>
 
-                                <div class="room-cat">
+                                <div class="room-row">
+                                    <div class="room-cat">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="17" cy="7" r="2.5"/><path d="M2 20v-1a4 4 0 014-4h12a4 4 0 014 4v1"/></svg>
                                     <span class="room-cat-text"><b>Erwachsene</b><span class="help">Mehrbettzimmer</span></span>
                                 </div>
-                                <div class="in"><input id="adultMultiCount" name="adultMultiCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Mehrbettzimmer"><span class="u">Pers.</span></div>
+                                <span class="room-lbl">Personen</span>
+                                <div class="stepper">
+                                    <button class="step" type="button" data-step="-1" data-step-target="adultMultiCount" aria-label="Anzahl Erwachsene im Mehrbettzimmer verringern"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+                                    <div class="in"><input id="adultMultiCount" name="adultMultiCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Erwachsene im Mehrbettzimmer"><span class="u">Pers.</span></div>
+                                    <button class="step" type="button" data-step="1" data-step-target="adultMultiCount" aria-label="Anzahl Erwachsene im Mehrbettzimmer erh&ouml;hen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                                </div>
+                                <span class="room-lbl">&euro; / Nacht</span>
                                 <div class="in"><input id="adultMultiPrice" name="adultMultiPrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Erwachsene im Mehrbettzimmer"><span class="u">€</span></div>
-                                <b class="fuf-num room-sum" id="room-sum-adult-multi">&ndash;</b>
+                                <div class="room-sum-line">
+                                    <span class="help room-calc" id="room-sum-adult-multi-calc"></span>
+                                    <b class="fuf-num room-sum" id="room-sum-adult-multi">&ndash;</b>
+                                </div>
+                                </div>
 
-                                <div class="room-cat">
+                                <div class="room-row">
+                                    <div class="room-cat">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-orange-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0112 0v1"/></svg>
                                     <span class="room-cat-text"><b>Kinder</b><span class="help" id="room-cat-child-sub">unter der Altersgrenze</span></span>
                                 </div>
-                                <div class="in"><input id="childCount" name="childCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Kinder"><span class="u">Pers.</span></div>
+                                <span class="room-lbl">Personen</span>
+                                <div class="stepper">
+                                    <button class="step" type="button" data-step="-1" data-step-target="childCount" aria-label="Anzahl Kinder verringern"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+                                    <div class="in"><input id="childCount" name="childCount" type="text" inputmode="numeric" value="0" required aria-label="Anzahl Kinder"><span class="u">Pers.</span></div>
+                                    <button class="step" type="button" data-step="1" data-step-target="childCount" aria-label="Anzahl Kinder erh&ouml;hen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                                </div>
+                                <span class="room-lbl">&euro; / Nacht</span>
                                 <div class="in"><input id="childPrice" name="childPrice" type="text" inputmode="decimal" value="0" required aria-label="Preis pro Nacht Kinder"><span class="u">€</span></div>
-                                <b class="fuf-num room-sum" id="room-sum-child">&ndash;</b>
+                                <div class="room-sum-line">
+                                    <span class="help room-calc" id="room-sum-child-calc"></span>
+                                    <b class="fuf-num room-sum" id="room-sum-child">&ndash;</b>
+                                </div>
+                                </div>
                             </div>
                             <div class="room-foot">
                                 <label for="adultAgeThreshold">Erwachsen ab</label>

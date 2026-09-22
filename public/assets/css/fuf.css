@@ -162,6 +162,10 @@ h1.fuf-display {
     background: var(--fuf-sand-200);
 }
 
+/* Die Kopfleiste ist der Baustein mit dem groessten Unterschied zwischen Handy
+ * und Desktop: 52 px mit Zurueck-Pfeil, Reisename und Menue-Icon gegen 64 px mit
+ * Wortmarke, Navigation und Benutzerblock. Hier stehen die Handy-Werte, die
+ * Rueckstellung folgt unten in @media (min-width: 992px). */
 .app-header {
     background: var(--fuf-brown-900);
     /* feine vertikale Holzmaserung */
@@ -171,12 +175,17 @@ h1.fuf-display {
     rgba(255, 255, 255, .04) 4px, rgba(255, 255, 255, .04) 5px,
     transparent 5px, transparent 9px);
     border-bottom: 3px solid var(--fuf-green-600);
-    padding: 0 32px;
-    height: 64px;
+    padding: 0 8px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 4px;
+    /* Kopfleiste und Umschalter bleiben zusammen stehen - auf einer 3.000 px
+     * langen Seite ist der Weg zurueck sonst ein Scrollmarathon. */
+    position: sticky;
+    top: 0;
+    z-index: 40;
 }
 
 .app-brand {
@@ -185,14 +194,17 @@ h1.fuf-display {
     gap: 12px;
     text-decoration: none;
     flex-shrink: 0;
+    margin-left: 6px;
 }
 
 .app-brand img {
-    height: 34px;
+    height: 22px;
     width: auto;
 }
 
+/* Neben Reisename und Menue-Icon ist fuer die Wortmarke kein Platz. */
 .app-brand span {
+    display: none;
     font-family: var(--fuf-font-display);
     font-size: 17px;
     color: var(--fuf-on-dark);
@@ -204,27 +216,110 @@ h1.fuf-display {
 .app-header-left {
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: 4px;
     min-width: 0;
+    flex-grow: 1;
 }
 
-.app-header-right {
+/* Zurueck-Pfeil und Reisename treten an die Stelle des Logos, sobald eine Reise
+ * offen ist; app.js setzt die Klasse in showEditorSection(). */
+.app-head-back,
+.app-head-title {
+    display: none;
+}
+
+body.is-trip-view .app-brand {
+    display: none;
+}
+
+body.is-trip-view .app-head-back {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    width: var(--fuf-touch);
+    height: var(--fuf-touch);
+    flex-shrink: 0;
+    border-radius: var(--fuf-radius-control);
+    color: var(--fuf-on-dark);
+}
+
+body.is-trip-view .app-head-title {
+    display: block;
+    min-width: 0;
+    flex-grow: 1;
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-menu-btn {
+    width: var(--fuf-touch);
+    height: var(--fuf-touch);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--fuf-radius-control);
+    background: transparent;
+    color: var(--fuf-on-dark);
+    cursor: pointer;
+}
+
+/* Das Menue ist dasselbe Markup wie die Desktop-Kopfleiste - offcanvas-lg
+ * schiebt es unter lg als Panel herein. Der Panelgrund traegt dieselbe
+ * Holzmaserung, damit die hellen Schriftfarben von .app-nav und .app-user
+ * ohne zweite Farbwelt weiterpassen. */
+.app-menu {
+    --bs-offcanvas-width: 280px;
+    --bs-offcanvas-padding-x: 14px;
+    --bs-offcanvas-padding-y: 12px;
+    --bs-offcanvas-color: var(--fuf-on-dark);
+    --bs-offcanvas-bg: var(--fuf-brown-900);
+    --bs-offcanvas-border-width: 0;
+    background-image: repeating-linear-gradient(90deg,
+    rgba(0, 0, 0, .08) 0px, rgba(0, 0, 0, .08) 1px,
+    transparent 1px, transparent 4px,
+    rgba(255, 255, 255, .04) 4px, rgba(255, 255, 255, .04) 5px,
+    transparent 5px, transparent 9px);
+}
+
+.app-menu .offcanvas-header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--fuf-on-dark-dim);
+}
+
+.app-menu .offcanvas-title {
+    font-family: var(--fuf-font-display);
+    font-size: 17px;
+    font-weight: 500;
+    /* h1, h2, h3 tragen global das Braun der Fliesstextfarbe - auf dem dunklen
+       Panel waere die Ueberschrift damit unsichtbar. */
+    color: var(--fuf-on-dark);
+}
+
+.app-menu .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .app-nav {
     display: flex;
+    flex-direction: column;
     gap: 4px;
 }
 
 .app-nav a,
 .app-nav button {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: 12px;
+    min-height: var(--fuf-touch);
+    padding: 0 12px;
     border: 0;
     border-radius: var(--fuf-radius-control);
     background: transparent;
@@ -248,12 +343,15 @@ h1.fuf-display {
     background: rgba(255, 255, 255, .12);
 }
 
+/* Im Menue steht der Benutzer als eigene Zeile unten, nicht als Anhaengsel
+ * rechts neben der Navigation - die Trennlinie zeigt deshalb nach oben. */
 .app-user {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding-left: 12px;
-    border-left: 1px solid var(--fuf-on-dark-dim);
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--fuf-on-dark-dim);
 }
 
 .app-avatar {
@@ -274,12 +372,17 @@ h1.fuf-display {
     display: flex;
     flex-direction: column;
     line-height: 1.2;
+    min-width: 0;
+    flex-grow: 1;
 }
 
 .app-user-meta .app-user-email {
     font-size: 13px;
     color: #FFFFFF;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .app-user-meta .app-user-role {
@@ -308,11 +411,86 @@ h1.fuf-display {
 }
 
 .app-main {
-    padding: 28px 32px;
+    padding: 20px 16px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     flex-grow: 1;
+}
+
+/* Ab lg die Kopfleiste aus DESIGN.md: Wortmarke, Navigation, Neue Reise und
+ * Benutzerblock in einer 64-px-Zeile. offcanvas-lg gibt das Panel hier von
+ * selbst auf; display: contents loest zusaetzlich seine beiden Huellen auf,
+ * damit die vier Bausteine direkte Flex-Kinder der Kopfleiste bleiben und in
+ * derselben Reihenfolge stehen wie vor dem Umbau. */
+@media (min-width: 992px) {
+    .app-header {
+        height: 64px;
+        padding: 0 32px;
+        gap: 12px;
+        position: static;
+        z-index: auto;
+    }
+
+    .app-header-left {
+        gap: 28px;
+        flex-grow: 0;
+    }
+
+    .app-brand {
+        margin-left: 0;
+    }
+
+    .app-brand img {
+        height: 34px;
+    }
+
+    .app-brand span {
+        display: inline;
+    }
+
+    .app-menu-btn,
+    body.is-trip-view .app-head-back,
+    body.is-trip-view .app-head-title {
+        display: none;
+    }
+
+    body.is-trip-view .app-brand {
+        display: flex;
+    }
+
+    .app-menu,
+    .app-menu .offcanvas-body {
+        display: contents;
+    }
+
+    .app-nav {
+        flex-direction: row;
+        gap: 4px;
+        /* 12 px Abstand der Kopfleiste plus 16 px ergeben die 28 px zur
+           Wortmarke wie gehabt; auto schiebt Neue Reise und Benutzerblock ans
+           rechte Ende. */
+        margin: 0 auto 0 16px;
+    }
+
+    .app-nav a,
+    .app-nav button {
+        min-height: 0;
+        gap: 8px;
+        padding: 8px 14px;
+    }
+
+    .app-user {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+        padding-left: 12px;
+        border-left: 1px solid var(--fuf-on-dark-dim);
+    }
+
+    .app-main {
+        padding: 28px 32px;
+    }
 }
 
 .app-footer {
@@ -438,22 +616,9 @@ h1.fuf-display {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .app-header {
-        padding: 0 16px;
-    }
-
-    .app-main {
-        padding: 20px 16px;
-    }
-
     .page-head {
         flex-direction: column;
         align-items: stretch;
-    }
-
-    .trip-head {
-        margin: -20px -16px 20px -16px;
-        padding: 14px 16px 0 16px;
     }
 }
 
@@ -463,36 +628,50 @@ h1.fuf-display {
 
 /* Der Reisekopf sitzt randlos ueber der Seite. Die negativen Margins heben
    das Padding von .app-main auf, damit die weisse Flaeche bis an die Kanten
-   reicht wie im Mockup. */
+   reicht wie im Mockup.
+
+   Auf dem Handy bleibt davon nur der Umschalter: Zurueck-Pfeil und Reisename
+   stehen eine Etage hoeher in der App-Kopfleiste, die Kennzahl zieht mit
+   Schritt 3 in die Bottom-Bar. Kopfleiste (52 px) und Umschalter kleben
+   zusammen, zusammen rund 100 px. */
 .trip-head {
-    /* Der gap von .app-main wirkt nur zwischen dessen Kindern, also nicht
-       zwischen diesem Kopf und dem Raster darunter. Die 24 px entsprechen dem
-       padding-top des Rasters in Mockup 02. */
-    margin: -28px -32px 24px -32px;
-    padding: 18px 32px 0 32px;
+    margin: -20px -16px 0 -16px;
+    padding: 4px 14px 5px 14px;
     background: #FFFFFF;
     border-bottom: 1px solid var(--fuf-sand-400);
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-    /* Der Umschalter sass bisher ganz oben auf einer 3.000 px langen Seite.
-       Die App-Kopfleiste darueber scrollt normal weg, nur dieser Kopf bleibt. */
+    gap: 0;
     position: sticky;
-    top: 0;
+    top: 52px;
     z-index: 30;
     transition: padding .15s, box-shadow .15s;
 }
 
-.trip-head-right {
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
+.trip-head.is-scrolled {
+    box-shadow: 0 6px 14px -6px rgba(61, 40, 23, .25);
 }
 
-/* Zurueck-Pfeil, Kennzahl und Speichern gehoeren nur in den gescrollten
-   Zustand - ungescrollt stehen Breadcrumb und Sticky-Panel dafuer bereit. */
+.trip-head-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+/* Die Meta-Zeile steht mobil unter dem Sticky-Bereich und scrollt mit; im
+   Kopf selbst haette sie die feste Zone auf 135 px aufgeblaeht. */
+.trip-meta-m {
+    padding: 10px 2px 0 2px;
+}
+
+/* Breadcrumb, Ueberschrift, Kennzahl, Zurueck-Pfeil und Kopf-Speichern gehoeren
+   auf dem Handy nicht in den Kopf. Auf dem Desktop haengen Pfeil, Kennzahl und
+   Speichern am gescrollten Zustand - ungescrollt stehen Breadcrumb und
+   Sticky-Panel dafuer bereit. */
+.trip-head-text,
 .trip-head-back,
 .trip-head-kpi,
 #trip-save-btn-head {
@@ -533,81 +712,6 @@ h1.fuf-display {
     font-weight: 500;
 }
 
-/* Gescrollt: eine Zeile, 52 px hoch. */
-.trip-head.is-scrolled {
-    padding: 8px 32px;
-    align-items: center;
-    flex-wrap: nowrap;
-    box-shadow: 0 6px 14px -6px rgba(61, 40, 23, .25);
-}
-
-.trip-head.is-scrolled .bc,
-.trip-head.is-scrolled #trip-editor-meta {
-    display: none;
-}
-
-.trip-head.is-scrolled .trip-head-text {
-    padding-bottom: 0;
-    /* Der Name steht direkt neben dem Pfeil, nicht mittig zwischen Pfeil und
-       Umschalter - space-between wuerde ihn sonst in die Mitte schieben. */
-    margin-right: auto;
-    min-width: 0;
-}
-
-.trip-head.is-scrolled .trip-head-title h1 {
-    font-family: var(--fuf-font-body);
-    font-size: 15px;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.trip-head.is-scrolled .trip-head-back,
-.trip-head.is-scrolled .trip-head-kpi {
-    display: flex;
-}
-
-.trip-head.is-scrolled .trip-head-right {
-    align-items: center;
-}
-
-/* Der Speichern-Knopf ist nur in der Planung sinnvoll - in der Abrechnung
-   gibt es kein Formular, das er abschicken koennte. */
-.trip-head.is-scrolled:not(.is-abrechnung) #trip-save-btn-head {
-    display: inline-flex;
-}
-
-/* Gescrollt wird aus dem Unterstrich-Umschalter ein Segment-Umschalter: in
-   einer 52-px-Zeile hat ein Unterstrich keine Kante, auf der er sitzen kann. */
-.trip-head.is-scrolled .nav-tabs.trip-tabs {
-    background: var(--fuf-sand-200);
-    border-radius: var(--fuf-radius-control);
-    padding: 3px;
-    margin-bottom: 0;
-    gap: 0;
-}
-
-.trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link {
-    padding: 4px 14px;
-    font-size: 13px;
-    border-bottom-color: transparent;
-    border-radius: 6px;
-}
-
-.trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link.active {
-    background: #FFFFFF;
-    box-shadow: 0 1px 2px rgba(61, 40, 23, .12);
-    border-bottom-color: transparent;
-}
-
-.trip-head-text {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-bottom: 14px;
-}
-
 .trip-head-title {
     display: flex;
     align-items: center;
@@ -635,15 +739,165 @@ h1.fuf-display {
     font-weight: 600;
 }
 
-/* Die Tabs sitzen auf der Unterkante des Kopfes, ihr eigener Rahmen entfaellt. */
+/* Mobil ist der Umschalter ein Segmented Control ueber die volle Breite: zwei
+   gleich breite Segmente auf sandfarbenem Grund, das aktive weiss. Ein
+   Unterstrich-Umschalter braeuchte eine Kante, auf der er sitzt - die gibt es
+   in einer 50-px-Zeile nicht. */
 .nav-tabs.trip-tabs {
+    width: 100%;
     border-bottom: 0;
-    gap: 0;
-    margin-bottom: -1px;
+    background: var(--fuf-sand-200);
+    border-radius: var(--fuf-radius-control);
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 0;
+}
+
+.nav-tabs.trip-tabs .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .nav-tabs.trip-tabs .nav-link {
-    padding: 12px 18px;
+    width: 100%;
+    justify-content: center;
+    /* Regel 3 verlangt 48 px; die Segmente sind ueber 180 px breit, und
+       3 + 44 + 3 px unter der 52-px-Kopfleiste ergeben die rund 100 px aus
+       RESPONSIVE.md. */
+    min-height: 44px;
+    padding: 4px 8px;
+    border-bottom-color: transparent;
+    border-radius: 6px;
+}
+
+.nav-tabs.trip-tabs .nav-link.active {
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(61, 40, 23, .12);
+    border-bottom-color: transparent;
+}
+
+/* Ab lg der Reisekopf aus DESIGN.md: Breadcrumb und Ueberschrift links, Tabs
+   rechts auf der Unterkante, und beim Scrollen eine 52-px-Zeile mit
+   Zurueck-Pfeil, Name, Kennzahl, Segment-Umschalter und Speichern. */
+@media (min-width: 992px) {
+    .trip-head {
+        /* Der gap von .app-main wirkt nur zwischen dessen Kindern, also nicht
+           zwischen diesem Kopf und dem Raster darunter. Die 24 px entsprechen
+           dem padding-top des Rasters in Mockup 02. */
+        margin: -28px -32px 24px -32px;
+        padding: 18px 32px 0 32px;
+        align-items: flex-end;
+        gap: 24px;
+        flex-wrap: wrap;
+        /* Die App-Kopfleiste darueber scrollt normal weg, nur dieser Kopf
+           bleibt. */
+        top: 0;
+    }
+
+    .trip-head-right {
+        align-items: flex-end;
+        flex-grow: 0;
+    }
+
+    .trip-head-text {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-bottom: 14px;
+    }
+
+    /* Gescrollt: eine Zeile, 52 px hoch. */
+    .trip-head.is-scrolled {
+        padding: 8px 32px;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .trip-head.is-scrolled .bc,
+    .trip-head.is-scrolled #trip-editor-meta {
+        display: none;
+    }
+
+    .trip-head.is-scrolled .trip-head-text {
+        padding-bottom: 0;
+        /* Der Name steht direkt neben dem Pfeil, nicht mittig zwischen Pfeil
+           und Umschalter - space-between wuerde ihn sonst in die Mitte
+           schieben. */
+        margin-right: auto;
+        min-width: 0;
+    }
+
+    .trip-head.is-scrolled .trip-head-title h1 {
+        font-family: var(--fuf-font-body);
+        font-size: 15px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .trip-head.is-scrolled .trip-head-back,
+    .trip-head.is-scrolled .trip-head-kpi {
+        display: flex;
+    }
+
+    .trip-head.is-scrolled .trip-head-right {
+        align-items: center;
+    }
+
+    /* Der Speichern-Knopf ist nur in der Planung sinnvoll - in der Abrechnung
+       gibt es kein Formular, das er abschicken koennte. */
+    .trip-head.is-scrolled:not(.is-abrechnung) #trip-save-btn-head {
+        display: inline-flex;
+    }
+
+    /* Ungescrollt sitzen die Tabs auf der Unterkante des Kopfes, ihr eigener
+       Rahmen entfaellt. Das Segmentkleid bekommen sie erst beim Scrollen. */
+    .nav-tabs.trip-tabs {
+        width: auto;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        gap: 0;
+        margin-bottom: -1px;
+    }
+
+    .nav-tabs.trip-tabs .nav-item {
+        flex: 0 1 auto;
+    }
+
+    .nav-tabs.trip-tabs .nav-link {
+        width: auto;
+        min-height: 0;
+        padding: 12px 18px;
+        border-radius: 0;
+        border-bottom-color: transparent;
+    }
+
+    .nav-tabs.trip-tabs .nav-link.active {
+        background: transparent;
+        box-shadow: none;
+        border-bottom-color: var(--fuf-green-600);
+    }
+
+    .trip-head.is-scrolled .nav-tabs.trip-tabs {
+        background: var(--fuf-sand-200);
+        border-radius: var(--fuf-radius-control);
+        padding: 3px;
+        margin-bottom: 0;
+    }
+
+    .trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link {
+        padding: 4px 14px;
+        font-size: 13px;
+        border-radius: 6px;
+    }
+
+    .trip-head.is-scrolled .nav-tabs.trip-tabs .nav-link.active {
+        background: #FFFFFF;
+        box-shadow: 0 1px 2px rgba(61, 40, 23, .12);
+        border-bottom-color: transparent;
+    }
 }
 
 .pg-main,
@@ -1668,9 +1922,10 @@ button.chip-btn.is-active {
     font-size: 15px;
 }
 
-/* Button in der Kopfleiste */
+/* Button in der Kopfleiste - im Menuepanel ueber die volle Breite. */
 .btn-hdr {
     height: var(--fuf-touch);
+    width: 100%;
 }
 
 .btn:disabled,
@@ -2623,9 +2878,15 @@ h2.modal-title {
  * dieses Abschnitts sind die Handy-Werte; hier stehen nur die Rueckstellungen
  * fuer den Desktop. Wer eine Groesse aendert, aendert also zuerst die mobile.
  *
- * Die fuenf aelteren @media (max-width: ...)-Bloecke weiter oben schalten
+ * Die aelteren @media (max-width: ...)-Bloecke weiter oben schalten
  * Spaltenlayouts. Sie bleiben stehen, bis Bottom-Bar und Sheet existieren
  * (Schritt 3), und werden erst dann mit umgedreht.
+ *
+ * Seit Schritt 2 stehen groessere Rueckstellungen nicht mehr hier, sondern in
+ * einem eigenen @media (min-width: 992px) direkt beim Baustein - fuer die
+ * Kopfleiste in Abschnitt 4, fuer Reisekopf und Umschalter in Abschnitt 5b.
+ * Hier bleiben nur die Tokens und die Einzelmasse, die zu keinem Baustein
+ * gehoeren.
  * ======================================================================== */
 
 /* Regel 1: Felder ausserhalb von .in - Suche, Datei, freistehende Eingaben.
@@ -2662,6 +2923,7 @@ textarea {
 
     .btn-hdr {
         height: 38px;
+        width: auto;
     }
 
     .trip-head-back {

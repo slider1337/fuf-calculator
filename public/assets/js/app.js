@@ -119,7 +119,7 @@ function resetCalculationResult() {
   byId("result-start-date").textContent = "–";
   byId("result-end-date").textContent = "–";
   byId("result-nights").textContent = "–";
-  byId("trip-editor-meta").textContent = "";
+  setTripEditorMeta("");
   byId("result-breakdowns-container").innerHTML = "";
   resetPanel();
   // Die Zusammenfassung im Section-Kopf fasst ein Ergebnis zusammen. Ohne
@@ -175,6 +175,13 @@ function tripEditorMeta(result) {
     `${nights} ${nights === 1 ? "Nacht" : "Nächte"}`,
     `${participants} Teilnehmer`,
   ].join(" · ");
+}
+
+// DESIGN: Auf dem Handy steht die Zeile ausserhalb des Reisekopfs, damit nur
+// Kopfleiste und Umschalter sticky sind. Beide Orte tragen denselben Text.
+function setTripEditorMeta(text) {
+  byId("trip-editor-meta").textContent = text;
+  byId("trip-editor-meta-mobile").textContent = text;
 }
 
 // DESIGN: Titel und Untertitel der Kategoriezeile, wie in Mockup 02.
@@ -368,7 +375,7 @@ function renderCalculationResult(result) {
   byId("result-participants-split").textContent = participantsSplit(breakdowns);
   // DESIGN: Kurzinfo im Reisekopf. Zeitraum, Naechte und Teilnehmer kommen aus
   // demselben Ergebnis, das auch das Sticky-Panel fuellt.
-  byId("trip-editor-meta").textContent = tripEditorMeta(result);
+  setTripEditorMeta(tripEditorMeta(result));
   byId("result-total-revenue").textContent = formatCurrency(result.totalCalculatedRevenue);
   byId("result-total-costs").textContent = formatCurrency(result.totalCalculatedCosts);
   // DESIGN: Die Farbe des Ueberschusses kommt von der KPI-Karte, weil .kpi b die
@@ -1116,6 +1123,8 @@ async function api(url, options = {}) {
 function showListSection() {
   byId("trip-list-section").classList.remove("d-none");
   byId("trip-editor-section").classList.add("d-none");
+  // DESIGN: Ohne offene Reise zeigt die Kopfleiste auf dem Handy wieder das Logo.
+  document.body.classList.remove("is-trip-view");
   window.scrollTo({ top: 0 });
   if (state.sectionObserver) {
     state.sectionObserver.disconnect();
@@ -1125,6 +1134,10 @@ function showListSection() {
 
 function showEditorSection(titleText, breadcrumbText) {
   byId("trip-editor-title").textContent = titleText;
+  // DESIGN: Auf dem Handy traegt die App-Kopfleiste den Reisenamen, weil im
+  // 52-px-Kopf darunter nur der Umschalter Platz hat.
+  byId("app-head-title").textContent = titleText;
+  document.body.classList.add("is-trip-view");
   // DESIGN: Die Ueberschrift traegt den Reisenamen, der Breadcrumb die Nummer.
   byId("trip-editor-breadcrumb").textContent = breadcrumbText;
   byId("trip-list-section").classList.add("d-none");
@@ -2492,9 +2505,25 @@ byId("back-to-list-btn").addEventListener("click", async (event) => {
   await navigateTo("/");
 });
 
-byId("trip-head-back-btn").addEventListener("click", async (event) => {
+// DESIGN: Denselben Weg zurueck gibt es zweimal - im Reisekopf auf dem Desktop,
+// in der App-Kopfleiste auf dem Handy.
+async function backToList(event) {
   event.preventDefault();
   await navigateTo("/");
+}
+
+byId("trip-head-back-btn").addEventListener("click", backToList);
+byId("app-head-back-btn").addEventListener("click", backToList);
+
+// DESIGN: Aus dem Menuepanel heraus geht es weiter - in ein Modal, in eine neue
+// Reise oder zurueck zur Liste. Das Panel muss vorher zu sein, sonst liegt es
+// ueber dem, was es geoeffnet hat. Ab lg gibt es keine Offcanvas-Instanz, dort
+// laeuft der Aufruf ins Leere.
+byId("app-menu").addEventListener("click", (event) => {
+  if (!(event.target instanceof HTMLElement) || !event.target.closest("a, button")) {
+    return;
+  }
+  window.bootstrap?.Offcanvas.getInstance(byId("app-menu"))?.hide();
 });
 
 byId("trip-list-body").addEventListener("click", async (event) => {

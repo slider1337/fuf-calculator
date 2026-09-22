@@ -11,41 +11,58 @@
 <div class="app-shell">
     <header class="app-header">
         <div class="app-header-left">
+            <!-- DESIGN: Auf dem Handy treten Zurueck-Pfeil und Reisename an die Stelle der
+                 Wortmarke, sobald eine Reise offen ist. app.js setzt dazu body.is-trip-view. -->
+            <a class="app-head-back" id="app-head-back-btn" href="/" aria-label="Zur&uuml;ck zur Reiseliste">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
             <a class="app-brand" href="/">
                 <img src="/assets/img/fuflogo.png" alt="FuF Erding">
                 <span>Gruppenreise-Kalkulator</span>
             </a>
-            <nav class="app-nav">
-                <a href="/" class="is-active">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                    Reisen
-                </a>
-                <button id="open-users-btn" type="button">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-                    Benutzer
-                </button>
-                <button id="open-settings-btn" type="button">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
-                    Globale Settings
-                </button>
-            </nav>
+            <span class="app-head-title" id="app-head-title"></span>
         </div>
-        <div class="app-header-right">
-            <button id="new-trip-btn" class="btn btn-a btn-hdr" type="button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Neue Reise
-            </button>
-            <div class="app-user">
-                <div class="app-avatar" id="current-user-avatar" aria-hidden="true"></div>
-                <div class="app-user-meta">
-                    <span class="app-user-email" id="current-user-email"></span>
-                    <span class="app-user-role d-none" id="current-user-role-badge">Admin</span>
-                </div>
-                <form method="post" action="/logout" class="m-0">
-                    <button class="app-icon-link" type="submit" aria-label="Abmelden" title="Abmelden">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <!-- DESIGN: Unter lg steckt die Navigation hinter diesem Icon; offcanvas-lg macht
+             aus demselben Markup ab lg wieder die waagerechte Kopfleiste. -->
+        <button class="app-menu-btn" id="app-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#app-menu" aria-controls="app-menu" aria-label="Men&uuml;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div class="app-menu offcanvas-lg offcanvas-end" id="app-menu" tabindex="-1" aria-labelledby="app-menu-title">
+            <div class="offcanvas-header">
+                <h2 class="offcanvas-title" id="app-menu-title">Men&uuml;</h2>
+                <button class="btn-close btn-close-white" type="button" data-bs-dismiss="offcanvas" data-bs-target="#app-menu" aria-label="Men&uuml; schlie&szlig;en"></button>
+            </div>
+            <div class="offcanvas-body">
+                <nav class="app-nav">
+                    <a href="/" class="is-active">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                        Reisen
+                    </a>
+                    <button id="open-users-btn" type="button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                        Benutzer
                     </button>
-                </form>
+                    <button id="open-settings-btn" type="button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+                        Globale Settings
+                    </button>
+                </nav>
+                <button id="new-trip-btn" class="btn btn-a btn-hdr" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Neue Reise
+                </button>
+                <div class="app-user">
+                    <div class="app-avatar" id="current-user-avatar" aria-hidden="true"></div>
+                    <div class="app-user-meta">
+                        <span class="app-user-email" id="current-user-email"></span>
+                        <span class="app-user-role d-none" id="current-user-role-badge">Admin</span>
+                    </div>
+                    <form method="post" action="/logout" class="m-0">
+                        <button class="app-icon-link" type="submit" aria-label="Abmelden" title="Abmelden">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </header>
@@ -214,6 +231,11 @@
                 </button>
             </div>
         </div>
+
+        <!-- DESIGN: Auf dem Handy sind nur Kopfleiste und Umschalter sticky, die Meta-Zeile
+             scrollt mit. Sie steht deshalb ausserhalb von .trip-head - im Kopf selbst sitzt
+             sie auf dem Desktop neben der Ueberschrift und kann nicht an beiden Orten sein. -->
+        <div class="trip-meta-m d-lg-none"><span class="help" id="trip-editor-meta-mobile"></span></div>
 
         <div class="tab-content" id="tripTabContent">
         <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">

@@ -32,14 +32,18 @@ Die Anwendung nutzt lokale E-Mail/Passwort-Konten, Einladungslinks, PHP-Sessions
 | E-Mail · Passwort · [Anmelden] |
 | Einladung erhalten? Zugang verbinden |
 
-## Entscheidungsvorschlag
+## Festgelegter Einsatz und Migrationspfad
 
-easyVerein zuerst, falls euer Verein es nutzt; Google als zusätzlicher Weg. ClubDesk-Kontakte allenfalls über einen geprüften CSV-Import übernehmen, Proton-Mail per Einladung zulassen. Es ist sinnvoll, **Authentifizierung** und **Freischaltung** bewusst getrennt zu halten: Der Login allein darf keine Reise sichtbar machen.
+**Heute nutzt der Verein ClubDesk; ein Wechsel zu easyVerein ist geplant.** Für die Übergangszeit bleiben die vorhandenen lokalen Einladungen nutzbar. Ein kontrollierter ClubDesk-CSV-Import kann Kontaktdaten vorbefüllen, stellt aber kein SSO dar. Nach dem Umzug kann easyVerein die primäre externe Anmeldung werden; Google ist der zusätzliche verbreitete Login-Weg für Personen mit Google-Konto. Proton-Mailadressen können weiterhin normale Einladungen empfangen.
+
+Der Login allein gibt **keine** Reise frei. Bereits vorhandene lokale Konten und zugewiesene Reisen behalten beim Providerwechsel ihre interne Benutzer-ID; eine bewusste Kontoverknüpfung verhindert doppelte Personen. Der Prozess muss auch für Nichtmitglieder funktionieren, die nur für eine Reise Belege einreichen.
+
+MFA/WebAuthn ist als [eigenes Konzept](06-mfa-webauthn.md) beschrieben.
 
 ## Vor Umsetzung klären
 
-- Welches Vereinssystem ist tatsächlich führend? Können Nichtmitglieder Belege abgeben?
-- Welche easyVerein-Scopes/Claims, Tarife und API-Rechte sind in eurem Account vorhanden? API-Schlüssel-Lebensdauer/Rotation beachten.
+- Welche easyVerein-Scopes/Claims, Tarife und API-Rechte sind beim geplanten Umzug in eurem konkreten Account vorhanden? API-Schlüssel-Lebensdauer/Rotation beachten.
+- Welche ClubDesk-Datensätze sollen beim Wechsel einmalig abgeglichen werden? Nichtmitglieder können per Einladung unabhängig vom Vereinssystem freigegeben werden.
 - Bestehende Benutzer bei doppelten E-Mails und ausgeschiedene Vereinsmitglieder behandeln.
 
 ## Quellen

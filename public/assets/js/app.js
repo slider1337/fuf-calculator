@@ -2636,9 +2636,9 @@ byId("new-trip-btn").addEventListener("click", startNewTrip);
 // DESIGN: Der Knopf in der Leerzustands-Karte macht dasselbe wie der in der Kopfleiste.
 byId("trip-list-empty-create-btn").addEventListener("click", startNewTrip);
 
-// DESIGN: Regel 5 - die Hauptaktion der Liste liegt unter lg in der Bottom-Bar,
-// in Daumenreichweite. Derselbe Aufruf wie im Menue.
-byId("trip-list-bar-create-btn").addEventListener("click", startNewTrip);
+// DESIGN: Das Plus in der Kopfleiste macht dasselbe wie der Knopf im Menue.
+// Es steht unter lg an der Stelle, an der bis 4i eine Bottom-Bar war.
+byId("new-trip-head-btn").addEventListener("click", startNewTrip);
 
 // DESIGN: Clientseitige Suche ueber den Reisenamen, ohne erneuten Request.
 byId("trip-search").addEventListener("input", () => {

@@ -22,6 +22,15 @@
             </a>
             <span class="app-head-title" id="app-head-title"></span>
         </div>
+        <!-- DESIGN: `Neue Reise` steht unter lg hier statt in einer Bottom-Bar. Regel 5
+             zieht auf der Liste nicht: es gibt keine Kennzahl, und die Hauptaktion ist
+             eine Reise zu oeffnen - das sind die Karten selbst. Eine Reise legt man
+             selten an, eine feste Bar kostete dafuer auf jedem Listenbildschirm 64 px.
+             In der Reiseansicht ist der Knopf weg, dort traegt die Bar Kennzahl und
+             Speichern. Ab lg blendet .app-menu-btn beide Icons aus. -->
+        <button class="app-menu-btn app-head-new" id="new-trip-head-btn" type="button" aria-label="Neue Reise" title="Neue Reise">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
         <!-- DESIGN: Unter lg steckt die Navigation hinter diesem Icon; offcanvas-lg macht
              aus demselben Markup ab lg wieder die waagerechte Kopfleiste. -->
         <button class="app-menu-btn" id="app-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#app-menu" aria-controls="app-menu" aria-label="Men&uuml;">
@@ -185,16 +194,6 @@
                 <span class="help">Aufschlag, Vereinsgeb&uuml;hr und Kurabgabe werden aus den globalen Settings vorbelegt.</span>
             </div>
             <button id="trip-list-empty-create-btn" class="btn btn-p" type="button">Reise erstellen</button>
-        </div>
-
-        <!-- DESIGN: Regel 5 - die Hauptaktion der Liste liegt unter lg unten, in
-             Daumenreichweite. Dieselbe .trip-bar wie in der Reiseansicht; ab lg
-             ist sie weg und `Neue Reise` steht wieder in der Kopfleiste. -->
-        <div class="trip-bar trip-bar-list" id="trip-list-bar">
-            <button id="trip-list-bar-create-btn" class="btn btn-p" type="button">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Neue Reise
-            </button>
         </div>
     </section>
 

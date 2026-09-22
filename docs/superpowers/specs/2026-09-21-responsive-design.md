@@ -348,10 +348,8 @@ Icons stehen **inline im Markup** (Hausregel: Icons sind inline-SVG) und sind ab
 keinen Reisestatus im Datenmodell und keinen Filter in der Liste. Dieselbe Begründung wie
 beim Status-Chip in Schritt 2.
 
-Dazu eine zweite Bar `#trip-list-bar` am Ende von `#trip-list-section`: dieselbe `.trip-bar`,
-nur mit `Neue Reise` über die volle Breite. `.app-footer` hält den Platz jetzt in beiden
-Ansichten frei, nicht mehr nur unter `body.is-trip-view`. Der Knopf im Menü bleibt als
-zweiter Weg.
+Dazu zunächst eine zweite Bar `#trip-list-bar` mit `Neue Reise`. **Sie ist mit 4i wieder
+entfallen** — der Knopf steht jetzt als `+` in der Kopfleiste; Begründung dort.
 
 ### 4c. Kennzahlen 2 × 2
 
@@ -477,6 +475,26 @@ Die Selektoren sind doppelt geschrieben (`.sec.sec-cards` statt `.sec-cards`), d
 Reihenfolge ist in Schritt 4 dreimal etwas schiefgegangen; Spezifität ist hier das
 robustere Werkzeug.
 
+**Die Karten brauchen ihr Weiß selbst.** Ohne die Hülle stehen sie auf dem
+Seitenhintergrund; vorher erbten sie das Weiß von der `.sec`. Beim ersten Anlauf fehlte
+`background: #FFFFFF` an `.tb-trips tbody tr`, und die Karten standen sandfarben auf
+sandfarben — nur der Rahmen trennte sie noch.
+
+**`Neue Reise` steht als `+` in der Kopfleiste, die Bottom-Bar der Liste entfällt.**
+Regel 5 zieht auf der Liste nicht: sie verlangt „wichtigste Zahl und Hauptaktion unten", es
+gibt dort aber keine Kennzahl, und die eigentliche Hauptaktion ist eine Reise zu *öffnen* —
+das sind die Karten selbst. Eine Reise legt man selten an; die feste Bar kostete dafür auf
+jedem Listenbildschirm dauerhaft 64 px. Das `+` ist weiterhin ein Tipp.
+
+Der Knopf trägt `.app-menu-btn` und erbt damit Größe, Touch-Ziel (48 px) und das Ausblenden
+ab lg vom Menü-Icon; `body.is-trip-view .app-head-new` blendet ihn in der Reiseansicht aus,
+wo die Bar Kennzahl und Speichern trägt. `.app-footer` hält den Platz wieder nur unter
+`body.is-trip-view` frei. Der Knopf im Menü bleibt als zweiter Weg.
+
+Damit weicht die Umsetzung an zwei Stellen bewusst von `RESPONSIVE.md` ab: dort steht
+„`Neue Reise` in der Bottom-Bar" und eine Filter-Chip-Leiste, die es im Datenmodell nicht
+gibt.
+
 **Neue Reise startet mit zwei offenen Abschnitten.** `Eckdaten` und `Aufschläge & Abgaben`
 bleiben offen, damit man nicht erst zweimal tippen muss, um anfangen zu können.
 
@@ -552,5 +570,6 @@ Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was f
 - [x] Schritt 4f — Anmeldungen
 - [x] Schritt 4g — zwei Desktop-first-Reste aus 3a
 - [x] Schritt 4h — `Kalkulation & Verkaufspreise` zuklappbar
-- [x] Schritt 4i — Kartenliste ohne Hülle, neue Reise mit zwei offenen Abschnitten
+- [x] Schritt 4i — Kartenliste ohne Hülle, `Neue Reise` als `+` im Kopf, neue Reise mit
+      zwei offenen Abschnitten
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

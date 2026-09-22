@@ -261,6 +261,13 @@ body.is-trip-view .app-head-title {
     text-overflow: ellipsis;
 }
 
+/* `Neue Reise` im Kopf gilt nur fuer die Liste - in der Reiseansicht traegt
+   die Bottom-Bar Kennzahl und Speichern, und ein Plus daneben waere die
+   falsche Aktion am falschen Ort. */
+body.is-trip-view .app-head-new {
+    display: none;
+}
+
 .app-menu-btn {
     width: var(--fuf-touch);
     height: var(--fuf-touch);
@@ -1634,17 +1641,10 @@ body.is-trip-view .app-head-title {
     padding: 0 20px;
 }
 
-/* Die Bar der Reiseliste traegt nur die Hauptaktion - die nimmt dann die
-   ganze Breite ein, anders als der Speichern-Knopf neben der Kennzahl. */
-.trip-bar-list .btn {
-    flex-grow: 1;
-    width: 100%;
-}
-
 /* Das Seitenende haelt den Platz der Bar frei. Ab lg ist --fuf-bar-space 0,
-   die Zeile stimmt dann wieder mit .app-footer ueberein. Seit Schritt 4b hat
-   auch die Liste eine Bar, die Regel gilt deshalb fuer beide Ansichten. */
-.app-footer {
+   die Zeile stimmt dann wieder mit .app-footer ueberein. Nur die
+   Reiseansicht hat eine Bar - auf der Liste steht `Neue Reise` im Kopf. */
+body.is-trip-view .app-footer {
     padding-bottom: calc(14px + var(--fuf-bar-space));
 }
 
@@ -2477,6 +2477,9 @@ body.is-trip-view .app-head-title {
     column-gap: 14px;
     padding: 13px 14px;
     margin-bottom: 10px;
+    /* Ohne die Huelle aus 4i steht die Karte auf dem Seitenhintergrund und
+       braucht ihr Weiss selbst - vorher erbte sie es von der .sec. */
+    background: #FFFFFF;
     border: 1px solid var(--fuf-sand-400);
     border-bottom: 1px solid var(--fuf-sand-400);
     border-radius: 10px;
@@ -2652,6 +2655,7 @@ body.is-trip-view .app-head-title {
         display: table-row;
         padding: 0;
         margin-bottom: 0;
+        background: transparent;
         border: 0;
         border-radius: 0;
     }

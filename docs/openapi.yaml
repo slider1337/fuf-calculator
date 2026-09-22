@@ -586,6 +586,21 @@ components:
           type: number
           format: float
 
+    RoomReservation:
+      type: object
+      required: [roomType, count]
+      properties:
+        roomType:
+          type: string
+          example: 2-Bettzimmer
+          description: >-
+            Freier Text. Er wird den Zimmerkategorien der Anmeldungen zugeordnet, ohne
+            Gross-/Kleinschreibung und Leerzeichen am Rand zu beachten.
+        count:
+          type: integer
+          minimum: 0
+          description: Anzahl reservierter Zimmer (nicht Personen).
+
     CreateTripRequest:
       type: object
       required:
@@ -638,6 +653,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupExpense'
+        roomReservations:
+          type: array
+          default: []
+          description: >-
+            Beim Haus reservierte Zimmer je Typ. Jeder Typ darf nur einmal vorkommen
+            (sonst 422 mit duplicate_room_type). Eintraege ohne Typ und mit Anzahl 0
+            werden uebergangen; ohne Typ, aber mit Anzahl, liefern sie 422 mit
+            room_type_required. Beim Aktualisieren ersetzt die Liste die bisherige.
+          items:
+            $ref: '#/components/schemas/RoomReservation'
 
     Trip:
       allOf:

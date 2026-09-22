@@ -74,6 +74,32 @@ final class OpenApiContractTest extends ApiTestCase
         }
     }
 
+    /**
+     * @throws JsonException
+     */
+    public function testTripResponseContainsAllSchemaProperties(): void
+    {
+        $tripPayload = $this->validTripPayload();
+        $tripPayload['roomReservations'] = [['roomType' => '2-Bettzimmer', 'count' => 4]];
+        $create = $this->dispatch('POST', '/api/trips', $tripPayload);
+        $created = json_decode((string) $create->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertPathAndStatusDefined('/api/trips/{id}', 'get', '200');
+
+        $response = $this->dispatch('GET', '/api/trips/' . $created['id']);
+        self::assertSame(200, $response->getStatusCode());
+
+        $payload = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($this->schemaProperties('CreateTripRequest') as $property) {
+            self::assertArrayHasKey($property, $payload);
+        }
+        foreach ($payload['roomReservations'] as $reservation) {
+            foreach ($this->requiredFieldsForSchema('RoomReservation') as $requiredField) {
+                self::assertArrayHasKey($requiredField, $reservation);
+            }
+        }
+    }
+
     private function assertPathAndStatusDefined(string $path, string $method, string $statusCode): void
     {
         self::assertArrayHasKey($path, $this->spec['paths']);

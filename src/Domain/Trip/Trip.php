@@ -9,7 +9,11 @@ use InvalidArgumentException;
 
 final readonly class Trip
 {
-    /** @param RoomBooking[] $bookings @param GroupExpense[] $groupExpenses */
+    /**
+     * @param RoomBooking[] $bookings
+     * @param GroupExpense[] $groupExpenses
+     * @param RoomReservation[] $roomReservations
+     */
     public function __construct(
         private ?int $id,
         private string $name,
@@ -21,6 +25,7 @@ final readonly class Trip
         private float $plannedTotalRevenue,
         private int $spaTaxCount = 0,
         private ?DateTimeImmutable $endDate = null,
+        private array $roomReservations = [],
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Trip name is required.');
@@ -32,6 +37,11 @@ final readonly class Trip
 
         if ($endDate !== null && $endDate < $startDate) {
             throw new InvalidArgumentException('End date must not be before start date.');
+        }
+
+        $roomTypes = array_map(static fn (RoomReservation $reservation) => $reservation->matchKey(), $roomReservations);
+        if (count($roomTypes) !== count(array_unique($roomTypes))) {
+            throw new InvalidArgumentException('Each room type may be reserved only once.');
         }
     }
 
@@ -52,7 +62,8 @@ final readonly class Trip
             $this->plannedTotalCosts,
             $this->plannedTotalRevenue,
             $this->spaTaxCount,
-            $this->endDate
+            $this->endDate,
+            $this->roomReservations
         );
     }
 
@@ -81,6 +92,12 @@ final readonly class Trip
     public function groupExpenses(): array
     {
         return $this->groupExpenses;
+    }
+
+    /** @return RoomReservation[] */
+    public function roomReservations(): array
+    {
+        return $this->roomReservations;
     }
 
     public function plannedTotalCosts(): float

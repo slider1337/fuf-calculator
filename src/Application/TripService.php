@@ -11,6 +11,7 @@ use App\Domain\Trip\DistributionMethod;
 use App\Domain\Trip\GroupExpense;
 use App\Domain\Trip\RoomBooking;
 use App\Domain\Trip\RoomCategoryType;
+use App\Domain\Trip\RoomReservation;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
 use DateTimeImmutable;
@@ -89,6 +90,8 @@ final readonly class TripService
             }
         }
 
+        $reservationPayloads = $this->roomReservationPayloads($payload);
+
         $bookings = [];
         try {
             foreach ($payload['bookings'] as $bookingPayload) {
@@ -112,6 +115,11 @@ final readonly class TripService
                 );
             }
 
+            $reservations = array_map(
+                static fn (array $reservation) => new RoomReservation($reservation['roomType'], $reservation['count']),
+                $reservationPayloads
+            );
+
             $trip = new Trip(
                 id: null,
                 name: (string) $payload['name'],
@@ -132,12 +140,48 @@ final readonly class TripService
                 plannedTotalRevenue: (float) ($payload['plannedTotalRevenue'] ?? 0),
                 spaTaxCount: (int) ($payload['spaTaxCount'] ?? 0),
                 endDate: $endDate,
+                roomReservations: $reservations,
             );
         } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);
         }
 
         return $id === null ? $trip : $trip->withId($id);
+    }
+
+    /**
+     * Optional, damit bestehende Clients unveraendert weiterlaufen. Eine ganz leere
+     * Zeile (kein Typ, Anzahl 0) ist ein nicht ausgefuelltes Formularfeld und faellt
+     * weg; ohne Typ, aber mit Anzahl, ist sie ein Eingabefehler.
+     *
+     * @return array<int, array{roomType: string, count: int}>
+     */
+    private function roomReservationPayloads(array $payload): array
+    {
+        $result = [];
+        $seen = [];
+
+        foreach ((array) ($payload['roomReservations'] ?? []) as $reservationPayload) {
+            $roomType = trim((string) ($reservationPayload['roomType'] ?? ''));
+            $count = (int) ($reservationPayload['count'] ?? 0);
+
+            if ($roomType === '') {
+                if ($count === 0) {
+                    continue;
+                }
+                throw new ValidationException(['roomReservations' => 'room_type_required']);
+            }
+
+            $key = RoomReservation::matchKeyFor($roomType);
+            if (isset($seen[$key])) {
+                throw new ValidationException(['roomReservations' => 'duplicate_room_type']);
+            }
+            $seen[$key] = true;
+
+            $result[] = ['roomType' => $roomType, 'count' => $count];
+        }
+
+        return $result;
     }
 
     public function getTrip(int $id): Trip

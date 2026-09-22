@@ -122,6 +122,10 @@ final readonly class TripController
                 'label' => $expense->label(),
                 'amount' => $expense->amount(),
             ], $trip->groupExpenses()),
+            'roomReservations' => array_map(static fn ($reservation) => [
+                'roomType' => $reservation->roomType(),
+                'count' => $reservation->count(),
+            ], $trip->roomReservations()),
         ];
     }
 }

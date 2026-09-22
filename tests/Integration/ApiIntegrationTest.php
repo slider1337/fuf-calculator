@@ -153,6 +153,75 @@ final class ApiIntegrationTest extends ApiTestCase
         self::assertFalse($created['averageAdultPrice']);
     }
 
+    /**
+     * @throws JsonException
+     */
+    public function testTripPersistsRoomReservations(): void
+    {
+        $payload = $this->validTripPayload();
+        $payload['roomReservations'] = [
+            ['roomType' => '2-Bettzimmer', 'count' => 4],
+            ['roomType' => 'Familienzimmer', 'count' => 1],
+        ];
+
+        $createResponse = $this->dispatch('POST', '/api/trips', $payload);
+        self::assertSame(201, $createResponse->getStatusCode());
+        $created = json_decode((string) $createResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        $getResponse = $this->dispatch('GET', '/api/trips/' . $created['id']);
+        $trip = json_decode((string) $getResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame($payload['roomReservations'], $trip['roomReservations']);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testUpdateTripReplacesRoomReservations(): void
+    {
+        $payload = $this->validTripPayload();
+        $payload['roomReservations'] = [['roomType' => '2-Bettzimmer', 'count' => 4]];
+        $create = $this->dispatch('POST', '/api/trips', $payload);
+        $created = json_decode((string) $create->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        $payload['roomReservations'] = [['roomType' => '3-Bettzimmer', 'count' => 2]];
+        $this->dispatch('PUT', '/api/trips/' . $created['id'], $payload);
+
+        $getResponse = $this->dispatch('GET', '/api/trips/' . $created['id']);
+        $trip = json_decode((string) $getResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame([['roomType' => '3-Bettzimmer', 'count' => 2]], $trip['roomReservations']);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testTripWithoutRoomReservationsReturnsEmptyList(): void
+    {
+        $createResponse = $this->dispatch('POST', '/api/trips', $this->validTripPayload());
+        $created = json_decode((string) $createResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame([], $created['roomReservations']);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function testCreateTripWithDuplicateRoomTypeReturns422(): void
+    {
+        $payload = $this->validTripPayload();
+        $payload['roomReservations'] = [
+            ['roomType' => '2-Bettzimmer', 'count' => 4],
+            ['roomType' => '2-bettzimmer', 'count' => 1],
+        ];
+
+        $response = $this->dispatch('POST', '/api/trips', $payload);
+
+        self::assertSame(422, $response->getStatusCode());
+        $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('duplicate_room_type', $body['details']['roomReservations']);
+    }
+
     public function testCreateTripWithMissingFieldsReturns422(): void
     {
         $response = $this->dispatch('POST', '/api/trips', ['name' => 'Fehlt']);

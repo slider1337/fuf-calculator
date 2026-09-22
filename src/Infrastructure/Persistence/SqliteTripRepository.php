@@ -10,6 +10,7 @@ use App\Domain\Trip\DistributionMethod;
 use App\Domain\Trip\GroupExpense;
 use App\Domain\Trip\RoomBooking;
 use App\Domain\Trip\RoomCategoryType;
+use App\Domain\Trip\RoomReservation;
 use App\Domain\Trip\Trip;
 use App\Domain\Trip\TripPricingPolicy;
 use DateMalformedStringException;
@@ -111,6 +112,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $this->pdo->prepare('DELETE FROM trip_bookings WHERE trip_id = :tripId')->execute([':tripId' => $tripId]);
         $this->pdo->prepare('DELETE FROM trip_group_expenses WHERE trip_id = :tripId')->execute([':tripId' => $tripId]);
+        $this->pdo->prepare('DELETE FROM trip_room_reservations WHERE trip_id = :tripId')->execute([':tripId' => $tripId]);
 
         $this->persistChildren($tripId, $trip);
 
@@ -160,6 +162,17 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             );
         }
 
+        $reservationsStmt = $this->pdo->prepare('SELECT * FROM trip_room_reservations WHERE trip_id = :tripId ORDER BY id ASC');
+        $reservationsStmt->execute([':tripId' => $id]);
+
+        $reservations = [];
+        foreach ($reservationsStmt->fetchAll() as $row) {
+            $reservations[] = new RoomReservation(
+                (string) $row['room_type'],
+                (int) $row['room_count']
+            );
+        }
+
         return new Trip(
             id: (int) $trip['id'],
             name: (string) $trip['name'],
@@ -180,7 +193,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             spaTaxCount: (int) ($trip['spa_tax_count'] ?? 0),
             endDate: isset($trip['end_date']) && $trip['end_date'] !== null
                 ? new DateTimeImmutable((string) $trip['end_date'])
-                : null
+                : null,
+            roomReservations: $reservations
         );
     }
 
@@ -231,6 +245,19 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 ':tripId' => $tripId,
                 ':label' => $expense->label(),
                 ':amount' => $expense->amount(),
+            ]);
+        }
+
+        $reservationStmt = $this->pdo->prepare(
+            'INSERT INTO trip_room_reservations (trip_id, room_type, room_count)
+             VALUES (:tripId, :roomType, :count)'
+        );
+
+        foreach ($trip->roomReservations() as $reservation) {
+            $reservationStmt->execute([
+                ':tripId' => $tripId,
+                ':roomType' => $reservation->roomType(),
+                ':count' => $reservation->count(),
             ]);
         }
     }

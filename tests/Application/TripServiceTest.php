@@ -60,6 +60,72 @@ final class TripServiceTest extends TestCase
         self::assertFalse($trip->pricingPolicy()->averageAdultPrice());
     }
 
+    public function testCreateFromArrayMapsRoomReservations(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        $trip = $service->createFromArray($this->validPayload(['roomReservations' => [
+            ['roomType' => '2-Bettzimmer', 'count' => 4],
+            ['roomType' => 'Familienzimmer', 'count' => 1],
+        ]]));
+
+        $reservations = $trip->roomReservations();
+        self::assertCount(2, $reservations);
+        self::assertSame('2-Bettzimmer', $reservations[0]->roomType());
+        self::assertSame(4, $reservations[0]->count());
+        self::assertSame('Familienzimmer', $reservations[1]->roomType());
+    }
+
+    public function testCreateFromArrayWithoutRoomReservationsHasNone(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        $trip = $service->createFromArray($this->validPayload());
+
+        self::assertSame([], $trip->roomReservations());
+    }
+
+    public function testCreateFromArraySkipsRoomReservationWithoutTypeAndCount(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        $trip = $service->createFromArray($this->validPayload(['roomReservations' => [
+            ['roomType' => '2-Bettzimmer', 'count' => 4],
+            ['roomType' => '  ', 'count' => 0],
+        ]]));
+
+        self::assertCount(1, $trip->roomReservations());
+    }
+
+    public function testCreateFromArrayRejectsRoomReservationWithoutTypeButWithCount(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        try {
+            $service->createFromArray($this->validPayload(['roomReservations' => [
+                ['roomType' => '', 'count' => 2],
+            ]]));
+            self::fail('ValidationException expected.');
+        } catch (ValidationException $exception) {
+            self::assertSame(['roomReservations' => 'room_type_required'], $exception->errors());
+        }
+    }
+
+    public function testCreateFromArrayRejectsDuplicateRoomType(): void
+    {
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+
+        try {
+            $service->createFromArray($this->validPayload(['roomReservations' => [
+                ['roomType' => '2-Bettzimmer', 'count' => 4],
+                ['roomType' => ' 2-BETTZIMMER', 'count' => 1],
+            ]]));
+            self::fail('ValidationException expected.');
+        } catch (ValidationException $exception) {
+            self::assertSame(['roomReservations' => 'duplicate_room_type'], $exception->errors());
+        }
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_merge([

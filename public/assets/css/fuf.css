@@ -1474,9 +1474,12 @@ body.is-trip-view .app-head-title {
 }
 
 /* Zusatzausgabe: Bezeichnung breit, Betrag schmal */
+/* Mobile first: Bezeichnung und Betrag stehen untereinander. Nebeneinander
+   nimmt der Betrag feste 180 px, und von 390 px bleiben der Bezeichnung
+   keine 180 -- Feld und Beschriftung ragten heraus. */
 .expense-row {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
     gap: 12px;
 }
 
@@ -1484,9 +1487,16 @@ body.is-trip-view .app-head-title {
     flex-grow: 1;
 }
 
-.expense-row .f-amount {
-    flex-grow: 0;
-    width: 180px;
+@media (min-width: 901px) {
+    .expense-row {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+
+    .expense-row .f-amount {
+        flex-grow: 0;
+        width: 180px;
+    }
 }
 
 /* ========================================================================
@@ -3408,8 +3418,18 @@ button.chip-btn.is-active {
 }
 
 /* Erfassungszeile fuer eine zusaetzliche Ausgabe */
+/* Mobile first: Bezeichnung, Betrag und Knopf stehen untereinander -- das ist
+   der wichtigste Handy-Vorgang, und nebeneinander ueberlagerten sich auf
+   390 px die Feldbeschriftungen. `flex: 0 0 170px` waere in der Spalte
+   ausserdem eine Hoehe, nicht eine Breite; dieselbe Falle wie beim
+   Kategoriefeld in 4f. */
 .expense-form {
     display: flex;
+    flex-direction: column;
+    /* .box-sand setzt align-items: end, damit Beschriftung und Feld in der
+       Zeile auf einer Grundlinie stehen. In der Spalte ist das die Querachse:
+       die Felder wurden rechtsbuendig und nur so breit wie ihr Inhalt. */
+    align-items: stretch;
     gap: 12px;
 }
 
@@ -3418,8 +3438,15 @@ button.chip-btn.is-active {
     min-width: 0;
 }
 
-.expense-form .f-amount {
-    flex: 0 0 170px;
+@media (min-width: 901px) {
+    .expense-form {
+        flex-direction: row;
+        align-items: end;
+    }
+
+    .expense-form .f-amount {
+        flex: 0 0 170px;
+    }
 }
 
 .tb-actions {
@@ -3493,19 +3520,32 @@ button.chip-btn.is-active {
     gap: 8px;
 }
 
+/* Mobile first: eine Spalte. Zwei Spuren standen hier bei jeder Breite -- der
+   Block ist beim Umdrehen der Queries in 3a uebersehen worden, weil er nie in
+   einem max-width-Block stand. Auf 390 px blieben je 170 px, und
+   "Gesamteinnahmen (Billing) 2.321,40 €" stand bis an die Kante. */
 .refund-calc {
     border: 1px solid var(--fuf-sand-400);
     border-radius: 10px;
     padding: 12px 16px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 4px 32px;
     align-content: center;
 }
 
 .refund-calc .cl-total {
-    grid-column: span 2;
     font-size: 15px;
+}
+
+@media (min-width: 901px) {
+    .refund-calc {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .refund-calc .cl-total {
+        grid-column: span 2;
+    }
 }
 
 

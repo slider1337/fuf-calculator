@@ -1,6 +1,6 @@
 # Responsive / Mobile first — Design
 
-Stand: 2026-09-21. Grundlage: `docs/design-handoff/RESPONSIVE.md` und
+Stand: 2026-09-22 (Schritte 1–3 umgesetzt). Grundlage: `docs/design-handoff/RESPONSIVE.md` und
 `docs/design-handoff/mockups/06-mobil.html` (fünf Handy-Ansichten bei 390 × 844).
 
 Baut auf `2026-09-18-ui-redesign-design.md` auf. Alles dort Festgelegte gilt weiter —
@@ -110,10 +110,13 @@ erhöhen, jeder spätere Schritt muss ihn senken, Schritt 4 muss ihn auf 0 bring
 
 Gemessen mit der Fixture-DB (`scripts/ui-fixture.php`, Reise #1):
 
-| Route | vor Schritt 1 | nach Schritt 1a | nach Schritt 2 |
-|---|---|---|---|
-| `/` (390 und 375 px) | 50 | 50 | 39 |
-| `/trips/1` (390 und 375 px) | 37 | 35 | 23 |
+| Route | vor Schritt 1 | nach Schritt 1a | nach Schritt 2 | nach Schritt 3 |
+|---|---|---|---|---|
+| `/` (390 und 375 px) | 50 | 50 | 39 | 39 |
+| `/trips/1` (390 und 375 px) | 37 | 35 | 23 | **0** |
+
+`/` bleibt in Schritt 3 stehen, weil Schritt 3 die Reiseliste nicht anfasst — sie besteht aus
+der Tabelle und der Filterleiste und fällt mit Schritt 4.
 
 **Die Messfunktion überspringt seit Schritt 2 auch `visibility: hidden`.** Ein
 geschlossenes Offcanvas-Panel parkt per `translateX(100%)` rechts neben dem Viewport. Sein
@@ -180,22 +183,108 @@ für `/` und `/trips/1` byteweise dieselben Aufnahmen wie vor dem Umbau (`compar
   und die Kantenglättung von Schrift und Holzmaserung fällt anders aus — 1.654 Pixel
   Unterschied bei unveränderter Geometrie.
 
-## Schritte 3–5 — noch offen
+## Schritt 3 — Bottom-Bar plus Blatt
+
+Vier Commits. Regel 5 (wichtigste Zahl und Hauptaktion unten, in Daumenreichweite) und
+Regel 6 (`env(safe-area-inset-bottom)`) werden hier eingelöst.
+
+### 3a. Die `max-width`-Queries umgedreht
+
+`fuf.css` hat seitdem keine `max-width`-Query mehr. Die Spaltenlayouts stehen einspaltig in
+der Basis, ihre Spaltenzahl kommt in `@media (min-width: 901px)` bzw. `(min-width: 1101px)`
+direkt beim Baustein dazu. Es waren **fünf** Blöcke, nicht vier wie nach Schritt 2 notiert.
+
+**Dabei ist toter Code aufgefallen.** Der Eintrag `.fuf-grid-spa` im alten
+`max-width: 900px`-Block wurde von der Definition in Abschnitt 11 überstimmt: gleiche
+Spezifität, aber später in der Datei. Die Kurabgabe-Zeile stand deshalb bei *keiner* Breite
+einspaltig. Mit der Rückstellung am Baustein greift sie jetzt.
+
+Diese Falle ist in Schritt 3 noch zweimal zugeschnappt und ist die wichtigste Lehre des
+Schritts: **eine mobile Regel gehört an denselben Ort wie die Definition, die sie
+überschreibt — sonst gewinnt die Definition.**
+
+### 3b. Das Blatt
+
+Beide Sticky-Panels stecken in einer Hülle `div.calc-sheet.offcanvas-lg.offcanvas-bottom`
+(`#calc-sheet-planung`, `#calc-sheet-abrechnung`). Dasselbe Muster wie das Menü in
+Schritt 2, also bleibt jede ID einmalig und kein Handler musste umgehängt werden. Ab `lg`
+lösen sich Hülle und `offcanvas-body` per `display: contents` auf, `.pg-side` sieht aus wie
+zuvor. Backdrop, Escape und Scroll-Sperre kommen von Bootstrap; Bootstrap blendet den
+`offcanvas-header` ab `lg` selbst aus.
+
+Der Griff ist zugleich der Schließen-Knopf (`data-bs-dismiss`) und die Wischfläche: sichtbar
+38 × 4 px wie im Mockup, treffen kann man die ganze 44-px-Kopfzeile. Der Wisch nach unten
+sind drei Touch-Handler in `app.js`, Schwelle 60 px.
+
+**`display: contents` löst die Hülle als Box auf, nicht als Vorfahre im DOM.** Ein Selektor
+`.calc-sheet .pnl` greift deshalb auch auf dem Desktop. Was im Blatt anders aussehen soll,
+muss also mobile-first am Baustein selbst stehen: `.pnl` ist in der Basis flach und wird
+erst ab `lg` zur Karte.
+
+### 3c. Die Bottom-Bar
+
+`div.trip-bar` am Ende von `#trip-editor-section`, `position: fixed`, 65 px plus
+`env(safe-area-inset-bottom)`, nur unter `lg`. Links die Kennzahl des aktiven Bereichs mit
+Pfeil nach oben, rechts `Speichern` als vierter `trip-form`-Submit — auf beiden Tabs, weil
+der Stale-Hinweis in der Abrechnung genau diesen Speicherstand meint.
+
+Die Kennzahl wird an derselben Stelle abgelesen wie die im Reisekopf, damit es keine zweite
+Rechnung gibt, die auseinanderlaufen könnte. Welches Blatt sie aufzieht, entscheidet
+`app.js` statt eines `data-bs-target` am Knopf — sonst müsste der Tab-Wechsel ein Attribut
+nachziehen.
+
+Neuer Token `--fuf-bar-space` hält am Seitenende den Platz frei und ist ab `lg` `0`.
+`z-index: 1030` hält die Bar unter Offcanvas (1045) und Backdrop (1040), das Blatt deckt sie
+also zu.
+
+### 3d. Abschnitte starten zugeklappt
+
+Die Sprungnavigation entfällt unter `lg`; ihr Baum bleibt im DOM, damit `renderJumpState`
+und der Section-Observer unberührt weiterlaufen. Stattdessen klappt `app.js` beim Öffnen
+einer Reise alle Abschnitte mit Chevron zu. Gemessen wird `window.innerWidth` **einmal beim
+Öffnen, nicht bei jedem Resize** — wer am Desktop das Fenster schmal zieht, soll nicht
+mitten in der Arbeit alles zufallen sehen. `sec-kalkulation` bleibt offen, die Section ist
+selbst das Akkordeon.
+
+Damit wird der Section-Kopf zur ganzen sichtbaren Oberfläche des Abschnitts, und drei Dinge
+daran waren dafür nicht tauglich:
+
+- **Der Kopf brach nicht um.** Ein Aktionsknopf schob den Chevron bis zu 227 px aus dem Bild
+  — und damit den einzigen Weg, den zugeklappten Abschnitt zu öffnen. Jetzt bilden Titel und
+  Chevron die erste Zeile, Zusammenfassung und Knöpfe rücken per `order` dahinter.
+- **Der Chevron war ein 18-px-Ziel**, Regel 3 verlangt 48 px.
+- **Die Fußzeile** stellte Hinweis und Knopf nebeneinander; „Verkaufspreise übernehmen & neu
+  berechnen" passt so auf 375 px nicht, weil `.btn` `white-space: nowrap` trägt.
+
+### 3e. Wechsel-Karte am Seitenende
+
+Vom Wechsel Planung ↔ Abrechnung bleiben zwei Einstiege statt der drei aus RESPONSIVE.md.
+Die **fix über der Bottom-Bar angepinnte Wechsel-Zeile entfällt** — ein zweites festes
+Element hätte nochmal rund 56 px Daumenzone gekostet und mit dem Blatt um dieselbe Stelle
+konkurriert. Das Segmented Control steht oben ohnehin permanent. Die Karte am Seitenende
+steht mobil einzeilig: Icon, Titel, Stand, Pfeil.
+
+### Verifikation
+
+- Überlauf: `/trips/1` von 23 auf 0 bei 390 und 375 px. `/` unverändert bei 39.
+- Desktop pixelgleich: `ui-shot.mjs` bei 1440 px liefert für `/` und `/trips/1` byteweise
+  dieselben Aufnahmen (`compare -metric AE` = 0). Für 3a zusätzlich bei 1101, 1100 und
+  901 px; bei 900 px unterscheidet sich nur die Kurabgabe-Zeile, der oben genannte Fehler.
+- `ui-shot.mjs` findet alle `REQUIRED_IDS`, keine JS-Fehler.
+- `composer test`: 223 Tests grün.
+
+**Zwei Pixelfallen dabei**, beide vom selben Typ wie der tote Code aus 3a:
+
+- `justify-content: center` auf `.chev` verschob das Icon in der Kalkulationszeile um 3 px:
+  der Knopf steckt dort in einer 24-px-Grid-Spur und streckt sich darauf. Das Zentrieren
+  gilt deshalb nur im Section-Kopf.
+- Der `order`-Sprung im Section-Kopf braucht eine Rückstellung ab `lg`, sonst stehen
+  Zusammenfassung und Knöpfe auch auf dem Desktop hinter dem Chevron.
+
+## Schritte 4–5 — noch offen
 
 Reihenfolge aus `RESPONSIVE.md`, Abschnitt „Reihenfolge". Details dort und in
 `mockups/06-mobil.html`; hier nur das, was beim Aufsetzen zu beachten ist.
-
-**Schritt 3 — Bottom-Bar plus Sheet.** Ersetzt die rechte Sticky-Spalte unter `lg`.
-Feste Bottom-Bar (links Kennzahl „Überschuss" mit Pfeil nach oben, rechts `Speichern`),
-`padding-bottom: env(safe-area-inset-bottom)` (Regel 6). Tippen auf die Kennzahl zieht das
-Sheet auf: Grabber, Kennzahlen, Kostenliste, dunkelgrüne Überschuss-Box, `Speichern`;
-Schließen per Wisch nach unten, Hintergrund-Tipp oder Escape. Die Sprungnavigation entfällt
-mobil — stattdessen sind alle Sections zugeklappt und zeigen nur ihre Zusammenfassung.
-Regel 5 (wichtigste Zahl und Hauptaktion unten, in Daumenreichweite) wird hier eingelöst.
-
-**Ab hier greifen die `max-width`-Queries.** Von den fünf aus Schritt 1 stehen nach
-Schritt 2 noch vier (zwei bei 1100 px, zwei bei 900 px). Sie gehören spätestens mit
-Schritt 3 auf `min-width` gedreht, weil dann das mobile Gegenstück existiert.
 
 **Schritt 4 — Karten statt Tabellen, Section für Section.**
 Sieben Tabellen. Unter `md` kein horizontales Scrollen, sondern pro Zeile ein Block:
@@ -217,6 +306,10 @@ Schließen-Kreuz, Inhalt scrollt, Buttons in fester Leiste unten über volle Bre
 - [x] Schritt 1b — Zahlenfelder mit `inputmode`
 - [x] Schritt 1c — `scripts/check-overflow.mjs`
 - [x] Schritt 2 — Kopfleiste und Segmented Control
-- [ ] Schritt 3 — Bottom-Bar plus Sheet
+- [x] Schritt 3a — `max-width`-Queries umgedreht
+- [x] Schritt 3b — Blatt statt Sticky-Spalte
+- [x] Schritt 3c — Bottom-Bar
+- [x] Schritt 3d — Abschnitte starten zugeklappt
+- [x] Schritt 3e — Wechsel-Karte am Seitenende kompakt
 - [ ] Schritt 4 — Karten statt Tabellen
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

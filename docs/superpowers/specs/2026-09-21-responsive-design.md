@@ -1,6 +1,6 @@
 # Responsive / Mobile first — Design
 
-Stand: 2026-09-22 (Schritte 1–4 umgesetzt). Grundlage: `docs/design-handoff/RESPONSIVE.md` und
+Stand: 2026-09-22 (alle fünf Schritte umgesetzt). Grundlage: `docs/design-handoff/RESPONSIVE.md` und
 `docs/design-handoff/mockups/06-mobil.html` (fünf Handy-Ansichten bei 390 × 844).
 
 Baut auf `2026-09-18-ui-redesign-design.md` auf. Alles dort Festgelegte gilt weiter —
@@ -542,13 +542,56 @@ bei gleicher Spezifität gewinnt die spätere Regel.
   `.box-sand` ist in der Spalte die Querachse — die Felder wurden rechtsbündig und nur so
   breit wie ihr Inhalt.
 
-## Schritt 5 — noch offen
+## Schritt 5 — Modals als Vollbild-Blätter
 
-**Modals als Vollbild-Sheets.** Drei Modals: `.modal-fullscreen-md-down` auf dem
-`.modal-dialog`, Kopf mit Titel und Schließen-Kreuz, Inhalt scrollt, Buttons in fester
-Leiste unten über volle Breite. Details in `RESPONSIVE.md` und `mockups/04-modals.html`.
+Ein Commit. Die drei Modals — `#users-modal`, `#invite-modal`, `#settings-modal` — tragen
+`modal-fullscreen-lg-down` am `.modal-dialog`. Kopf mit Titel und Schließen-Kreuz, Inhalt
+scrollt, Knopfleiste fest am unteren Rand. Der Kartenmodus aus 4a greift im Benutzer-Modal
+schon; es fehlte nur die Hülle.
 
-Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was fehlt.
+**`lg-down`, nicht `md-down` wie in `RESPONSIVE.md`.** Menü und Kalkulationsblatt, die
+beiden anderen Vollbild-Überlagerungen, schalten bei 992 px (`offcanvas-lg`). Eine dritte
+Grenze bei 768 px hätte ein Band erzeugt, in dem ein zentrierter Dialog neben einem
+Vollbild-Menü stünde.
+
+Bootstrap hält die Fußzeile über `modal-fullscreen-*-down` selbst außerhalb des scrollenden
+`.modal-body`; sie bleibt also ohne Zutun stehen. Dazu kommen drei eigene Regeln, alle
+mobile-first mit Rückstellung ab 992 px:
+
+- Die Knöpfe der Fußzeile teilen sich die Breite zu gleichen Teilen (`flex: 1 1 0`).
+- `padding-bottom: calc(12px + env(safe-area-inset-bottom))` — Regel 6, unter der Leiste
+  liegt auf dem iPhone die Home-Indicator-Leiste.
+- Suche und `Nutzer einladen` im Kopf des Benutzer-Modals stehen untereinander;
+  nebeneinander bleiben dem Suchfeld auf 390 px keine 200 px.
+
+**Eine Falle:** `margin: 0` und `flex-wrap: nowrap` an der Fußzeile wirken ohne
+Rückstellung auch am Desktop. Bootstrap gibt `.modal-footer > *` eine eigene Margin; ohne
+sie verschoben sich alle drei Modals bei 1440 px um 9.000 bis 12.000 Pixel. Die Margin
+bleibt jetzt stehen — neben dem `gap` fällt sie mobil kaum ins Gewicht.
+
+### Verifikation
+
+- Überlauf bei 390 und 375 px: 0 in allen drei Modals, dazu unverändert 0 in den fünf
+  Zuständen aus Schritt 4 und auf `/trips/new`.
+- Desktop pixelgleich bei 1440, 1101, 1100, 992, 901 und 900 px, **und in allen drei
+  Modals bei 1440 px** (`compare -metric AE` = 0).
+- `ui-shot.mjs` findet alle `REQUIRED_IDS`, keine JS-Fehler, bei 390 und 1440 px.
+- `composer test`: 223 Tests grün.
+
+## Was Skripte nicht abdecken
+
+Alles Gemessene lief headless in Chrome bei 390 und 375 px. `RESPONSIVE.md` verlangt
+zusätzlich Handprüfung auf echten Geräten, und die steht aus:
+
+- Zoomt ein Feld beim Antippen? Die 16-px-Regel aus Schritt 1 soll das verhindern,
+  bewiesen ist es nicht.
+- Sitzen Bottom-Bar und Modal-Fußzeile über der Home-Indicator-Leiste?
+  `env(safe-area-inset-bottom)` ist gesetzt, im Desktop-Chrome ist der Wert aber immer 0.
+- Funktioniert das Blatt mit eingeblendeter Tastatur?
+- Querformat, und ein Android um 412 px.
+
+Die ersten beiden Punkte sind reine Annahmen, solange sie niemand auf einem iPhone
+gesehen hat.
 
 ## Status
 
@@ -573,4 +616,5 @@ Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was f
 - [x] Schritt 4h — `Kalkulation & Verkaufspreise` zuklappbar
 - [x] Schritt 4i — Kartenliste ohne Hülle, `Neue Reise` als `+` im Kopf, neue Reise mit
       drei offenen Abschnitten
-- [ ] Schritt 5 — Modals als Vollbild-Sheets
+- [x] Schritt 5 — Modals als Vollbild-Blätter
+- [ ] Handprüfung auf echten Geräten (iPhone, Android, Querformat, Tastatur)

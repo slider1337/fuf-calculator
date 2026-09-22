@@ -3787,19 +3787,37 @@ h2.modal-title {
     font-size: 13px;
 }
 
+/* Mobile first: das Blatt nutzt die Breite, der Rand darf schmaler sein als im
+   zentrierten Dialog. */
 .modal-body {
-    padding: 18px 22px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-/* Suche links, Aktion rechts - im Kopf des Benutzer-Modals */
+@media (min-width: 992px) {
+    .modal-body {
+        padding: 18px 22px;
+    }
+}
+
+/* Suche und Aktion im Kopf des Benutzer-Modals. Mobile first untereinander -
+   nebeneinander bleiben dem Suchfeld auf 390 px keine 200 px. */
 .modal-toolbar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+@media (min-width: 992px) {
+    .modal-toolbar {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
 }
 
 .modal-toolbar .in-search {
@@ -3875,11 +3893,35 @@ h2.modal-title {
     color: var(--fuf-brown-400);
 }
 
+/* Mobile first: die Knopfleiste sitzt am unteren Rand des Blattes und teilt
+   sich die Breite. Bootstrap haelt sie ueber .modal-fullscreen-lg-down
+   ausserhalb des scrollenden .modal-body, sie bleibt also stehen.
+   Regel 6: unter der Leiste liegt auf dem iPhone die Home-Indicator-Leiste. */
 .modal-footer {
     background: var(--fuf-sand-50);
     border-top: 1px solid var(--fuf-sand-300);
-    padding: 12px 20px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;
+    flex-wrap: nowrap;
     gap: 8px;
+}
+
+/* Die Knoepfe teilen sich die Zeile zu gleichen Teilen. Bootstrap gibt
+   .modal-footer > * eine eigene Margin; sie bleibt stehen, damit der Desktop
+   unberuehrt ist, und faellt neben dem gap kaum ins Gewicht. */
+.modal-footer > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (min-width: 992px) {
+    .modal-footer {
+        flex-wrap: wrap;
+        padding: 12px 20px;
+    }
+
+    .modal-footer > .btn {
+        flex: 0 0 auto;
+    }
 }
 
 /* Die Modals bringen ihre eigenen Abstaende mit - der Rest kommt aus .tb. */

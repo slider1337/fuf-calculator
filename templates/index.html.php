@@ -77,8 +77,13 @@
     </header>
     <div class="app-main">
 
+    <!-- DESIGN: Unter lg sind die drei Modals Vollbild-Blaetter. `lg-down` und nicht
+         `md-down` wie in RESPONSIVE.md: Menue und Kalkulationsblatt, die beiden anderen
+         Vollbild-Ueberlagerungen, schalten bei 992 px (offcanvas-lg). Eine dritte Grenze
+         bei 768 px haette ein Band erzeugt, in dem ein zentrierter Dialog neben einem
+         Vollbild-Menue stuende. -->
     <div class="modal fade" id="users-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-fullscreen-lg-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="modal-title-group">
@@ -125,7 +130,7 @@
     </div>
 
     <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-fullscreen-lg-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="modal-title-group">
@@ -1100,7 +1105,7 @@
     </section>
 
     <div class="modal fade" id="settings-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-lg-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="modal-title-group">

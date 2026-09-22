@@ -682,7 +682,7 @@
                     <b>Abrechnung</b>
                     <span class="help" id="switch-to-abrechnung-sub">Belege und tats&auml;chliche Ausgaben erfassen</span>
                 </span>
-                <span class="btn btn-o switch-cta-btn">&Ouml;ffnen
+                <span class="btn btn-o switch-cta-btn"><span class="switch-cta-word">&Ouml;ffnen</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </span>
             </a>
@@ -955,7 +955,7 @@
                 <a class="switch-cta switch-cta-back" href="#planung" id="switch-to-planung">
                     <span class="btn btn-o switch-cta-btn">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                        &Ouml;ffnen
+                        <span class="switch-cta-word">&Ouml;ffnen</span>
                     </span>
                     <span class="switch-cta-text">
                         <span class="switch-cta-label">Anderer Bereich</span>

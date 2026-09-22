@@ -2788,6 +2788,31 @@ button.chip-btn.is-active {
     flex-shrink: 0;
 }
 
+/* Mobile first: eine Zeile mit Icon, Titel, Stand und Pfeil. "Anderer Bereich"
+   und "Oeffnen" kosten die Breite, die der Stand braucht - vom Knopf bleibt
+   das Pfeil-Quadrat. Ab lg ist es wieder die Karte aus DESIGN.md. */
+.switch-cta-label,
+.switch-cta-word {
+    display: none;
+}
+
+.switch-cta-btn {
+    min-width: var(--fuf-touch);
+    padding: 0;
+}
+
+@media (min-width: 992px) {
+    .switch-cta-label,
+    .switch-cta-word {
+        display: inline;
+    }
+
+    .switch-cta-btn {
+        min-width: 0;
+        padding: 0 16px;
+    }
+}
+
 .switch-cta-back .switch-cta-text {
     text-align: right;
 }

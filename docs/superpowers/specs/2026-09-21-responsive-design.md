@@ -1,6 +1,6 @@
 # Responsive / Mobile first — Design
 
-Stand: 2026-09-22 (Schritte 1–3 umgesetzt). Grundlage: `docs/design-handoff/RESPONSIVE.md` und
+Stand: 2026-09-22 (Schritte 1–4 umgesetzt). Grundlage: `docs/design-handoff/RESPONSIVE.md` und
 `docs/design-handoff/mockups/06-mobil.html` (fünf Handy-Ansichten bei 390 × 844).
 
 Baut auf `2026-09-18-ui-redesign-design.md` auf. Alles dort Festgelegte gilt weiter —
@@ -51,6 +51,12 @@ Bootstrap-Standard, drei Stufen (aus RESPONSIVE.md):
 
 `<meta name="viewport" content="width=device-width, initial-scale=1">` ist gesetzt.
 Kein `maximum-scale`, kein `user-scalable=no`.
+
+**Umgesetzt sind daraus zwei Grenzen, 901 px und 992 px, nicht die 768 px dieser Tabelle.**
+Tokens, Bottom-Bar und Blatt schalten bei 992 px (`lg`), alle Spaltenlayouts und der
+Kartenmodus aus Schritt 4 bei 901 px. Die 901 stammen aus Schritt 3a: darunter brechen schon
+die Feldbeschriftungen um. Eine dritte Grenze bei 768 px hätte ein Band erzeugt, in dem die
+sechsspaltige Reiseliste wieder Tabelle wäre, aber noch keine 900 px Platz hat.
 
 ## Schritt 1 — globale Regeln
 
@@ -110,13 +116,32 @@ erhöhen, jeder spätere Schritt muss ihn senken, Schritt 4 muss ihn auf 0 bring
 
 Gemessen mit der Fixture-DB (`scripts/ui-fixture.php`, Reise #1):
 
-| Route | vor Schritt 1 | nach Schritt 1a | nach Schritt 2 | nach Schritt 3 |
-|---|---|---|---|---|
-| `/` (390 und 375 px) | 50 | 50 | 39 | 39 |
-| `/trips/1` (390 und 375 px) | 37 | 35 | 23 | **0** |
+| Route | vor Schritt 1 | nach Schritt 1a | nach Schritt 2 | nach Schritt 3 | nach Schritt 4 |
+|---|---|---|---|---|---|
+| `/` (390 und 375 px) | 50 | 50 | 39 | 39 | **0** |
+| `/trips/1` (390 und 375 px) | 37 | 35 | 23 | **0** | **0** |
 
 `/` bleibt in Schritt 3 stehen, weil Schritt 3 die Reiseliste nicht anfasst — sie besteht aus
 der Tabelle und der Filterleiste und fällt mit Schritt 4.
+
+**Diese Reihe hat bis Schritt 4 nur einen von vier Zuständen gemessen.** Der Check lädt die
+Seite und misst, was sichtbar ist — und sichtbar ist auf `/trips/1` nur die Planung mit
+zugeklappten Abschnitten. Die Abrechnung ist eine `.tab-pane` ohne `.show`, also
+`display: none`; die Abschnitte starten seit 3d zugeklappt; das Benutzer-Modal ist zu. Alles,
+was 4a umgebaut hat, lag damit außerhalb der Messung. Mit `--eval` sind es fünf Zustände,
+und alle fünf stehen nach Schritt 4 bei 0:
+
+| Zustand | `--eval` | nach Schritt 3 | nach Schritt 4 |
+|---|---|---|---|
+| Liste | — | 39 | **0** |
+| Reise, Abschnitte zugeklappt | — | 0 | **0** |
+| Reise, Planung aufgeklappt | alle `#panel-planung .collapse` auf `show` | 14 | **0** |
+| Reise, Abrechnung aufgeklappt | Tab wechseln, dann alle `#panel-abrechnung .collapse` | 0 ¹ | **0** |
+| Benutzer-Modal | `#open-users-btn` klicken | 0 | **0** |
+
+¹ Die Abrechnung war vor Schritt 4 sauber und wurde durch 4c kurzzeitig auf 2 gebracht
+(Abweichung in der Kachel plus, als Folge der zu breiten Seite, der Speichern-Knopf der
+Bottom-Bar). Beides im selben Schritt behoben.
 
 **Die Messfunktion überspringt seit Schritt 2 auch `visibility: hidden`.** Ein
 geschlossenes Offcanvas-Panel parkt per `translateX(100%)` rechts neben dem Viewport. Sein
@@ -281,23 +306,181 @@ steht mobil einzeilig: Icon, Titel, Stand, Pfeil.
 - Der `order`-Sprung im Section-Kopf braucht eine Rückstellung ab `lg`, sonst stehen
   Zusammenfassung und Knöpfe auch auf dem Desktop hinter dem Chevron.
 
-## Schritte 4–5 — noch offen
+## Schritt 4 — Karten statt Tabellen
 
-Reihenfolge aus `RESPONSIVE.md`, Abschnitt „Reihenfolge". Details dort und in
-`mockups/06-mobil.html`; hier nur das, was beim Aufsetzen zu beachten ist.
+Sieben Commits. Umschaltpunkt ist überall **901 px**, nicht die 768 px aus `RESPONSIVE.md`:
+die Datei hat nach 3a keinen einzigen 768er-Punkt, jedes Raster stellt bei 901 px zurück.
+Bei 768 px entstünde ein Band, in dem die sechsspaltige Reiseliste wieder Tabelle wäre,
+aber noch keine 900 px Platz hat.
 
-**Schritt 4 — Karten statt Tabellen, Section für Section.**
-Sieben Tabellen. Unter `md` kein horizontales Scrollen, sondern pro Zeile ein Block:
-Bezeichnung fett links, Wert rechts, Zusatzinfos als Hilfetext darunter. Betrifft Kennzahlen
-(2 × 2), Unterkunft & Teilnehmer (drei Karten mit − / + Stepper à 48 px), Kalkulation &
-Verkaufspreise (Akkordeon-Zeile auf zwei Zeilen), Anmeldungen (Teilnehmertabelle wird Liste,
-CSV-Import und manuelles Formular untereinander, Drag-and-drop-Zone wird Datei-Button),
-geplante Kosten, Rückerstattung, Zimmerbedarf, sowie die Reiseliste (Kartenliste, Spalte „ID"
-entfällt, Filter als horizontal scrollbare Chip-Leiste, `Neue Reise` in der Bottom-Bar).
+Es sind **acht** Tabellen, nicht sieben: die Teilnehmertabelle im aufgeklappten
+Anmeldungs-Akkordeon ist ebenfalls eine `.tb`.
 
-**Schritt 5 — Modals als Vollbild-Sheets.**
-Drei Modals: `.modal-fullscreen-md-down` auf dem `.modal-dialog`, Kopf mit Titel und
-Schließen-Kreuz, Inhalt scrollt, Buttons in fester Leiste unten über volle Breite.
+### 4a. Kartenmodus auf `.tb`
+
+Abschnitt 10 ist mobile-first. Eine `.tb` ist in der Basis eine Liste von Blöcken — pro
+Zeile ein Block, pro Zelle eine Zeile aus Spaltenbeschriftung und Wert. Die Beschriftung
+kommt aus **`data-col`** am `<td>`, die erste Zelle trägt statt dessen `.tb-head` und wird
+die Überschrift des Blocks. Ab 901 px stellt ein Block am Ende desselben Abschnitts die
+echte Tabelle wieder her.
+
+Das Attribut heißt `data-col` und nicht `data-label`, weil der Bearbeiten-Knopf der
+Zusatzausgaben schon ein `data-label` für seinen Handler trägt.
+
+Deckt sechs Tabellen mit einem Mechanismus: geplante Kosten, zusätzliche Ausgaben,
+Rückerstattung, Zimmer nach Typ, Personen nach Abrechnungskategorie, Benutzer-Modal,
+Teilnehmerliste. Rückerstattung zusätzlich mit `.tb-refund` — „Gezahlt … Anteil …" als
+eine Hilfstext-Zeile unter dem Namen, die Erstattung darunter rechts.
+
+**`font-size: inherit` an `.tb td` überstimmt eine Klasse an der Zelle selbst.** `#1` in der
+Reiseliste und die Plan-Spalten der Zimmerkarte sind `.help`; `.tb td` (0,1,1) schlägt
+`.help` (0,1,0). Sie verloren ihre 13 px — 280 bzw. 1.700 Pixel Unterschied am Desktop. Der
+Schrift-Reset gilt deshalb nur für `.tb-head`.
+
+### 4b. Reiseliste als Kartenliste
+
+`.tb-trips`: Name als Überschrift, Zeitraum und Teilnehmer als eine Zeile mit Icons,
+Überschuss durch eine Trennlinie abgesetzt, Aktionen zuletzt. Spalte „ID" entfällt. Die
+Icons stehen **inline im Markup** (Hausregel: Icons sind inline-SVG) und sind ab 901 px per
+`.tb-ico` ausgeblendet.
+
+**Status-Chip und Filter-Chip-Leiste aus `RESPONSIVE.md` entfallen ersatzlos** — es gibt
+keinen Reisestatus im Datenmodell und keinen Filter in der Liste. Dieselbe Begründung wie
+beim Status-Chip in Schritt 2.
+
+Dazu eine zweite Bar `#trip-list-bar` am Ende von `#trip-list-section`: dieselbe `.trip-bar`,
+nur mit `Neue Reise` über die volle Breite. `.app-footer` hält den Platz jetzt in beiden
+Ansichten frei, nicht mehr nur unter `body.is-trip-view`. Der Knopf im Menü bleibt als
+zweiter Weg.
+
+### 4c. Kennzahlen 2 × 2
+
+`.fuf-grid-3` und `.fuf-grid-4` fallen aus der Einspalten-Basis von 3a heraus und stehen
+schon mobil in zwei Spuren; die dritte Kachel von drei nimmt beide Spuren. Die Abrechnung
+wird 277 px kürzer.
+
+**Die Beträge bleiben genau.** `RESPONSIVE.md` erlaubt sie mobil ohne Nachkommastellen, aber
+die Formatierung hängt an einer Stelle in `app.js`; eine breitenabhängige zweite Variante
+liefe beim Resize auseinander und gewinnt bei 390 px kaum Platz.
+
+`.kpi-line` bekommt `flex-wrap`: in der halben Zeile ist neben „-11.649,80 €" kein Platz für
+„-13.784,20 €", und `.kpi-dev` trägt `white-space: nowrap`.
+
+### 4d. Unterkunft als drei Karten mit Stepper
+
+Pro Kategorie eine Karte: Icon und Name, Zeile „Personen" mit − / + Stepper und
+mittig-fetter Zahl, Zeile „€ / Nacht", darunter die Summe mit Rechenweg als Hilfstext. Die
+Karte ist ein Raster aus zwei Spuren.
+
+Drei Hüllen im Template — `.room-row`, `.stepper`, `.room-sum-line` — verschwinden ab 901 px
+per `display: contents`. Danach stehen die vier Zellen wieder direkt im Raster; was nur zur
+Karte gehört (Beschriftungen, Stepper-Knöpfe, Rechenweg) ist ab 901 px `display: none`,
+sonst wären es sieben Rasterkinder pro Zeile.
+
+Der Stepper: Knöpfe à 48 px, Wert über `numberFromField()`, bei 0 geklemmt, danach ein
+`input`-Event — so laufen Vorschau, Summenspalte und Dirty-State genauso mit wie beim
+Tippen. Nur unter 901 px, damit die Tabelle am Desktop unverändert bleibt.
+
+**Bei 901 px ist die Section zugeklappt** (3d greift bis 992 px). Der Pixelvergleich taugt
+dort nicht als Nachweis; für 4d sind 1440, 1101, 1100 und 992 px die Prüfpunkte.
+
+### 4e. Kalkulationszeile auf zwei Zeilen
+
+Reines CSS, `calcRow()` unberührt. Flächenraster aus zwei Zeilen: oben Kategorie und
+berechneter Endpreis, darunter Verkaufspreis-Feld mit Abweichung und Einnahmen, der Chevron
+rechts über beide. Die Spaltenköpfe entfallen unter 901 px. Das Spaltenmaß steckt jetzt im
+Token `--fuf-calc-cols`, weil die Rückstellung bei `.calc-row-head` stehen muss und das Maß
+sonst zweimal in der Datei stünde.
+
+### 4f. Anmeldungen
+
+Die Ziehfläche wird ein Datei-Knopf: kein gestrichelter Rahmen, kein Icon, `CSV auswählen`
+und `Importieren` untereinander über die volle Breite. Der Knopf ist ein **zweites
+`<label for="csvFile">`** — mehrere Labels auf dasselbe Feld sind erlaubt, `#csvFile` bleibt
+unberührt und `app.js` musste nichts wissen.
+
+Die Kopfzeile einer Anmeldung stellt Umschalter und Chevron in die erste Zeile, die
+Aktionsknöpfe darunter rechts; im Umschalter steht der Name oben, Chips und Betrag brechen
+darunter um. Ursache der Überläufe war `.reg-name { min-width: 190px }` — am Desktop richtet
+das die Namen aneinander aus, mobil ist es genau eine Spalte zu viel.
+
+Die Teilnehmerliste trägt `.tb-regs`: Name fett mit dem Preis rechts daneben, darunter
+Geburtsdatum mit Alter und Kategorie-Chip in einer Zeile. Die Spaltenbeschriftungen aus 4a
+entfallen hier — ein Datum, ein Chip und ein Betrag sagen selbst, was sie sind.
+
+Manuell-Formular, Filterleiste und Fußzeile stehen mobil untereinander; die Chip-Leiste darf
+waagerecht scrollen.
+
+### 4g. Zwei Desktop-first-Reste aus 3a
+
+Beim Umdrehen der Queries in 3a übersehen, weil keiner der drei Bausteine je in einem
+`max-width`-Block stand — sie waren von Anfang an unbedingt zweispaltig:
+
+- `.expense-row` (Zusatzausgaben, Planung): Betrag mit festen 180 px neben der Bezeichnung.
+- `.expense-form` (Ausgabe erfassen, Abrechnung): `flex: 0 0 170px` am Betrag; auf 390 px
+  überlagerten sich die Feldbeschriftungen.
+- `.refund-calc`: harte zwei Spuren bei jeder Breite.
+
+Alle drei stehen mobil einspaltig mit Rückstellung ab 901 px.
+
+### Ein vorbestehender Strukturfehler, gefunden bei 4b
+
+`templates/index.html.php` hatte hinter den drei kommentierten Schließern von `.pg`,
+`#panel-abrechnung` und `.tab-content` **ein `</div>` zu viel**. Der Parser schloss damit
+`<section id="trip-editor-section">` vorzeitig, und alles danach rutschte eine Ebene nach
+außen: die Speichern-Bar aus 3c landete in `.app-shell` und wurde auch auf der Reiseliste
+gezeichnet, das folgende `</section>` schloss `.app-shell`, und die drei Modals samt Fußzeile
+standen außerhalb der Hülle. Gefunden, weil die neue `Neue Reise`-Bar von der alten verdeckt
+wurde.
+
+Eigener Commit vor 4b. **Der Desktop ändert sich dadurch, und das ist die Korrektur:**
+`.app-shell` ist `min-height: 100vh`, die Fußzeile trägt `margin-top: auto`. Außerhalb der
+Hülle hing sie hinter einem 100vh-Block, jede Seite war 47 px zu hoch. Die Seitenhöhe fällt
+bei 1440, 901 und 900 px von 1247 auf 1200 px. Das Template ist seitdem vollständig
+wohlgeformt.
+
+### Verifikation
+
+- Überlauf bei 390 und 375 px: **alle fünf Zustände bei 0** (siehe die Zustandstabelle unter
+  „Basiswert").
+- Desktop pixelgleich bei 1440, 1101, 1100, 992 und 901 px (`compare -metric AE` = 0). Die
+  einzige gewollte Änderung ist die Seitenhöhe aus dem Strukturfehler-Commit.
+- Bei 900 px ist der Unterschied planmäßig groß — dort greifen Kartenmodus, Kennzahlen 2 × 2
+  und Zimmerkarten.
+- `ui-shot.mjs` findet alle `REQUIRED_IDS`, keine JS-Fehler, bei 390 und 1440 px.
+- `composer test`: 223 Tests grün.
+
+**Die Lehre aus 3a ist in Schritt 4 dreimal zugeschnappt**, jedes Mal gleich: eine mobile
+Regel stand weiter oben in der Datei als die Definition, die sie überschreiben sollte, und
+bei gleicher Spezifität gewinnt die spätere Regel.
+
+- Die Rückstellung der Zimmerkarten stand bei `.fuf-grid-room` in Abschnitt 5a — der Desktop
+  zeigte drei Karten nebeneinander statt der Tabelle.
+- `.dropzone-icon { display: flex }` steht hinter dem `.dropzone`-Block; das Icon blieb mobil
+  sichtbar.
+- `.dropzone-text label` traf auch den Datei-Knopf und schlug dessen eigene Regel — der Knopf
+  war unterstrichen.
+
+**Vier weitere Fallen**, alle vom Typ „die mobile Regel wirkt auch am Desktop":
+
+- `.tb-sub` inline zu stellen verschob am Desktop die ganze Reiseliste (5.627 Pixel).
+- `order` für die zweizeilige Anmeldungs-Kopfzeile zog am Desktop den Chevron vor die
+  Aktionsknöpfe (2.739 Pixel) — dieselbe Falle wie beim `order`-Sprung in 3d.
+- `display: contents` löst die Hülle als Box auf, **nicht als Treffer im Selektor**:
+  `.room-row > .room-cat` passt weiterhin, und das `grid-column: 1 / -1` der Karte ließ die
+  Kategoriezelle am Desktop alle vier Spuren spannen. Lehre aus 3b.
+- Eine feste `flex-basis` ist in der Spalte eine **Höhe**, nicht eine Breite:
+  `flex: 0 0 170px` am Kategoriefeld ergab ein 170 px hohes Feld. Und `align-items: end` aus
+  `.box-sand` ist in der Spalte die Querachse — die Felder wurden rechtsbündig und nur so
+  breit wie ihr Inhalt.
+
+## Schritt 5 — noch offen
+
+**Modals als Vollbild-Sheets.** Drei Modals: `.modal-fullscreen-md-down` auf dem
+`.modal-dialog`, Kopf mit Titel und Schließen-Kreuz, Inhalt scrollt, Buttons in fester
+Leiste unten über volle Breite. Details in `RESPONSIVE.md` und `mockups/04-modals.html`.
+
+Der Kartenmodus aus 4a greift im Benutzer-Modal schon; die Hülle ist das, was fehlt.
 
 ## Status
 
@@ -311,5 +494,12 @@ Schließen-Kreuz, Inhalt scrollt, Buttons in fester Leiste unten über volle Bre
 - [x] Schritt 3c — Bottom-Bar
 - [x] Schritt 3d — Abschnitte starten zugeklappt
 - [x] Schritt 3e — Wechsel-Karte am Seitenende kompakt
-- [ ] Schritt 4 — Karten statt Tabellen
+- [x] Schritt 4a — Kartenmodus auf `.tb`
+- [x] Template — überzähliges `</div>` vor der Bottom-Bar entfernt
+- [x] Schritt 4b — Reiseliste als Kartenliste plus Bottom-Bar
+- [x] Schritt 4c — Kennzahlen 2 × 2
+- [x] Schritt 4d — Unterkunft als drei Karten mit Stepper
+- [x] Schritt 4e — Kalkulationszeile auf zwei Zeilen
+- [x] Schritt 4f — Anmeldungen
+- [x] Schritt 4g — zwei Desktop-first-Reste aus 3a
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

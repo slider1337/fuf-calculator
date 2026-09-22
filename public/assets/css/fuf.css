@@ -1912,10 +1912,46 @@ body.is-trip-view .app-footer {
  * 10. Tabelle
  * ======================================================================== */
 
+/* Mobile first: eine Tabelle ist auf dem Handy keine Tabelle, sondern eine
+   Liste von Bloecken - pro Zeile ein Block, pro Zelle eine Zeile aus
+   Spaltenbeschriftung und Wert. Die Beschriftung kommt aus data-col am <td>,
+   die erste Zelle traegt statt dessen .tb-head und wird die Ueberschrift des
+   Blocks. Waagerecht scrollen muss dafuer niemand.
+
+   Das Attribut heisst data-col und nicht data-label, weil der
+   Bearbeiten-Knopf der Zusatzausgaben schon ein data-label fuer seinen
+   Handler traegt.
+
+   Die Rueckstellung zur echten Tabelle steht am Ende dieses Abschnitts und
+   nicht in einem eigenen Block weiter unten: eine mobile Regel gehoert an
+   denselben Ort wie die Definition, die sie ueberschreibt - sonst gewinnt die
+   Definition. */
 .tb {
+    display: block;
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+}
+
+/* Die Spaltenkoepfe stehen als Beschriftung in den Zellen, die Kopfzeile
+   selbst hat auf dem Handy keine Aufgabe. */
+.tb thead {
+    display: none;
+}
+
+.tb tbody,
+.tb tfoot {
+    display: block;
+}
+
+.tb tr {
+    display: block;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--fuf-sand-300);
+}
+
+.tb tbody tr:last-child {
+    border-bottom: 0;
 }
 
 .tb th {
@@ -1930,25 +1966,72 @@ body.is-trip-view .app-footer {
 }
 
 .tb td {
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--fuf-sand-300);
-    vertical-align: middle;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 3px 0;
+    border-bottom: 0;
 }
 
-/* Tabelle ohne .sec-b dazwischen: die Karte bringt keine Innenabstaende mit.
- * Die Kopfzeile braucht Luft nach oben, die Zellen fluchten mit der Fusszeile. */
-.sec > .tb th {
-    padding: 14px 20px 8px 20px;
+/* Die leeren Fuellzellen der Summenzeilen fallen weg - als Block waeren sie
+   eine leere Zeile mitten im Stapel. */
+.tb td:empty {
+    display: none;
 }
 
-.sec > .tb td {
-    padding: 11px 20px;
+.tb td[data-col]::before {
+    content: attr(data-col);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--fuf-brown-400);
+}
+
+/* Ueberschrift des Blocks: volle Breite, kein Wert daneben. */
+.tb td.tb-head {
+    display: block;
+    padding: 0 0 6px 0;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+/* Aktionsspalte: keine Beschriftung, die Knoepfe stehen rechts. */
+.tb td.tb-act {
+    justify-content: flex-end;
+    padding-top: 8px;
+}
+
+/* Tabelle ohne polsterndes Elternteil - Reiseliste, geplante Kosten und die
+   beiden Zimmerkarten. Als Bloecke stiessen sie sonst an die Kante. */
+.sec > .tb,
+.sec > .collapse > .tb,
+.room-card .tb {
+    padding: 0 20px 14px 20px;
 }
 
 .tb .r,
 .tb th.r {
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+
+/* Die Summenzeile bleibt eine Zeile: Beschriftung links, Betrag rechts. */
+.tb tfoot tr,
+.tb tr.sum-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 10px 12px;
+    border-bottom: 0;
+    border-radius: 8px;
+    background: var(--fuf-sand-100);
+    font-weight: 700;
 }
 
 .tb tfoot td,
@@ -1961,15 +2044,7 @@ body.is-trip-view .app-footer {
 .tb-empty td {
     color: var(--fuf-brown-400);
     text-align: center;
-}
-
-/* Reiseliste: schmale ID-Spalte, feste Aktionsspalte */
-.tb-col-id {
-    width: 60px;
-}
-
-.tb-col-action {
-    width: 200px;
+    justify-content: center;
 }
 
 /* Pfeil, der die Sortierspalte markiert */
@@ -1998,6 +2073,142 @@ body.is-trip-view .app-footer {
 
 .tb-sub {
     display: block;
+}
+
+/* Rueckerstattung, mobile first: "gezahlt ... - Anteil ..." stehen als eine
+   Hilfstext-Zeile unter dem Namen, die Erstattung darunter rechts. So gibt es
+   RESPONSIVE.md vor, und der Block wird pro Anmeldung eine Zeile kuerzer. */
+.tb-refund tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+}
+
+.tb-refund tbody td.tb-head {
+    flex: 1 0 100%;
+}
+
+.tb-refund tbody td.refund-paid,
+.tb-refund tbody td.refund-share {
+    flex: 0 0 auto;
+    padding-top: 0;
+}
+
+.tb-refund tbody td.refund-paid::before,
+.tb-refund tbody td.refund-share::before {
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.tb-refund tbody td[data-col="Erstattung"] {
+    flex: 1 0 100%;
+}
+
+/* Ab 901 px wieder eine echte Tabelle - dieselbe Grenze wie bei den Rastern
+   in Abschnitt 5a. Die feste Spaltenbreite steht hier und nicht in der Basis,
+   weil width auf einem Block wirkt, auf einer Tabellenzelle aber nur als
+   Vorschlag. */
+@media (min-width: 901px) {
+    .tb {
+        display: table;
+    }
+
+    .tb thead {
+        display: table-header-group;
+    }
+
+    .tb tbody {
+        display: table-row-group;
+    }
+
+    .tb tfoot {
+        display: table-footer-group;
+    }
+
+    .tb tr,
+    .tb tbody tr:last-child,
+    .tb tfoot tr,
+    .tb tr.sum-row {
+        display: table-row;
+        padding: 0;
+        border-bottom: 0;
+        border-radius: 0;
+        background: transparent;
+        font-weight: 400;
+    }
+
+    .tb td,
+    .tb td.tb-head,
+    .tb td.tb-act {
+        display: table-cell;
+        padding: 11px 12px;
+        border-bottom: 1px solid var(--fuf-sand-300);
+        vertical-align: middle;
+    }
+
+    /* Schrift nur an der Blockueberschrift zurueckstellen, nicht an .tb td:
+       eine Zelle traegt manchmal selbst eine Klasse (#1 in der Reiseliste und
+       die Plan-Spalten der Zimmerkarte sind .help), und .tb td schlaegt eine
+       einzelne Klasse in der Spezifitaet. */
+    .tb td.tb-head {
+        font-weight: 400;
+        font-size: inherit;
+    }
+
+    .tb td:empty {
+        display: table-cell;
+    }
+
+    .tb td[data-col]::before {
+        content: none;
+    }
+
+    .sec > .tb,
+    .sec > .collapse > .tb,
+    .room-card .tb {
+        padding: 0;
+    }
+
+    /* Tabelle ohne .sec-b dazwischen: die Karte bringt keine Innenabstaende
+     * mit. Die Kopfzeile braucht Luft nach oben, die Zellen fluchten mit der
+     * Fusszeile. */
+    .sec > .tb th {
+        padding: 14px 20px 8px 20px;
+    }
+
+    .sec > .tb td {
+        padding: 11px 20px;
+    }
+
+    .tb tfoot td,
+    .tb tr.sum-row td {
+        background: var(--fuf-sand-100);
+        border-bottom: 0;
+        font-weight: 700;
+    }
+
+    /* Reiseliste: schmale ID-Spalte, feste Aktionsspalte */
+    .tb-col-id {
+        width: 60px;
+    }
+
+    .tb-col-action {
+        width: 200px;
+    }
+
+    .tb-refund tbody tr {
+        display: table-row;
+    }
+
+    .tb-refund tbody td.tb-head,
+    .tb-refund tbody td.refund-paid,
+    .tb-refund tbody td.refund-share,
+    .tb-refund tbody td[data-col="Erstattung"] {
+        display: table-cell;
+    }
 }
 
 /* ========================================================================
@@ -2547,8 +2758,18 @@ button.chip-btn.is-active {
     font-size: 14px;
 }
 
-.room-bar-cell {
-    width: 40%;
+/* Mobile first: der Balken entfaellt. Als Block hat er keine Inhaltsbreite
+   und faellt auf 0 zusammen; neben der Zahl im selben Block waere er ohnehin
+   nur Wiederholung. */
+.tb td.room-bar-cell {
+    display: none;
+}
+
+@media (min-width: 901px) {
+    .tb td.room-bar-cell {
+        display: table-cell;
+        width: 40%;
+    }
 }
 
 /* Der Balken zeigt den Anteil an der groessten Kategorie. Die Breite kommt

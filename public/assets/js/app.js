@@ -1705,9 +1705,9 @@ function renderRoomSummary(registrations) {
     const share = maxRooms > 0 ? Math.round((roomCounts[cat] / maxRooms) * 100) : 0;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${escapeHtml(cat)}</td>
+      <td class="tb-head">${escapeHtml(cat)}</td>
       <td class="room-bar-cell"><span class="bar"><span style="width: ${share}%"></span></span></td>
-      <td class="r"><b>${roomCounts[cat]}</b></td>
+      <td class="r" data-col="Zimmer"><b>${roomCounts[cat]}</b></td>
     `;
     detailBody.appendChild(tr);
     totalRooms += roomCounts[cat];
@@ -1785,10 +1785,10 @@ function registrationRows(reg, startDate) {
 
     return `
       <tr>
-        <td>${escapeHtml(participant.name)}</td>
-        <td class="reg-date">${formatDate(participant.birthDate)}${ageNote}</td>
-        <td>${category}</td>
-        <td class="r"><b>${price}</b></td>
+        <td class="tb-head">${escapeHtml(participant.name)}</td>
+        <td class="reg-date" data-col="Geburtstag">${formatDate(participant.birthDate)}${ageNote}</td>
+        <td data-col="Kategorie">${category}</td>
+        <td class="r" data-col="Preis"><b>${price}</b></td>
       </tr>`;
   }).join("");
 }
@@ -2069,8 +2069,8 @@ function renderSettlement(settlement) {
   (settlement.plannedCostItems || []).forEach((item) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${escapeHtml(item.label)}</td>
-      <td class="r">${formatCurrency(item.amount)}</td>
+      <td class="tb-head">${escapeHtml(item.label)}</td>
+      <td class="r" data-col="Betrag">${formatCurrency(item.amount)}</td>
     `;
     plannedBody.appendChild(tr);
   });
@@ -2091,9 +2091,9 @@ function renderSettlement(settlement) {
   expenses.forEach((expense) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><b>${escapeHtml(expense.label)}</b></td>
-      <td class="r">${formatCurrency(expense.amount)}</td>
-      <td class="r">
+      <td class="tb-head"><b>${escapeHtml(expense.label)}</b></td>
+      <td class="r" data-col="Betrag">${formatCurrency(expense.amount)}</td>
+      <td class="r tb-act">
         <div class="tb-actions">
           <button type="button" class="ib" data-edit-expense="${expense.id}" data-label="${escapeHtml(expense.label)}" data-amount="${expense.amount}" aria-label="Ausgabe bearbeiten" title="Bearbeiten">${iconEdit}</button>
           <button type="button" class="ib ib-danger" data-delete-expense="${expense.id}" aria-label="Ausgabe löschen" title="Löschen">${iconTrash}</button>
@@ -2289,10 +2289,10 @@ function renderRefundDistribution() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><b>${escapeHtml(primaryName)}</b><span class="help reg-age">${escapeHtml(reg.roomCategory)}</span></td>
-      <td class="r">${formatCurrency(reg.billingTotal)}</td>
-      <td class="r help">${formatPercentTwo(sharePercent)}</td>
-      <td class="r ${refundAmount >= 0 ? "fuf-pos" : "fuf-neg"}">${signedCurrency(refundAmount)}</td>
+      <td class="tb-head"><b>${escapeHtml(primaryName)}</b><span class="help reg-age">${escapeHtml(reg.roomCategory)}</span></td>
+      <td class="r refund-paid" data-col="Gezahlt">${formatCurrency(reg.billingTotal)}</td>
+      <td class="r help refund-share" data-col="Anteil">${formatPercentTwo(sharePercent)}</td>
+      <td class="r ${refundAmount >= 0 ? "fuf-pos" : "fuf-neg"}" data-col="Erstattung">${signedCurrency(refundAmount)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -2409,15 +2409,15 @@ function renderUsers() {
         : '<span class="help">&mdash;</span>';
 
     return `<tr>
-      <td>
+      <td class="tb-head">
         <div class="user-cell">
           <span class="user-avatar" aria-hidden="true">${escapeHtml(initialsFromEmail(user.email))}</span>
           <b>${escapeHtml(user.email)}</b>
         </div>
       </td>
-      <td>${role}</td>
-      <td>${status}</td>
-      <td class="r">${action}</td>
+      <td data-col="Rolle">${role}</td>
+      <td data-col="Status">${status}</td>
+      <td class="r tb-act">${action}</td>
     </tr>`;
   }).join("");
 }

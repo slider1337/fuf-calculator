@@ -647,19 +647,19 @@
                                 <table class="tb">
                                     <tbody>
                                     <tr>
-                                        <td>Erwachsene im Doppelzimmer</td>
-                                        <td class="help r" id="cat-plan-adult-double"></td>
-                                        <td class="r cat-ist"><b id="cat-summary-adult-double">0</b><span id="cat-check-adult-double"></span></td>
+                                        <td class="tb-head">Erwachsene im Doppelzimmer</td>
+                                        <td class="help r" id="cat-plan-adult-double" data-col="Plan"></td>
+                                        <td class="r cat-ist" data-col="Ist"><b id="cat-summary-adult-double">0</b><span id="cat-check-adult-double"></span></td>
                                     </tr>
                                     <tr>
-                                        <td>Erwachsene im Mehrbettzimmer</td>
-                                        <td class="help r" id="cat-plan-adult-multi"></td>
-                                        <td class="r cat-ist"><b id="cat-summary-adult-multi">0</b><span id="cat-check-adult-multi"></span></td>
+                                        <td class="tb-head">Erwachsene im Mehrbettzimmer</td>
+                                        <td class="help r" id="cat-plan-adult-multi" data-col="Plan"></td>
+                                        <td class="r cat-ist" data-col="Ist"><b id="cat-summary-adult-multi">0</b><span id="cat-check-adult-multi"></span></td>
                                     </tr>
                                     <tr>
-                                        <td>Kinder</td>
-                                        <td class="help r" id="cat-plan-child"></td>
-                                        <td class="r cat-ist"><b id="cat-summary-child">0</b><span id="cat-check-child"></span></td>
+                                        <td class="tb-head">Kinder</td>
+                                        <td class="help r" id="cat-plan-child" data-col="Plan"></td>
+                                        <td class="r cat-ist" data-col="Ist"><b id="cat-summary-child">0</b><span id="cat-check-child"></span></td>
                                     </tr>
                                     </tbody>
                                     <tfoot>
@@ -925,7 +925,7 @@
                                 </div>
                             </div>
 
-                            <table class="tb">
+                            <table class="tb tb-refund">
                                 <thead>
                                 <tr>
                                     <th>Anmeldung</th>

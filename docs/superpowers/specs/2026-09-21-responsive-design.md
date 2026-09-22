@@ -110,10 +110,19 @@ erhöhen, jeder spätere Schritt muss ihn senken, Schritt 4 muss ihn auf 0 bring
 
 Gemessen mit der Fixture-DB (`scripts/ui-fixture.php`, Reise #1):
 
-| Route | vor Schritt 1 | nach Schritt 1a |
-|---|---|---|
-| `/` (390 und 375 px) | 50 | 50 |
-| `/trips/1` (390 und 375 px) | 37 | 35 |
+| Route | vor Schritt 1 | nach Schritt 1a | nach Schritt 2 |
+|---|---|---|---|
+| `/` (390 und 375 px) | 50 | 50 | 39 |
+| `/trips/1` (390 und 375 px) | 37 | 35 | 23 |
+
+**Die Messfunktion überspringt seit Schritt 2 auch `visibility: hidden`.** Ein
+geschlossenes Offcanvas-Panel parkt per `translateX(100%)` rechts neben dem Viewport. Sein
+eigener Rahmen fällt schon durch die `position: fixed`-Ausnahme, seine Kinder aber nicht —
+die 28 Elemente des Menüs zählten beim ersten Lauf allesamt als Überlauf und trieben die
+Zahl auf 67 bzw. 51. `visibility` vererbt sich, ein Test deckt deshalb den ganzen Teilbaum
+ab; ein *geöffnetes* Panel und die Bottom-Bar aus Schritt 3 werden weiter gemessen. Mit der
+neuen Messung ergibt der Stand vor Schritt 2 unverändert 50 und 35, die Reihe bleibt also
+vergleichbar.
 
 Reproduzieren:
 
@@ -127,18 +136,54 @@ node scripts/check-overflow.mjs --base http://127.0.0.1:8123 --width 390 --width
 - `scripts/ui-shot.mjs` muss alle `REQUIRED_IDS` weiter finden — das ist der eigentliche
   Regressionsschutz für den Template-Umbau.
 
-## Schritte 2–5 — noch offen
+## Schritt 2 — Kopfleiste und Segmented Control
+
+Umschaltpunkt ist `lg` (992 px), dieselbe Grenze wie bei den Tokens aus Schritt 1. Die
+berührten Bausteine sind dabei **echt mobile-first** geschrieben: Basiswerte = Handy,
+Desktop-Werte in einem eigenen `@media (min-width: 992px)` direkt beim Baustein
+(Abschnitt 4 für die Kopfleiste, 5b für Reisekopf und Umschalter). Kein sechster
+`max-width`-Block; die Regeln für `.app-header`, `.app-main` und `.trip-head` sind aus dem
+`max-width: 900px`-Block herausgefallen, weil die Basis sie abdeckt.
+
+- **Kopfleiste mobil 52 px, sticky.** Reiseansicht: Zurück-Pfeil, Reisename mit
+  `text-overflow: ellipsis`. Liste: Logo. `app.js` setzt dazu `body.is-trip-view`.
+- **Menü als `offcanvas-lg`.** Reisen, Benutzer, Globale Settings, `Neue Reise` und der
+  Benutzerblock stehen unter `lg` in einem Panel, ab `lg` macht Bootstrap daraus wieder die
+  waagerechte Kopfleiste. Damit bleibt jede ID einmalig und an ihrem Platz — kein einziger
+  Event-Handler musste umgehängt werden. Die beiden Hüllen des Offcanvas lösen sich ab `lg`
+  per `display: contents` auf, sonst stünde die Navigation rechts statt neben der
+  Wortmarke.
+- **Segmented Control** über die volle Breite, zwei gleich breite Segmente à 44 px,
+  Zähler-Chip bleibt. Kopfleiste und Umschalter zusammen **111 px** sticky. Die ~100 px aus
+  `RESPONSIVE.md` wären nur mit kleineren Touch-Zielen zu haben; Regel 3 hat Vorrang.
+- **Die Meta-Zeile** (`Zeitraum · Nächte · Teilnehmer`) steht mobil als
+  `#trip-editor-meta-mobile` außerhalb von `.trip-head` und scrollt mit — im Kopf hätte sie
+  die feste Zone auf 135 px aufgebläht. Sie ist dupliziert, nicht verschoben: auf dem
+  Desktop gehört sie neben die Überschrift.
+
+Zwei Punkte aus `mockups/06-mobil.html` entfallen:
+
+- **Status-Chip** am Reisenamen — es gibt keinen Reisestatus im Datenmodell. Entfällt wie
+  der „Beleg fotografieren"-Button in Schritt 1.
+- **Suche-Icon** in der Kopfleiste der Liste — das Suchfeld steht in `.page-head` und gehört
+  mit der Reiseliste zu Schritt 4. `Neue Reise` sitzt bis dahin im Menü; mit Schritt 3/4
+  zieht der Knopf in die Bottom-Bar.
+
+Der Desktop ist dabei **pixelgleich** geblieben: `scripts/ui-shot.mjs --width 1440` liefert
+für `/` und `/trips/1` byteweise dieselben Aufnahmen wie vor dem Umbau (`compare -metric AE`
+= 0). Zwei Fallen dabei:
+
+- Die Navigation sitzt ab `lg` nicht mehr in `.app-header-left`, ihr Abstand zur Wortmarke
+  setzt sich seitdem aus dem `gap` der Kopfleiste (12 px) und `margin-left: 16 px` zusammen.
+- `.app-header` braucht ab `lg` neben `position: static` auch `z-index: auto`. Bleibt der
+  `z-index` der Handy-Regel stehen, zeichnet Chrome die Kopfleiste auf einer eigenen Ebene
+  und die Kantenglättung von Schrift und Holzmaserung fällt anders aus — 1.654 Pixel
+  Unterschied bei unveränderter Geometrie.
+
+## Schritte 3–5 — noch offen
 
 Reihenfolge aus `RESPONSIVE.md`, Abschnitt „Reihenfolge". Details dort und in
 `mockups/06-mobil.html`; hier nur das, was beim Aufsetzen zu beachten ist.
-
-**Schritt 2 — Kopfleiste und Segmented Control.** Im Screenshot bei 390 px ist die heutige
-Kopfleiste der auffälligste Schaden: Logo, `Neue Reise`, Avatar und Navigation überlagern
-sich. `nav.app-nav` ist mit +165 px auch der größte Einzelposten im Überlauf-Zähler.
-Kopfleiste mobil 52 px: Zurück-Pfeil, Reisename mit `text-overflow: ellipsis`, Status-Chip.
-Reisen/Benutzer/Settings wandern hinter ein Menü-Icon. Tab-Umschalter wird ein Segmented
-Control über die volle Breite direkt unter der Kopfleiste, inaktive Seite mit Zähler-Chip,
-zusammen mit der Kopfleiste sticky (~100 px).
 
 **Schritt 3 — Bottom-Bar plus Sheet.** Ersetzt die rechte Sticky-Spalte unter `lg`.
 Feste Bottom-Bar (links Kennzahl „Überschuss" mit Pfeil nach oben, rechts `Speichern`),
@@ -148,9 +193,9 @@ Schließen per Wisch nach unten, Hintergrund-Tipp oder Escape. Die Sprungnavigat
 mobil — stattdessen sind alle Sections zugeklappt und zeigen nur ihre Zusammenfassung.
 Regel 5 (wichtigste Zahl und Hauptaktion unten, in Daumenreichweite) wird hier eingelöst.
 
-**Ab hier greifen die `max-width`-Queries.** Die in Schritt 1 stehengelassenen fünf Queries
-gehören spätestens mit Schritt 3 auf `min-width` gedreht, weil dann das mobile Gegenstück
-existiert.
+**Ab hier greifen die `max-width`-Queries.** Von den fünf aus Schritt 1 stehen nach
+Schritt 2 noch vier (zwei bei 1100 px, zwei bei 900 px). Sie gehören spätestens mit
+Schritt 3 auf `min-width` gedreht, weil dann das mobile Gegenstück existiert.
 
 **Schritt 4 — Karten statt Tabellen, Section für Section.**
 Sieben Tabellen. Unter `md` kein horizontales Scrollen, sondern pro Zeile ein Block:
@@ -171,7 +216,7 @@ Schließen-Kreuz, Inhalt scrollt, Buttons in fester Leiste unten über volle Bre
 - [x] Schritt 1a — globale Regeln in `fuf.css`
 - [x] Schritt 1b — Zahlenfelder mit `inputmode`
 - [x] Schritt 1c — `scripts/check-overflow.mjs`
-- [ ] Schritt 2 — Kopfleiste und Segmented Control
+- [x] Schritt 2 — Kopfleiste und Segmented Control
 - [ ] Schritt 3 — Bottom-Bar plus Sheet
 - [ ] Schritt 4 — Karten statt Tabellen
 - [ ] Schritt 5 — Modals als Vollbild-Sheets

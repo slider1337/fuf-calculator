@@ -46,6 +46,12 @@ function parseArgs(argv) {
 
 // Laeuft im Browser. Position fixed und eigene Scrollcontainer sind
 // ausgenommen: die duerfen breiter sein als das Dokument.
+//
+// Unsichtbares ebenso: ein geschlossenes Offcanvas-Panel parkt per
+// translateX(100%) rechts neben dem Viewport. Sein Rahmen ist zwar fixed und
+// faellt schon durch die Zeile darunter, seine Kinder aber nicht - die zaehlten
+// sonst allesamt als Ueberlauf. visibility vererbt sich, ein Test deckt deshalb
+// den ganzen Teilbaum ab. Ein geoeffnetes Panel wird weiter gemessen.
 const MEASURE = `(() => {
   const out = [];
   const docW = document.documentElement.clientWidth;
@@ -53,6 +59,7 @@ const MEASURE = `(() => {
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
     const st = getComputedStyle(el);
+    if (st.visibility === 'hidden') return;
     if (st.position === 'fixed' || st.overflowX === 'auto' || st.overflowX === 'scroll') return;
     if (r.right > docW + 0.5 || r.left < -0.5) {
       out.push({

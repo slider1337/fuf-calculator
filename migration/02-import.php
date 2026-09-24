@@ -20,7 +20,7 @@ declare(strict_types=1);
 // ==========================================================================
 const WP_URL = 'https://fuferding-687yg9ejg3.live-website.com';
 const WP_USER = 'benna';
-const WP_APP_PASS = 'sQTs 8jPu dCw0 wnvO 9VDy 08ev'; // z.B. 'abcd EFGH 1234 wxyz 5678 ijkl'
+const WP_APP_PASS = getenv('FUF_WP_APP_PASSWORD') ?: '';
 
 const BERICHTE_JSON = __DIR__ . '/output/berichte.json';
 const CATEGORY_NAME = 'Berichte';

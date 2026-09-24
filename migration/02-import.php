@@ -20,7 +20,7 @@ declare(strict_types=1);
 // ==========================================================================
 const WP_URL = 'https://fuferding-687yg9ejg3.live-website.com';
 const WP_USER = 'benna';
-const WP_APP_PASS = getenv('FUF_WP_APP_PASSWORD') ?: '';
+define('WP_APP_PASS', getenv('FUF_WP_APP_PASSWORD') ?: '');
 
 const BERICHTE_JSON = __DIR__ . '/output/berichte.json';
 const CATEGORY_NAME = 'Berichte';
@@ -38,8 +38,8 @@ const UPLOAD_RETRIES = 3;
 const UPLOAD_RETRY_WAIT = 5; // Sekunden warten bei Retry
 
 // ==========================================================================
-if (WP_APP_PASS === 'HIER_DEIN_APP_PASSWORD_EINTRAGEN') {
-    echo "FEHLER: Bitte WP_APP_PASS in 02-import.php eintragen!\n";
+if (WP_APP_PASS === '') {
+    echo "FEHLER: Bitte FUF_WP_APP_PASSWORD als Umgebungsvariable setzen!\n";
     exit(1);
 }
 

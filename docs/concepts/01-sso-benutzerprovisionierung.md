@@ -38,6 +38,10 @@ Die Anwendung nutzt lokale E-Mail/Passwort-Konten, Einladungslinks, PHP-Sessions
 
 Der Login allein gibt **keine** Reise frei. Bereits vorhandene lokale Konten und zugewiesene Reisen behalten beim Providerwechsel ihre interne Benutzer-ID; eine bewusste Kontoverknüpfung verhindert doppelte Personen. Der Prozess muss auch für Nichtmitglieder funktionieren, die nur für eine Reise Belege einreichen.
 
+## Erweiterung für die FuF-Website und Veranstaltungsanmeldung
+
+WordPress wird neben dem Kalkulator ein eigener OIDC-Client von easyVerein. Beide Anwendungen erhalten getrennte Client-IDs, Redirect-URIs und lokale Sitzungen; eine zentral bestätigte easyVerein-Identität wird jeweils über `(issuer, subject)` gebunden. Der WordPress-Login wird vor dem [eigenen Familienanmeldeplugin](08-familienanmeldung-wordpress.md) umgesetzt. Öffentliche [Veranstaltungsseiten](07-veranstaltungen-easyverein-clubdesk.md) bleiben ohne Anmeldung erreichbar. Gäste einer Gruppenanmeldung brauchen kein eigenes Konto. Vor Freigabe ist im konkreten Vereinsaccount zu prüfen, ob auch Nichtmitglieder als Kontaktperson ein easyVerein-Konto erhalten können und welche Familienbeziehungen über API/Claims tatsächlich verfügbar sind. Keine Familienzuordnung allein aus E-Mail-Adresse oder Nachname ableiten.
+
 MFA/WebAuthn ist als [eigenes Konzept](06-mfa-webauthn.md) beschrieben.
 
 ## Vor Umsetzung klären

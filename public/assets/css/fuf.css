@@ -345,6 +345,10 @@ body.is-trip-view .app-head-new {
     white-space: nowrap;
 }
 
+.app-nav svg {
+    flex-shrink: 0;
+}
+
 .app-nav a:hover,
 .app-nav button:hover {
     background: rgba(255, 255, 255, .08);
@@ -503,6 +507,14 @@ body.is-trip-view .app-head-new {
 
     .app-main {
         padding: 28px 32px;
+    }
+}
+
+/* In der schmalen Desktop-Kopfleiste reicht ein beschriftetes Link-Symbol.
+ * Im mobilen Menue und auf breiten Desktops bleibt der volle Text sichtbar. */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .app-account-link span {
+        display: none;
     }
 }
 

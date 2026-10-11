@@ -50,6 +50,11 @@ Dann im Browser:
 - API Doku (lokal): `http://127.0.0.1:8080/docs`
 - OpenAPI YAML: `http://127.0.0.1:8080/openapi.yaml`
 
+## Zusätzliche easyVerein-Anmeldung
+
+Einrichtung und einmalige Kontoverknüpfung: [docs/easyverein-login.md](docs/easyverein-login.md).
+Die bisherige E-Mail-/Passwort-Anmeldung bleibt erhalten.
+
 ## Tests
 
 ```bash

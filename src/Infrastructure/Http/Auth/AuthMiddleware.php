@@ -14,6 +14,8 @@ final class AuthMiddleware implements MiddlewareInterface
 {
     private const PUBLIC_PATHS = [
         '/login',
+        '/auth/easyverein',
+        '/auth/easyverein/callback',
         '/logout',
         '/forgot-password',
         '/set-password',

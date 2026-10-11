@@ -66,6 +66,7 @@
                         <span class="app-user-email" id="current-user-email"></span>
                         <span class="app-user-role d-none" id="current-user-role-badge">Admin</span>
                     </div>
+                    <a href="/account/easyverein" class="app-icon-link" title="easyVerein verknüpfen">easyVerein verknüpfen</a>
                     <form method="post" action="/logout" class="m-0">
                         <button class="app-icon-link" type="submit" aria-label="Abmelden" title="Abmelden">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>

@@ -29,6 +29,7 @@ final readonly class EasyVereinController
     {
         $_SESSION['easyverein_csrf'] ??= bin2hex(random_bytes(32));
         return TemplateRenderer::render($response->withHeader('Cache-Control', 'no-store'), 'auth/easyverein.html.php', [
+            'email' => Session::userEmail(),
             'enabled' => $this->provider->enabled(),
             'linked' => $this->identities->hasIdentity((int) Session::userId()),
             'csrf' => $_SESSION['easyverein_csrf'],
@@ -60,6 +61,34 @@ final readonly class EasyVereinController
             Session::flash('info', 'Verknüpfung nicht gestartet. Bitte prüfe dein bisheriges Passwort und versuche es erneut.');
             return $this->redirect($response, '/account/easyverein');
         }
+    }
+
+    public function unlink(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $body = (array) $request->getParsedBody();
+        $csrf = $body['csrf'] ?? null;
+        if (!is_string($csrf) || !isset($_SESSION['easyverein_csrf'])
+            || !hash_equals($_SESSION['easyverein_csrf'], $csrf)) {
+            return $response->withStatus(403)->withHeader('Cache-Control', 'no-store');
+        }
+        try {
+            // Verify the fallback login before removing an authentication method.
+            $password = $body['password'] ?? '';
+            if (!is_string($password)) {
+                throw new RuntimeException('Invalid password');
+            }
+            $user = $this->auth->login((string) Session::userEmail(), $password);
+            if ($user->id() !== Session::userId()) {
+                throw new RuntimeException('Account changed');
+            }
+            $this->identities->unlink((int) $user->id());
+            $this->clearFlow();
+            unset($_SESSION['easyverein_csrf']);
+            Session::flash('info', 'Die easyVerein-Verknüpfung wurde entfernt. Du kannst dich weiterhin mit E-Mail und Passwort anmelden.');
+        } catch (Throwable) {
+            Session::flash('info', 'Verknüpfung nicht entfernt. Bitte prüfe dein bisheriges Kalkulator-Passwort und versuche es erneut.');
+        }
+        return $this->redirect($response, '/account/easyverein');
     }
 
     public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -109,7 +138,7 @@ final readonly class EasyVereinController
             $userId = $this->identities->findUserId(EasyVereinProvider::ISSUER, $subject);
             $user = $userId === null ? null : $this->users->findById($userId);
             if ($user === null) {
-                Session::flash('info', 'Bitte melde dich zuerst mit E-Mail und Passwort an und verknüpfe dein Konto unter „easyVerein verknüpfen“.');
+                Session::flash('info', 'Bitte melde dich zuerst mit E-Mail und Passwort an und verknüpfe dein Konto unter „Mein Konto“.');
                 return $this->redirect($response, '/login');
             }
             Session::login((int) $user->id(), $user->email(), $user->role());

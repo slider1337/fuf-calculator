@@ -28,6 +28,12 @@ final readonly class SqliteEasyVereinIdentityRepository
         return $statement->fetchColumn() !== false;
     }
 
+    public function unlink(int $userId): void
+    {
+        $statement = $this->pdo->prepare('DELETE FROM easyverein_identities WHERE user_id = ?');
+        $statement->execute([$userId]);
+    }
+
     public function link(int $userId, string $issuer, string $subject): void
     {
         // Unique constraints prevent account reassignment, also under concurrent requests.

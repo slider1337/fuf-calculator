@@ -510,11 +510,26 @@ body.is-trip-view .app-head-new {
     }
 }
 
-/* In der schmalen Desktop-Kopfleiste reicht ein beschriftetes Link-Symbol.
- * Im mobilen Menue und auf breiten Desktops bleibt der volle Text sichtbar. */
+/* Auf schmalen Desktops steht die beschriftete Navigation in einer eigenen
+ * Zeile, damit alle Menuepunkte und die Benutzeraktionen sichtbar bleiben. */
 @media (min-width: 992px) and (max-width: 1199.98px) {
-    .app-account-link span {
-        display: none;
+    .app-header {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 64px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .app-nav {
+        order: 1;
+        flex-basis: 100%;
+        margin: 0;
+        flex-wrap: wrap;
+    }
+
+    .app-user {
+        margin-left: auto;
     }
 }
 

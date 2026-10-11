@@ -19,11 +19,21 @@ bestehenden Kalkulator-Rollen. Die WordPress-Anmeldung ist hiervon unabhängig.
 4. Änderung deployen bzw. bestehenden Deploy-Workflow ausführen. Die neue Migration
    legt die Identitätszuordnung an. Die Anwendung läuft ohne die neuen Werte weiter.
 5. Mit dem bisherigen Kalkulator-Konto anmelden, im Kopfbereich
-   **easyVerein verknüpfen** öffnen, Kalkulator-Passwort erneut eingeben und
+   **Mein Konto** öffnen, Kalkulator-Passwort erneut eingeben und
    bei easyVerein anmelden. Danach abmelden und **Mit easyVerein anmelden** verwenden.
 
 Für andere HTTPS-Domains müssen APP_URL, Redirect URL und Allowed origin übereinstimmen.
 Lokal werden die Werte als echte Umgebungsvariablen gesetzt; PHP lädt keine .env-Datei.
+
+## Verknüpfung verwalten und entfernen
+
+Im Menü ist **Mein Konto** auf jeder Bildschirmgröße beschriftet sichtbar.
+Die Seite `/account/easyverein` zeigt die Kalkulator-E-Mail und den aktuellen
+Verknüpfungsstatus. Bei bestehender Verknüpfung kann sie dort nach Bestätigung
+des Kalkulator-Passworts entfernt werden. Dabei werden nur die eigene Zuordnung
+und laufende OIDC-Versuche dieser Sitzung entfernt. Konto, Reisen, Passwort,
+Rolle und aktuelle Sitzung bleiben erhalten. Auch bei deaktivierter
+Provider-Konfiguration lässt sich die vorhandene Verknüpfung entfernen.
 
 ## Verhalten und Prüfung
 
@@ -57,3 +67,10 @@ Quelle: https://hilfe.easyverein.com/en/articles/2746882
   die Prüfung auf der CI-Zielversion PHP 8.4 stehen noch aus.
 - Composer-Audit meldet vorhandene Hinweise bei sechs bereits verwendeten
   Paketen; die vier neu hinzugefügten Pakete sind hiervon nicht betroffen.
+
+## Ergänzende Prüfung der Kontoverwaltung
+
+257 PHPUnit-Tests mit 753 Assertions auf PHP 8.5.11 erfolgreich. Vier zusätzliche
+Integrationstests prüfen sichtbaren Status, Entfernen bei deaktiviertem Provider,
+Passwort-/CSRF-Prüfung, Zugriff nur auf die eigene Zuordnung und die weitere
+Passwort-Anmeldung. Die nachfolgende easyVerein-Anmeldung wird nach Entfernen abgewiesen.

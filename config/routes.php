@@ -23,6 +23,7 @@ return static function (App $app): void {
     $app->get('/auth/easyverein', [\App\Infrastructure\Http\Controller\EasyVereinController::class, 'login']);
     $app->get('/auth/easyverein/callback', [\App\Infrastructure\Http\Controller\EasyVereinController::class, 'callback']);
     $app->get('/account/easyverein', [\App\Infrastructure\Http\Controller\EasyVereinController::class, 'account']);
+    $app->post('/account/easyverein/unlink', [\App\Infrastructure\Http\Controller\EasyVereinController::class, 'unlink']);
     $app->post('/account/easyverein/link', [\App\Infrastructure\Http\Controller\EasyVereinController::class, 'link']);
 
     $app->get('/login', [AuthController::class, 'showLogin']);

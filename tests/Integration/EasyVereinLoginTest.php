@@ -165,4 +165,68 @@ final class EasyVereinLoginTest extends ApiTestCase
         self::assertSame('/login', $this->dispatch('GET', '/account/easyverein')->getHeaderLine('Location'));
         self::assertSame('/login', $this->dispatch('POST', '/account/easyverein/link', [])->getHeaderLine('Location'));
     }
+
+    public function testAccountPageShowsStatusAndRemoveActionEvenWhenProviderDisabled(): void
+    {
+        $this->link();
+        $this->finishLogin();
+        $this->provider->available = false;
+        $response = $this->dispatch('GET', '/account/easyverein');
+        $html = (string) $response->getBody();
+        self::assertStringContainsString('Mein Konto', $html);
+        self::assertStringContainsString('admin@example.com', $html);
+        self::assertStringContainsString('Verknüpft', $html);
+        self::assertStringContainsString('/account/easyverein/unlink', $html);
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+    }
+
+    public function testUnlinkPreservesPasswordRoleAndSessionAndBlocksFutureSso(): void
+    {
+        $this->link();
+        $this->finishLogin();
+        $_SESSION['easyverein_csrf'] = 'unlink-csrf';
+        // Removing a link also invalidates an already started authentication flow.
+        $this->dispatch('GET', '/auth/easyverein');
+        $response = $this->dispatch('POST', '/account/easyverein/unlink', ['csrf' => 'unlink-csrf', 'password' => 'local-password-123']);
+        self::assertSame('/account/easyverein', $response->getHeaderLine('Location'));
+        $repository = $this->app->getContainer()->get(SqliteEasyVereinIdentityRepository::class);
+        self::assertFalse($repository->hasIdentity($this->userId));
+        self::assertSame($this->userId, $_SESSION['user_id']);
+        self::assertArrayNotHasKey('easyverein_flow', $_SESSION);
+        $user = $this->app->getContainer()->get(AuthService::class)->login('admin@example.com', 'local-password-123');
+        self::assertSame('admin', $user->role());
+        $html = (string) $this->dispatch('GET', '/account/easyverein')->getBody();
+        self::assertStringContainsString('Nicht verknüpft', $html);
+        self::assertStringContainsString('/account/easyverein/link', $html);
+        $_SESSION = [];
+        $this->dispatch('GET', '/auth/easyverein');
+        self::assertSame('/login', $this->finishLogin()->getHeaderLine('Location'));
+        self::assertArrayNotHasKey('user_id', $_SESSION);
+    }
+
+    public function testUnlinkRejectsWrongCsrfPasswordAndAnonymousRequest(): void
+    {
+        $this->link();
+        $this->finishLogin();
+        $_SESSION['easyverein_csrf'] = 'unlink-csrf';
+        self::assertSame(403, $this->dispatch('POST', '/account/easyverein/unlink', ['csrf' => 'wrong', 'password' => 'local-password-123'])->getStatusCode());
+        $this->dispatch('POST', '/account/easyverein/unlink', ['csrf' => 'unlink-csrf', 'password' => 'wrong']);
+        self::assertTrue($this->app->getContainer()->get(SqliteEasyVereinIdentityRepository::class)->hasIdentity($this->userId));
+        $_SESSION = [];
+        self::assertSame('/login', $this->dispatch('POST', '/account/easyverein/unlink', [])->getHeaderLine('Location'));
+    }
+
+    public function testUnlinkCanOnlyRemoveCurrentUsersIdentity(): void
+    {
+        $this->link();
+        $this->finishLogin();
+        $other = $this->app->getContainer()->get(AuthService::class)->setPasswordDirect('other@example.com', 'local-password-123');
+        $repository = $this->app->getContainer()->get(SqliteEasyVereinIdentityRepository::class);
+        $repository->link((int) $other->id(), EasyVereinProvider::ISSUER, 'other-subject');
+        $_SESSION['easyverein_csrf'] = 'unlink-csrf';
+        $this->dispatch('POST', '/account/easyverein/unlink', ['csrf' => 'unlink-csrf', 'password' => 'local-password-123', 'user_id' => $other->id()]);
+        self::assertFalse($repository->hasIdentity($this->userId));
+        self::assertTrue($repository->hasIdentity((int) $other->id()));
+    }
+
 }

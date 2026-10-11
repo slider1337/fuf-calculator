@@ -74,11 +74,13 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
           MAILER_DSN: ${{ secrets.MAILER_DSN }}
           MAIL_FROM: ${{ vars.MAIL_FROM }}
+          EASYVEREIN_CLIENT_ID: ${{ vars.EASYVEREIN_CLIENT_ID }}
+          EASYVEREIN_CLIENT_SECRET: ${{ secrets.EASYVEREIN_CLIENT_SECRET }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: APP_URL,MAILER_DSN,MAIL_FROM
+          envs: APP_URL,MAILER_DSN,MAIL_FROM,EASYVEREIN_CLIENT_ID,EASYVEREIN_CLIENT_SECRET
           script: |
             set -e
             cd /opt/fuf-calculator
@@ -89,6 +91,8 @@ jobs:
             APP_URL=${APP_URL}
             MAILER_DSN=${MAILER_DSN}
             MAIL_FROM=${MAIL_FROM}
+            EASYVEREIN_CLIENT_ID=${EASYVEREIN_CLIENT_ID}
+            EASYVEREIN_CLIENT_SECRET=${EASYVEREIN_CLIENT_SECRET}
             EOF
 
             # Pull latest image

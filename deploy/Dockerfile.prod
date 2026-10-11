@@ -1,7 +1,7 @@
 # Stage 1: Install Composer dependencies
 FROM composer:2 AS vendor
 WORKDIR /app
-COPY composer.json ./
+COPY composer.json composer.lock ./
 COPY scripts/copy-bootstrap.php ./scripts/copy-bootstrap.php
 COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
 RUN composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
@@ -13,7 +13,7 @@ ENV SERVER_NAME=fuf-calc.benna.me
 
 WORKDIR /app
 
-RUN install-php-extensions pdo_sqlite opcache
+RUN install-php-extensions pdo_sqlite opcache curl
 
 # Production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

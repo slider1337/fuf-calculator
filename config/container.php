@@ -57,6 +57,13 @@ return static function (): ContainerInterface {
             $from = getenv('MAIL_FROM') ?: 'noreply@example.com';
             return new SymfonyMailer($dsn, $from);
         }),
+        App\Infrastructure\Http\Auth\EasyVereinProvider::class => factory(static function (): App\Infrastructure\Http\Auth\EasyVereinProvider {
+            return new App\Infrastructure\Http\Auth\EasyVereinProvider(
+                getenv('EASYVEREIN_CLIENT_ID') ?: '',
+                getenv('EASYVEREIN_CLIENT_SECRET') ?: '',
+                getenv('APP_URL') ?: '',
+            );
+        }),
         AuthService::class => factory(static function (ContainerInterface $c): AuthService {
             $appUrl = getenv('APP_URL') ?: 'http://localhost:8080';
             return new AuthService(

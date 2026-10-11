@@ -15,7 +15,7 @@ use Throwable;
 
 final readonly class AuthController
 {
-    public function __construct(private AuthService $service)
+    public function __construct(private AuthService $service, private \App\Infrastructure\Http\Auth\EasyVereinProvider $easyVerein)
     {
     }
 
@@ -29,6 +29,7 @@ final readonly class AuthController
             'flash' => Session::flash('info'),
             'error' => null,
             'email' => '',
+            'easyVereinEnabled' => $this->easyVerein->enabled(),
         ]);
     }
 
@@ -45,6 +46,7 @@ final readonly class AuthController
                 'flash' => null,
                 'error' => $exception->getMessage(),
                 'email' => $email,
+                'easyVereinEnabled' => $this->easyVerein->enabled(),
             ]);
         }
 

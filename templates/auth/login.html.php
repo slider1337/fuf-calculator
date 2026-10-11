@@ -36,6 +36,14 @@
         </div>
     </div>
 
+    <?php if (!empty($easyVereinEnabled)): ?>
+        <div class="text-center mt-3">
+            <p class="text-muted small">oder</p>
+            <a class="btn btn-outline-primary w-100" href="/auth/easyverein">Mit easyVerein anmelden</a>
+            <p class="small text-muted mt-2">Beim ersten Mal nach der bisherigen Anmeldung dein Konto mit easyVerein verknüpfen.</p>
+        </div>
+    <?php endif; ?>
+
     <div class="text-center mt-3 small">
         <a href="/forgot-password">Passwort vergessen?</a>
     </div>

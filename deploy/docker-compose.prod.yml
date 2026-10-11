@@ -33,6 +33,8 @@ services:
       - APP_URL=${APP_URL}
       - MAILER_DSN=${MAILER_DSN}
       - MAIL_FROM=${MAIL_FROM}
+      - EASYVEREIN_CLIENT_ID=${EASYVEREIN_CLIENT_ID:-}
+      - EASYVEREIN_CLIENT_SECRET=${EASYVEREIN_CLIENT_SECRET:-}
 
 volumes:
   sqlite-data:

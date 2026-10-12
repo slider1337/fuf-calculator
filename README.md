@@ -55,6 +55,10 @@ Dann im Browser:
 Einrichtung und einmalige Kontoverknüpfung: [docs/easyverein-login.md](docs/easyverein-login.md).
 Die bisherige E-Mail-/Passwort-Anmeldung bleibt erhalten.
 
+## Veranstaltungsverwaltung: Design-Konzept
+
+[Veranstaltungen, Reisen, versionierte Formulare und Orga-Auswertungen](docs/concepts/09-veranstaltungsverwaltung-formulare.md) beschreibt das geplante gemeinsame Backend für Calculator und Website-Anmeldungen, inklusive Ansichten, Beispieldaten und Design-Prompt. Das Konzept ist noch nicht implementiert.
+
 ## Tests
 
 ```bash

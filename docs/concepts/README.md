@@ -13,7 +13,13 @@ Die Konzepte für Kalkulator und Website bauen aufeinander auf:
 7. [Veranstaltungen aus easyVerein und ClubDesk-Inhalte](07-veranstaltungen-easyverein-clubdesk.md) – öffentliche WordPress-Anzeige und kontrollierter Import der Zusatzinfos.
 8. [Familienanmeldung in WordPress](08-familienanmeldung-wordpress.md) – eigenes Plugin mit Gästen und Preisgruppe je Person.
 
-## Empfohlene Reihenfolge
+9. [Veranstaltungsverwaltung, Formulare und Orga-Auswertung](09-veranstaltungsverwaltung-formulare.md) – neues Zielbild vom 12.10.2026: Veranstaltungen als Rahmen für Reisen, zentrale Formularversionen und Antworten im Calculator, gemeinsame Website-Buchungs-API sowie feldbezogene Auswertungen.
+
+## Aktuelles Zielbild für Veranstaltungen und Anmeldungen
+
+Konzept 9 entwickelt die Reisegruppen aus Konzept 4 zu Veranstaltungen weiter und ersetzt für neue Zusatzformulare die primäre WordPress-Datenhaltung aus Konzept 8. Die Website bleibt die Mitgliederoberfläche; der Calculator wird das gemeinsame Backend. Für diese Erweiterung gelten die Umsetzungsreihenfolge und offenen technischen Entscheidungen in Konzept 9. Die bisherigen Kapitel bleiben als historische Grundlage erhalten; deren Befunde vom September sind keine Beschreibung bereits implementierter Funktionen.
+
+## Empfohlene Reihenfolge (historischer Stand 25.09.2026)
 
 **Für die neue Veranstaltungsfunktion:** (1) easyVerein-OIDC für WordPress gemäß Konzept 1 ergänzen und die nötigen API-Rechte prüfen; (2) öffentliche Anzeige der easyVerein-Termine gemäß Konzept 7 aufbauen; (3) ClubDesk-Zusatzinfos zuordnen und importieren; (4) eigenes Anmeldeplugin gemäß Konzept 8 entwickeln. Anzeige und ClubDesk-Import können schon vor Fertigstellung des Logins stattfinden; die eigene Anmeldung wird erst mit funktionsfähigem Login und bestätigtem easyVerein-Schreibweg freigeschaltet. Der SSO-Schritt hat Vorrang vor dem Anmeldeplugin.
 

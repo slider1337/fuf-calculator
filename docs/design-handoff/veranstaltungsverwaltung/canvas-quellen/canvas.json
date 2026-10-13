@@ -1,0 +1,374 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-12T15:00:00Z"
+ },
+ "title": "FuF Calculator · Veranstaltungsverwaltung",
+ "launch": {
+  "view": "canvas",
+  "page": "desk"
+ },
+ "pages": [
+  {
+   "id": "desk",
+   "name": "Calculator · Desktop"
+  },
+  {
+   "id": "mob",
+   "name": "Calculator · Mobil"
+  },
+  {
+   "id": "web",
+   "name": "Website · Mitgliederformular"
+  },
+  {
+   "id": "zust",
+   "name": "Zustände & Komponenten"
+  }
+ ],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1120,
+   "title": "Start · Übersicht & Navigation",
+   "page": "desk",
+   "is_interactive": true
+  },
+  "D01-Veranstaltungen.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1180,
+   "title": "D1 · Veranstaltungsliste",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D02-Veranstaltung.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 1440,
+   "h": 1000,
+   "title": "D2 · Veranstaltung · Reisen",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D03-Formular-Editor.dc.html": {
+   "x": 0,
+   "y": 1380,
+   "w": 1440,
+   "h": 1240,
+   "title": "D3 · Formular-Editor (Feldliste · Konfiguration · Vorschau)",
+   "page": "desk",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "D04-Formular-Vorschau.dc.html": {
+   "x": 1520,
+   "y": 1380,
+   "w": 1440,
+   "h": 1240,
+   "title": "D4 · Formularvorschau (Desktop + Mobil, Beispielpersonen)",
+   "page": "desk",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "D05-Versionen.dc.html": {
+   "x": 3040,
+   "y": 1380,
+   "w": 1440,
+   "h": 1300,
+   "title": "D5 · Versionshistorie, Vergleich, Veröffentlichen",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D06-Versionswechsel.dc.html": {
+   "x": 0,
+   "y": 2880,
+   "w": 1440,
+   "h": 1120,
+   "title": "D6 · Reise-Versionswechsel mit Vorab-Auswirkung",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D07-Wizard.dc.html": {
+   "x": 1520,
+   "y": 2880,
+   "w": 1440,
+   "h": 1080,
+   "title": "D7 · Wizard Reise/Termin (klickbar, 5 Schritte + Auftrag)",
+   "page": "desk",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "D08-Reise-Uebersicht.dc.html": {
+   "x": 3040,
+   "y": 2880,
+   "w": 1440,
+   "h": 1060,
+   "title": "D8 · Reise · Übersicht",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D09-Anmeldungen.dc.html": {
+   "x": 0,
+   "y": 4200,
+   "w": 1440,
+   "h": 1260,
+   "title": "D9 · Anmeldungen mit Buchungsdetail (Teilfehler)",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D10-Auswertung.dc.html": {
+   "x": 1520,
+   "y": 4200,
+   "w": 1440,
+   "h": 1560,
+   "title": "D10 · Auswertung (Filter, Varianten, Versionen klickbar)",
+   "page": "desk",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "D11-Drilldown.dc.html": {
+   "x": 3040,
+   "y": 4200,
+   "w": 1440,
+   "h": 1000,
+   "title": "D11 · Antwort-Drilldown mit identischen Filtern",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D12-Team-Termin.dc.html": {
+   "x": 0,
+   "y": 5960,
+   "w": 1440,
+   "h": 1120,
+   "title": "D12 · Team & Termin (externer Konflikt, Reiseteam)",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D13-Standardteam.dc.html": {
+   "x": 1520,
+   "y": 5960,
+   "w": 1440,
+   "h": 960,
+   "title": "D13 · Standardteam der Veranstaltung",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D14-Planung-Uebernahme.dc.html": {
+   "x": 3040,
+   "y": 5960,
+   "w": 1440,
+   "h": 1120,
+   "title": "D14 · Planung · Anmeldedaten übernehmen",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "D15-Reisen.dc.html": {
+   "x": 0,
+   "y": 7280,
+   "w": 1440,
+   "h": 640,
+   "title": "D15 · Reisen (veranstaltungsübergreifend)",
+   "page": "desk",
+   "expand": "fill"
+  },
+  "M01-Veranstaltungen.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "M1 · Veranstaltungen",
+   "page": "mob"
+  },
+  "M02-Veranstaltung.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "M2 · Veranstaltung · Reisen",
+   "page": "mob"
+  },
+  "M03-Editor-Felder.dc.html": {
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 1180,
+   "title": "M3 · Editor · Feldliste (Reihenfolge per Buttons)",
+   "page": "mob"
+  },
+  "M04-Feld.dc.html": {
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 1080,
+   "title": "M4 · Editor · Feld bearbeiten",
+   "page": "mob"
+  },
+  "M05-Vorschau.dc.html": {
+   "x": 1880,
+   "y": 0,
+   "w": 390,
+   "h": 980,
+   "title": "M5 · Editor · Vorschau mit Beispielpersonen",
+   "page": "mob"
+  },
+  "M06-Versionswechsel.dc.html": {
+   "x": 2350,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "M6 · Reise-Versionswechsel (Vollbild-Sheet)",
+   "page": "mob"
+  },
+  "M07-Wizard.dc.html": {
+   "x": 2820,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "M7 · Wizard Reise/Termin · Schritt Prüfen",
+   "page": "mob"
+  },
+  "M08-Anmeldungen.dc.html": {
+   "x": 0,
+   "y": 1380,
+   "w": 390,
+   "h": 1000,
+   "title": "M8 · Reise · Anmeldungen (Buchungskarten)",
+   "page": "mob"
+  },
+  "M09-Buchung.dc.html": {
+   "x": 470,
+   "y": 1380,
+   "w": 390,
+   "h": 1400,
+   "title": "M9 · Buchungsdetail (Teilfehler je Person)",
+   "page": "mob"
+  },
+  "M10-Auswertung.dc.html": {
+   "x": 940,
+   "y": 1380,
+   "w": 390,
+   "h": 1160,
+   "title": "M10 · Reise · Auswertung",
+   "page": "mob"
+  },
+  "M11-Drilldown.dc.html": {
+   "x": 1410,
+   "y": 1380,
+   "w": 390,
+   "h": 1060,
+   "title": "M11 · Antwort-Drilldown",
+   "page": "mob"
+  },
+  "M12-Termin.dc.html": {
+   "x": 1880,
+   "y": 1380,
+   "w": 390,
+   "h": 1000,
+   "title": "M12 · Team & Termin · externer Konflikt",
+   "page": "mob"
+  },
+  "M13-Team.dc.html": {
+   "x": 2350,
+   "y": 1380,
+   "w": 390,
+   "h": 844,
+   "title": "M13 · Reiseteam / Standardteam",
+   "page": "mob"
+  },
+  "M14-Reise.dc.html": {
+   "x": 2820,
+   "y": 1380,
+   "w": 390,
+   "h": 1060,
+   "title": "M14 · Reise · Übersicht",
+   "page": "mob"
+  },
+  "W01-Anmeldung.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1500,
+   "title": "W1 · Website · Mitgliederformular (klickbar: Personen → Angaben → Zusammenfassung → Ergebnis)",
+   "page": "web",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "W02-Anmeldung-Mobil.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 390,
+   "h": 1700,
+   "title": "W2 · Website · Mitgliederformular mobil (klickbar)",
+   "page": "web",
+   "is_interactive": true
+  },
+  "W03-Zustaende.dc.html": {
+   "x": 1990,
+   "y": 0,
+   "w": 1440,
+   "h": 1200,
+   "title": "W3 · Website · Fehler- und Sonderzustände",
+   "page": "web"
+  },
+  "K01-Komponenten.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1320,
+   "title": "K1 · Komponenten & Tokens-Erweiterung",
+   "page": "zust"
+  },
+  "Z01-Zustaende.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1900,
+   "title": "Z1 · Zustände (leer, Fehler, Sync, Rechte, Abrechnung)",
+   "page": "zust"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "D01-Veranstaltungen.dc.html",
+  "D02-Veranstaltung.dc.html",
+  "D03-Formular-Editor.dc.html",
+  "D04-Formular-Vorschau.dc.html",
+  "D05-Versionen.dc.html",
+  "D06-Versionswechsel.dc.html",
+  "D07-Wizard.dc.html",
+  "D08-Reise-Uebersicht.dc.html",
+  "D09-Anmeldungen.dc.html",
+  "D10-Auswertung.dc.html",
+  "D11-Drilldown.dc.html",
+  "D12-Team-Termin.dc.html",
+  "D13-Standardteam.dc.html",
+  "D14-Planung-Uebernahme.dc.html",
+  "D15-Reisen.dc.html",
+  "M01-Veranstaltungen.dc.html",
+  "M02-Veranstaltung.dc.html",
+  "M03-Editor-Felder.dc.html",
+  "M04-Feld.dc.html",
+  "M05-Vorschau.dc.html",
+  "M06-Versionswechsel.dc.html",
+  "M07-Wizard.dc.html",
+  "M08-Anmeldungen.dc.html",
+  "M09-Buchung.dc.html",
+  "M10-Auswertung.dc.html",
+  "M11-Drilldown.dc.html",
+  "M12-Termin.dc.html",
+  "M13-Team.dc.html",
+  "M14-Reise.dc.html",
+  "W01-Anmeldung.dc.html",
+  "W02-Anmeldung-Mobil.dc.html",
+  "W03-Zustaende.dc.html",
+  "K01-Komponenten.dc.html",
+  "Z01-Zustaende.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

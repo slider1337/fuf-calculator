@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website · Anmeldung mobil</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+.w{font-family:'Figtree',system-ui,sans-serif;color:#2E2217;background:#F4EBDD;font-size:16px;line-height:1.45}
+.w *{box-sizing:border-box}
+.zs{font-family:'Zilla Slab',Georgia,serif;font-weight:700}
+.wcard{background:#FFFBF3;border:1px solid #E3D3B8;border-radius:24px;box-shadow:0 20px 44px rgba(74,46,26,.12);overflow:hidden}
+.wood{color:#FBF5EA;background-color:#8A5A34;background-image:repeating-linear-gradient(180deg,rgba(58,34,18,.22) 0,rgba(58,34,18,.22) 1px,transparent 1px,transparent 5px),repeating-linear-gradient(180deg,rgba(255,226,180,.12) 0,rgba(255,226,180,.12) 2px,transparent 2px,transparent 11px)}
+.muted{color:#6B5540;font-size:14px}
+.pill{min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #D2B98F;background:#FFFBF3;color:#4A2E1A;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.pill.on{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.pill.bad{border-color:#B3261E}
+.prow{padding:12px 14px;border:2px solid #E3D3B8;border-radius:16px;display:flex;gap:12px;align-items:center;background:#FFFBF3;width:100%;font:inherit;text-align:left;cursor:pointer;color:#2E2217}
+.prow.on{border-color:#3F7F3A;background:#EEF1E2}
+.box26{width:26px;height:26px;border-radius:8px;border:2px solid #8A5A34;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#FFFBF3}
+.prow.on .box26{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.wav{width:40px;height:40px;border-radius:50%;border:2px solid #8A5A34;display:flex;align-items:center;justify-content:center;font-family:'Zilla Slab',Georgia,serif;font-weight:700;font-size:14px;flex-shrink:0;background:#F9E3B8}
+.wbtn{min-height:52px;padding:0 24px;border-radius:999px;border:0;background:#E4702A;color:#2A1A0E;font:inherit;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(228,112,42,.3);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.wbtn2{min-height:48px;padding:0 20px;border-radius:999px;border:2px solid #7A4B2A;background:transparent;color:#4A2E1A;font:inherit;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.winp{display:flex;align-items:center;min-height:48px;border:2px solid #D2B98F;border-radius:12px;background:#fff;overflow:hidden}
+.winp input,.winp textarea{border:0;outline:0;background:transparent;flex-grow:1;min-width:0;padding:10px 14px;font:inherit;font-size:16px;color:#2E2217}
+.winp span{padding:0 14px;align-self:stretch;display:flex;align-items:center;background:#F5EFE4;color:#6B5540;font-weight:600;font-size:14px}
+.wq{display:flex;flex-direction:column;gap:8px}
+.wq>b{font-size:16px}
+.werr{border-left:0;background:#FBE4E1;color:#7A1A14;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+.wchk{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:2px solid #E3D3B8;border-radius:16px;background:#FFFBF3;font:inherit;text-align:left;cursor:pointer;color:#2E2217;width:100%}
+.wchk.on{border-color:#3F7F3A;background:#EEF1E2}.wchk.bad{border-color:#B3261E;background:#FFF4F2}
+.wchk.on .box26{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.wstep{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#8A7762}
+.wstep i{width:24px;height:24px;border-radius:50%;border:2px solid #D2B98F;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.wstep.on{color:#2E2217}.wstep.on i{background:#4A2E1A;border-color:#4A2E1A;color:#FBF5EA}.wstep.done{color:#3F7F3A}.wstep.done i{border-color:#3F7F3A}
+.sumrow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed #E3D3B8;font-size:15px}
+.sumrow b{text-align:right}
+</style>
+
+<style>html{background:#d9d2c4}body{display:flex;justify-content:center;padding:24px 0}</style>
+</head>
+<body>
+<template id="dc-tpl">
+
+<div class="w" style="width:390px;min-height:1700px"><div class="wood" style="height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 14px"><img src="assets/fuflogo.png" alt="FuF Erding" style="height:34px"><button type="button" aria-label="Menü" style="width:44px;height:44px;border:0;background:transparent;color:#FBF5EA"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"></path></svg></button></div>
+<div style="padding:16px 12px;display:flex;flex-direction:column;gap:12px"><h1 class="zs" style="font-size:30px;margin:0">Winterfreizeit 2027</h1><span class="muted">12.–16.02.2027 · Jugendhaus Lungau</span><div class="wcard">
+<div class="wood" style="padding:16px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px"><span class="zs" style="font-size:23px">Anmeldung</span><span style="padding:6px 12px;border-radius:999px;background:#FBF5EA;color:#4A2E1A;font-size:14px;font-weight:700">Formular v3</span></div>
+
+<div style="display:flex;gap:4px;padding:12px 12px 0"><sc-for list="{{steps}}" as="s" hint-placeholder-count="4"><span class="{{s.cls}}" style="flex:1 1 0;min-width:0;font-size:11px;flex-direction:column;gap:2px"><i>{{s.n}}</i>{{s.t}}</span></sc-for></div>
+<div style="padding:18px 16px 24px;display:flex;flex-direction:column;gap:14px">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:12px">
+<span class="muted">Anmeldeschluss <b style="color:#2E2217">15.12.2026</b> · noch <b style="color:#2E2217">18</b> Plätze frei</span>
+<span class="zs" style="font-size:20px">Wer fährt mit?</span>
+<sc-for list="{{people}}" as="p" hint-placeholder-count="4"><button type="button" role="checkbox" aria-checked="{{p.aria}}" class="{{p.cls}}" onClick="{{p.toggle}}"><span class="box26"><sc-if value="{{p.on}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" fill="none" stroke="#FBF5EA" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></span><span class="wav">{{p.ini}}</span><span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b>{{p.name}}</b><span class="muted" style="font-size:13px">{{p.sub}}</span></span><span style="font-size:13px;font-weight:700;color:#4A2E1A;text-align:right">{{p.priceTxt}}</span></button></sc-for>
+<span class="muted">Gäste meldet das Orgateam an. Rechnungsempfänger ist das Mitglied, das die Buchung abschickt.</span>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid #E3D3B8;padding-top:14px"><span><b>{{count}}</b> · {{totalTxt}}</span><button type="button" class="wbtn" onClick="{{next0}}">Weiter zu den Zusatzangaben</button></div></div></sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{err}}" hint-placeholder-val="{{false}}"><div class="werr" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><span>{{errTxt}}</span></div></sc-if>
+<span class="zs" style="font-size:20px">Für eure ganze Buchung</span>
+<div class="wq"><b>Zimmerwunsch *</b><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="{{zDZ}}" onClick="{{setDZ}}">Doppelzimmer</button><button type="button" class="{{zMB}}" onClick="{{setMB}}">Mehrbettzimmer</button></div><span class="muted">Ein Wunsch – das Orgateam teilt die Zimmer zu.</span></div>
+<div class="wq"><label for="vegTrue"><b>Vegetarische Essen *</b></label><div class="winp" style="max-width:220px"><input id="vegTrue" inputmode="numeric" value="{{veg}}" onChange="{{setVeg}}"><span>Personen</span></div>
+<sc-if value="{{vegBad}}" hint-placeholder-val="{{false}}"><span style="color:#B3261E;font-weight:700;font-size:14px">Bitte eine Zahl eintragen – 0 ist auch in Ordnung.</span></sc-if></div>
+<div class="wq"><b>Ankunftszeit <span class="muted" style="font-weight:400">(optional)</span></b><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="{{a1}}" onClick="{{setA1}}">bis 15 Uhr</button><button type="button" class="{{a2}}" onClick="{{setA2}}">15–18 Uhr</button><button type="button" class="{{a3}}" onClick="{{setA3}}">nach 18 Uhr</button></div></div>
+<sc-if value="{{hasKids}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:12px">
+<span class="zs" style="font-size:20px">Für jedes Kind</span>
+<sc-for list="{{kids}}" as="k" hint-placeholder-count="2"><div style="border:2px solid #E3D3B8;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px"><b>{{k.name}}</b><span style="font-size:15px">Skikurs gewünscht? *</span><div style="display:flex;gap:8px"><button type="button" class="{{k.ja}}" onClick="{{k.setJa}}">Ja</button><button type="button" class="{{k.nein}}" onClick="{{k.setNein}}">Nein</button></div>
+<sc-if value="{{k.miss}}" hint-placeholder-val="{{false}}"><span style="color:#B3261E;font-weight:700;font-size:14px">Bitte Ja oder Nein wählen.</span></sc-if></div></sc-for>
+<span class="zs" style="font-size:20px">Bestätigung</span>
+<button type="button" role="checkbox" aria-checked="{{aufAria}}" class="{{aufCls}}" onClick="{{togAuf}}"><span class="box26"><sc-if value="{{aufOn}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" fill="none" stroke="#FBF5EA" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></span><span>Ich übernehme für alle angemeldeten Kinder die Aufsichtspflicht. *<span class="muted" style="display:block;font-size:13px">gilt für: {{kidNames}}</span></span></button>
+<sc-if value="{{aufMiss}}" hint-placeholder-val="{{false}}"><span style="color:#B3261E;font-weight:700;font-size:14px">Diese Bestätigung ist nötig, weil Kinder angemeldet sind.</span></sc-if></div></sc-if>
+<div class="wq"><label for="komTrue"><b>Kommentar <span class="muted" style="font-weight:400">(optional)</span></b></label><div class="winp"><textarea id="komTrue" rows="2"></textarea></div></div>
+<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid #E3D3B8;padding-top:14px"><button type="button" class="wbtn2" onClick="{{back}}">Zurück</button><button type="button" class="wbtn" onClick="{{next1}}">Weiter zur Zusammenfassung</button></div></div></sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:14px">
+<span class="zs" style="font-size:20px">Bitte prüfen</span>
+<div><b style="font-size:14px;color:#6B5540;text-transform:uppercase;letter-spacing:.6px">Personen</b>
+<sc-for list="{{chosen}}" as="c" hint-placeholder-count="4"><div class="sumrow"><span>{{c.name}} <span class="muted">· {{c.grp}}</span></span><b>{{c.price}}</b></div></sc-for>
+<div class="sumrow" style="border:0"><b>Summe</b><b>{{totalTxt}}</b></div></div>
+<div><b style="font-size:14px;color:#6B5540;text-transform:uppercase;letter-spacing:.6px">Angaben für die ganze Buchung</b>
+<div class="sumrow"><span>Zimmerwunsch</span><b>{{zimTxt}}</b></div><div class="sumrow"><span>Vegetarische Essen</span><b>{{vegTxt}}</b></div><div class="sumrow"><span>Ankunftszeit</span><b>{{ankTxt}}</b></div></div>
+<sc-if value="{{hasKids}}" hint-placeholder-val="{{true}}"><div><b style="font-size:14px;color:#6B5540;text-transform:uppercase;letter-spacing:.6px">Angaben je Kind</b>
+<sc-for list="{{kids}}" as="k" hint-placeholder-count="2"><div class="sumrow"><span>{{k.name}} · Skikurs</span><b>{{k.val}}</b></div></sc-for>
+<div class="sumrow"><span>Aufsichtspflicht bestätigt für</span><b>{{kidNames}}</b></div></div></sc-if>
+<button type="button" role="checkbox" aria-checked="{{verbAria}}" class="{{verbCls}}" onClick="{{togVerb}}"><span class="box26"><sc-if value="{{verbOn}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 L6.5 12 L13 4.5" fill="none" stroke="#FBF5EA" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></span><span>Ich buche verbindlich für die genannten Personen und habe die <a href="#storno" style="color:#B4501A">Stornobedingungen</a> gelesen. *</span></button>
+<sc-if value="{{verbMiss}}" hint-placeholder-val="{{false}}"><div class="werr" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><span>Bitte bestätige die verbindliche Buchung.</span></div></sc-if>
+<span class="muted">Die Rechnung stellt der Verein über easyVerein an dich als Mitglied.</span>
+<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid #E3D3B8;padding-top:14px"><button type="button" class="wbtn2" onClick="{{back}}">Ändern</button><button type="button" class="wbtn" onClick="{{submit}}">Verbindlich anmelden</button></div></div></sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:14px">
+<sc-if value="{{ok}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+<span style="width:56px;height:56px;border-radius:50%;background:#3F7F3A;color:#FBF5EA;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"></path></svg></span>
+<span class="zs" style="font-size:24px">Ihr seid angemeldet!</span>
+<span>Buchung <b>B-2027-0013</b> ist eingegangen. Alle Personen sind in der Vereinsverwaltung bestätigt.</span>
+<span class="muted">Deine Angaben kannst du bis zum Anmeldeschluss in „Mein Bereich“ ändern.</span>
+<button type="button" class="wbtn2" onClick="{{showPartial}}" style="font-size:13px;min-height:36px">Variante: Teilfehler zeigen</button></div></sc-if>
+<sc-if value="{{partial}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:12px">
+<span class="zs" style="font-size:24px">Fast geschafft</span>
+<span>Deine Anmeldung ist gespeichert (Buchung <b>B-2027-0013</b>). Bei einer Person hakt es noch:</span>
+<div class="sumrow"><span>Maria, Stefan, Paul</span><b style="color:#3F7F3A">bestätigt</b></div><div class="sumrow"><span>Lena</span><b style="color:#B4501A">wird noch geprüft</b></div>
+<div style="background:#F9E1C8;border-radius:12px;padding:12px 14px;font-size:14px">Du musst nichts erneut abschicken – das Orgateam klärt das und meldet sich. Es entsteht keine doppelte Anmeldung.</div>
+<button type="button" class="wbtn2" onClick="{{showOk}}" style="font-size:13px;min-height:36px">Variante: Erfolg zeigen</button></div></sc-if>
+<button type="button" class="wbtn2" onClick="{{restart}}">Von vorn (Demo)</button></div></sc-if>
+</div></div></div></div>
+</template>
+<div id="dc-root"></div>
+
+<script>
+(function(){
+class DCLogic{constructor(p){this.props=p||{};this.state={};}setState(o){this.state=Object.assign({},this.state,typeof o==='function'?o(this.state):o);window.__dcRender();}forceUpdate(){window.__dcRender();}}
+window.DCLogic=DCLogic;
+const TPL=document.getElementById('dc-tpl');
+function look(path,scopes){path=path.trim();if(path==='true')return true;if(path==='false')return false;if(/^-?\d+(\.\d+)?$/.test(path))return +path;
+ const parts=path.split('.');for(let i=scopes.length-1;i>=0;i--){if(scopes[i]&&parts[0] in scopes[i]){let v=scopes[i];for(const p of parts){v=v==null?undefined:v[p];}return v;}}return undefined;}
+const WHOLE=/^\{\{\s*([^}]+?)\s*\}\}$/;
+function interp(s,sc){return s.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(m,p)=>{const v=look(p,sc);return v==null?'':String(v);});}
+function render(node,sc,parent){
+ if(node.nodeType===3){parent.appendChild(document.createTextNode(interp(node.nodeValue,sc)));return;}
+ if(node.nodeType!==1)return;
+ const tag=node.tagName.toLowerCase();
+ if(tag==='sc-if'){const m=WHOLE.exec(node.getAttribute('value')||'');if(m&&look(m[1],sc)){for(const c of node.childNodes)render(c,sc,parent);}return;}
+ if(tag==='sc-for'){const m=WHOLE.exec(node.getAttribute('list')||'');const list=m?look(m[1],sc)||[]:[];const as=node.getAttribute('as')||'item';
+   list.forEach((it,i)=>{const s={$index:i};s[as]=it;for(const c of node.childNodes)render(c,sc.concat([s]),parent);});return;}
+ const ns=node.namespaceURI;const el=ns&&ns!=='http://www.w3.org/1999/xhtml'?document.createElementNS(ns,tag):document.createElement(tag);
+ for(const a of Array.from(node.attributes)){const n=a.name,v=a.value;const m=WHOLE.exec(v);
+   if(/^on[a-z]+$/i.test(n)&&m){const fn=look(m[1],sc);if(typeof fn==='function'){let ev=n.slice(2).toLowerCase();if(ev==='change'&&(tag==='input'||tag==='textarea'))ev='change';el.addEventListener(ev,fn);}continue;}
+   if(n.startsWith('hint-'))continue;
+   if(m){const val=look(m[1],sc);if(n==='value'){el.value=val==null?'':val;el.setAttribute('value',val==null?'':val);}else if(typeof val==='boolean'&&!n.startsWith('aria-')){if(val)el.setAttribute(n,'');}else el.setAttribute(n,val==null?'':String(val));}
+   else el.setAttribute(n,v.indexOf('{{')>=0?interp(v,sc):v);}
+ if(tag==='template'){parent.appendChild(el);return;}
+ for(const c of node.childNodes)render(c,sc,el);parent.appendChild(el);}
+let comp=null;
+window.__dcRender=function(){const root=document.getElementById('dc-root');const vals=comp.renderVals();const sx=window.scrollX,sy=window.scrollY;root.innerHTML='';for(const c of TPL.content.childNodes)render(c,[vals],root);window.scrollTo(sx,sy);};
+window.__dcStart=function(C){comp=new C({});window.__dcRender();};
+})();
+</script>
+<script>
+
+
+const PEOPLE = [
+ {k:'maria', name:'Maria Huber', ini:'MH', sub:'du · Mitglied', kid:false, grp:'Erwachsene', price:389},
+ {k:'stefan', name:'Stefan Huber', ini:'SH', sub:'Mitglied', kid:false, grp:'Erwachsene', price:389},
+ {k:'lena', name:'Lena Huber', ini:'LH', sub:'9 Jahre · Mitglied', kid:true, grp:'Kind 3–13', price:189},
+ {k:'paul', name:'Paul Huber', ini:'PH', sub:'6 Jahre · Mitglied', kid:true, grp:'Kind 3–13', price:189},
+];
+const eur = (n) => n.toLocaleString('de-DE') + ' €';
+const CHECK = '';
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { step:0, sel:{maria:true, stefan:true, lena:true, paul:true}, zim:'DZ', veg:'1', ank:'', ski:{lena:'Ja', paul:''}, auf:false, verb:false, err:false, err2:false, res:'ok', kom:'' }; }
+  renderVals(){
+    const st = this.state, set = (o) => this.setState(o);
+    const chosen = PEOPLE.filter(p => st.sel[p.k]);
+    const kids = chosen.filter(p => p.kid);
+    const total = chosen.reduce((s,p)=>s+p.price,0);
+    const steps = ['Personen','Zusatzangaben','Zusammenfassung','Ergebnis'].map((t,i)=>({t, n: i < st.step ? '✓' : String(i+1), cls: 'wstep' + (i===st.step?' on':(i<st.step?' done':''))}));
+    const people = PEOPLE.map(p => ({...p, cls: 'prow' + (st.sel[p.k]?' on':''), on: !!st.sel[p.k], aria: st.sel[p.k] ? 'true':'false', toggle: () => set({ sel: {...st.sel, [p.k]: !st.sel[p.k]} }), priceTxt: p.grp + ' · ' + eur(p.price)}));
+    const skiMissing = kids.filter(k => !st.ski[k.k]);
+    const kidRows = kids.map(k => ({ name: k.name.split(' ')[0] + ' (' + k.sub.split(' ')[0] + ')', ja: st.ski[k.k]==='Ja' ? 'pill on':'pill' + (st.err && !st.ski[k.k] ? ' bad':''), nein: st.ski[k.k]==='Nein' ? 'pill on':'pill' + (st.err && !st.ski[k.k] ? ' bad':''),
+       setJa: () => set({ ski:{...st.ski, [k.k]:'Ja'} }), setNein: () => set({ ski:{...st.ski, [k.k]:'Nein'} }), miss: st.err && !st.ski[k.k], val: st.ski[k.k] || '—' }));
+    const zErr = (kids.length && !st.auf) || skiMissing.length > 0 || st.veg==='';
+    const errCount = (kids.length && !st.auf ? 1:0) + skiMissing.length + (st.veg===''?1:0);
+    return {
+      steps, people, kids: kidRows, hasKids: kids.length>0, noKids: kids.length===0,
+      s0: st.step===0, s1: st.step===1, s2: st.step===2, s3: st.step===3,
+      count: chosen.length + (chosen.length===1 ? ' Person' : ' Personen'), totalTxt: eur(total),
+      canNext0: chosen.length>0,
+      next0: () => { if (chosen.length) set({step:1}); },
+      back: () => set({step: Math.max(0, st.step-1), err:false, err2:false}),
+      next1: () => { if (zErr) set({err:true}); else set({step:2, err:false}); },
+      err: st.err && zErr, errTxt: errCount + (errCount===1 ? ' Angabe fehlt' : ' Angaben fehlen') + ' – bitte unten ergänzen.',
+      zDZ: st.zim==='DZ'?'pill on':'pill', zMB: st.zim==='MBZ'?'pill on':'pill', setDZ: () => set({zim:'DZ'}), setMB: () => set({zim:'MBZ'}),
+      veg: st.veg, setVeg: (e) => set({veg: e.target.value.replace(/[^0-9]/g,'')}), vegBad: st.err && st.veg==='',
+      a1: st.ank==='15'?'pill on':'pill', a2: st.ank==='18'?'pill on':'pill', a3: st.ank==='x'?'pill on':'pill',
+      setA1: () => set({ank:'15'}), setA2: () => set({ank:'18'}), setA3: () => set({ank:'x'}),
+      ankTxt: {'15':'bis 15 Uhr','18':'15–18 Uhr','x':'nach 18 Uhr'}[st.ank] || 'keine Angabe',
+      aufCls: 'wchk' + (st.auf ? ' on' : (st.err && kids.length ? ' bad' : '')), aufOn: st.auf, aufAria: st.auf?'true':'false', togAuf: () => set({auf: !st.auf}), aufMiss: st.err && kids.length && !st.auf,
+      kidNames: kids.map(k=>k.name.split(' ')[0]).join(' und '),
+      verbCls: 'wchk' + (st.verb ? ' on' : (st.err2 ? ' bad':'')), verbOn: st.verb, verbAria: st.verb?'true':'false', togVerb: () => set({verb: !st.verb}), verbMiss: st.err2 && !st.verb,
+      chosen: chosen.map(p => ({ name:p.name, grp:p.grp, price: eur(p.price) })),
+      vegTxt: (st.veg||'0') + (st.veg==='1' ? ' Person' : ' Personen'), zimTxt: st.zim==='DZ' ? 'Doppelzimmer' : 'Mehrbettzimmer',
+      submit: () => { if (!st.verb) set({err2:true}); else set({step:3, err2:false}); },
+      ok: st.res==='ok', partial: st.res==='partial', showPartial: () => set({res:'partial'}), showOk: () => set({res:'ok'}),
+      restart: () => set({step:0, err:false, err2:false, verb:false, res:'ok'}),
+    };
+  }
+}
+
+window.__dcStart(Component);
+</script>
+</body>
+</html>

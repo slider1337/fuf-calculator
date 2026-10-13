@@ -23,7 +23,7 @@ Webanwendung zur Kalkulation von Einzelpreisen fuer Gruppenreisen (Kompaktmodus)
 - `src/Domain` - Domain-Modelle und Berechnungslogik
 - `src/Application` - Services, Ports, Validation
 - `src/Infrastructure` - SQLite und HTTP Controller
-- `database/schema.sql` - Datenbankschema
+- `migrations/` - Phinx-Datenbankmigrationen (aktueller Schema-Vertrag)
 - `templates/index.html.php` - Bootstrap UI
 - `public/assets/js/app.js` - AJAX-Frontend
 - `docs/openapi.yaml` - OpenAPI-Spec
@@ -58,6 +58,8 @@ Die bisherige E-Mail-/Passwort-Anmeldung bleibt erhalten.
 ## Veranstaltungsverwaltung: Design-Konzept
 
 [Veranstaltungen, Reisen, versionierte Formulare und Orga-Auswertungen](docs/concepts/09-veranstaltungsverwaltung-formulare.md) beschreibt das geplante gemeinsame Backend für Calculator und Website-Anmeldungen, inklusive Ansichten, Beispieldaten und Design-Prompt. Das Konzept ist noch nicht implementiert.
+
+Der [Umsetzungsplan mit elf Aufgaben](docs/implementation/veranstaltungsverwaltung/README.md) führt vom bestehenden Calculator bis zur Website-Anbindung. **Zuerst alle Calculator-Grundlagen und Funktionen, Website erst in Schritt 11.** Die vollständige [Design-Übergabe mit Desktop-/Mobilreferenzen](docs/design-handoff/veranstaltungsverwaltung/START-HIER.md) liegt ebenfalls im Repository.
 
 ## Tests
 

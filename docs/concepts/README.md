@@ -17,7 +17,7 @@ Die Konzepte für Kalkulator und Website bauen aufeinander auf:
 
 ## Aktuelles Zielbild für Veranstaltungen und Anmeldungen
 
-Konzept 9 entwickelt die Reisegruppen aus Konzept 4 zu Veranstaltungen weiter und ersetzt für neue Zusatzformulare die primäre WordPress-Datenhaltung aus Konzept 8. Die Website bleibt die Mitgliederoberfläche; der Calculator wird das gemeinsame Backend. Für diese Erweiterung gelten die Umsetzungsreihenfolge und offenen technischen Entscheidungen in Konzept 9. Die bisherigen Kapitel bleiben als historische Grundlage erhalten; deren Befunde vom September sind keine Beschreibung bereits implementierter Funktionen.
+Konzept 9 entwickelt die Reisegruppen aus Konzept 4 zu Veranstaltungen weiter und ersetzt für neue Zusatzformulare die primäre WordPress-Datenhaltung aus Konzept 8. Die Website bleibt die Mitgliederoberfläche; der Calculator wird das gemeinsame Backend. Für diese Erweiterung gilt der [Umsetzungsplan zur Design-Übergabe](../implementation/veranstaltungsverwaltung/README.md): zuerst Calculator-Grundlagen und alle Calculator-Funktionen, Website erst als letzter Schritt. Die offenen fachlichen Entscheidungen in Konzept 9 bleiben zu klären. Die bisherigen Kapitel bleiben als historische Grundlage erhalten; deren Befunde vom September sind keine Beschreibung bereits implementierter Funktionen.
 
 ## Empfohlene Reihenfolge (historischer Stand 25.09.2026)
 

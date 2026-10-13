@@ -247,7 +247,7 @@ Abnahmebeispiele:
 
 Das Design kann auf den oben beschriebenen Produktregeln aufbauen. Vor Implementierung sind festzulegen: konkreter easyVerein-API-Vertrag und Benachrichtigungsverhalten; sichere Website-Identitätsdelegation; Abgleichintervall; Buchungs-/Änderungsfristen je Reise; Aufbewahrung und Löschregeln; Behandlung externer Preisänderungen. Keine unbelegten API-Feldnamen als fertige Schnittstelle darstellen.
 
-Umsetzungsreihenfolge: (1) Rechte und Veranstaltungs-/Reisezuordnung samt Migration, (2) Formularversionierung und Vorschau, (3) eindeutige Terminverknüpfung/Anlage, (4) gemeinsame Buchungs-API und Website-Anbindung, (5) Antworten/Auswertungen, (6) kontrollierte Kalkulationsübernahme und Abgleich.
+**Aktualisierte Umsetzungsreihenfolge zur Design-Übergabe (12.10.2026):** Zuerst alle Calculator-Grundlagen und Funktionen einschließlich Buchungen, Antworten/Auswertungen, kontrollierter Kalkulationsübernahme, Termin-/Teilnahmeabgleich und geprüfter Mitglieder-API fertigstellen. Erst danach die Website anpassen. Maßgeblich sind die [elf Umsetzungsschritte](../implementation/veranstaltungsverwaltung/README.md) mit Grundlagen, Design-Zuordnung und Abnahme. Die Originalfassung im Design-Handover bleibt als Quellenstand unverändert erhalten.
 
 ## 14. Direkt verwendbarer Design-Prompt
 

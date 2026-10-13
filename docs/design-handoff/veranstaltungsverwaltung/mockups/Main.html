@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Übersicht Veranstaltungsverwaltung</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2D5A3D}a:hover{color:#1A3D2A}
+.app{font-family:'Source Sans 3',system-ui,sans-serif;background:#F3EFE6;color:#3D2817;font-size:15px;line-height:1.4}
+.app *{box-sizing:border-box}
+.hd{background:#3D2817;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0,rgba(0,0,0,.08) 1px,transparent 1px,transparent 4px,rgba(255,255,255,.04) 4px,rgba(255,255,255,.04) 5px,transparent 5px,transparent 9px);border-bottom:3px solid #2D5A3D;padding:0 32px;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hd-l{display:flex;align-items:center;gap:24px;flex-wrap:wrap;min-width:0}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand img{height:32px;width:auto}
+.brand span{font-family:Georgia,serif;font-size:17px;color:#F5EFE0;border-left:1px solid rgba(245,239,224,.3);padding-left:12px}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;color:#F5EFE0}
+.nav a.on{background:rgba(255,255,255,.14);color:#fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:34px;height:34px;border-radius:50%;background:#F5B547;color:#3D2817;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.who small{display:block;font-size:11px;color:#F5B547;letter-spacing:.6px;text-transform:uppercase}
+.who b{font-size:13px;color:#fff;font-weight:600}
+.wrap{padding:24px 32px 40px;display:flex;flex-direction:column;gap:20px;max-width:1440px;margin:0 auto}
+.bc{display:flex;gap:6px;align-items:center;font-size:13px;color:#7A6651;flex-wrap:wrap}
+.bc a{text-decoration:none;font-weight:600}
+h1.t{margin:0;font-family:Georgia,serif;font-size:28px;font-weight:500;line-height:1.2}
+h2.t2{margin:0;font-family:Georgia,serif;font-size:20px;font-weight:500}
+.sub{font-size:14px;color:#7A6651}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E2D9C8;overflow-x:auto}
+.tabs a{display:inline-flex;align-items:center;gap:7px;padding:10px 14px 9px;font-size:14px;font-weight:600;color:#5C4A3A;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;margin-bottom:-1px}
+.tabs a.on{color:#2D5A3D;border-bottom-color:#2D5A3D;font-weight:700}
+.sec{background:#fff;border:1px solid #E2D9C8;border-radius:12px;overflow:hidden;min-width:0}
+.sec-h{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid #EFE8DA;background:#FDFBF7;flex-wrap:wrap}
+.sec-h h2,.sec-h h3{margin:0;font-size:16px;font-weight:700;flex-grow:1;display:flex;align-items:center;gap:8px}
+.sec-b{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f label,.lb{font-size:13px;font-weight:600;color:#5C4A3A}
+.in{display:flex;align-items:center;height:42px;border:1px solid #D4CBB9;border-radius:8px;background:#fff;overflow:hidden;min-width:0}
+.in input,.in select,.in textarea{border:0;outline:0;background:transparent;height:100%;flex-grow:1;min-width:0;padding:0 12px;font:inherit;font-size:15px;color:#3D2817;appearance:none;-webkit-appearance:none}
+.in .u{padding:0 12px;height:100%;display:flex;align-items:center;background:#F6F1E7;border-left:1px solid #E2D9C8;color:#7A6651;font-size:13px;font-weight:600;white-space:nowrap}
+.in .pre{padding-left:12px;color:#8A7762;display:flex}
+.in.dirty{border-color:#E76F1E;box-shadow:0 0 0 3px rgba(231,111,30,.15)}
+.in.err{border-color:#9B2C2C;box-shadow:0 0 0 3px rgba(155,44,44,.12)}
+.ta{height:auto}.ta textarea{padding:10px 12px;min-height:72px;resize:vertical}
+.help{font-size:12px;color:#8A7762}
+.errt{font-size:12px;color:#9B2C2C;font-weight:600;display:flex;gap:5px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.kpi{background:#fff;border:1px solid #E2D9C8;border-radius:12px;padding:13px 16px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi span{font-size:12px;color:#8A7762;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.kpi b{font-family:Georgia,serif;font-size:24px;font-weight:500;color:#3D2817;font-variant-numeric:tabular-nums}
+.kpi.g{background:#E6EFE9;border-color:#B9D3C2}.kpi.a{background:#FAEEDA;border-color:#EBCF9F}
+.tbx{overflow-x:auto}
+.tb{width:100%;border-collapse:collapse;font-size:14px}
+.tb th{text-align:left;font-size:12px;color:#8A7762;letter-spacing:.6px;text-transform:uppercase;padding:10px 12px 8px;border-bottom:2px solid #E2D9C8;font-weight:700;white-space:nowrap}
+.tb td{padding:11px 12px;border-bottom:1px solid #EFE8DA;vertical-align:middle}
+.tb .r{text-align:right;font-variant-numeric:tabular-nums}
+.tb tr.sel td{background:#F2F7F3}
+.tb tr.sum td{background:#F6F1E7;border-bottom:0;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1.35}
+.c-green{background:#E6EFE9;color:#1A3D2A}.c-amber{background:#FAEEDA;color:#7A4A12}.c-brown{background:#EFE8DA;color:#3D2817}
+.c-grey{background:#F3EFE6;color:#5C4A3A;border:1px solid #E2D9C8}.c-orange{background:#FCE3D0;color:#8A3E0B}
+.c-red{background:#FBE9E4;color:#9B2C2C}.c-dark{background:#3D2817;color:#F5EFE0}.c-solid{background:#2D5A3D;color:#fff}
+.btn{height:40px;padding:0 16px;border-radius:8px;font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap;border:0}
+.btn-p{background:#2D5A3D;color:#fff}.btn-a{background:#E76F1E;color:#fff}
+.btn-o{background:#fff;color:#2D5A3D;border:1px solid #2D5A3D}.btn-g{background:#fff;color:#5C4A3A;border:1px solid #D4CBB9;font-weight:600}
+.btn-d{background:#fff;color:#9B2C2C;border:1px solid #E0B4B4;font-weight:600}.btn-x{background:#E2D9C8;color:#7A6651;cursor:not-allowed}
+.btn-s{height:34px;padding:0 12px;font-size:13px}
+.ib{width:34px;height:34px;border-radius:8px;border:1px solid #D4CBB9;background:#fff;color:#7A6651;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.sp{flex-grow:1}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.split{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.split>.main{flex:999 1 620px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.split>.side{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.box{border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.box>svg{flex-shrink:0;margin-top:2px}
+.b-amber{background:#FAEEDA;color:#5C3A0E}.b-red{background:#FBE9E4;color:#7A2020}.b-green{background:#E6EFE9;color:#1A3D2A}.b-sand{background:#F6F1E7;color:#5C4A3A}.b-dark{background:#1A3D2A;color:#F5EFE0}
+.k{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:14px;color:#5C4A3A;padding:3px 0}
+.k b{color:#3D2817;font-variant-numeric:tabular-nums;text-align:right}
+.big{font-family:Georgia,serif;font-size:34px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
+.num{font-variant-numeric:tabular-nums}
+.bar{height:10px;border-radius:999px;background:#EFE8DA;display:flex;overflow:hidden}
+.bar i{display:block;height:100%}
+.dash{border:2px dashed #C9BFAA;border-radius:12px;background:#FDFBF7}
+.seg{display:inline-flex;border:1px solid #D4CBB9;border-radius:8px;overflow:hidden;background:#fff}
+.seg a,.seg button{padding:0 12px;height:34px;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:600;color:#5C4A3A;text-decoration:none;border:0;background:transparent;cursor:pointer;border-right:1px solid #E2D9C8}
+.seg :last-child{border-right:0}
+.seg .on{background:#2D5A3D;color:#fff}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;border:1px solid #D4CBB9;background:#fff;font:inherit;font-size:13px;font-weight:600;color:#5C4A3A;cursor:pointer;white-space:nowrap}
+.fchip.on{background:#E6EFE9;border-color:#2D5A3D;color:#1A3D2A}
+.step{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#8A7762;white-space:nowrap}
+.step i{width:26px;height:26px;border-radius:50%;border:2px solid #D4CBB9;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:700;background:#fff}
+.step.on{color:#2D5A3D}.step.on i{border-color:#2D5A3D;background:#2D5A3D;color:#fff}
+.step.done{color:#2D5A3D}.step.done i{border-color:#2D5A3D;color:#2D5A3D}
+.lnk{font-weight:700;text-decoration:none}
+.fld{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #E2D9C8;border-radius:10px;background:#fff;font-size:14px;cursor:pointer;width:100%;text-align:left;font-family:inherit;color:#3D2817}
+.fld.on{border-color:#2D5A3D;box-shadow:0 0 0 2px #2D5A3D inset;background:#F2F7F3}
+.fld .ti{width:30px;height:30px;border-radius:8px;background:#F6F1E7;color:#5C4A3A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.ftr{padding:14px 32px;display:flex;justify-content:space-between;font-size:12px;color:#8A7762;border-top:1px solid #E2D9C8}
+.phone{width:390px;background:#F3EFE6;overflow:hidden}
+.mhd{height:52px;background:#3D2817;border-bottom:3px solid #2D5A3D;display:flex;align-items:center;gap:6px;padding:0 6px;color:#F5EFE0}
+.mhd .mt{flex-grow:1;min-width:0;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhd a,.mhd button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#F5EFE0;border:0;background:transparent;border-radius:8px;flex-shrink:0}
+.mtabs{display:flex;overflow-x:auto;background:#fff;border-bottom:1px solid #E2D9C8;padding:0 8px;gap:2px}
+.mtabs a{flex-shrink:0;min-height:46px;display:flex;align-items:center;padding:0 12px;font-size:15px;font-weight:600;color:#5C4A3A;text-decoration:none;border-bottom:3px solid transparent}
+.mtabs a.on{color:#2D5A3D;border-bottom-color:#2D5A3D;font-weight:700}
+.mb{padding:14px 14px 24px;display:flex;flex-direction:column;gap:12px}
+.phone .in{height:48px}.phone .in input,.phone .in select{font-size:16px}
+.phone .btn{height:48px;font-size:15px}.phone .ib{width:48px;height:48px}
+.card{background:#fff;border:1px solid #E2D9C8;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;text-decoration:none;color:#3D2817}
+.bbar{position:sticky;bottom:0;background:#fff;border-top:1px solid #E2D9C8;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
+.ovl{background:rgba(61,40,23,.45);padding:40px 24px;display:flex;justify-content:center}
+.dlg{background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(61,40,23,.35);overflow:hidden;width:100%;display:flex;flex-direction:column}
+.dlg-h{padding:18px 22px 14px;border-bottom:1px solid #EFE8DA;display:flex;gap:10px;align-items:flex-start}
+.dlg-f{padding:14px 22px;background:#FDFBF7;border-top:1px solid #EFE8DA;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.diff-add{background:#E6EFE9}.diff-del{background:#FBE9E4;text-decoration:line-through}.diff-chg{background:#FAEEDA}
+</style>
+
+
+</head>
+<body>
+<template id="dc-tpl">
+
+<div class="app" style="min-height:1120px"><header class="hd"><div class="hd-l"><a href="D01-Veranstaltungen.html" class="brand"><img src="assets/fuflogo.png" alt="FuF Erding"><span>Gruppenreise-Kalkulator</span></a><nav class="nav" aria-label="Hauptnavigation"><a href="D01-Veranstaltungen.html" class="on"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"></path></svg>Veranstaltungen</a><a href="D15-Reisen.html" class=""><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Reisen</a><a href="Z01-Zustaende.html" class=""><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 110 8 4 4 0 010-8z"></path></svg>Mein Konto</a><a href="D13-Standardteam.html" class=""><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 3a4 4 0 110 8 4 4 0 010-8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"></path></svg>Benutzer</a><a href="Z01-Zustaende.html" class=""><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9a3 3 0 110 6 3 3 0 010-6zM19 12l2-1-1-3-2 .2-1.2-1.2L17 5l-3-1-1 2h-2L10 4 7 5l.2 2L6 8.2 4 8l-1 3 2 1v1l-2 1 1 3 2-.2L7.2 17 7 19l3 1 1-2h2l1 2 3-1-.2-2 1.2-1.2 2 .2 1-3-2-1z"></path></svg>Globale Einstellungen</a></nav></div>
+<div class="who"><div class="av">BS</div><div><b>benedikt@fuf-erding.de</b><small>Globale Verwaltung</small></div><a href="Main.html" class="ib" style="background:rgba(255,255,255,.1);border:0;color:#F5EFE0" aria-label="Abmelden"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path></svg></a></div></header><main class="wrap"><div class="row" style="justify-content:space-between;align-items:flex-end"><div style="display:flex;flex-direction:column;gap:4px"><h1 class="t" style="font-size:34px">Veranstaltungsverwaltung &amp; versionierte Formulare</h1>
+<span class="sub" style="font-size:16px">Design zu Konzept 09 · Veranstaltung = dauerhafter Rahmen · Reise = Durchführung mit genau einem easyVerein-Termin · Formularversionen an der Veranstaltung</span></div><img src="assets/fuflogo.png" alt="FuF Erding" style="height:56px;background:#3D2817;padding:8px 12px;border-radius:10px"></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+<section class="sec"><div class="sec-h"><h2>Veranstaltung &amp; Formular</h2></div><div class="sec-b" style="gap:6px"><a href="D01-Veranstaltungen.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"></path></svg></span><span style="flex-grow:1"><b>Veranstaltungsliste</b><span class="help" style="display:block">Karten/Tabelle, Aktiv/Archiviert</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D02-Veranstaltung.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></span><span style="flex-grow:1"><b>Veranstaltung · Reisen</b><span class="help" style="display:block">Reisen mit Version und Terminstatus</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D03-Formular-Editor.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2h6v4H9zM5 4h4M15 4h4v18H5V4M8 11h8M8 15h8M8 19h5"></path></svg></span><span style="flex-grow:1"><b>Formular-Editor</b><span class="help" style="display:block">klickbar: Feld wählen, sortieren</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D04-Formular-Vorschau.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12zM12 9a3 3 0 110 6 3 3 0 010-6z"></path></svg></span><span style="flex-grow:1"><b>Formularvorschau</b><span class="help" style="display:block">Beispielpersonen, Desktop/Mobil</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D05-Versionen.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v18M15 3v18M3 8h6M15 16h6"></path></svg></span><span style="flex-grow:1"><b>Versionen &amp; Vergleich</b><span class="help" style="display:block">Diff v3→v4, Veröffentlichen</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D13-Standardteam.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 3a4 4 0 110 8 4 4 0 010-8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"></path></svg></span><span style="flex-grow:1"><b>Standardteam</b><span class="help" style="display:block">Vorschlag für neue Reisen</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></section>
+<section class="sec"><div class="sec-h"><h2>Reise</h2></div><div class="sec-b" style="gap:6px"><a href="D07-Wizard.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span><span style="flex-grow:1"><b>Wizard Reise/Termin</b><span class="help" style="display:block">klickbar, 5 Schritte + Auftrag</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D08-Reise-Uebersicht.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v11h14V10"></path></svg></span><span style="flex-grow:1"><b>Reise · Übersicht</b><span class="help" style="display:block">Kennzahlen, Klärfälle, Version</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D06-Versionswechsel.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 01-15.5 6.2L3 16M3 12a9 9 0 0115.5-6.2L21 8M21 3v5h-5M3 21v-5h5"></path></svg></span><span style="flex-grow:1"><b>Versionswechsel</b><span class="help" style="display:block">Auswirkung vorab</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D09-Anmeldungen.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 3a4 4 0 110 8 4 4 0 010-8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"></path></svg></span><span style="flex-grow:1"><b>Anmeldungen + Buchungsdetail</b><span class="help" style="display:block">Teilfehler je Person</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D10-Auswertung.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span><span style="flex-grow:1"><b>Auswertung</b><span class="help" style="display:block">klickbar: Filter, Versionen, Varianten</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D11-Drilldown.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></span><span style="flex-grow:1"><b>Antwort-Drilldown</b><span class="help" style="display:block">identische Filter, Export</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D12-Team-Termin.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"></path></svg></span><span style="flex-grow:1"><b>Team &amp; Termin</b><span class="help" style="display:block">externer Konflikt feldweise</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D14-Planung-Uebernahme.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2h14v20H5zM8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2"></path></svg></span><span style="flex-grow:1"><b>Planung · Übernahme</b><span class="help" style="display:block">Geplant → Angemeldet</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></section>
+<section class="sec"><div class="sec-h"><h2>Website, Mobil &amp; Zustände</h2></div><div class="sec-b" style="gap:6px"><a href="W01-Anmeldung.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 110 8 4 4 0 010-8z"></path></svg></span><span style="flex-grow:1"><b>Website · Mitgliederformular</b><span class="help" style="display:block">klickbar, Holz &amp; Lagerfeuer</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="W02-Anmeldung-Mobil.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2h10v20H7zM11 18h2"></path></svg></span><span style="flex-grow:1"><b>Website · mobil</b><span class="help" style="display:block">klickbar</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="W03-Zustaende.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg></span><span style="flex-grow:1"><b>Website · Zustände</b><span class="help" style="display:block">Pflichtfehler, Versionskonflikt</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="M01-Veranstaltungen.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2h10v20H7zM11 18h2"></path></svg></span><span style="flex-grow:1"><b>Calculator mobil</b><span class="help" style="display:block">14 Ansichten, verlinkt</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="Z01-Zustaende.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg></span><span style="flex-grow:1"><b>Zustände Calculator</b><span class="help" style="display:block">18 Leer-/Fehlerzustände</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="K01-Komponenten.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"></path></svg></span><span style="flex-grow:1"><b>Komponenten</b><span class="help" style="display:block">Kacheln, Chips, Feldtypen</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a><a href="D15-Reisen.html" class="fld" style="text-decoration:none"><span class="ti"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></span><span style="flex-grow:1"><b>Reisen (übergreifend)</b><span class="help" style="display:block">Schnellübersicht</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></section>
+</div>
+<div class="box b-sand"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 110 18 9 9 0 010-18zM12 11v6M12 7h.01"></path></svg><span>Fiktive Beispieldaten aus Abschnitt 11: Winterfreizeit 2027 mit 12 Buchungen / 42 Personen, Formular v2/v3, Winterfreizeit 2028 als Entwurf. Keine API, keine externen Schreibaktionen.</span></div></main></div>
+</template>
+<div id="dc-root"></div>
+
+<script>
+(function(){
+class DCLogic{constructor(p){this.props=p||{};this.state={};}setState(o){this.state=Object.assign({},this.state,typeof o==='function'?o(this.state):o);window.__dcRender();}forceUpdate(){window.__dcRender();}}
+window.DCLogic=DCLogic;
+const TPL=document.getElementById('dc-tpl');
+function look(path,scopes){path=path.trim();if(path==='true')return true;if(path==='false')return false;if(/^-?\d+(\.\d+)?$/.test(path))return +path;
+ const parts=path.split('.');for(let i=scopes.length-1;i>=0;i--){if(scopes[i]&&parts[0] in scopes[i]){let v=scopes[i];for(const p of parts){v=v==null?undefined:v[p];}return v;}}return undefined;}
+const WHOLE=/^\{\{\s*([^}]+?)\s*\}\}$/;
+function interp(s,sc){return s.replace(/\{\{\s*([^}]+?)\s*\}\}/g,(m,p)=>{const v=look(p,sc);return v==null?'':String(v);});}
+function render(node,sc,parent){
+ if(node.nodeType===3){parent.appendChild(document.createTextNode(interp(node.nodeValue,sc)));return;}
+ if(node.nodeType!==1)return;
+ const tag=node.tagName.toLowerCase();
+ if(tag==='sc-if'){const m=WHOLE.exec(node.getAttribute('value')||'');if(m&&look(m[1],sc)){for(const c of node.childNodes)render(c,sc,parent);}return;}
+ if(tag==='sc-for'){const m=WHOLE.exec(node.getAttribute('list')||'');const list=m?look(m[1],sc)||[]:[];const as=node.getAttribute('as')||'item';
+   list.forEach((it,i)=>{const s={$index:i};s[as]=it;for(const c of node.childNodes)render(c,sc.concat([s]),parent);});return;}
+ const ns=node.namespaceURI;const el=ns&&ns!=='http://www.w3.org/1999/xhtml'?document.createElementNS(ns,tag):document.createElement(tag);
+ for(const a of Array.from(node.attributes)){const n=a.name,v=a.value;const m=WHOLE.exec(v);
+   if(/^on[a-z]+$/i.test(n)&&m){const fn=look(m[1],sc);if(typeof fn==='function'){let ev=n.slice(2).toLowerCase();if(ev==='change'&&(tag==='input'||tag==='textarea'))ev='change';el.addEventListener(ev,fn);}continue;}
+   if(n.startsWith('hint-'))continue;
+   if(m){const val=look(m[1],sc);if(n==='value'){el.value=val==null?'':val;el.setAttribute('value',val==null?'':val);}else if(typeof val==='boolean'&&!n.startsWith('aria-')){if(val)el.setAttribute(n,'');}else el.setAttribute(n,val==null?'':String(val));}
+   else el.setAttribute(n,v.indexOf('{{')>=0?interp(v,sc):v);}
+ if(tag==='template'){parent.appendChild(el);return;}
+ for(const c of node.childNodes)render(c,sc,el);parent.appendChild(el);}
+let comp=null;
+window.__dcRender=function(){const root=document.getElementById('dc-root');const vals=comp.renderVals();const sx=window.scrollX,sy=window.scrollY;root.innerHTML='';for(const c of TPL.content.childNodes)render(c,[vals],root);window.scrollTo(sx,sy);};
+window.__dcStart=function(C){comp=new C({});window.__dcRender();};
+})();
+</script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+window.__dcStart(Component);
+</script>
+</body>
+</html>

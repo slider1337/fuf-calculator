@@ -1,6 +1,6 @@
 # Schritt 09 – Teilnahmen, Abgleich und externe Konflikte
 
-Status: **offen** · Voraussetzung: Schritt 08 abgenommen.
+Status: **lokale technische Grundlage implementiert; produktive Abnahme offen** · Voraussetzung: Schritt 08 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 
@@ -23,3 +23,5 @@ Drei von vier Personen bestätigt, eine abgelehnt: zwei Chips, Ergebnis je Perso
 Referenzen D08/D09/D12, M08/M09/M12/M14 und Z01. Vor echter Buchungsfreigabe Benachrichtigungsverhalten aller Teilnahme-/Storno-/Änderungswege dokumentieren. Bestehende Website wird weiterhin nicht geändert.
 
 Nach Abschluss Prüfprotokoll mit konkreten Änderungen, Tests, Datenmigration, offenen Punkten und Betriebsanweisungen ergänzen. Keine echten Mails oder Testtermine/-teilnahmen erzeugen. Keine folgenden Schritte vorziehen.
+
+Aktueller Prüfstand: [PRUEFUNG-09.md](PRUEFUNG-09.md). Offene Provider-/Freigabekriterien bleiben Voraussetzung; Fakes sind kein produktiver Nachweis.

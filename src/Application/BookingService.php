@@ -8,7 +8,7 @@ use App\Domain\Form\{AnswerValidator,FormSchema};
 /** Local booking workflow. No external confirmation or network writes. */
 final readonly class BookingService
 {
-    public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations) {}
+    public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private \App\Application\Port\BookingPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations) {}
     public function list(int $tripId): array
     {
         $this->policy->trip($tripId,'registration.view');
@@ -143,6 +143,7 @@ final readonly class BookingService
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$id,$p){
             $b=$this->load($tripId,$id);[$key,$hash,$op]=$this->repeat($tripId,$p,'cancel',$id);if($op){return $this->get($tripId,$id);}
             $this->revision($b,$p);$reason=$this->reason($p);$ids=$p['personIds']??array_column($b['persons'],'id');
+            foreach($b['persons'] as $person){if(in_array($person['id'],is_array($ids)?$ids:[],true)&&($person['externalReference']??null)!==null&&$person['status']!=='cancelled'){throw new AccessException('use_external_cancellation',409);}}
             if(!is_array($ids)||!array_is_list($ids)||$ids===[]||count(array_filter($ids,'is_int'))!==count($ids)||array_diff($ids,array_column($b['persons'],'id'))!==[]){throw new ValidationException(['personIds'=>'owned_person_ids_required']);}
             foreach($ids as $pid){$this->bookings->cancelPerson($id,$pid);}
             $remaining=array_filter($b['persons'],static fn($x)=>$x['status']!=='cancelled'&&!in_array($x['id'],$ids,true));

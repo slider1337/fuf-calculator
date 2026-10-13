@@ -12,7 +12,7 @@ use Slim\Psr7\Factory\ResponseFactory;
 
 final class AuthMiddleware implements MiddlewareInterface
 {
-    public function __construct(private \App\Application\AccessPolicy $policy) {}
+    public function __construct(private \App\Application\AccessPolicy $policy, private IntegrationAuthenticator $integration) {}
 
     private const PUBLIC_PATHS = [
         '/login',
@@ -25,6 +25,14 @@ final class AuthMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        if (str_starts_with($request->getUri()->getPath(), '/integration/v1/')) {
+            try {
+                $identity = $this->integration->authenticate($request);
+                return $handler->handle($request->withAttribute('memberIdentity', $identity))->withHeader('Cache-Control','private, no-store');
+            } catch (\App\Application\AccessException $e) {
+                return \App\Infrastructure\Http\JsonResponder::write((new ResponseFactory())->createResponse(), ['error'=>$e->error], $e->status)->withHeader('Cache-Control','no-store');
+            }
+        }
         Session::start();
 
         $path = $request->getUri()->getPath();

@@ -1,6 +1,6 @@
 # Schritt 10 – Mitglieder-API und Calculator-Abnahme vor Websitebau
 
-Status: **offen** · Voraussetzung: Schritte 01–09 abgenommen; reale Integration nur soweit ihr Vertrag geklärt ist.
+Status: **lokale technische Grundlage implementiert; produktive Abnahme offen** · Voraussetzung: Schritte 01–09 abgenommen; reale Integration nur soweit ihr Vertrag geklärt ist.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 
@@ -23,3 +23,5 @@ Testclient ohne Calculator-Account durchläuft Buchung→Korrektur→Teilstorno�
 Freigabekriterium: Calculator-Funktionen und versionierter Vertrag stehen unabhängig von WordPress bereit; bekannte Sperren konkret dokumentiert. Nicht erfüllte Pflichtkriterien blockieren Schritt 11. Bestehende Website kann zu Testzwecken gelesen, nicht geändert werden. Offene echte API-/Versandfragen nicht als bestanden markieren.
 
 Nach Abschluss Prüfprotokoll mit konkreten Änderungen, Tests, Datenmigration, offenen Punkten und Betriebsanweisungen ergänzen. Keine echten Mails oder Testtermine/-teilnahmen erzeugen. Keine folgenden Schritte vorziehen.
+
+Aktueller Prüfstand: [PRUEFUNG-10.md](PRUEFUNG-10.md). Offene Provider-/Freigabekriterien bleiben Voraussetzung; Fakes sind kein produktiver Nachweis.

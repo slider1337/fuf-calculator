@@ -19,7 +19,7 @@ final class EventOpenApiContractTest extends ApiTestCase
     public function testEveryRegisteredApiOperationHasADocumentedContract(): void
     {
         foreach ($this->app->getRouteCollector()->getRoutes() as $route) {
-            if (!str_starts_with($route->getPattern(), '/api/')) { continue; }
+            if (!str_starts_with($route->getPattern(), '/api/') && !str_starts_with($route->getPattern(), '/integration/v1/')) { continue; }
             $path = preg_replace('/\{(\w+):[^}]+\}/', '{$1}', $route->getPattern());
             foreach ($route->getMethods() as $method) {
                 self::assertArrayHasKey(strtolower($method), $this->spec['paths'][$path] ?? [], "$method $path");

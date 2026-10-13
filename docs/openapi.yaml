@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.4.0
+  version: 1.5.0
 security:
   - calculatorSession: []
 servers:
@@ -1569,7 +1569,7 @@ paths:
     get:
       summary: Lokale und alte Buchungen lesen; Antworten nur mit answers.view
       parameters:
-      - &id001
+      - &id001_1
         name: id
         in: path
         required: true
@@ -1597,7 +1597,7 @@ paths:
     post:
       summary: Lokale Orga-Buchung atomar/idempotent erfassen; keine externe Bestätigung
       parameters:
-      - *id001
+      - *id001_1
       responses:
         '201':
           description: OK
@@ -1625,8 +1625,8 @@ paths:
     get:
       summary: Buchung, Personen und berechtigte Antwortrevisionen lesen
       parameters:
-      - *id001
-      - &id002
+      - *id001_1
+      - &id002_1
         name: bookingId
         in: path
         required: true
@@ -1653,8 +1653,8 @@ paths:
     put:
       summary: Antworten begründet korrigieren oder aktive Version ausdrücklich ergänzen; nichtfinanziell auch nach Abschluss
       parameters:
-      - *id001
-      - *id002
+      - *id001_1
+      - *id002_1
       responses:
         '200':
           description: OK
@@ -1682,8 +1682,8 @@ paths:
     post:
       summary: Personen oder gesamte Buchung stornieren; Buchungsmengen ungeprüft
       parameters:
-      - *id001
-      - *id002
+      - *id001_1
+      - *id002_1
       responses:
         '200':
           description: OK
@@ -1711,8 +1711,8 @@ paths:
     put:
       summary: Zimmerzuteilung unabhängig vom Wunsch speichern
       parameters:
-      - *id001
-      - *id002
+      - *id001_1
+      - *id002_1
       responses:
         '200':
           description: OK
@@ -1740,8 +1740,8 @@ paths:
     get:
       summary: Auswertung / Drilldown / Export mit identischen Filtern; Export zusätzlich answers.export
       parameters:
-      - *id001
-      - &id003
+      - *id001_1
+      - &id003_1
         name: status
         in: query
         schema:
@@ -1752,17 +1752,17 @@ paths:
           - pending
           - cancelled
           default: confirmed
-      - &id004
+      - &id004_1
         name: versionId
         in: query
         schema:
           type: integer
-      - &id005
+      - &id005_1
         name: fieldId
         in: query
         schema:
           type: string
-      - &id006
+      - &id006_1
         name: state
         in: query
         schema:
@@ -1773,20 +1773,20 @@ paths:
           - unchecked
           - not_applicable
           - not_asked
-      - &id007
+      - &id007_1
         name: search
         in: query
         schema:
           type: string
           maxLength: 200
-      - &id008
+      - &id008_1
         name: page
         in: query
         schema:
           type: integer
           minimum: 1
           default: 1
-      - &id009
+      - &id009_1
         name: pageSize
         in: query
         schema:
@@ -1794,7 +1794,7 @@ paths:
           minimum: 1
           maximum: 200
           default: 50
-      - &id010
+      - &id010_1
         name: format
         in: query
         schema:
@@ -1832,15 +1832,15 @@ paths:
     get:
       summary: Auswertung / Drilldown / Export mit identischen Filtern; Export zusätzlich answers.export
       parameters:
-      - *id001
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      - *id009
-      - *id010
+      - *id001_1
+      - *id003_1
+      - *id004_1
+      - *id005_1
+      - *id006_1
+      - *id007_1
+      - *id008_1
+      - *id009_1
+      - *id010_1
       - name: tripIds
         in: query
         schema:
@@ -1894,7 +1894,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: &id001
+        schema: &id001_2
           type: integer
   /api/trips/{id}/planning-transfer/preview:
     post:
@@ -1921,7 +1921,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
       requestBody:
         required: true
         content:
@@ -1953,7 +1953,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
       requestBody:
         required: true
         content:
@@ -1985,7 +1985,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
   /api/trips/{id}/term/draft:
     put:
       summary: Save local term draft without external write
@@ -2011,7 +2011,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
       requestBody:
         required: true
         content:
@@ -2043,7 +2043,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
   /api/trips/{id}/term/request:
     post:
       summary: Accept one durable create operation; blocked adapter remains blocked
@@ -2069,7 +2069,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
       requestBody:
         required: true
         content:
@@ -2102,7 +2102,7 @@ paths:
       - name: id
         in: path
         required: true
-        schema: *id001
+        schema: *id001_2
       requestBody:
         required: true
         content:
@@ -2137,8 +2137,609 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TripWizardRequest'
+  /api/trips/{id}/participation-sync:
+    get:
+      summary: Teilnahmeaufträge, Konflikte und Klärfälle lesen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+  /api/trips/{id}/participation-sync/reconcile:
+    post:
+      summary: Externen Stand lesen; keine Provider-Schreibaktion
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+  /api/trips/{id}/participation-sync/acknowledge:
+    post:
+      summary: Ausgewählte externe Terminfelder als geprüfte Basis bestätigen; Planung
+        unverändert
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConflictAcknowledgment'
+  /api/trips/{id}/participation-sync/jobs/{jobId}/retry:
+    post:
+      summary: Nur nachgewiesen abgelehnte Person erneut prüfen/übertragen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: Accepted; pending is not external confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+  /api/trips/{id}/bookings/{bookingId}/participations:
+    post:
+      summary: Dauerhafte Personenaufträge, keine simulierte Bestätigung
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: bookingId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: Accepted; pending is not external confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipationRequest'
+  /api/trips/{id}/member-settings:
+    get:
+      summary: Mitgliederfreigabe und explizite Fristen lesen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberSettingsResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+    put:
+      summary: Freigabe/Fristen konfigurieren; echte Adapter müssen bereit sein
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberSettingsResult'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberSettingsRequest'
+  /integration/v1/events/{eventId}/trip:
+    get:
+      summary: Reise ausschließlich anhand bestätigter easyVerein-Termin-ID finden
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberContext'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/context:
+    get:
+      summary: Formularstand, geprüfte Familienpersonen und aktuelle Preise
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberContext'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/preview:
+    post:
+      summary: Servervalidierte Vorschau ohne Speichern oder externe Aufträge
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreview'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberBookingRequest'
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/bookings:
+    get:
+      summary: Nur eigene Buchungen, maximal 25; nextCursor für nächste Seite
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: after
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBookingList'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      security:
+      - memberDelegation: []
+    post:
+      summary: Verbindlich lokal speichern und atomar Personenaufträge anlegen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: Accepted; pending is not external confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBooking'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberBookingRequest'
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/bookings/{bookingId}:
+    get:
+      summary: Eigene Buchung und Ergebnis je Person
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: bookingId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBooking'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/bookings/{bookingId}/answers:
+    put:
+      summary: Eigene Antworten korrigieren/aktive Version ausdrücklich ergänzen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: bookingId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBooking'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCorrectionRequest'
+      security:
+      - memberDelegation: []
+  /integration/v1/trips/{id}/bookings/{bookingId}/cancel:
+    post:
+      summary: Teilstorno als dauerhaften externen Auftrag anfordern
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: bookingId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: Accepted; pending is not external confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBooking'
+        '401':
+          description: No valid session or signed member delegation
+        '403':
+          description: Capability/scope/person forbidden
+        '404':
+          description: Trip/booking not released or not owned
+        '409':
+          description: Revision/form/price/idempotency/closure conflict
+        '410':
+          description: Member retention access period expired
+        '413':
+          description: Request exceeds 256 KiB
+        '422':
+          description: Field errors with stable field/person keys
+        '429':
+          description: Integration rate limit
+        '503':
+          description: Unverified/disabled provider or integration configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCancellationRequest'
+      security:
+      - memberDelegation: []
 components:
   securitySchemes:
+    memberDelegation:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: FuF base64url(JSON claims).HMAC-SHA256; signed method/target/bodyHash, issuer/audience, memberId, iat/exp <=120s and single-use nonce. See docs/integration/member-api.md. Independent of calculatorSession.
     calculatorSession:
       type: apiKey
       in: cookie
@@ -4120,7 +4721,7 @@ components:
       required:
       - roomMapping
       properties:
-        roomMapping: &id001
+        roomMapping: &id001_3
           type: object
           additionalProperties:
             type: string
@@ -4136,8 +4737,8 @@ components:
       - operationKey
       - reason
       properties:
-        roomMapping: *id001
-        sourceHash: &id002
+        roomMapping: *id001_3
+        sourceHash: &id002_2
           type: string
         operationKey:
           type: string
@@ -4164,14 +4765,14 @@ components:
       - canApply
       - note
       properties:
-        sourceHash: *id002
-        sourceStand: *id002
+        sourceHash: *id002_2
+        sourceStand: *id002_2
         roomMapping:
           anyOf:
-          - *id001
+          - *id001_3
           - type: array
             maxItems: 0
-            items: *id002
+            items: *id002_2
         before:
           $ref: '#/components/schemas/CreateTripRequest'
         after:
@@ -4190,12 +4791,12 @@ components:
             - value
             - counts
             properties:
-              fieldId: *id002
+              fieldId: *id002_2
               target:
                 type: string
                 enum:
                 - vegetarianMeals
-              value: *id002
+              value: *id002_2
               counts:
                 type: object
         quantityTotals:
@@ -4203,18 +4804,18 @@ components:
           required:
           - vegetarianMeals
           properties:
-            vegetarianMeals: *id002
+            vegetarianMeals: *id002_2
         assignedRooms:
           type: array
-          items: *id002
-        excludedPersons: &id003
+          items: *id002_2
+        excludedPersons: &id003_2
           type: integer
         issues:
           type: array
-          items: *id002
-        canApply: &id004
+          items: *id002_2
+        canApply: &id004_2
           type: boolean
-        note: *id002
+        note: *id002_2
     CalculationSnapshot:
       type: object
       required:
@@ -4224,11 +4825,11 @@ components:
       - createdAt
       - data
       properties:
-        id: *id003
-        sourceHash: *id002
-        actorId: *id003
-        createdAt: *id002
-        requestHash: *id002
+        id: *id003_2
+        sourceHash: *id002_2
+        actorId: *id003_2
+        createdAt: *id002_2
+        requestHash: *id002_2
         data:
           $ref: '#/components/schemas/PlanningPreview'
     PlanningStatus:
@@ -4240,7 +4841,7 @@ components:
         snapshot:
           $ref: '#/components/schemas/CalculationSnapshot'
           nullable: true
-        stale: *id004
+        stale: *id004_2
     TermPriceGroup:
       type: object
       required:
@@ -4297,7 +4898,7 @@ components:
         description:
           type: string
           maxLength: 10000
-        calendarReference: *id002
+        calendarReference: *id002_2
         visibility:
           type: string
           enum:
@@ -4323,17 +4924,17 @@ components:
           enum:
           - create
           - link
-        externalId: *id002
+        externalId: *id002_2
         teamUserIds:
           type: array
-          items: *id003
+          items: *id003_2
     TermDraftState:
       type: object
       required:
       - revision
       - data
       properties:
-        revision: *id003
+        revision: *id003_2
         data:
           $ref: '#/components/schemas/TermDraft'
     TermDraftRequest:
@@ -4354,8 +4955,8 @@ components:
       - confirmedAt
       - data
       properties:
-        externalId: *id002
-        confirmedAt: *id002
+        externalId: *id002_2
+        confirmedAt: *id002_2
         data:
           type: object
     TermJob:
@@ -4372,10 +4973,10 @@ components:
       - leaseUntil
       - createdAt
       properties:
-        id: *id003
-        tripId: *id003
-        operationKey: *id002
-        actorId: *id003
+        id: *id003_2
+        tripId: *id003_2
+        operationKey: *id002_2
+        actorId: *id003_2
         status:
           type: string
           enum:
@@ -4385,7 +4986,7 @@ components:
           - reconciling
           - unknown
           - succeeded
-        attempts: *id003
+        attempts: *id003_2
         externalId:
           type: string
           nullable: true
@@ -4395,7 +4996,7 @@ components:
         leaseUntil:
           type: integer
           nullable: true
-        createdAt: *id002
+        createdAt: *id002_2
     TermState:
       type: object
       required:
@@ -4419,12 +5020,12 @@ components:
         blockedReason:
           type: string
           nullable: true
-        referenceConfirmed: *id004
+        referenceConfirmed: *id004_2
         registrationEnabled:
           type: boolean
           enum:
           - false
-        registrationReason: *id002
+        registrationReason: *id002_2
     TermReview:
       type: object
       required:
@@ -4435,17 +5036,17 @@ components:
       - blockedReason
       - externalAction
       properties:
-        revision: *id003
-        reviewHash: *id002
+        revision: *id003_2
+        reviewHash: *id002_2
         data:
           $ref: '#/components/schemas/TermDraft'
         issues:
           type: array
-          items: *id002
+          items: *id002_2
         blockedReason:
           type: string
           nullable: true
-        externalAction: *id002
+        externalAction: *id002_2
     TermRequest:
       type: object
       required:
@@ -4456,7 +5057,7 @@ components:
         operationKey:
           type: string
           pattern: ^[a-zA-Z0-9_-]{8,100}$
-        reviewHash: *id002
+        reviewHash: *id002_2
         confirmed:
           type: boolean
           enum:
@@ -4481,7 +5082,7 @@ components:
       - planning
       - draft
       properties:
-        operationKey: *id002
+        operationKey: *id002_2
         planning:
           $ref: '#/components/schemas/CreateTripRequest'
         draft:
@@ -4491,4 +5092,549 @@ components:
       required:
       - tripId
       properties:
-        tripId: *id003
+        tripId: *id003_2
+    ExternalPriceGroup:
+      type: object
+      required:
+      - id
+      - price
+      properties:
+        id:
+          type: string
+        price:
+          type: string
+    ExternalFieldConflict:
+      type: object
+      required:
+      - field
+      - before
+      - external
+      properties:
+        field:
+          type: string
+        before:
+          nullable: true
+        external:
+          nullable: true
+    ParticipationJobSummary:
+      type: object
+      required:
+      - id
+      - bookingId
+      - personId
+      - kind
+      - status
+      - attempts
+      - errorCode
+      - createdAt
+      properties:
+        id:
+          type: integer
+        bookingId:
+          type: integer
+        personId:
+          type: integer
+        kind:
+          type: string
+          enum:
+          - register
+          - cancel
+        status:
+          type: string
+          enum:
+          - pending
+          - running
+          - unknown
+          - reconciling
+          - failed
+          - blocked
+          - succeeded
+        attempts:
+          type: integer
+        errorCode:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+    ExternalClarificationSummary:
+      type: object
+      required:
+      - externalId
+      - status
+      - observedAt
+      properties:
+        externalId:
+          type: string
+        status:
+          type: string
+        observedAt:
+          type: string
+    ParticipationSyncResult:
+      type: object
+      required:
+      - blockedReason
+      - priceGroups
+      - jobs
+      - observation
+      - clarifications
+      properties:
+        blockedReason:
+          type: string
+          nullable: true
+        priceGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalPriceGroup'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipationJobSummary'
+        observation:
+          type: object
+          required:
+          - revision
+          - observedAt
+          - conflicts
+          properties:
+            revision:
+              type: integer
+            observedAt:
+              type: string
+            conflicts:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExternalFieldConflict'
+          nullable: true
+        clarifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalClarificationSummary'
+    ParticipationChoice:
+      type: object
+      required:
+      - id
+      - memberReference
+      - priceGroupId
+      - expectedPrice
+      properties:
+        id:
+          type: integer
+        memberReference:
+          type: string
+        priceGroupId:
+          type: string
+          nullable: true
+        expectedPrice:
+          type: string
+          nullable: true
+    ParticipationRequest:
+      type: object
+      required:
+      - operationKey
+      - revision
+      - kind
+      - persons
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        kind:
+          type: string
+          enum:
+          - register
+          - cancel
+        persons:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipationChoice'
+    ConflictAcknowledgment:
+      type: object
+      required:
+      - revision
+      - confirmed
+      - reason
+      - fields
+      properties:
+        revision:
+          type: integer
+        confirmed:
+          type: boolean
+          enum:
+          - true
+        reason:
+          type: string
+        fields:
+          type: array
+          items:
+            type: string
+            enum:
+            - revision
+            - canceled
+            - bookingUntil
+            - capacityRemaining
+            - groups
+    MemberSettingsRequest:
+      type: object
+      required:
+      - enabled
+      - bookingUntil
+      - correctionUntil
+      - cancelUntil
+      - retentionUntil
+      properties:
+        enabled: &id001
+          type: boolean
+        bookingUntil:
+          type: integer
+        correctionUntil:
+          type: integer
+        cancelUntil:
+          type: integer
+        retentionUntil:
+          type: integer
+    MemberSettingsResult:
+      type: object
+      required:
+      - settings
+      - blockedReason
+      properties:
+        settings:
+          type: object
+          required:
+          - trip_id
+          - enabled
+          - booking_until
+          - correction_until
+          - cancel_until
+          - retention_until
+          properties:
+            trip_id:
+              type: integer
+            enabled:
+              type: integer
+            booking_until:
+              type: integer
+            correction_until:
+              type: integer
+            cancel_until:
+              type: integer
+            retention_until:
+              type: integer
+          nullable: true
+        blockedReason:
+          type: string
+          nullable: true
+    MemberPerson:
+      type: object
+      required:
+      - memberReference
+      - name
+      - birthDate
+      - editable
+      properties:
+        memberReference:
+          type: string
+        name:
+          type: string
+        birthDate:
+          type: string
+        editable: *id001
+    MemberContext:
+      type: object
+      required:
+      - contractVersion
+      - tripId
+      - eventId
+      - versionId
+      - form
+      - people
+      - priceGroups
+      - priceRevision
+      - capacityRemaining
+      - canceled
+      - bookingUntil
+      - correctionUntil
+      - cancelUntil
+      properties:
+        contractVersion:
+          type: string
+        tripId:
+          type: integer
+        eventId:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        form:
+          type: object
+          required:
+          - id
+          - fields
+          properties:
+            id:
+              type: integer
+            fields:
+              type: array
+              items:
+                $ref: '#/components/schemas/FormField'
+          nullable: true
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberPerson'
+        priceGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalPriceGroup'
+        priceRevision:
+          type: string
+        capacityRemaining:
+          type: integer
+        canceled: *id001
+        bookingUntil:
+          type: integer
+        correctionUntil:
+          type: integer
+        cancelUntil:
+          type: integer
+    MemberPersonChoice:
+      type: object
+      required:
+      - memberReference
+      - priceGroupId
+      - expectedPrice
+      properties:
+        memberReference:
+          type: string
+        priceGroupId:
+          type: string
+          nullable: true
+        expectedPrice:
+          type: string
+          nullable: true
+    MemberBookingRequest:
+      type: object
+      required:
+      - operationKey
+      - versionId
+      - priceRevision
+      - confirmed
+      - persons
+      - answers
+      properties:
+        operationKey:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        priceRevision:
+          type: string
+        confirmed: *id001
+        persons:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberPersonChoice'
+        answers:
+          $ref: '#/components/schemas/BookingAnswers'
+    MemberPreview:
+      type: object
+      required:
+      - valid
+      - versionId
+      - priceRevision
+      - persons
+      - answers
+      properties:
+        valid: *id001
+        versionId:
+          type: integer
+          nullable: true
+        priceRevision:
+          type: string
+        persons:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - name
+            - birthDate
+            - memberReference
+            - priceGroupId
+            - expectedPrice
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              birthDate:
+                type: string
+              memberReference:
+                type: string
+              priceGroupId:
+                type: string
+                nullable: true
+              expectedPrice:
+                type: string
+                nullable: true
+        answers:
+          $ref: '#/components/schemas/FormAnswersResult'
+    MemberCorrectionRequest:
+      type: object
+      required:
+      - operationKey
+      - revision
+      - confirmed
+      - reason
+      - answers
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        confirmed: *id001
+        reason:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        answers:
+          $ref: '#/components/schemas/BookingAnswers'
+    MemberCancellationRequest:
+      type: object
+      required:
+      - operationKey
+      - revision
+      - confirmed
+      - reason
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        confirmed: *id001
+        reason:
+          type: string
+        personIds:
+          type: array
+          items:
+            type: integer
+    MemberBookingList:
+      type: object
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberBooking'
+        nextCursor:
+          type: string
+          nullable: true
+    MemberBooking:
+      type: object
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        reference:
+          type: string
+        source:
+          type: string
+        contactIdentity:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum:
+          - pending
+          - confirmed
+          - partially_confirmed
+          - cancelled
+        syncStatus:
+          type: string
+          description: New local entries remain pending until a real adapter confirms
+            participation. Legacy entries are local_only.
+        roomCategory:
+          type: string
+          nullable: true
+        roomAssignment:
+          type: string
+        comment:
+          type: string
+        receivedAt:
+          type: string
+          nullable: true
+        revision:
+          type: integer
+        managed:
+          type: boolean
+        persons:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingPerson'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberAnswer'
+        supplementPending:
+          type: boolean
+      required:
+      - id
+      - tripId
+      - reference
+      - source
+      - contactIdentity
+      - versionId
+      - status
+      - syncStatus
+      - roomCategory
+      - roomAssignment
+      - comment
+      - receivedAt
+      - revision
+      - managed
+      - persons
+      - supplementPending
+    MemberAnswer:
+      type: object
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: integer
+          nullable: true
+        versionId:
+          type: integer
+        fieldId:
+          type: string
+        state:
+          type: string
+          enum:
+          - answered
+          - missing
+          - not_applicable
+          - unchecked
+        value:
+          nullable: true
+          description: Typed JSON value; decimal numbers are exact strings, false and
+            zero remain distinct.
+        createdAt:
+          type: string
+          format: date-time
+        bookingRevision:
+          type: integer
+      required:
+      - id
+      - participantId
+      - versionId
+      - fieldId
+      - state
+      - value
+      - createdAt
+      - bookingRevision

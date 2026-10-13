@@ -5,7 +5,7 @@ namespace App\Application;
 use App\Application\Port\AccessRepositoryInterface;
 use App\Application\Port\ActorInterface;
 
-final readonly class AccessPolicy
+final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
 {
     public const TRIP_CAPABILITIES = ['trip.view', 'trip.manage', 'registration.view', 'registration.manage', 'answers.view', 'answers.correct', 'answers.export', 'analytics.view', 'calculation.manage', 'settlement.view', 'settlement.close', 'settlement.reopen', 'expense.view', 'expense.manage', 'term.manage', 'access.manage'];
     public const EVENT_CAPABILITIES = ['event.view', 'event.manage', 'form.manage', 'form.publish', 'access.manage'];

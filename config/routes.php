@@ -79,6 +79,25 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);
     $app->post('/api/trips/{id:[0-9]+}/term/link', [$workflow, 'link']);
 
+    $member = \App\Infrastructure\Http\Controller\MemberController::class;
+    $app->get('/integration/v1/events/{eventId:[0-9]+}/trip', [$member, 'resolve']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/context', [$member, 'context']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/bookings', [$member, 'list']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}', [$member, 'get']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/preview', [$member, 'preview']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/bookings', [$member, 'create']);
+    $app->put('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/answers', [$member, 'correct']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/cancel', [$member, 'cancel']);
+    $app->get('/api/trips/{id:[0-9]+}/member-settings', [$member, 'settings']);
+    $app->put('/api/trips/{id:[0-9]+}/member-settings', [$member, 'configure']);
+
+    $participation = \App\Infrastructure\Http\Controller\ParticipationController::class;
+    $app->get('/api/trips/{id:[0-9]+}/participation-sync', [$participation, 'read']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/reconcile', [$participation, 'reconcile']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/acknowledge', [$participation, 'acknowledge']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/jobs/{jobId:[0-9]+}/retry', [$participation, 'retry']);
+    $app->post('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/participations', [$participation, 'request']);
+
     $booking = \App\Infrastructure\Http\Controller\BookingController::class;
     $app->get('/api/trips/{id:[0-9]+}/bookings', [$booking, 'list']);
     $app->post('/api/trips/{id:[0-9]+}/bookings', [$booking, 'create']);

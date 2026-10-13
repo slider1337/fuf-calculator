@@ -32,10 +32,10 @@ function managementError(error) {
   setStatusNote('management-status', `Fehler: ${error.message}`, 'error'); byId('management-status').focus();
 }
 async function performManagement(operation) { try { setStatusNote('management-status','',null); await operation(); } catch (error) { managementError(error); } }
-function showManagementModal(title, fields, submit) {
+function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
   management.modal ||= new bootstrap.Modal(byId('management-modal'));
   byId('management-title').textContent = title; byId('management-fields').innerHTML = fields;
-  byId('management-modal-error').textContent = ''; management.submit = submit;
+  byId('management-modal-error').textContent = ''; byId('management-submit').textContent = submitLabel; management.submit = submit;
   management.modal.show();
   byId('management-modal').addEventListener('shown.bs.modal', () => byId('management-fields').querySelector('input,select,textarea')?.focus(), {once:true});
 }
@@ -45,7 +45,7 @@ function textField(id, label, value = '', type = 'text') {
 function reasonField() { return '<label class="f" for="action-reason">Grund<div class="in"><textarea id="action-reason" required maxlength="500" rows="2"></textarea></div></label>'; }
 byId('management-form').addEventListener('submit', async event => {
   event.preventDefault(); const button = event.currentTarget.querySelector('[type=submit]'); button.disabled = true;
-  try { await management.submit(); management.modal.hide(); } catch (error) { byId('management-modal-error').textContent = `Fehler: ${error.message}`; }
+  try { await management.submit(); management.modal.hide(); } catch (error) { byId('management-modal-error').textContent = `Fehler: ${error.message}`; byId('management-modal-error').focus(); }
   finally { button.disabled = false; }
 });
 async function showEvents() {
@@ -166,6 +166,9 @@ function resetTripPermissions() {
 }
 function renderTripManagement(trip) {
   resetTripPermissions(); const caps = trip.capabilities;
+  byId('trip-event-assign').disabled = true;
+  byId('trip-event-assign').classList.toggle('d-none', !caps.includes('trip.manage') || !!trip.closedAt);
+  byId('trip-event-assignment-note').textContent = '';
   performManagement(() => loadTripFormBinding(trip.id));
   byId('trip-event-select').disabled = true;
   for (const [tab,cap] of [['planung','calculation.manage'],['anmeldungen','registration.view'],['auswertung','analytics.view'],['abrechnung','settlement.view']]) { byId(`tab-${tab}`).classList.toggle('d-none', !caps.includes(cap)); }
@@ -188,6 +191,21 @@ function renderTripManagement(trip) {
   byId('registrations-section').classList.toggle('d-none', !caps.includes('registration.view'));
   byId('actual-expense-form')?.querySelectorAll('input,button').forEach(e => e.disabled = !!trip.closedAt || !caps.includes('expense.manage'));
 }
+byId('trip-event-assign').addEventListener('click', () => performManagement(async () => {
+  const trip = state.currentTrip;
+  if (!trip || !hasTripCapability('trip.manage') || trip.closedAt) { throw new Error('Die Veranstaltungszuordnung ist nicht freigegeben.'); }
+  if (dirtyPlanning()) { throw new Error('Bitte zuerst die Planungsänderungen speichern, bevor du die Veranstaltung änderst.'); }
+  const events = (await api('/api/events')).filter(e => e.capabilities.includes('event.manage'));
+  if (trip.eventId && !events.some(e => e.id === trip.eventId)) { throw new Error('Zum Ändern fehlt die Verwaltungsberechtigung für die bisherige Veranstaltung.'); }
+  if (!events.length) { throw new Error('Keine verwaltbare Veranstaltung vorhanden. Lege unter Veranstaltungen zuerst eine an.'); }
+  showManagementModal('Veranstaltung zuordnen / ändern', '<p>Die Reise und ihre Kalkulation bleiben erhalten. Das Reiseteam wird nicht durch das Standardteam ersetzt.</p><label class="f">Veranstaltung<div class="in"><select id="trip-assignment-event"><option value="">Ohne Veranstaltung</option>' + events.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('') + '</select></div></label>' + reasonField(), async () => {
+    const eventId = byId('trip-assignment-event').value === '' ? null : Number(byId('trip-assignment-event').value);
+    if (eventId === trip.eventId) { throw new Error('Bitte eine andere Zuordnung wählen.'); }
+    await api(`/api/trips/${trip.id}/event`, {method:'PUT',body:JSON.stringify({eventId,reason:byId('action-reason').value})});
+    await openTrip(trip.id);
+  }, 'Zuordnung speichern');
+  byId('trip-assignment-event').value = trip.eventId || '';
+}));
 for (const [id,action,title] of [['trip-close','close','Abrechnung abschließen'],['trip-reopen','reopen','Abrechnung begründet wiederöffnen']]) {
   byId(id).addEventListener('click', () => showManagementModal(title, '<p>Der Schritt wird mit Akteur, Zeitpunkt und Grund protokolliert.</p>' + reasonField(), async () => {
     await api(`/api/trips/${state.currentTripId}/${action}`, {method:'POST',body:JSON.stringify({reason:byId('action-reason').value})}); await openTrip(state.currentTripId);

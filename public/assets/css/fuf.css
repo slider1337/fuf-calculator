@@ -4368,3 +4368,23 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
   .form-mobile-actions button { min-height:48px; }
   .form-toolbar { position:static; }
 }
+
+/* A form wraps the management modal sections: keep it within the viewport,
+   with only the body scrolling and both actions permanently reachable. */
+#management-form { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; overflow:hidden; }
+#management-modal .modal-header,
+#management-modal .modal-footer,
+#management-modal-error { flex-shrink:0; }
+#management-fields { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+#management-modal-error:empty { display:none; }
+#management-modal-error { margin:8px 0; overflow-wrap:anywhere; max-height:20vh; overflow-y:auto; }
+#management-modal .modal-footer .btn { white-space:normal; min-height:48px; }
+/* Keep comparisons as real tables inside their own scroll area. The generic
+   mobile card transformation is meant for trip lists, not this comparison. */
+.form-diff-scroll .tb { display:table; table-layout:fixed; min-width:760px; width:100%; }
+.form-diff-scroll .tb thead { display:table-header-group; }
+.form-diff-scroll .tb tbody { display:table-row-group; }
+.form-diff-scroll .tb tr { display:table-row; }
+.form-diff-scroll .tb th,
+.form-diff-scroll .tb td { display:table-cell; white-space:normal; overflow-wrap:anywhere; width:auto; text-align:left; }
+.form-diff-scroll .tb td::before { display:none; }

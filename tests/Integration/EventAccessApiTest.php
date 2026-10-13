@@ -191,4 +191,19 @@ final class EventAccessApiTest extends ApiTestCase
         }
     }
 
+    public function testEventChangePreservesTripTeamAndRequiresBothEventRights(): void
+    {
+        $from=$this->event();$to=$this->event();$trip=$this->trip($from);$user=$this->person();
+        $this->grant($trip,$user,['trip.view','trip.manage']);
+        $team=$this->json('GET',"/api/trips/$trip/team");
+        $before=$this->json('GET',"/api/trips/$trip");
+        $this->json('PUT',"/api/trips/$trip/event",['eventId'=>$to,'reason'=>'Bewusster Wechsel']);
+        self::assertSame($team,$this->json('GET',"/api/trips/$trip/team"));
+        $after=$this->json('GET',"/api/trips/$trip");self::assertSame($to,$after['eventId']);self::assertSame($before['bookings'],$after['bookings']);
+        $this->login($user);$this->json('PUT',"/api/trips/$trip/event",['eventId'=>$from,'reason'=>'Ohne Veranstaltungsrecht'],403);
+        $this->login(1,'admin');self::assertSame($to,$this->json('GET',"/api/trips/$trip")['eventId']);
+        $this->json('POST',"/api/trips/$trip/close",['reason'=>'Abgeschlossen']);
+        $this->json('PUT',"/api/trips/$trip/event",['eventId'=>$from,'reason'=>'Nach Abschluss'],409);
+    }
+
 }

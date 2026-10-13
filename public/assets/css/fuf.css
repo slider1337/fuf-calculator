@@ -1945,8 +1945,8 @@ body.is-trip-view .app-footer {
 }
 
 .in:focus-within {
-    border-color: var(--fuf-green-600);
-    box-shadow: 0 0 0 3px rgba(45, 90, 61, .12);
+    border-color: var(--fuf-brown-500);
+    box-shadow: 0 0 0 3px rgba(122, 102, 81, .12);
 }
 
 .in input,
@@ -1992,11 +1992,8 @@ body.is-trip-view .app-footer {
     align-items: center;
 }
 
-/* Geaenderter, noch nicht gespeicherter Wert */
-.in.is-dirty {
-    border-color: var(--fuf-orange-600);
-    box-shadow: 0 0 0 3px rgba(231, 111, 30, .15);
-}
+/* Ungespeicherte Änderungen werden im Statushinweis genannt.
+ * Eingaberahmen zeigen Fokus bzw. echte Validierungsfehler. */
 
 /* ========================================================================
  * 8. Kennzahlen

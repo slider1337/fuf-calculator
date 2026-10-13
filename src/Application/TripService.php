@@ -32,7 +32,10 @@ final readonly class TripService
     {
         $this->policy->actorId();
         return $this->policy->transaction(function () use ($payload) {
-            $eventId = isset($payload['eventId']) ? (int) $payload['eventId'] : null;
+            $eventId = $payload['eventId'] ?? null;
+            if ($eventId !== null && (!is_int($eventId) || $eventId < 1)) {
+                throw new ValidationException(['eventId' => 'positive_integer_or_null_required']);
+            }
             if ($eventId !== null) {
                 $this->policy->require('event', $eventId, 'event.manage');
                 $event = $this->events->get($eventId) ?? throw new NotFoundException('Event not found');

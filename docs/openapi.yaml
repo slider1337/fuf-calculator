@@ -1965,7 +1965,7 @@ components:
           type: integer
           nullable: true
           minimum: 1
-          description: Veranstaltung für neue Durchführungen; ohne Angabe bleibt der bestehende API-Anlageweg kompatibel.
+          description: Optionale Veranstaltung für neue Durchführungen. Ohne Angabe oder mit null wird eine unabhängige Reise angelegt; andernfalls ist eine positive ganzzahlige ID mit event.manage erforderlich.
         name:
           type: string
         startDate:

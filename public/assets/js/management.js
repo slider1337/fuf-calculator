@@ -113,7 +113,7 @@ byId('event-settings-form').addEventListener('submit', event => { event.preventD
   const updated = await api(`/api/events/${e.id}`, {method:'PUT',body:JSON.stringify({name:byId('event-setting-name').value,description:byId('event-setting-description').value,archived:byId('event-setting-archived').checked,revision:e.revision})});
   management.event = updated; await showEvent(e.id);
 }); });
-byId('event-new-trip').addEventListener('click', () => performManagement(async () => { management.newEventId = management.event.id; await startNewTrip(); }));
+byId('event-new-trip').addEventListener('click', () => performManagement(async () => { management.newEventId = management.event.id; await openTermWizard(null, management.event); }));
 async function loadEventSelector(selected = null) {
   const events = await api('/api/events');
   const creating = state.currentTripId === null;
@@ -166,6 +166,7 @@ function resetTripPermissions() {
 }
 function renderTripManagement(trip) {
   resetTripPermissions(); const caps = trip.capabilities;
+  if (typeof loadWorkflowStatus === "function") { performManagement(() => loadWorkflowStatus(trip)); }
   byId('trip-event-assign').disabled = true;
   byId('trip-event-assign').classList.toggle('d-none', !caps.includes('trip.manage') || !!trip.closedAt);
   byId('trip-event-assignment-note').textContent = '';
@@ -234,8 +235,8 @@ document.addEventListener('click', event => {
     byId('management-fields').querySelectorAll('[data-capability]').forEach(e => e.checked = caps.includes(e.dataset.capability));
   }
 });
-for (const name of ['uebersicht','anmeldungen','auswertung','team']) {
-  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
+for (const name of ['uebersicht','planung','anmeldungen','auswertung','team']) {
+  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (['planung','team'].includes(name) && typeof loadWorkflowStatus === 'function' && state.currentTrip) { performManagement(() => loadWorkflowStatus(state.currentTrip)); } if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
 }
 window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'function' && formDirty()) || (!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) || (!byId('event-detail-section').classList.contains('d-none') && eventSettingsDirty())) { event.preventDefault(); event.returnValue = ''; } });
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.3.0
+  version: 1.4.0
 security:
   - calculatorSession: []
 servers:
@@ -1869,6 +1869,274 @@ paths:
           description: Revision, form version, idempotency conflict or closed trip
         '422':
           description: Validation error
+  /api/trips/{id}/planning-transfer:
+    get:
+      summary: Latest transfer and computed stale state
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanningStatus'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id001
+          type: integer
+  /api/trips/{id}/planning-transfer/preview:
+    post:
+      summary: Read-only confirmed-person preview using existing price calculator
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanningPreview'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanningTransferRequest'
+  /api/trips/{id}/planning-transfer/apply:
+    post:
+      summary: Explicit atomic transfer with source conflict detection
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationSnapshot'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanningApplyRequest'
+  /api/trips/{id}/term:
+    get:
+      summary: Local draft, durable operation, verified reference and registration gate
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+  /api/trips/{id}/term/draft:
+    put:
+      summary: Save local term draft without external write
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermDraftRequest'
+  /api/trips/{id}/term/review:
+    post:
+      summary: Review saved draft and current trip/form/team; no external write
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermReview'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+  /api/trips/{id}/term/request:
+    post:
+      summary: Accept one durable create operation; blocked adapter remains blocked
+      responses:
+        '202':
+          description: Accepted local operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermRequest'
+  /api/trips/{id}/term/link:
+    post:
+      summary: Verify stable external ID before unique local link; production adapter
+        currently blocked
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermLinkRequest'
+  /api/trip-wizard:
+    post:
+      summary: Atomically create local trip, selected default team, form binding and
+        draft
+      responses:
+        '201':
+          description: Created local trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripWizardResult'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripWizardRequest'
 components:
   securitySchemes:
     calculatorSession:
@@ -3846,3 +4114,381 @@ components:
       - page
       - pageSize
       - totalRows
+
+    PlanningTransferRequest:
+      type: object
+      required:
+      - roomMapping
+      properties:
+        roomMapping: &id001
+          type: object
+          additionalProperties:
+            type: string
+            enum:
+            - ADULT_DOUBLE
+            - ADULT_MULTI
+          description: Explicit assigned room label to adult calculation category; never
+            the room wish.
+    PlanningApplyRequest:
+      type: object
+      required:
+      - sourceHash
+      - operationKey
+      - reason
+      properties:
+        roomMapping: *id001
+        sourceHash: &id002
+          type: string
+        operationKey:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,100}$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    PlanningPreview:
+      type: object
+      required:
+      - sourceHash
+      - sourceStand
+      - roomMapping
+      - before
+      - after
+      - budgetBefore
+      - budgetAfter
+      - quantities
+      - quantityTotals
+      - assignedRooms
+      - excludedPersons
+      - issues
+      - canApply
+      - note
+      properties:
+        sourceHash: *id002
+        sourceStand: *id002
+        roomMapping:
+          anyOf:
+          - *id001
+          - type: array
+            maxItems: 0
+            items: *id002
+        before:
+          $ref: '#/components/schemas/CreateTripRequest'
+        after:
+          $ref: '#/components/schemas/CreateTripRequest'
+        budgetBefore:
+          $ref: '#/components/schemas/CalculationResult'
+        budgetAfter:
+          $ref: '#/components/schemas/CalculationResult'
+        quantities:
+          type: array
+          items:
+            type: object
+            required:
+            - fieldId
+            - target
+            - value
+            - counts
+            properties:
+              fieldId: *id002
+              target:
+                type: string
+                enum:
+                - vegetarianMeals
+              value: *id002
+              counts:
+                type: object
+        quantityTotals:
+          type: object
+          required:
+          - vegetarianMeals
+          properties:
+            vegetarianMeals: *id002
+        assignedRooms:
+          type: array
+          items: *id002
+        excludedPersons: &id003
+          type: integer
+        issues:
+          type: array
+          items: *id002
+        canApply: &id004
+          type: boolean
+        note: *id002
+    CalculationSnapshot:
+      type: object
+      required:
+      - id
+      - sourceHash
+      - actorId
+      - createdAt
+      - data
+      properties:
+        id: *id003
+        sourceHash: *id002
+        actorId: *id003
+        createdAt: *id002
+        requestHash: *id002
+        data:
+          $ref: '#/components/schemas/PlanningPreview'
+    PlanningStatus:
+      type: object
+      required:
+      - snapshot
+      - stale
+      properties:
+        snapshot:
+          $ref: '#/components/schemas/CalculationSnapshot'
+          nullable: true
+        stale: *id004
+    TermPriceGroup:
+      type: object
+      required:
+      - label
+      - price
+      - category
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        price:
+          type: string
+          nullable: true
+        category:
+          type: string
+          enum:
+          - ADULT_DOUBLE
+          - ADULT_MULTI
+          - CHILD
+          - GUEST
+    TermDraft:
+      type: object
+      required:
+      - title
+      - startDate
+      - endDate
+      - location
+      - description
+      - calendarReference
+      - visibility
+      - capacity
+      - registrationDeadline
+      - priceGroups
+      - formVersionId
+      - mode
+      - externalId
+      - teamUserIds
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        location:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        calendarReference: *id002
+        visibility:
+          type: string
+          enum:
+          - members
+          - private
+        capacity:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        registrationDeadline:
+          type: string
+          format: date
+          nullable: true
+        priceGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/TermPriceGroup'
+        formVersionId:
+          type: integer
+          nullable: true
+        mode:
+          type: string
+          enum:
+          - create
+          - link
+        externalId: *id002
+        teamUserIds:
+          type: array
+          items: *id003
+    TermDraftState:
+      type: object
+      required:
+      - revision
+      - data
+      properties:
+        revision: *id003
+        data:
+          $ref: '#/components/schemas/TermDraft'
+    TermDraftRequest:
+      type: object
+      required:
+      - revision
+      - draft
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        draft:
+          $ref: '#/components/schemas/TermDraft'
+    TermLink:
+      type: object
+      required:
+      - externalId
+      - confirmedAt
+      - data
+      properties:
+        externalId: *id002
+        confirmedAt: *id002
+        data:
+          type: object
+    TermJob:
+      type: object
+      required:
+      - id
+      - tripId
+      - operationKey
+      - actorId
+      - status
+      - attempts
+      - externalId
+      - errorCode
+      - leaseUntil
+      - createdAt
+      properties:
+        id: *id003
+        tripId: *id003
+        operationKey: *id002
+        actorId: *id003
+        status:
+          type: string
+          enum:
+          - pending
+          - blocked
+          - running
+          - reconciling
+          - unknown
+          - succeeded
+        attempts: *id003
+        externalId:
+          type: string
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        leaseUntil:
+          type: integer
+          nullable: true
+        createdAt: *id002
+    TermState:
+      type: object
+      required:
+      - draft
+      - link
+      - job
+      - blockedReason
+      - referenceConfirmed
+      - registrationEnabled
+      - registrationReason
+      properties:
+        draft:
+          $ref: '#/components/schemas/TermDraftState'
+          nullable: true
+        link:
+          $ref: '#/components/schemas/TermLink'
+          nullable: true
+        job:
+          $ref: '#/components/schemas/TermJob'
+          nullable: true
+        blockedReason:
+          type: string
+          nullable: true
+        referenceConfirmed: *id004
+        registrationEnabled:
+          type: boolean
+          enum:
+          - false
+        registrationReason: *id002
+    TermReview:
+      type: object
+      required:
+      - revision
+      - reviewHash
+      - data
+      - issues
+      - blockedReason
+      - externalAction
+      properties:
+        revision: *id003
+        reviewHash: *id002
+        data:
+          $ref: '#/components/schemas/TermDraft'
+        issues:
+          type: array
+          items: *id002
+        blockedReason:
+          type: string
+          nullable: true
+        externalAction: *id002
+    TermRequest:
+      type: object
+      required:
+      - operationKey
+      - reviewHash
+      - confirmed
+      properties:
+        operationKey:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,100}$
+        reviewHash: *id002
+        confirmed:
+          type: boolean
+          enum:
+          - true
+    TermLinkRequest:
+      type: object
+      required:
+      - externalId
+      - reason
+      properties:
+        externalId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    TripWizardRequest:
+      type: object
+      required:
+      - operationKey
+      - planning
+      - draft
+      properties:
+        operationKey: *id002
+        planning:
+          $ref: '#/components/schemas/CreateTripRequest'
+        draft:
+          $ref: '#/components/schemas/TermDraft'
+    TripWizardResult:
+      type: object
+      required:
+      - tripId
+      properties:
+        tripId: *id003

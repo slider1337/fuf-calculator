@@ -68,6 +68,17 @@ return static function (App $app): void {
     $app->delete('/api/trips/{id}/actual-expenses/{expenseId}', [ActualExpenseController::class, 'delete']);
     $app->get('/api/trips/{id}/settlement', [ActualExpenseController::class, 'settlement']);
 
+    $workflow = \App\Infrastructure\Http\Controller\WorkflowController::class;
+    $app->post('/api/trip-wizard', [$workflow, 'createTrip']);
+    $app->get('/api/trips/{id:[0-9]+}/planning-transfer', [$workflow, 'planningStatus']);
+    $app->post('/api/trips/{id:[0-9]+}/planning-transfer/preview', [$workflow, 'planningPreview']);
+    $app->post('/api/trips/{id:[0-9]+}/planning-transfer/apply', [$workflow, 'planningApply']);
+    $app->get('/api/trips/{id:[0-9]+}/term', [$workflow, 'term']);
+    $app->put('/api/trips/{id:[0-9]+}/term/draft', [$workflow, 'draft']);
+    $app->post('/api/trips/{id:[0-9]+}/term/review', [$workflow, 'review']);
+    $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);
+    $app->post('/api/trips/{id:[0-9]+}/term/link', [$workflow, 'link']);
+
     $booking = \App\Infrastructure\Http\Controller\BookingController::class;
     $app->get('/api/trips/{id:[0-9]+}/bookings', [$booking, 'list']);
     $app->post('/api/trips/{id:[0-9]+}/bookings', [$booking, 'create']);

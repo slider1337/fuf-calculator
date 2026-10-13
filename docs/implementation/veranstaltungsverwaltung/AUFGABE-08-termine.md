@@ -1,6 +1,6 @@
 # Schritt 08 – Reise-/Terminwizard und dauerhafte Terminaufträge
 
-Status: **offen** · Voraussetzung: Schritte 01–07 abgenommen.
+Status: **lokal und mit Fakes umgesetzt; produktiver easyVerein-Adapter gesperrt; manuelle Designabnahme offen** · Voraussetzung: Schritte 01–07 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

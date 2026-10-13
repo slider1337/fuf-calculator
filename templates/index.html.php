@@ -421,9 +421,9 @@
 
 </div>
 <div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><section class="sec"><div class="sec-h"><h2>Auswertung</h2></div><div class="sec-b" id="analytics-workspace"></div></section></div>
-<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help">Terminanlage und easyVerein-Abgleich folgen in Schritt 8 und 9. Hier werden noch keine externen Termine erstellt.</p></div></section></div>
+<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help"><span id="term-status" role="status">Terminstand wird geladen.</span></p><button type="button" class="btn btn-p" id="term-wizard">Termin vorbereiten</button><div id="term-details"></div></div></section></div>
 
-        <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">
+        <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung"><section class="sec"><div class="sec-h"><h2>Anmeldedaten übernehmen</h2><button id="planning-transfer-btn" type="button" class="btn btn-p">Übernahme vorbereiten</button></div><div class="sec-b"><p id="planning-transfer-status" role="status">Noch kein übernommener Stand.</p></div></section>
         <div class="pg">
         <div class="pg-main">
             <form id="trip-form" class="pg-form">
@@ -1242,6 +1242,7 @@
 <script src="/assets/js/management.js"></script>
 <script src="/assets/js/forms.js"></script>
 <script src="/assets/js/bookings.js"></script>
+<script src="/assets/js/workflows.js"></script>
 </body>
 </html>
 

@@ -303,7 +303,12 @@
                     </div>
                     <div class="collapse show" id="sec-eckdaten-body">
                         <div class="sec-b">
-<label class="f">Veranstaltung<div class="in"><select id="trip-event-select" required></select></div></label>
+<div class="f">
+    <label for="trip-event-select">Veranstaltung (optional)</label>
+    <div class="in"><select id="trip-event-select" aria-describedby="trip-event-help"></select></div>
+    <p class="help" id="trip-event-help"></p>
+    <button type="button" class="btn btn-o btn-s" id="trip-event-create">Veranstaltung anlegen</button>
+</div>
 
                             <div class="fuf-grid fuf-grid-eck">
                                 <div class="f">

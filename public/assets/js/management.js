@@ -116,10 +116,23 @@ byId('event-settings-form').addEventListener('submit', event => { event.preventD
 byId('event-new-trip').addEventListener('click', () => performManagement(async () => { management.newEventId = management.event.id; await startNewTrip(); }));
 async function loadEventSelector(selected = null) {
   const events = await api('/api/events');
-  byId('trip-event-select').innerHTML = '<option value="">Veranstaltung wählen</option>' + events.filter(e => e.capabilities.includes('event.manage') || e.id === selected).map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('');
+  const creating = state.currentTripId === null;
+  const selectable = events.filter(e => e.capabilities.includes('event.manage') || e.id === selected);
+  byId('trip-event-select').innerHTML = `<option value="">${creating ? 'Ohne Veranstaltung' : 'Keine Veranstaltung zugeordnet'}</option>` + selectable.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('');
   if (selected && !events.some(e => e.id === selected)) { byId('trip-event-select').innerHTML += `<option value="${selected}">Veranstaltung #${selected}</option>`; }
-  byId('trip-event-select').value = selected || management.newEventId || ''; management.newEventId = null; byId('trip-event-select').disabled = state.currentTripId !== null;
+  byId('trip-event-select').value = selected || management.newEventId || ''; management.newEventId = null;
+  byId('trip-event-select').disabled = !creating;
+  byId('trip-event-create').classList.toggle('d-none', !creating);
+  byId('trip-event-help').textContent = !creating
+    ? 'Die Zuordnung einer bestehenden Reise wird in der Veranstaltungsverwaltung geändert.'
+    : selectable.length === 0
+      ? 'Keine auswählbare Veranstaltung vorhanden. Du kannst die Reise ohne Veranstaltung speichern oder hier eine anlegen.'
+      : 'Du kannst die Reise ohne Veranstaltung speichern und später zuordnen.';
 }
+byId('trip-event-create').addEventListener('click', () => showManagementModal('Veranstaltung für diese Reise anlegen', textField('trip-new-event-name','Name') + '<label class="f">Beschreibung<div class="in"><textarea id="trip-new-event-description" rows="3" maxlength="10000"></textarea></div></label>', async () => {
+  const e = await api('/api/events', {method:'POST',body:JSON.stringify({name:byId('trip-new-event-name').value,description:byId('trip-new-event-description').value})});
+  await loadEventSelector(e.id); renderDirtyState();
+}));
 byId('event-assign-trip').addEventListener('click', () => performManagement(async () => {
   const trips = await api('/api/trips');
   const unassigned = trips.filter(t => t.eventId === null && !t.closedAt);

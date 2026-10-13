@@ -171,4 +171,24 @@ final class EventAccessApiTest extends ApiTestCase
         $event=$this->event(); $trip=$this->trip($event);
         foreach (["/events","/events/$event","/trips/$trip"] as $path) { $response=$this->dispatch('GET',$path); self::assertSame(200,$response->getStatusCode()); self::assertStringContainsString('management.js',(string)$response->getBody()); }
     }
+    public function testTripWithoutEventCanBeSavedAndAssignedLater(): void
+    {
+        $payload=$this->validTripPayload()+['eventId'=>null];
+        $trip=$this->json('POST','/api/trips',$payload,201);
+        self::assertNull($trip['eventId']);
+        $event=$this->event();
+        $this->json('PUT',"/api/trips/{$trip['id']}/event",['eventId'=>$event,'reason'=>'Nachträgliche Zuordnung']);
+        $assigned=$this->json('GET',"/api/trips/{$trip['id']}");
+        self::assertSame($event,$assigned['eventId']);
+        self::assertSame($trip['bookings'],$assigned['bookings']);
+        self::assertSame($trip['name'],$assigned['name']);
+    }
+    public function testInvalidEventReferenceReturnsFieldErrorInsteadOfAccessError(): void
+    {
+        foreach ([0,-1,'',false,[],'1'] as $invalid) {
+            $response=$this->json('POST','/api/trips',$this->validTripPayload()+['eventId'=>$invalid],422);
+            self::assertArrayHasKey('eventId',$response['details']);
+        }
+    }
+
 }

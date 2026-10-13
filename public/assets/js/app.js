@@ -2965,7 +2965,7 @@ byId("trip-form").addEventListener("submit", async (event) => {
 
   try {
     const payload = tripPayloadFromForm();
-    if (!tripIdValue) { payload.eventId = Number(byId('trip-event-select').value); }
+    if (!tripIdValue) { payload.eventId = byId('trip-event-select').value === '' ? null : Number(byId('trip-event-select').value); }
     else if (Number(byId('trip-event-select').value) !== (state.currentTrip?.eventId || 0)) { throw new Error('Die Zuordnung bestehender Reisen erfolgt in der Veranstaltung.'); }
     const trip = tripIdValue
       ? await api(`/api/trips/${tripIdValue}`, { method: "PUT", body: JSON.stringify(payload) })

@@ -73,11 +73,10 @@ final readonly class RegistrationService
             throw new NotFoundException('Trip not found.');
         }
 
+        if (($this->policy->metadata($tripId)['form_version_id'] ?? null) !== null) { throw new AccessException('versioned_booking_endpoint_required',409); }
         $errors = [];
         $roomCategory = trim($data['roomCategory'] ?? '');
-        if ($roomCategory === '') {
-            $errors['roomCategory'] = 'required';
-        }
+
 
         $participantsData = $data['participants'] ?? [];
         if (!is_array($participantsData) || count($participantsData) === 0) {
@@ -113,7 +112,7 @@ final readonly class RegistrationService
         $registration = new Registration(
             id: null,
             tripId: $tripId,
-            roomCategory: $roomCategory,
+            roomCategory: $roomCategory === '' ? null : $roomCategory,
             receivedAt: date('d.m.Y H:i:s'),
             comment: trim($data['comment'] ?? ''),
             participants: $participants,
@@ -183,14 +182,14 @@ final readonly class RegistrationService
 
         $registrations = $this->registrationRepository->findByTripId($tripId);
 
-        $updatedRegistrations = $this->billingService->calculateBillings($trip, $registrations);
+        $legacy = array_values(array_filter($registrations, static fn($r) => !$r->managed()));
+        $updatedRegistrations = $this->billingService->calculateBillings($trip, $legacy);
 
-        $result = [];
         foreach ($updatedRegistrations as $updated) {
-            $result[] = $this->registrationRepository->updateBilling($updated);
+            $this->registrationRepository->updateBilling($updated);
         }
 
-        return $result;
+        return $this->registrationRepository->findByTripId($tripId);
     }
 
     public function deleteRegistrations(int $tripId): void
@@ -397,7 +396,7 @@ final readonly class RegistrationService
         return new Registration(
             id: null,
             tripId: $tripId,
-            roomCategory: $roomCategory,
+            roomCategory: $roomCategory === '' ? null : $roomCategory,
             receivedAt: $receivedAt,
             comment: $comment,
             participants: $participants

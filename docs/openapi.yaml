@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.2.0
+  version: 1.3.0
 security:
   - calculatorSession: []
 servers:
@@ -1565,6 +1565,310 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TripFormPreviewRequest'
+  /api/trips/{id}/bookings:
+    get:
+      summary: Lokale und alte Buchungen lesen; Antworten nur mit answers.view
+      parameters:
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+    post:
+      summary: Lokale Orga-Buchung atomar/idempotent erfassen; keine externe Bestätigung
+      parameters:
+      - *id001
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+  /api/trips/{id}/bookings/{bookingId}:
+    get:
+      summary: Buchung, Personen und berechtigte Antwortrevisionen lesen
+      parameters:
+      - *id001
+      - &id002
+        name: bookingId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+  /api/trips/{id}/bookings/{bookingId}/answers:
+    put:
+      summary: Antworten begründet korrigieren oder aktive Version ausdrücklich ergänzen; nichtfinanziell auch nach Abschluss
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCorrection'
+  /api/trips/{id}/bookings/{bookingId}/cancel:
+    post:
+      summary: Personen oder gesamte Buchung stornieren; Buchungsmengen ungeprüft
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCancellation'
+  /api/trips/{id}/bookings/{bookingId}/room:
+    put:
+      summary: Zimmerzuteilung unabhängig vom Wunsch speichern
+      parameters:
+      - *id001
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRoomAssignment'
+  /api/trips/{id}/analytics:
+    get:
+      summary: Auswertung / Drilldown / Export mit identischen Filtern; Export zusätzlich answers.export
+      parameters:
+      - *id001
+      - &id003
+        name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - confirmed
+          - all
+          - pending
+          - cancelled
+          default: confirmed
+      - &id004
+        name: versionId
+        in: query
+        schema:
+          type: integer
+      - &id005
+        name: fieldId
+        in: query
+        schema:
+          type: string
+      - &id006
+        name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - answered
+          - missing
+          - unchecked
+          - not_applicable
+          - not_asked
+      - &id007
+        name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - &id008
+        name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - &id009
+        name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - &id010
+        name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+          - csv
+          - revisions
+          - print
+          default: json
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analytics'
+            text/csv:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
+  /api/events/{id}/analytics:
+    get:
+      summary: Auswertung / Drilldown / Export mit identischen Filtern; Export zusätzlich answers.export
+      parameters:
+      - *id001
+      - *id003
+      - *id004
+      - *id005
+      - *id006
+      - *id007
+      - *id008
+      - *id009
+      - *id010
+      - name: tripIds
+        in: query
+        schema:
+          type: string
+        description: Explicit comma-separated event trip IDs; empty string selects no trips. Every selected trip must be authorized; default only allowed trips.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analytics'
+            text/csv:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Session missing
+        '403':
+          description: Required trip capability missing
+        '404':
+          description: Booking or trip inaccessible
+        '409':
+          description: Revision, form version, idempotency conflict or closed trip
+        '422':
+          description: Validation error
 components:
   securitySchemes:
     calculatorSession:
@@ -2189,6 +2493,14 @@ components:
       type: object
       required: [name, birthDate]
       properties:
+        id:
+          type: integer
+          nullable: true
+          readOnly: true
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
+          readOnly: true
         name:
           type: string
         birthDate:
@@ -2203,7 +2515,7 @@ components:
           type: string
         categoryType:
           type: string
-          enum: [ADULT_DOUBLE, ADULT_MULTI, CHILD, SPA_TAX, SPA_TAX_CREDIT]
+          enum: [ADULT_DOUBLE, ADULT_MULTI, ADULT, CHILD, SPA_TAX, SPA_TAX_CREDIT]
         price:
           type: number
           format: float
@@ -2218,6 +2530,7 @@ components:
           type: integer
         roomCategory:
           type: string
+          nullable: true
         receivedAt:
           type: string
           nullable: true
@@ -2244,10 +2557,11 @@ components:
 
     CreateRegistrationRequest:
       type: object
-      required: [roomCategory, participants]
+      required: [participants]
       properties:
         roomCategory:
           type: string
+          nullable: true
           example: "3-Bettzimmer"
         comment:
           type: string
@@ -3032,10 +3346,17 @@ components:
           existingRegistrationCount:
             type: integer
             nullable: true
+          existingVersionBreakdown:
+            type: array
+            nullable: true
+            items:
+              type: object
+              required: [versionId, count]
+              properties:
+                versionId: {type: integer, nullable: true}
+                count: {type: integer}
           existingVersionBreakdownAvailable:
             type: boolean
-            enum:
-            - false
           canRequestSupplement:
             type: boolean
         required:
@@ -3044,3 +3365,484 @@ components:
         - existingRegistrationCount
         - existingVersionBreakdownAvailable
         - canRequestSupplement
+    BookingPerson:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientReference:
+          type: string
+          nullable: true
+        name:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+          - pending
+          - confirmed
+          - cancelled
+        syncStatus:
+          type: string
+        memberReference:
+          type: string
+          nullable: true
+      required:
+      - id
+      - clientReference
+      - name
+      - birthDate
+      - status
+      - syncStatus
+      - memberReference
+    AnswerRevision:
+      type: object
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: integer
+          nullable: true
+        versionId:
+          type: integer
+        fieldId:
+          type: string
+        state:
+          type: string
+          enum:
+          - answered
+          - missing
+          - not_applicable
+          - unchecked
+        value:
+          nullable: true
+          description: Typed JSON value; decimal numbers are exact strings, false and zero remain distinct.
+        actorId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        bookingRevision:
+          type: integer
+      required:
+      - id
+      - participantId
+      - versionId
+      - fieldId
+      - state
+      - value
+      - actorId
+      - createdAt
+      - reason
+      - bookingRevision
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        reference:
+          type: string
+        source:
+          type: string
+        contactIdentity:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum:
+          - pending
+          - confirmed
+          - partially_confirmed
+          - cancelled
+        syncStatus:
+          type: string
+          description: New local entries remain pending until a real adapter confirms participation. Legacy entries are local_only.
+        roomCategory:
+          type: string
+          nullable: true
+        roomAssignment:
+          type: string
+        comment:
+          type: string
+        receivedAt:
+          type: string
+          nullable: true
+        revision:
+          type: integer
+        managed:
+          type: boolean
+        persons:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingPerson'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerRevision'
+        revisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerRevision'
+        formVersion:
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/FormVersion'
+        supplementPending:
+          type: boolean
+      required:
+      - id
+      - tripId
+      - reference
+      - source
+      - contactIdentity
+      - versionId
+      - status
+      - syncStatus
+      - roomCategory
+      - roomAssignment
+      - comment
+      - receivedAt
+      - revision
+      - managed
+      - persons
+      - supplementPending
+    BookingAnswers:
+      type: object
+      properties:
+        booking:
+          type: object
+          additionalProperties: {}
+        persons:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+      required:
+      - booking
+      - persons
+    BookingCreate:
+      type: object
+      properties:
+        operationKey:
+          type: string
+          minLength: 8
+          maxLength: 100
+        contactIdentity:
+          type: string
+          minLength: 1
+          maxLength: 200
+        versionId:
+          type: integer
+          nullable: true
+        roomCategory:
+          type: string
+          nullable: true
+        comment:
+          type: string
+          maxLength: 2000
+        persons:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^[a-zA-Z0-9_-]{1,80}$
+              name:
+                type: string
+                minLength: 1
+                maxLength: 200
+              birthDate:
+                type: string
+                format: date
+            required:
+            - id
+            - name
+            - birthDate
+        answers:
+          $ref: '#/components/schemas/BookingAnswers'
+      required:
+      - operationKey
+      - contactIdentity
+      - persons
+    BookingCorrection:
+      type: object
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        versionId:
+          type: integer
+          nullable: true
+        persons:
+          type: array
+          description: Optional complete active-person list with existing IDs. Requires registration.manage and an open trip. Birth-date changes revalidate visibility and required answers.
+          items:
+            type: object
+            required: [id, name, birthDate]
+            properties:
+              id: {type: integer}
+              name: {type: string, minLength: 1, maxLength: 200}
+              birthDate: {type: string, format: date}
+        answers:
+          $ref: '#/components/schemas/BookingAnswers'
+      required:
+      - operationKey
+      - revision
+      - reason
+    BookingCancellation:
+      type: object
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        personIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+      required:
+      - operationKey
+      - revision
+      - reason
+    BookingRoomAssignment:
+      type: object
+      properties:
+        operationKey:
+          type: string
+        revision:
+          type: integer
+        reason:
+          type: string
+        roomAssignment:
+          type: string
+          maxLength: 200
+      required:
+      - operationKey
+      - revision
+      - reason
+      - roomAssignment
+    AnalyticsRow:
+      type: object
+      properties:
+        tripId:
+          type: integer
+        bookingId:
+          type: integer
+        reference:
+          type: string
+        participantId:
+          type: integer
+          nullable: true
+        person:
+          type: string
+        status:
+          type: string
+        syncStatus:
+          type: string
+        source:
+          type: string
+        versionId:
+          type: integer
+          nullable: true
+        fieldId:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+        scope:
+          type: string
+        unit:
+          type: string
+        state:
+          type: string
+          enum:
+          - answered
+          - missing
+          - unchecked
+          - not_applicable
+          - not_asked
+        value:
+          nullable: true
+        answerAt:
+          type: string
+          nullable: true
+      required:
+      - tripId
+      - bookingId
+      - reference
+      - participantId
+      - person
+      - status
+      - syncStatus
+      - source
+      - versionId
+      - fieldId
+      - label
+      - type
+      - scope
+      - unit
+      - state
+      - value
+      - answerAt
+    AnalyticsMetric:
+      type: object
+      properties:
+        field:
+          $ref: '#/components/schemas/FormField'
+        counts:
+          type: object
+          properties:
+            answered:
+              type: integer
+            missing:
+              type: integer
+            unchecked:
+              type: integer
+            not_applicable:
+              type: integer
+            not_asked:
+              type: integer
+          required:
+          - answered
+          - missing
+          - unchecked
+          - not_applicable
+          - not_asked
+        denominator:
+          type: integer
+        sum:
+          type: string
+          nullable: true
+        uncheckedSum:
+          type: string
+          nullable: true
+        'yes':
+          type: integer
+        'no':
+          type: integer
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+              count:
+                type: integer
+            required:
+            - id
+            - label
+            - count
+      required:
+      - field
+      - counts
+      - denominator
+      - sum
+      - uncheckedSum
+      - 'yes'
+      - 'no'
+      - options
+    Analytics:
+      type: object
+      properties:
+        stand:
+          type: string
+        filters:
+          type: object
+          properties:
+            tripIds:
+              type: array
+              items:
+                type: integer
+            status:
+              type: string
+            versionId:
+              type: integer
+              nullable: true
+            fieldId:
+              type: string
+              nullable: true
+            state:
+              type: string
+              nullable: true
+            search:
+              type: string
+          required:
+          - tripIds
+          - status
+          - versionId
+          - fieldId
+          - state
+          - search
+        populationLabel:
+          type: string
+        totalLabel:
+          type: string
+        versions:
+          type: array
+          items:
+            type: integer
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsMetric'
+        tripMetrics:
+          type: array
+          items:
+            type: object
+            properties:
+              tripId:
+                type: integer
+              metrics:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalyticsMetric'
+            required:
+            - tripId
+            - metrics
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsRow'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalRows:
+          type: integer
+      required:
+      - stand
+      - filters
+      - populationLabel
+      - totalLabel
+      - versions
+      - metrics
+      - tripMetrics
+      - rows
+      - page
+      - pageSize
+      - totalRows

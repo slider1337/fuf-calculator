@@ -84,7 +84,7 @@ final class FormApiTest extends ApiTestCase
         $draft=$this->draft($e,$release['id']);$fields=$draft['fields'];$fields[0]['label']='Korrigiert';$fields[]=$this->field('yes_no',['scope'=>'person']);$draft=$this->save($e,$draft,$fields);$next=$this->release($e,$draft);
         self::assertSame($release['id'],$this->json('GET',"/api/trips/$a/form")['versionId']);self::assertSame($release['id'],$this->json('GET',"/api/trips/$b/form")['versionId']);
         $diff=$this->json('GET',"/api/events/$e/forms/compare?from={$release['id']}&to={$next['id']}");self::assertSame(['changed','added'],array_column($diff['rows'],'change'));self::assertTrue($diff['rows'][0]['compatibleSeries']);
-        $preview=$this->json('POST',"/api/trips/$a/form/preview-switch",['revision'=>1,'versionId'=>$next['id']]);self::assertSame(0,$preview['existingRegistrationCount']);self::assertFalse($preview['existingVersionBreakdownAvailable']);
+        $preview=$this->json('POST',"/api/trips/$a/form/preview-switch",['revision'=>1,'versionId'=>$next['id']]);self::assertSame(0,$preview['existingRegistrationCount']);self::assertTrue($preview['existingVersionBreakdownAvailable']);self::assertSame([],$preview['existingVersionBreakdown']);
         $changed=$this->bind($a,$next,1,true);self::assertSame(2,$changed['revision']);self::assertCount(2,$changed['history']);
         self::assertSame($release['id'],$this->json('GET',"/api/trips/$b/form")['versionId']);
         $this->json('PUT',"/api/trips/$a/form",['revision'=>1,'versionId'=>$release['id'],'targetRevision'=>$release['revision'],'requestSupplement'=>false,'reason'=>'Stale'],409);

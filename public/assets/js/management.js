@@ -161,7 +161,7 @@ async function editTeam(type, userId = null) {
 for (const [id,type] of [['default-team-add','default'],['event-access-add','event'],['trip-team-add','trip']]) { byId(id).addEventListener('click', () => performManagement(() => editTeam(type))); }
 function resetTripPermissions() {
   for (const name of ['uebersicht','planung','anmeldungen','auswertung','abrechnung','team']) { byId(`tab-${name}`).classList.remove('d-none'); }
-  byId('trip-form').querySelectorAll('input,select,button').forEach(e => e.disabled = false);
+  byId('trip-form').querySelectorAll('input,select,textarea,button').forEach(e => e.disabled = false);
   for (const id of ['trip-save-btn-head','trip-save-btn','trip-save-btn-sticky','trip-save-btn-bar','calculate-btn']) { if (byId(id)) byId(id).disabled = false; }
 }
 function renderTripManagement(trip) {
@@ -242,8 +242,8 @@ window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'fu
 function applyTripWriteControls() {
   const trip = state.currentTrip; if (!trip) { return; }
   const registrationReadOnly = !!trip.closedAt || !hasTripCapability('registration.manage');
-  for (const id of ['csv-upload-form','manual-registration-form']) { byId(id).querySelectorAll('input,select,button').forEach(e => e.disabled = registrationReadOnly); }
-  for (const id of ['recalculate-billings-btn','delete-registrations-btn']) { byId(id).disabled = registrationReadOnly; }
+  for (const id of ['csv-upload-form','manual-registration-form']) { byId(id).querySelectorAll('input,select,textarea,button').forEach(e => e.disabled = registrationReadOnly); }
+  for (const id of ['recalculate-billings-btn','delete-registrations-btn']) { byId(id).disabled = registrationReadOnly || (id === 'delete-registrations-btn' && typeof bookingUI !== 'undefined' && bookingUI.items.some(b => b.managed)); }
   document.querySelectorAll('[data-delete-registration]').forEach(e => e.disabled = registrationReadOnly);
   const expenseReadOnly = !!trip.closedAt || !hasTripCapability('expense.manage');
   document.querySelectorAll('[data-edit-expense],[data-delete-expense]').forEach(e => e.disabled = expenseReadOnly);
@@ -258,6 +258,8 @@ function applyTripWriteControls() {
 function renderManagementBar() {
   if (!state.currentTripId) { return; }
   const tab = activeTabName();
+  byId('booking-save-btn-bar').classList.toggle('d-none', tab !== 'anmeldungen' || !hasTripCapability('registration.manage') || !hasTripCapability('answers.correct'));
+  byId('booking-save-btn-bar').disabled = !!state.currentTrip?.closedAt;
   byId('trip-save-btn-bar').classList.toggle('d-none', tab !== 'planung');
   byId('trip-bar-team-btn').classList.toggle('d-none', tab !== 'team' || !(hasTripCapability('access.manage') || state.currentUser?.role === 'admin'));
 }

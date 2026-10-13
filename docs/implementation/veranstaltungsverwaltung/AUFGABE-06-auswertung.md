@@ -1,6 +1,6 @@
 # Schritt 06 – Auswertungen, Antwort-Drilldown und Export
 
-Status: **offen** · Voraussetzung: Schritt 05 abgenommen.
+Status: **technisch umgesetzt und geprüft; manuelle Designabnahme offen** · Prüfprotokoll: [PRUEFUNG-06](PRUEFUNG-06.md) · Voraussetzung: Schritt 05 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

@@ -39,6 +39,7 @@ final readonly class RegistrationBillingService
             $total = 0.0;
 
             foreach ($registration->participants() as $participant) {
+                if ($participant->status() !== 'confirmed') { continue; }
                 $categoryType = $this->determineCategory(
                     $participant,
                     $registration->roomCategory(),
@@ -101,7 +102,7 @@ final readonly class RegistrationBillingService
 
     public function determineCategory(
         Participant $participant,
-        string $roomCategory,
+        ?string $roomCategory,
         DateTimeImmutable $tripStartDate,
         int $adultAgeThreshold
     ): string {
@@ -111,6 +112,7 @@ final readonly class RegistrationBillingService
             return 'CHILD';
         }
 
+        if ($roomCategory === null || $roomCategory === '') { return 'ADULT'; }
         return $this->isDoubleRoom($roomCategory) ? 'ADULT_DOUBLE' : 'ADULT_MULTI';
     }
 

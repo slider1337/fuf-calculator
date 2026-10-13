@@ -372,15 +372,17 @@ final class RegistrationServiceTest extends TestCase
         ]);
     }
 
-    public function testAddManualRegistrationFailsWithoutRoomCategory(): void
+    public function testAddManualRegistrationAcceptsNoRoomForDayEvent(): void
     {
         $trip = $this->createTrip();
 
-        $this->expectException(ValidationException::class);
-        $this->service->addManualRegistration($trip->id(), [
+        $result = $this->service->addManualRegistration($trip->id(), [
             'roomCategory' => '',
             'participants' => [['name' => 'Max', 'birthDate' => '1985-03-07']],
         ]);
+        self::assertNull($result[0]->roomCategory());
+        self::assertSame('ADULT', $result[0]->billingItems()[0]->categoryType());
+
     }
 
     public function testAddManualRegistrationForUnknownTripThrowsNotFound(): void

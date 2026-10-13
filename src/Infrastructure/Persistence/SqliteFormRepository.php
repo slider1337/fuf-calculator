@@ -61,6 +61,10 @@ final readonly class SqliteFormRepository implements FormRepositoryInterface
         $history = $this->query('SELECT * FROM trip_form_history WHERE trip_id=? ORDER BY revision DESC', [$tripId])->fetchAll(PDO::FETCH_ASSOC);
         return ['versionId' => $r['form_version_id'] === null ? null : (int) $r['form_version_id'], 'revision' => (int) $r['form_revision'], 'history' => array_map(static fn ($h) => ['id' => (int) $h['id'],'fromVersionId' => $h['from_version_id'] === null ? null : (int) $h['from_version_id'],'toVersionId' => (int) $h['to_version_id'],'revision' => (int) $h['revision'],'actorId' => (int) $h['actor_id'],'createdAt' => $h['created_at'],'reason' => $h['reason'],'requestSupplement' => (bool) $h['request_supplement']], $history)];
     }
+    public function registrationVersions(int $tripId): array
+    {
+        return array_map(static fn($r)=>['versionId'=>$r['form_version_id']===null?null:(int)$r['form_version_id'],'count'=>(int)$r['n']],$this->query('SELECT form_version_id,COUNT(*) AS n FROM registrations WHERE trip_id=? GROUP BY form_version_id',[$tripId])->fetchAll(PDO::FETCH_ASSOC));
+    }
     public function registrationCount(int $tripId): int { return (int) $this->query('SELECT COUNT(*) FROM registrations WHERE trip_id=?', [$tripId])->fetchColumn(); }
     public function switchVersion(int $tripId, int $revision, int $versionId, int $actor, string $reason, bool $supplement): array
     {

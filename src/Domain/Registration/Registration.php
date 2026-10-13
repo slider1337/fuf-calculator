@@ -19,18 +19,17 @@ final readonly class Registration
     public function __construct(
         private ?int $id,
         private int $tripId,
-        private string $roomCategory,
+        private ?string $roomCategory,
         private ?string $receivedAt,
         private string $comment,
         private array $participants,
         private string $source = self::SOURCE_CSV,
         private ?DateTimeImmutable $billingCalculatedAt = null,
         private ?float $billingTotal = null,
-        private array $billingItems = []
+        private array $billingItems = [],
+        private bool $managed = false
     ) {
-        if ($roomCategory === '') {
-            throw new InvalidArgumentException('Room category is required.');
-        }
+        if ($roomCategory === '') { throw new InvalidArgumentException('Use null for a day event without accommodation.'); }
 
         if ($participants === []) {
             throw new InvalidArgumentException('At least one participant is required.');
@@ -58,7 +57,8 @@ final readonly class Registration
             $this->source,
             $this->billingCalculatedAt,
             $this->billingTotal,
-            $this->billingItems
+            $this->billingItems,
+            $this->managed
         );
     }
 
@@ -67,7 +67,7 @@ final readonly class Registration
         return $this->tripId;
     }
 
-    public function roomCategory(): string
+    public function roomCategory(): ?string
     {
         return $this->roomCategory;
     }
@@ -87,6 +87,8 @@ final readonly class Registration
     {
         return $this->participants;
     }
+
+    public function managed(): bool { return $this->managed; }
 
     public function source(): string
     {
@@ -126,7 +128,8 @@ final readonly class Registration
             $this->source,
             $calculatedAt,
             $total,
-            $items
+            $items,
+            $this->managed
         );
     }
 }

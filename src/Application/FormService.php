@@ -172,7 +172,7 @@ final readonly class FormService
     {
         return $this->policy->transaction(function () use ($tripId,$p) {
             [$b,$v] = $this->target($tripId,$p);
-            return $this->diff($b['versionId'] === null ? null : $this->forms->get($b['versionId']),$v) + ['revision'=>$b['revision'],'targetRevision'=>$v['revision'],'existingRegistrationCount'=>$this->policy->can('trip',$tripId,'registration.view') ? $this->forms->registrationCount($tripId) : null,'existingVersionBreakdownAvailable'=>false,'canRequestSupplement'=>$this->policy->can('trip',$tripId,'registration.manage')];
+            return $this->diff($b['versionId'] === null ? null : $this->forms->get($b['versionId']),$v) + ['revision'=>$b['revision'],'targetRevision'=>$v['revision'],'existingRegistrationCount'=>$this->policy->can('trip',$tripId,'registration.view') ? $this->forms->registrationCount($tripId) : null,'existingVersionBreakdownAvailable'=>$this->policy->can('trip',$tripId,'registration.view'),'existingVersionBreakdown'=>$this->policy->can('trip',$tripId,'registration.view') ? $this->forms->registrationVersions($tripId) : null,'canRequestSupplement'=>$this->policy->can('trip',$tripId,'registration.manage')];
         });
     }
     public function switchVersion(int $tripId, array $p): array

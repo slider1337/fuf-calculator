@@ -11,12 +11,17 @@ final readonly class Participant
 {
     public function __construct(
         private string $name,
-        private DateTimeImmutable $birthDate
+        private DateTimeImmutable $birthDate,
+        private ?int $id = null,
+        private string $status = 'confirmed'
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Participant name is required.');
         }
     }
+
+    public function id(): ?int { return $this->id; }
+    public function status(): string { return $this->status; }
 
     public function name(): string
     {

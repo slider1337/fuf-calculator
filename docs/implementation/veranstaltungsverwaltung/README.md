@@ -1,6 +1,6 @@
 # Veranstaltungsverwaltung – Umsetzung des Designs
 
-Stand: 13.10.2026 · **Schritte 01–04 umgesetzt und technisch geprüft; manuelle Designabnahme offen. Schritte 05–11 weiterhin offen.**
+Stand: 13.10.2026 · **Schritte 01–06 umgesetzt und technisch geprüft; manuelle Designabnahme offen. Schritte 07–11 weiterhin offen.**
 
 Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator, erst zum Schluss die Website anpassen.** Calculator, easyVerein und WordPress behalten ihre Aufgaben aus [Konzept 09](../../concepts/09-veranstaltungsverwaltung-formulare.md). Diese Reihenfolge ersetzt für diese Erweiterung die frühere Reihenfolge in Konzept 09, Abschnitt 13. Vor Schritt 11 gibt es keine Änderung im Website-Repository und keinen Wechsel des produktiven Anmeldewegs.
 
@@ -15,7 +15,7 @@ Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator,
 
 ## Schritte
 
-Jeder Schritt wird separat umgesetzt und geprüft. Aktueller Stand: Schritte 01–04 technisch umgesetzt; Prüfprotokolle [01](PRUEFUNG-01.md), [02](PRUEFUNG-02.md), [03](PRUEFUNG-03.md) und [04](PRUEFUNG-04.md). Die manuelle Designabnahme ist noch offen. Schritte 05–11 sind offen. Reihenfolge ist eine Abhängigkeit, kein Auftrag zur sofortigen Gesamtimplementierung.
+Jeder Schritt wird separat umgesetzt und geprüft. Aktueller Stand: Schritte 01–06 technisch umgesetzt; Prüfprotokolle [01](PRUEFUNG-01.md), [02](PRUEFUNG-02.md), [03](PRUEFUNG-03.md), [04](PRUEFUNG-04.md), [05](PRUEFUNG-05.md) und [06](PRUEFUNG-06.md). Die manuelle Designabnahme ist noch offen. Schritte 07–11 sind offen. Reihenfolge ist eine Abhängigkeit, kein Auftrag zur sofortigen Gesamtimplementierung.
 
 | Schritt | Ergebnis | Aufgabe |
 | --- | --- | --- |

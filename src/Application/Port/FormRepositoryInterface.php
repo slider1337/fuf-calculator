@@ -12,5 +12,6 @@ interface FormRepositoryInterface
     public function archive(int $id, int $revision): array;
     public function binding(int $tripId): array;
     public function switchVersion(int $tripId, int $revision, int $versionId, int $actor, string $reason, bool $supplement): array;
+    public function registrationVersions(int $tripId): array;
     public function registrationCount(int $tripId): int;
 }

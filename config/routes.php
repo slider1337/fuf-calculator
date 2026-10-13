@@ -68,6 +68,16 @@ return static function (App $app): void {
     $app->delete('/api/trips/{id}/actual-expenses/{expenseId}', [ActualExpenseController::class, 'delete']);
     $app->get('/api/trips/{id}/settlement', [ActualExpenseController::class, 'settlement']);
 
+    $booking = \App\Infrastructure\Http\Controller\BookingController::class;
+    $app->get('/api/trips/{id:[0-9]+}/bookings', [$booking, 'list']);
+    $app->post('/api/trips/{id:[0-9]+}/bookings', [$booking, 'create']);
+    $app->get('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}', [$booking, 'get']);
+    $app->put('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/answers', [$booking, 'correct']);
+    $app->post('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/cancel', [$booking, 'cancel']);
+    $app->put('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/room', [$booking, 'room']);
+    $app->get('/api/trips/{id:[0-9]+}/analytics', [$booking, 'analytics']);
+    $app->get('/api/events/{id:[0-9]+}/analytics', [$booking, 'eventAnalytics']);
+
     $forms = \App\Infrastructure\Http\Controller\FormController::class;
     $app->get('/api/events/{eventId:[0-9]+}/forms', [$forms, 'list']);
     $app->post('/api/events/{eventId:[0-9]+}/forms', [$forms, 'create']);

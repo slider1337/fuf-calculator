@@ -171,8 +171,8 @@ final class ActualExpenseService
 
         return [
             'totalRevenue' => $totalRevenue,
-            'participantCount' => array_sum(array_map(static fn ($registration) => count($registration->participants()), $registrations)),
-            'registrationCount' => count($registrations),
+            'participantCount' => array_sum(array_map(static fn ($registration) => count(array_filter($registration->participants(), static fn($p) => $p->status() === 'confirmed')), $registrations)),
+            'registrationCount' => count(array_filter($registrations, static fn($r) => count(array_filter($r->participants(), static fn($p) => $p->status() === 'confirmed')) > 0)),
             'plannedCostItems' => $plannedCostItems,
             'totalPlannedCosts' => $totalPlannedCosts,
             'totalAdditionalExpenses' => $totalAdditionalExpenses,

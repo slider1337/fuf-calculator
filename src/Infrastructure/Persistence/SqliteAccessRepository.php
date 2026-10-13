@@ -37,7 +37,7 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
     }
     public function metadata(int $tripId): array
     {
-        $s = $this->pdo->prepare('SELECT event_id, closed_at, closed_by, settlement_snapshot, calculation_snapshot FROM trips WHERE id = ?');
+        $s = $this->pdo->prepare('SELECT form_version_id, form_revision, event_id, closed_at, closed_by, settlement_snapshot, calculation_snapshot FROM trips WHERE id = ?');
         $s->execute([$tripId]); return $s->fetch(PDO::FETCH_ASSOC) ?: [];
     }
     public function setMetadata(int $tripId, array $values): void

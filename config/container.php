@@ -45,6 +45,7 @@ return static function (): ContainerInterface {
         App\Application\Port\AccessRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteAccessRepository::class),
         App\Application\Port\ActorInterface::class => autowire(App\Infrastructure\Http\Auth\SessionActor::class),
         App\Application\Port\EventRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteEventRepository::class),
+        App\Application\Port\FormRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteFormRepository::class),
         PDO::class => static function (): PDO {
             $dbPath = getenv('DB_PATH') ?: (__DIR__ . '/../database/fuf.sqlite');
             return SqliteConnection::create($dbPath);

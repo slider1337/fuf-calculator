@@ -4,6 +4,7 @@ const tripCapabilities = ['trip.view','trip.manage','registration.view','registr
 const eventCapabilities = ['event.view','event.manage','form.manage','form.publish','access.manage'];
 const capabilityLabels = {'trip.view':'Reise ansehen','trip.manage':'Reise verwalten','registration.view':'Anmeldungen ansehen','registration.manage':'Anmeldungen bearbeiten','answers.view':'Antworten ansehen','answers.correct':'Antworten korrigieren','answers.export':'Antworten exportieren','analytics.view':'Auswertung ansehen','calculation.manage':'Planung bearbeiten und berechnen','settlement.view':'Abrechnung ansehen','settlement.close':'Abrechnung abschließen','settlement.reopen':'Abrechnung wiederöffnen','expense.view':'Ausgaben ansehen','expense.manage':'Ausgaben bearbeiten','term.manage':'Termin verwalten','access.manage':'Zugriffe verwalten','event.view':'Veranstaltung ansehen','event.manage':'Veranstaltung verwalten','form.manage':'Formular bearbeiten','form.publish':'Formular veröffentlichen'};
 function hideEventSections() {
+  document.body.classList.remove('is-form-view');
   byId('event-list-section').classList.add('d-none'); byId('event-detail-section').classList.add('d-none');
 }
 function hasTripCapability(cap) { return state.currentTrip?.capabilities?.includes(cap) || false; }
@@ -11,6 +12,10 @@ function dirtyPlanning() {
   return state.formSnapshot !== null && (roomReservationRowIds() !== state.reservationRowsSnapshot || tripFormFields().some(field => state.formSnapshot[field.id] !== undefined && state.formSnapshot[field.id] !== fieldState(field)));
 }
 function allowManagementNavigation() {
+  if (typeof formDirty === 'function' && formDirty()) {
+    if (!window.confirm('Ungespeicherte Formularänderungen verwerfen?')) { return false; }
+    formsUI.eventId = null;
+  }
   if (!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) {
     return window.confirm('Ungespeicherte Planungsänderungen verwerfen?');
   }
@@ -79,11 +84,13 @@ function tripCard(t) {
   return `<article class="event-card"><a href="/trips/${t.id}" data-spa><h3>${escapeHtml(t.name)}</h3></a><p>${escapeHtml(formatTripPeriod(t))}</p><span class="chip ${t.closedAt ? 'c-grey' : 'c-green'}">${t.closedAt ? 'Abgerechnet' : 'Offen'}</span><div class="event-card-stats"><div><span class="help">Nächte</span><b>${t.nights}</b></div><div><span class="help">Überschuss</span><b>${t.surplus === null ? 'Nicht freigegeben' : formatCurrency(t.surplus)}</b></div></div></article>`;
 }
 async function showEventTab(tab) {
+  document.body.classList.toggle('is-form-view', tab === 'formular');
   for (const name of ['reisen','formular','standardteam','einstellungen']) {
     byId(`event-panel-${name}`).classList.toggle('d-none', tab !== name);
     document.querySelector(`[data-event-tab="${name}"]`).classList.toggle('is-active', tab === name);
     document.querySelector(`[data-event-tab="${name}"]`).setAttribute('aria-current', tab === name ? 'page' : 'false');
   }
+  if (tab === 'formular') { await loadFormWorkspace(); }
   if (tab === 'standardteam') {
     if (management.event.capabilities.includes('access.manage') || state.currentUser?.role === 'admin') {
       await loadTeam('default'); await loadTeam('event');
@@ -146,6 +153,7 @@ function resetTripPermissions() {
 }
 function renderTripManagement(trip) {
   resetTripPermissions(); const caps = trip.capabilities;
+  performManagement(() => loadTripFormBinding(trip.id));
   byId('trip-event-select').disabled = true;
   for (const [tab,cap] of [['planung','calculation.manage'],['anmeldungen','registration.view'],['auswertung','analytics.view'],['abrechnung','settlement.view']]) { byId(`tab-${tab}`).classList.toggle('d-none', !caps.includes(cap)); }
   const canAccess = caps.includes('access.manage') || state.currentUser?.role === 'admin';
@@ -198,7 +206,7 @@ document.addEventListener('click', event => {
 for (const name of ['uebersicht','anmeldungen','auswertung','team']) {
   byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
 }
-window.addEventListener('beforeunload', event => { if ((!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) || (!byId('event-detail-section').classList.contains('d-none') && eventSettingsDirty())) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'function' && formDirty()) || (!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) || (!byId('event-detail-section').classList.contains('d-none') && eventSettingsDirty())) { event.preventDefault(); event.returnValue = ''; } });
 
 function applyTripWriteControls() {
   const trip = state.currentTrip; if (!trip) { return; }

@@ -57,6 +57,7 @@ final readonly class EventService
     {
         $this->policy->writeTrip($tripId, 'trip.manage', function () use ($tripId, $eventId, $reason) {
             $reason = $this->policy->reason($reason);
+            if (($this->policy->metadata($tripId)['form_version_id'] ?? null) !== null) { throw new AccessException('bound_form_prevents_event_change', 409); }
             $previous = $this->policy->metadata($tripId)['event_id'] ?? null;
             if ($previous !== null) { $this->policy->require('event', (int) $previous, 'event.manage'); }
             if ($eventId !== null) { $this->requireActive($eventId); }

@@ -4324,3 +4324,50 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
   #event-detail-section { padding-bottom:80px; }
   #event-new-trip,#default-team-add,#event-settings-form button[type="submit"] { position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:16px; right:16px; z-index:20; }
 }
+
+/* Versioned form editor follows the existing Calculator sections and tokens. */
+.form-editor-grid { display:grid; grid-template-columns:minmax(220px,1fr) minmax(300px,1.5fr) minmax(210px,1fr); gap:20px; align-items:start; }
+.form-editor-grid > * { min-width:0; }
+.form-field-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; border:1px solid #d9e1da; border-radius:10px; padding:6px; }
+.form-field-row.selected { border:2px solid #46704c; background:#f1f6f0; }
+.form-field-select { flex:1; border:0; background:transparent; text-align:left; min-width:0; padding:10px; color:inherit; }
+.form-field-select strong,.form-field-select span { display:block; overflow-wrap:anywhere; }
+.form-order { display:flex; flex-direction:column; gap:4px; }
+.form-order button { min-height:48px; min-width:48px; padding:4px; }
+.form-field-config .f { margin-bottom:14px; }
+.form-check-line { display:flex; gap:10px; align-items:center; min-height:48px; margin:8px 0; }
+.form-check-line input { min-width:20px; min-height:20px; }
+.form-option { padding:12px 0; border-bottom:1px solid #ddd; }
+.form-option .help { overflow-wrap:anywhere; }
+.form-history { display:grid; gap:16px; }
+.form-diff-scroll { max-width:100%; overflow-x:auto; }
+.form-diff-scroll table { min-width:700px; }
+.form-diff-scroll small { display:block; overflow-wrap:anywhere; }
+.form-diff-added { background:#E6EFE9; }
+.form-diff-changed { background:#FAEEDA; }
+.form-diff-removed { background:#FBE9E4; }
+.form-preview-inputs { max-width:640px; margin:auto; }
+.form-preview-inputs.mobile-preview { max-width:360px; }
+.form-preview-field { margin:18px 0; }
+.form-preview-field.has-error { border-left:3px solid #9B2C2C; padding-left:12px; }
+.form-field-error { color:#9B2C2C; }
+.form-preview-notice { padding:12px; background:#f4f6ef; }
+.form-binding { border:1px solid #d9e1da; border-radius:12px; padding:16px; margin:18px 0; }
+.form-binding small { overflow-wrap:anywhere; }
+@media (max-width:1100px) { .form-editor-grid { grid-template-columns:minmax(220px,1fr) minmax(300px,1.5fr); } .form-mini-preview { grid-column:1/-1; } }
+@media (max-width:767px) {
+  .form-editor-grid { display:block; }
+  .form-editor-grid[data-mobile-step="list"] .form-field-config,.form-editor-grid[data-mobile-step="edit"] .form-field-list { display:none; }
+  .form-mini-preview { display:none; }
+  .form-toolbar { position:sticky; bottom:0; z-index:5; background:#fffbf3; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); }
+  .form-toolbar button { min-height:48px; }
+  .form-preview-inputs { max-width:100%; }
+}
+.form-mobile-actions { display:none; }
+#form-inline-preview .in { max-width:100%; }
+@media (max-width:767px) {
+  .is-form-view { padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
+  .is-form-view .form-mobile-actions { position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; justify-content:center; background:#fffbf3; border-top:1px solid #d9e1da; padding:12px 10px calc(12px + env(safe-area-inset-bottom)); z-index:20; }
+  .form-mobile-actions button { min-height:48px; }
+  .form-toolbar { position:static; }
+}

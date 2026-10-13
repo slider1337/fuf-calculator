@@ -68,6 +68,19 @@ return static function (App $app): void {
     $app->delete('/api/trips/{id}/actual-expenses/{expenseId}', [ActualExpenseController::class, 'delete']);
     $app->get('/api/trips/{id}/settlement', [ActualExpenseController::class, 'settlement']);
 
+    $forms = \App\Infrastructure\Http\Controller\FormController::class;
+    $app->get('/api/events/{eventId:[0-9]+}/forms', [$forms, 'list']);
+    $app->post('/api/events/{eventId:[0-9]+}/forms', [$forms, 'create']);
+    $app->get('/api/events/{eventId:[0-9]+}/forms/compare', [$forms, 'compare']);
+    $app->get('/api/events/{eventId:[0-9]+}/forms/{versionId:[0-9]+}', [$forms, 'get']);
+    $app->put('/api/events/{eventId:[0-9]+}/forms/{versionId:[0-9]+}', [$forms, 'save']);
+    $app->post('/api/events/{eventId:[0-9]+}/forms/{versionId:[0-9]+}/preview', [$forms, 'preview']);
+    $app->post('/api/events/{eventId:[0-9]+}/forms/{versionId:[0-9]+}/publish', [$forms, 'publish']);
+    $app->post('/api/events/{eventId:[0-9]+}/forms/{versionId:[0-9]+}/archive', [$forms, 'archive']);
+    $app->get('/api/trips/{id:[0-9]+}/form', [$forms, 'binding']);
+    $app->post('/api/trips/{id:[0-9]+}/form/preview-switch', [$forms, 'switchPreview']);
+    $app->put('/api/trips/{id:[0-9]+}/form', [$forms, 'switchVersion']);
+
     $eventController = \App\Infrastructure\Http\Controller\EventController::class;
     $app->get('/api/events/{id:[0-9]+}/people', [$eventController, 'people']);
     $app->get('/api/trips/{id:[0-9]+}/people', [$eventController, 'people']);

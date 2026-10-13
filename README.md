@@ -57,7 +57,7 @@ Die bisherige E-Mail-/Passwort-Anmeldung bleibt erhalten.
 
 ## Veranstaltungsverwaltung: Design-Konzept
 
-[Veranstaltungen, Reisen, versionierte Formulare und Orga-Auswertungen](docs/concepts/09-veranstaltungsverwaltung-formulare.md) beschreibt das geplante gemeinsame Backend für Calculator und Website-Anmeldungen, inklusive Ansichten, Beispieldaten und Design-Prompt. Schritte 1 und 2 sind umgesetzt: konkrete Reiserechte, Audit, Abrechnungsabschluss sowie Veranstaltungen, Reisezuordnung und Teams. Formulare, neue Buchungen/Auswertungen und Website-Anbindung folgen in den weiteren Schritten.
+[Veranstaltungen, Reisen, versionierte Formulare und Orga-Auswertungen](docs/concepts/09-veranstaltungsverwaltung-formulare.md) beschreibt das geplante gemeinsame Backend für Calculator und Website-Anmeldungen, inklusive Ansichten, Beispieldaten und Design-Prompt. Schritte 1–4 sind technisch umgesetzt: konkrete Reiserechte, Audit, Abrechnungsabschluss, Veranstaltungen/Teams sowie Formular-Editor, Vorschau, unveränderliche Veröffentlichungen und bewusste Versionswechsel je Reise. Die manuelle Designabnahme bleibt offen. Neue Buchungen/Antworten, Auswertungen und Website-Anbindung folgen in den weiteren Schritten.
 
 Der [Umsetzungsplan mit elf Aufgaben](docs/implementation/veranstaltungsverwaltung/README.md) führt vom bestehenden Calculator bis zur Website-Anbindung. **Zuerst alle Calculator-Grundlagen und Funktionen, Website erst in Schritt 11.** Die vollständige [Design-Übergabe mit Desktop-/Mobilreferenzen](docs/design-handoff/veranstaltungsverwaltung/START-HIER.md) liegt ebenfalls im Repository.
 

@@ -1,6 +1,6 @@
 # Schritt 04 – Veröffentlichung, Historie und Versionswechsel
 
-Status: **offen** · Voraussetzung: Schritt 03 abgenommen.
+Status: **technisch umgesetzt; manuelle Designabnahme offen** · Nachweis: [PRUEFUNG-04](PRUEFUNG-04.md) · Voraussetzung: Schritt 03 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

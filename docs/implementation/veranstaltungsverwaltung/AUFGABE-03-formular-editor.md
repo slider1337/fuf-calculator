@@ -1,6 +1,6 @@
 # Schritt 03 – Formular-Editor und gemeinsame Validierung
 
-Status: **offen** · Voraussetzung: Schritt 02 abgenommen.
+Status: **technisch umgesetzt; manuelle Designabnahme offen** · Nachweis: [PRUEFUNG-03](PRUEFUNG-03.md) · Voraussetzung: Schritt 02 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

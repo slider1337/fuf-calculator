@@ -1325,6 +1325,7 @@ async function navigateTo(pathname, options = {}) {
 
 async function renderCurrentRoute(options = {}) {
   const { reuseLoadedTrip = false } = options;
+  state.currentRoutePath = window.location.pathname;
   const route = matchRoute(window.location.pathname);
   byId('nav-events').classList.toggle('is-active', ['events', 'event'].includes(route.name));
   byId('nav-trips').classList.toggle('is-active', !['events', 'event'].includes(route.name));
@@ -2745,6 +2746,7 @@ async function bootstrapPage() {
   await loadSettings();
   await loadTripList();
   window.addEventListener("popstate", async () => {
+    if (state.currentRoutePath !== window.location.pathname && !allowManagementNavigation()) { window.history.pushState({}, "", state.currentRoutePath); return; }
     try {
       await renderCurrentRoute({ reuseLoadedTrip: true });
     } catch (error) {

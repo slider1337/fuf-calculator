@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.1.0
+  version: 1.2.0
 security:
   - calculatorSession: []
 servers:
@@ -1177,6 +1177,394 @@ paths:
       description: Nur Zuordnungen aus der Vorschau. Neue Benutzer erben keine Altfreigaben. Ohne capabilities wird
         der bisherige funktionale Umfang konkret je Reise übernommen.
 
+  /api/events/{eventId}/forms:
+    get:
+      summary: Formularfamilie lesen
+      description: Benötigt event.view. Historische/archivierte Versionen bleiben lesbar.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      summary: Einzigen Entwurf anlegen / Release kopieren
+      description: Benötigt form.manage; archivierte Veranstaltung gesperrt. Pro Veranstaltung höchstens ein Entwurf.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDraftRequest'
+  /api/events/{eventId}/forms/compare:
+    get:
+      summary: Zwei gespeicherte Definitionen vergleichen
+      description: Benötigt event.view. Gleiche ID/Typ/Einheit/Geltung sind dieselbe Serie; Options-IDs bleiben nachvollziehbar.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: integer
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormDiff'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/events/{eventId}/forms/{versionId}:
+    get:
+      summary: Historische Definition lesen
+      description: ''
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      summary: Entwurf mit Revision speichern
+      description: 'Benötigt form.manage. IDs nicht frei editierbar: id=null erzeugt eine neue ID; bestehende IDs
+        müssen zur Familie gehören. Typ/Einheit/Geltung/Art oder semanticChange=true erzeugen eine neue Feld-ID. Optionsbedeutungsänderung
+        erzeugt eine neue Options-ID. Releases sind unveränderlich.'
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormSaveRequest'
+  /api/events/{eventId}/forms/{versionId}/preview:
+    post:
+      summary: Fiktive Antworten prüfen
+      description: Vorschau benötigt event.view und schreibt keine Buchungen. Optionales tripId erfordert trip.view
+        derselben Veranstaltung und verwendet Reisebeginn/Altersgrenze. Antwortfehler ergeben 200 mit valid=false;
+        ungültiger Kontext 422. Veröffentlichung/Archivierung benötigt form.publish. Keine automatische Reiseumstellung,
+        keine E-Mails.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormPreviewResult'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormPreviewRequest'
+  /api/events/{eventId}/forms/{versionId}/publish:
+    post:
+      summary: Entwurf unveränderlich veröffentlichen
+      description: Vorschau benötigt event.view und schreibt keine Buchungen. Optionales tripId erfordert trip.view
+        derselben Veranstaltung und verwendet Reisebeginn/Altersgrenze. Antwortfehler ergeben 200 mit valid=false;
+        ungültiger Kontext 422. Veröffentlichung/Archivierung benötigt form.publish. Keine automatische Reiseumstellung,
+        keine E-Mails.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormPublishRequest'
+  /api/events/{eventId}/forms/{versionId}/archive:
+    post:
+      summary: Release für neue Auswahl archivieren
+      description: Vorschau benötigt event.view und schreibt keine Buchungen. Optionales tripId erfordert trip.view
+        derselben Veranstaltung und verwendet Reisebeginn/Altersgrenze. Antwortfehler ergeben 200 mit valid=false;
+        ungültiger Kontext 422. Veröffentlichung/Archivierung benötigt form.publish. Keine automatische Reiseumstellung,
+        keine E-Mails.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormArchiveRequest'
+  /api/trips/{id}/form:
+    get:
+      summary: Gebundene historische Definition und Wechselhistorie lesen
+      description: 'trip.view: nur gebundene Definition. trip.manage: zusätzlich verfügbare veröffentlichte Versionen
+        der gleichen Veranstaltung.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripFormBinding'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      summary: Veröffentlichten Formularstand bewusst binden
+      description: trip.manage, offene Reise; revision und targetRevision müssen passen. Fremde/archivierte Versionen
+        nicht auswählbar. requestSupplement erfordert registration.manage und legt nur lokale Datenaufträge für vorhandene
+        Registrierungen an. Bestehende Antworten/Finanzwerte bleiben erhalten.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripFormState'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripFormSwitchRequest'
+  /api/trips/{id}/form/preview-switch:
+    post:
+      summary: Versionswechsel ohne Schreiben prüfen
+      description: trip.manage, offene Reise. Bestehende Buchungszahl nur mit registration.view, sonst null. Aufteilung
+        nach Buchungsversionen folgt in Schritt 5 (false statt Demozahlen).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripFormSwitchPreview'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Konkrete Veranstaltungs-/Reisefähigkeit fehlt
+        '404':
+          description: Ziel fehlt oder Reise nicht freigegeben
+        '409':
+          description: revision_conflict, immutable_form, draft_exists, trip_closed, event_archived oder version_already_active
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripFormPreviewRequest'
 components:
   securitySchemes:
     calculatorSession:
@@ -2011,3 +2399,648 @@ components:
             $ref: '#/components/schemas/UserSummary'
 
 
+
+    FormOption:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^o_[a-f0-9]{32}$
+        label:
+          type: string
+          maxLength: 200
+      required:
+      - id
+      - label
+    FormVisibility:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - always
+          - children
+          - child
+          - adult
+          - selection
+        fieldId:
+          type: string
+        value:
+          oneOf:
+          - type: string
+          - type: boolean
+      required:
+      - kind
+    FormField:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^f_[a-f0-9]{32}$
+        type:
+          type: string
+          enum:
+          - number
+          - checkbox
+          - yes_no
+          - single_select
+          - multi_select
+          - short_text
+          - long_text
+          - date
+          - notice
+          - section
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        help:
+          type: string
+          maxLength: 2000
+        scope:
+          type: string
+          enum:
+          - booking
+          - person
+        required:
+          type: boolean
+        analytics:
+          type: boolean
+        unit:
+          type: string
+        integer:
+          type: boolean
+        min:
+          type: string
+          nullable: true
+        max:
+          type: string
+          nullable: true
+        default:
+          type: string
+          nullable: true
+        maxLength:
+          type: integer
+        minSelections:
+          type: integer
+        maxSelections:
+          type: integer
+        mapping:
+          type: string
+          nullable: true
+          enum:
+          - null
+          - vegetarianMeals
+          - roomPreference
+          - arrivalDate
+        visibility:
+          $ref: '#/components/schemas/FormVisibility'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormOption'
+      required:
+      - id
+      - type
+      - label
+      - help
+      - scope
+      - required
+      - analytics
+      - unit
+      - integer
+      - min
+      - max
+      - default
+      - maxLength
+      - minSelections
+      - maxSelections
+      - mapping
+      - visibility
+      - options
+    FormVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        number:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+          - archived
+        revision:
+          type: integer
+        basedOnId:
+          type: integer
+          nullable: true
+        createdBy:
+          type: integer
+        createdAt:
+          type: string
+        publishedBy:
+          type: integer
+          nullable: true
+        publishedAt:
+          type: string
+          nullable: true
+        changeDescription:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormField'
+      required:
+      - id
+      - eventId
+      - number
+      - status
+      - revision
+      - basedOnId
+      - createdBy
+      - createdAt
+      - publishedBy
+      - publishedAt
+      - changeDescription
+      - fields
+    FormDraftRequest:
+      type: object
+      properties:
+        basedOnId:
+          type: integer
+          nullable: true
+      required: []
+    FormSaveRequest:
+      type: object
+      properties:
+        revision:
+          type: integer
+        fields:
+          type: array
+          maxItems: 100
+          items:
+            allOf:
+            - $ref: '#/components/schemas/FormFieldInput'
+      required:
+      - revision
+      - fields
+    FormFieldInput:
+      example:
+        id: null
+        type: number
+        label: Vegetarische Essen
+        scope: booking
+        unit: Personen
+        integer: true
+        required: true
+        min: '0'
+        mapping: vegetarianMeals
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum:
+          - number
+          - checkbox
+          - yes_no
+          - single_select
+          - multi_select
+          - short_text
+          - long_text
+          - date
+          - notice
+          - section
+        label:
+          type: string
+        help:
+          type: string
+        scope:
+          type: string
+        required:
+          type: boolean
+        analytics:
+          type: boolean
+        unit:
+          type: string
+        integer:
+          type: boolean
+        min:
+          oneOf:
+          - type: string
+          - type: integer
+          nullable: true
+        max:
+          oneOf:
+          - type: string
+          - type: integer
+          nullable: true
+        default:
+          oneOf:
+          - type: string
+          - type: integer
+          nullable: true
+        maxLength:
+          type: integer
+        minSelections:
+          type: integer
+        maxSelections:
+          type: integer
+        mapping:
+          type: string
+          nullable: true
+        visibility:
+          $ref: '#/components/schemas/FormVisibility'
+        semanticChange:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                nullable: true
+              label:
+                type: string
+              semanticChange:
+                type: boolean
+            required:
+            - label
+      required:
+      - type
+      - label
+    FormPublishRequest:
+      type: object
+      properties:
+        revision:
+          type: integer
+        changeDescription:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - revision
+      - changeDescription
+    FormArchiveRequest:
+      type: object
+      properties:
+        revision:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - revision
+      - reason
+    FormAnswerValue:
+      oneOf:
+      - type: string
+      - type: integer
+      - type: boolean
+      - type: array
+        items:
+          type: string
+      nullable: true
+      description: Numbers use decimal strings (dot, up to 6 decimals) or integers, never JSON floats. Empty and false/0
+        are distinct.
+    FormAnswerMap:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/FormAnswerValue'
+    FormAnswersInput:
+      type: object
+      properties:
+        booking:
+          $ref: '#/components/schemas/FormAnswerMap'
+        persons:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FormAnswerMap'
+      required: []
+    FormPreviewContext:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        adultAgeThreshold:
+          type: integer
+          minimum: 1
+          maximum: 100
+        persons:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              birthDate:
+                type: string
+                format: date
+            required:
+            - id
+            - birthDate
+      required:
+      - startDate
+      - adultAgeThreshold
+      - persons
+    FormPreviewRequest:
+      example:
+        context:
+          startDate: '2026-12-20'
+          adultAgeThreshold: 18
+          persons:
+            - id: example-adult
+              birthDate: '1986-01-01'
+            - id: example-child
+              birthDate: '2017-01-01'
+        answers:
+          booking: {}
+          persons: {}
+      type: object
+      properties:
+        context:
+          anyOf:
+            - $ref: '#/components/schemas/FormPreviewContext'
+            - type: object
+              description: Nur mit tripId; Stichtag/Altersgrenze kommen dann aus der Reise.
+              required: [persons]
+              properties:
+                persons:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, birthDate]
+                    properties:
+                      id:
+                        type: string
+                      birthDate:
+                        type: string
+                        format: date
+        answers:
+          $ref: '#/components/schemas/FormAnswersInput'
+        tripId:
+          type: integer
+      required:
+      - context
+    FormAnswerState:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+          - missing
+          - answered
+          - invalid
+          - not_applicable
+          - display
+        value:
+          $ref: '#/components/schemas/FormAnswerValue'
+      required:
+      - state
+      - value
+    FormAnswersResult:
+      type: object
+      properties:
+        booking:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FormAnswerState'
+        persons:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              $ref: '#/components/schemas/FormAnswerState'
+      required:
+      - booking
+      - persons
+    FormPreviewResult:
+      type: object
+      properties:
+        versionId:
+          type: integer
+        revision:
+          type: integer
+        valid:
+          type: boolean
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+        answers:
+          $ref: '#/components/schemas/FormAnswersResult'
+        persons:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              age:
+                type: integer
+              child:
+                type: boolean
+            required:
+            - id
+            - age
+            - child
+        startDate:
+          type: string
+        adultAgeThreshold:
+          type: integer
+      required:
+      - versionId
+      - revision
+      - valid
+      - errors
+      - answers
+      - persons
+      - startDate
+      - adultAgeThreshold
+    FormDiffRow:
+      type: object
+      properties:
+        fieldId:
+          type: string
+        change:
+          type: string
+          enum:
+          - added
+          - changed
+          - removed
+          - unchanged
+        before:
+          allOf:
+          - $ref: '#/components/schemas/FormField'
+          nullable: true
+        after:
+          allOf:
+          - $ref: '#/components/schemas/FormField'
+          nullable: true
+        compatibleSeries:
+          type: boolean
+        positionBefore:
+          type: integer
+          nullable: true
+        positionAfter:
+          type: integer
+          nullable: true
+        impact:
+          type: string
+          enum:
+          - not_asked_in_older_versions
+          - historical_answers_preserved
+          - same_series
+          - separate_series
+      required:
+      - fieldId
+      - change
+      - before
+      - after
+      - compatibleSeries
+      - positionBefore
+      - positionAfter
+      - impact
+    FormDiff:
+      type: object
+      properties:
+        fromVersionId:
+          type: integer
+          nullable: true
+        toVersionId:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormDiffRow'
+      required:
+      - fromVersionId
+      - toVersionId
+      - rows
+    TripFormHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+        fromVersionId:
+          type: integer
+          nullable: true
+        toVersionId:
+          type: integer
+        revision:
+          type: integer
+        actorId:
+          type: integer
+        createdAt:
+          type: string
+        reason:
+          type: string
+        requestSupplement:
+          type: boolean
+      required:
+      - id
+      - fromVersionId
+      - toVersionId
+      - revision
+      - actorId
+      - createdAt
+      - reason
+      - requestSupplement
+    TripFormState:
+      type: object
+      properties:
+        versionId:
+          type: integer
+          nullable: true
+        revision:
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripFormHistory'
+      required:
+      - versionId
+      - revision
+      - history
+    TripFormBinding:
+      allOf:
+      - $ref: '#/components/schemas/TripFormState'
+      - type: object
+        properties:
+          version:
+            allOf:
+            - $ref: '#/components/schemas/FormVersion'
+            nullable: true
+          availableVersions:
+            type: array
+            items:
+              $ref: '#/components/schemas/FormVersion'
+        required:
+        - version
+        - availableVersions
+    TripFormPreviewRequest:
+      type: object
+      properties:
+        revision:
+          type: integer
+        versionId:
+          type: integer
+      required:
+      - revision
+      - versionId
+    TripFormSwitchRequest:
+      type: object
+      properties:
+        revision:
+          type: integer
+        versionId:
+          type: integer
+        targetRevision:
+          type: integer
+        requestSupplement:
+          type: boolean
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - revision
+      - versionId
+      - targetRevision
+      - requestSupplement
+      - reason
+    TripFormSwitchPreview:
+      allOf:
+      - $ref: '#/components/schemas/FormDiff'
+      - type: object
+        properties:
+          revision:
+            type: integer
+          targetRevision:
+            type: integer
+          existingRegistrationCount:
+            type: integer
+            nullable: true
+          existingVersionBreakdownAvailable:
+            type: boolean
+            enum:
+            - false
+          canRequestSupplement:
+            type: boolean
+        required:
+        - revision
+        - targetRevision
+        - existingRegistrationCount
+        - existingVersionBreakdownAvailable
+        - canRequestSupplement

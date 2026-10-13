@@ -14,12 +14,19 @@ final class ActualExpenseService
     public function __construct(
         private ActualExpenseRepositoryInterface $expenseRepository,
         private TripRepositoryInterface $tripRepository,
-        private RegistrationRepositoryInterface $registrationRepository
+        private RegistrationRepositoryInterface $registrationRepository,
+        private AccessPolicy $policy
     ) {
     }
 
     public function addExpense(int $tripId, array $payload): ActualExpense
     {
+        return $this->policy->transaction(fn () => $this->addExpenseInternal($tripId, $payload));
+    }
+
+    private function addExpenseInternal(int $tripId, array $payload): ActualExpense
+    {
+        $this->policy->trip($tripId, 'expense.manage', true);
         $this->assertTripExists($tripId);
         $this->validatePayload($payload);
 
@@ -33,13 +40,20 @@ final class ActualExpenseService
         return $this->expenseRepository->save($expense);
     }
 
-    public function updateExpense(int $expenseId, array $payload): ActualExpense
+    public function updateExpense(int $expenseId, array $payload, ?int $tripId = null): ActualExpense
+    {
+        return $this->policy->transaction(fn () => $this->updateExpenseInternal($expenseId, $payload, $tripId));
+    }
+
+    private function updateExpenseInternal(int $expenseId, array $payload, ?int $tripId = null): ActualExpense
     {
         $existing = $this->expenseRepository->getById($expenseId);
         if ($existing === null) {
             throw new NotFoundException('Actual expense not found.');
         }
 
+        $this->assertExpenseTrip($existing->tripId(), $tripId);
+        $this->policy->trip($existing->tripId(), 'expense.manage', true);
         $this->validatePayload($payload);
 
         $updated = new ActualExpense(
@@ -52,19 +66,27 @@ final class ActualExpenseService
         return $this->expenseRepository->update($updated);
     }
 
-    public function deleteExpense(int $expenseId): void
+    public function deleteExpense(int $expenseId, ?int $tripId = null): void
+    {
+        $this->policy->transaction(fn () => $this->deleteExpenseInternal($expenseId, $tripId));
+    }
+
+    private function deleteExpenseInternal(int $expenseId, ?int $tripId = null): void
     {
         $existing = $this->expenseRepository->getById($expenseId);
         if ($existing === null) {
             throw new NotFoundException('Actual expense not found.');
         }
 
+        $this->assertExpenseTrip($existing->tripId(), $tripId);
+        $this->policy->trip($existing->tripId(), 'expense.manage', true);
         $this->expenseRepository->delete($expenseId);
     }
 
     /** @return ActualExpense[] */
     public function getExpenses(int $tripId): array
     {
+        $this->policy->trip($tripId, 'expense.view');
         $this->assertTripExists($tripId);
 
         return $this->expenseRepository->findByTripId($tripId);
@@ -75,6 +97,13 @@ final class ActualExpenseService
      */
     public function getSettlement(int $tripId): array
     {
+        $this->policy->trip($tripId, 'settlement.view');
+        $snapshot = $this->policy->metadata($tripId)['settlement_snapshot'] ?? null;
+        if ($snapshot !== null) {
+            $result = json_decode($snapshot, true, 512, JSON_THROW_ON_ERROR);
+            $result['expenses'] = $this->expenseRepository->findByTripId($tripId);
+            return $result;
+        }
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
             throw new NotFoundException('Trip not found.');
@@ -142,6 +171,8 @@ final class ActualExpenseService
 
         return [
             'totalRevenue' => $totalRevenue,
+            'participantCount' => array_sum(array_map(static fn ($registration) => count($registration->participants()), $registrations)),
+            'registrationCount' => count($registrations),
             'plannedCostItems' => $plannedCostItems,
             'totalPlannedCosts' => $totalPlannedCosts,
             'totalAdditionalExpenses' => $totalAdditionalExpenses,
@@ -149,6 +180,11 @@ final class ActualExpenseService
             'surplus' => $surplus,
             'expenses' => $expenses,
         ];
+    }
+
+    private function assertExpenseTrip(int $actual, ?int $requested): void
+    {
+        if ($requested !== null && $requested !== $actual) { throw new NotFoundException('Actual expense not found.'); }
     }
 
     private function categoryLabel(string $type): string

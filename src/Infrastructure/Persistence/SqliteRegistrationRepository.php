@@ -21,7 +21,8 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
 
     public function save(Registration $registration): Registration
     {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) { $this->pdo->beginTransaction(); }
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO registrations (trip_id, room_category, received_at, comment, source, billing_calculated_at, billing_total)
@@ -55,7 +56,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
 
         $this->persistBillingItems($registrationId, $registration->billingItems());
 
-        $this->pdo->commit();
+        if ($ownsTransaction) { $this->pdo->commit(); }
 
         return $registration->withId($registrationId);
     }
@@ -67,7 +68,8 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
             throw new InvalidArgumentException('Registration id is required for billing update.');
         }
 
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) { $this->pdo->beginTransaction(); }
 
         $stmt = $this->pdo->prepare(
             'UPDATE registrations SET billing_calculated_at = :billingCalc, billing_total = :billingTotal WHERE id = :id'
@@ -84,7 +86,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
 
         $this->persistBillingItems($id, $registration->billingItems());
 
-        $this->pdo->commit();
+        if ($ownsTransaction) { $this->pdo->commit(); }
 
         return $registration;
     }

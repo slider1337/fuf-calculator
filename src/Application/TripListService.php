@@ -20,7 +20,8 @@ final readonly class TripListService
         private TripRepositoryInterface $tripRepository,
         private RegistrationRepositoryInterface $registrationRepository,
         private PriceCalculatorService $calculator,
-        private ActualExpenseService $actualExpenseService
+        private ActualExpenseService $actualExpenseService,
+        private AccessPolicy $policy
     ) {
     }
 
@@ -32,6 +33,7 @@ final readonly class TripListService
     {
         $items = [];
         foreach ($this->tripRepository->findAll() as $row) {
+            if (!$this->policy->can('trip', (int) $row['id'], 'trip.view')) { continue; }
             $items[] = $this->toListItem($row);
         }
 
@@ -42,6 +44,8 @@ final readonly class TripListService
     {
         $item = [
             'id' => (int) $row['id'],
+            'eventId' => isset($this->policy->metadata((int) $row['id'])['event_id']) ? (int) $this->policy->metadata((int) $row['id'])['event_id'] : null,
+            'closedAt' => $this->policy->metadata((int) $row['id'])['closed_at'] ?? null,
             'name' => (string) $row['name'],
             'startDate' => (string) $row['startDate'],
             'endDate' => $row['endDate'] ?? null,
@@ -68,7 +72,9 @@ final readonly class TripListService
             return [];
         }
 
-        $registrations = $this->registrationRepository->findByTripId($tripId);
+        $canRegistrations = $this->policy->can('trip', $tripId, 'registration.view');
+        $canFinance = $this->policy->can('trip', $tripId, 'settlement.view');
+        $registrations = ($canRegistrations || $canFinance) ? $this->registrationRepository->findByTripId($tripId) : [];
 
         $registeredParticipants = 0;
         foreach ($registrations as $registration) {
@@ -79,12 +85,12 @@ final readonly class TripListService
 
         return [
             'nights' => $trip->nights(),
-            'plannedParticipants' => $this->plannedParticipants($trip),
-            'registeredParticipants' => $registeredParticipants,
-            'surplus' => $hasRegistrations
+            'plannedParticipants' => ($canRegistrations || $canFinance || $this->policy->can('trip', $tripId, 'calculation.manage')) ? $this->plannedParticipants($trip) : null,
+            'registeredParticipants' => $canRegistrations ? $registeredParticipants : null,
+            'surplus' => !$canFinance ? null : ($hasRegistrations
                 ? $this->actualExpenseService->getSettlement($tripId)['surplus']
-                : $this->calculator->calculate($trip)['surplus'],
-            'surplusBasis' => $hasRegistrations ? 'settlement' : 'calculation',
+                : (($snapshot = $this->policy->metadata($tripId)['calculation_snapshot'] ?? null) !== null ? json_decode($snapshot, true)['surplus'] : $this->calculator->calculate($trip)['surplus'])),
+            'surplusBasis' => $canFinance ? ($hasRegistrations ? 'settlement' : 'calculation') : null,
         ];
     }
 

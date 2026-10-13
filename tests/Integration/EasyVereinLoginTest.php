@@ -51,6 +51,7 @@ final class EasyVereinLoginTest extends ApiTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->app->getContainer()->get(\PDO::class)->exec('DELETE FROM users');
         $this->provider = new FakeEasyVereinProvider();
         $this->app->getContainer()->set(EasyVereinProvider::class, $this->provider);
         $user = $this->app->getContainer()->get(AuthService::class)->setPasswordDirect('admin@example.com', 'local-password-123');

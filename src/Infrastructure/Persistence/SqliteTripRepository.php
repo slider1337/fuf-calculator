@@ -26,7 +26,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
     public function save(Trip $trip): Trip
     {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) { $this->pdo->beginTransaction(); }
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO trips (
@@ -59,7 +60,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $this->persistChildren($tripId, $trip);
 
-        $this->pdo->commit();
+        if ($ownsTransaction) { $this->pdo->commit(); }
 
         return $trip->withId($tripId);
     }
@@ -71,7 +72,8 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             throw new InvalidArgumentException('Trip id is required for update.');
         }
 
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) { $this->pdo->beginTransaction(); }
 
         $stmt = $this->pdo->prepare(
             'UPDATE trips SET
@@ -116,7 +118,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $this->persistChildren($tripId, $trip);
 
-        $this->pdo->commit();
+        if ($ownsTransaction) { $this->pdo->commit(); }
 
         return $trip;
     }
@@ -194,7 +196,10 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             endDate: isset($trip['end_date']) && $trip['end_date'] !== null
                 ? new DateTimeImmutable((string) $trip['end_date'])
                 : null,
-            roomReservations: $reservations
+            roomReservations: $reservations,
+            eventId: isset($trip['event_id']) ? (int) $trip['event_id'] : null,
+            closedAt: $trip['closed_at'] ?? null,
+            closedBy: isset($trip['closed_by']) ? (int) $trip['closed_by'] : null,
         );
     }
 

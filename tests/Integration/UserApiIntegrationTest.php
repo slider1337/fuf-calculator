@@ -11,6 +11,12 @@ use JsonException;
 
 final class UserApiIntegrationTest extends ApiTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->app->getContainer()->get(\PDO::class)->exec('DELETE FROM users');
+    }
+
     /**
      * @throws JsonException
      */

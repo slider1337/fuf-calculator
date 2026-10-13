@@ -17,7 +17,8 @@ final readonly class RegistrationService
     public function __construct(
         private RegistrationRepositoryInterface $registrationRepository,
         private TripRepositoryInterface $tripRepository,
-        private RegistrationBillingService $billingService
+        private RegistrationBillingService $billingService,
+        private AccessPolicy $policy
     ) {
     }
 
@@ -28,6 +29,11 @@ final readonly class RegistrationService
      * @throws DateMalformedStringException
      */
     public function importCsv(int $tripId, string $csvContent): array
+    {
+        return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->importCsvInternal($tripId, $csvContent));
+    }
+
+    private function importCsvInternal(int $tripId, string $csvContent): array
     {
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
@@ -56,6 +62,11 @@ final readonly class RegistrationService
      * @return Registration[]
      */
     public function addManualRegistration(int $tripId, array $data): array
+    {
+        return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->addManualRegistrationInternal($tripId, $data));
+    }
+
+    private function addManualRegistrationInternal(int $tripId, array $data): array
     {
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
@@ -121,6 +132,11 @@ final readonly class RegistrationService
      */
     public function deleteRegistration(int $tripId, int $registrationId): array
     {
+        return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->deleteRegistrationInternal($tripId, $registrationId));
+    }
+
+    private function deleteRegistrationInternal(int $tripId, int $registrationId): array
+    {
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
             throw new NotFoundException('Trip not found.');
@@ -141,6 +157,7 @@ final readonly class RegistrationService
      */
     public function getRegistrations(int $tripId): array
     {
+        $this->policy->trip($tripId, 'registration.view');
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
             throw new NotFoundException('Trip not found.');
@@ -153,6 +170,11 @@ final readonly class RegistrationService
      * @return Registration[]
      */
     public function recalculateBillings(int $tripId): array
+    {
+        return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->recalculateBillingsInternal($tripId));
+    }
+
+    private function recalculateBillingsInternal(int $tripId): array
     {
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
@@ -172,6 +194,11 @@ final readonly class RegistrationService
     }
 
     public function deleteRegistrations(int $tripId): void
+    {
+        $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->deleteRegistrationsInternal($tripId));
+    }
+
+    private function deleteRegistrationsInternal(int $tripId): void
     {
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {

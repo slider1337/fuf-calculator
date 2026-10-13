@@ -26,6 +26,8 @@ abstract class ApiTestCase extends TestCase
         putenv('DB_PATH=' . $this->dbPath);
 
         SqliteSchema::migrate($this->dbPath);
+        $seed = new \PDO('sqlite:' . $this->dbPath);
+        $seed->exec("INSERT INTO users (id,email,password_hash,role,created_at) VALUES (1,'test@example.com',NULL,'admin','2026-10-13')");
 
         $factory = require __DIR__ . '/../../config/app.php';
         $this->app = $factory();

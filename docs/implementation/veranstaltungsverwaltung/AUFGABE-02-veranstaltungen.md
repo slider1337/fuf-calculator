@@ -1,6 +1,6 @@
 # Schritt 02 – Veranstaltungen, Reisen und Teams
 
-Status: **offen** · Voraussetzung: Schritt 01 abgenommen.
+Status: **umgesetzt, technisch geprüft; manuelle Designabnahme offen** · [Prüfprotokoll](PRUEFUNG-02.md) · Voraussetzung: Schritt 01 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

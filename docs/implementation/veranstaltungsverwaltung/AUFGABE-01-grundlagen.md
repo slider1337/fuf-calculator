@@ -1,6 +1,6 @@
 # Schritt 01 – Rechte, Migration, Audit und Abschluss
 
-Status: **offen** · Voraussetzung: Keine; erster Umsetzungsschritt.
+Status: **umgesetzt, technisch geprüft; manuelle Designabnahme offen** · [Prüfprotokoll](PRUEFUNG-01.md) · Voraussetzung: Keine; erster Umsetzungsschritt.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

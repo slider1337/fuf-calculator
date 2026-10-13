@@ -32,7 +32,7 @@ final class ActualExpenseServiceTest extends TestCase
         $expenseRepo = new InMemoryActualExpenseRepository();
         $this->tripRepo = new InMemoryTripRepository();
         $this->regRepo = new InMemoryRegistrationRepository();
-        $this->service = new ActualExpenseService($expenseRepo, $this->tripRepo, $this->regRepo);
+        $this->service = new ActualExpenseService($expenseRepo, $this->tripRepo, $this->regRepo, \Tests\Support\AllowedPolicy::make());
     }
 
     private function createTrip(): Trip

@@ -43,7 +43,8 @@
             </div>
             <div class="offcanvas-body">
                 <nav class="app-nav">
-                    <a href="/" class="is-active">
+                    <a href="/events" id="nav-events">Veranstaltungen</a>
+                    <a href="/" id="nav-trips" class="is-active">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
                         Reisen
                     </a>
@@ -109,6 +110,7 @@
                             Nutzer einladen
                         </button>
                     </div>
+                    <button type="button" class="btn btn-o" id="legacy-preview-btn">Alt-Reiserechte prüfen</button>
                     <div id="users-status" class="status-note d-none"></div>
                     <table class="tb">
                         <thead>
@@ -159,6 +161,28 @@
             </div>
         </div>
     </div>
+
+    <section id="event-list-section" class="d-none">
+        <div class="page-head"><div><h1 class="fuf-display">Veranstaltungen</h1><span class="help">Wiederkehrende Veranstaltungen und ihre Reisen</span></div>
+        <button type="button" id="event-create-btn" class="btn btn-a">Veranstaltung anlegen</button></div>
+        <div class="event-toolbar"><label class="in"><span class="visually-hidden">Veranstaltungen suchen</span><input id="event-search" type="search" placeholder="Veranstaltungen suchen"></label>
+        <label><input id="event-archived" type="checkbox"> Archivierte anzeigen</label>
+        <div role="group" aria-label="Ansicht"><button type="button" class="btn btn-o" id="event-cards-btn" aria-pressed="true">Karten</button> <button type="button" class="btn btn-o" id="event-table-btn" aria-pressed="false">Tabelle</button></div></div>
+        <div id="event-list-content"></div>
+    </section>
+    <section id="event-detail-section" class="d-none">
+        <nav class="bc" aria-label="Pfad"><a href="/events" data-spa>Veranstaltungen</a><span aria-hidden="true">›</span><span id="event-breadcrumb"></span></nav>
+        <div class="page-head"><div><h1 class="fuf-display" id="event-title"></h1><p id="event-description" class="help"></p></div><span id="event-status" class="chip"></span></div>
+        <nav class="event-tabs" aria-label="Veranstaltungsbereiche">
+            <button class="btn btn-o" type="button" data-event-tab="reisen">Reisen</button><button class="btn btn-o" type="button" data-event-tab="formular">Formular</button><button class="btn btn-o" type="button" data-event-tab="standardteam">Standardteam</button><button class="btn btn-o" type="button" data-event-tab="einstellungen">Einstellungen</button>
+        </nav>
+        <div id="event-panel-reisen"><div class="event-toolbar"><button type="button" id="event-new-trip" class="btn btn-a">Neue Reise</button><button type="button" id="event-assign-trip" class="btn btn-o">Bestehende Reise zuordnen</button></div><div id="event-trips"></div></div>
+        <div id="event-panel-formular" class="d-none empty-state"><h2>Formular</h2><p>Der Formular-Editor folgt in Schritt 3. Hier ist noch kein Zusatzformular verfügbar.</p></div>
+        <div id="event-panel-standardteam" class="d-none"><section class="sec"><div class="sec-h"><h2>Standardteam</h2><button type="button" class="btn btn-o" id="default-team-add">Person hinzufügen</button></div><div class="sec-b"><p class="help">Beim Anlegen wird das Team unabhängig in die Reise kopiert. Spätere Änderungen wirken nur auf neue Reisen.</p><div id="default-team-list"></div></div></section><section class="sec"><div class="sec-h"><h2>Veranstaltungsverwaltung</h2><button type="button" class="btn btn-o" id="event-access-add">Person hinzufügen</button></div><div id="event-access-list" class="sec-b"></div></section></div>
+        <div id="event-panel-einstellungen" class="d-none"><form id="event-settings-form" class="sec"><div class="sec-h"><h2>Einstellungen</h2></div><div class="sec-b"><label class="f">Name<div class="in"><input id="event-setting-name" required maxlength="200"></div></label><label class="f">Beschreibung<div class="in"><textarea id="event-setting-description" maxlength="10000" rows="4"></textarea></div></label><label><input id="event-setting-archived" type="checkbox"> Archiviert</label><span class="help">Das Archiv erhält historische Reisen. Neue Reisen sind bis zur Reaktivierung gesperrt.</span><button type="submit" class="btn btn-p">Speichern</button></div></form></div>
+    </section>
+    <div id="management-status" class="status-note d-none" role="alert" tabindex="-1"></div>
+    <div class="modal fade" id="management-modal" tabindex="-1" aria-labelledby="management-title" aria-hidden="true"><div class="modal-dialog modal-lg modal-fullscreen-lg-down"><div class="modal-content"><form id="management-form"><div class="modal-header"><h2 class="modal-title" id="management-title"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button></div><div class="modal-body" id="management-fields"></div><div class="modal-footer"><button type="button" class="btn btn-o" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-p">Speichern</button></div><p class="help px-3" id="management-modal-error" role="alert"></p></form></div></div></div>
 
     <section id="trip-list-section">
         <div class="page-head">
@@ -227,7 +251,7 @@
                     <span class="help" id="trip-head-kpi-label">&Uuml;berschuss</span>
                     <b id="trip-head-kpi-value">&ndash;</b>
                 </div>
-                <ul class="nav nav-tabs trip-tabs" id="tripTabs" role="tablist">
+                <ul class="nav nav-tabs trip-tabs" id="tripTabs" role="tablist"><li class="nav-item" role="presentation"><button class="nav-link" id="tab-uebersicht" data-bs-toggle="tab" data-bs-target="#panel-uebersicht" type="button" role="tab" aria-controls="panel-uebersicht" aria-selected="false">Übersicht</button></li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="tab-planung" data-bs-toggle="tab" data-bs-target="#panel-planung" type="button" role="tab" aria-controls="panel-planung" aria-selected="true">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>
@@ -235,6 +259,7 @@
                         <span class="chip c-amber tab-chip d-none" id="tab-planung-count"></span>
                     </button>
                 </li>
+<li class="nav-item" role="presentation"><button class="nav-link" id="tab-anmeldungen" data-bs-toggle="tab" data-bs-target="#panel-anmeldungen" type="button" role="tab" aria-controls="panel-anmeldungen" aria-selected="false">Anmeldungen</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="tab-auswertung" data-bs-toggle="tab" data-bs-target="#panel-auswertung" type="button" role="tab" aria-controls="panel-auswertung" aria-selected="false">Auswertung</button></li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-abrechnung" data-bs-toggle="tab" data-bs-target="#panel-abrechnung" type="button" role="tab" aria-controls="panel-abrechnung" aria-selected="false">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
@@ -242,6 +267,7 @@
                         <span class="chip c-amber tab-chip d-none" id="tab-abrechnung-count"></span>
                     </button>
                 </li>
+<li class="nav-item" role="presentation"><button class="nav-link" id="tab-team" data-bs-toggle="tab" data-bs-target="#panel-team" type="button" role="tab" aria-controls="panel-team" aria-selected="false">Team &amp; Termin</button></li>
                 </ul>
                 <button id="trip-save-btn-head" class="btn btn-p btn-s" type="submit" form="trip-form">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
@@ -255,7 +281,11 @@
              sie auf dem Desktop neben der Ueberschrift und kann nicht an beiden Orten sein. -->
         <div class="trip-meta-m d-lg-none"><span class="help" id="trip-editor-meta-mobile"></span></div>
 
-        <div class="tab-content" id="tripTabContent">
+        <div class="tab-content" id="tripTabContent"><div class="tab-pane fade" id="panel-uebersicht" role="tabpanel" aria-labelledby="tab-uebersicht"><section class="sec"><div class="sec-h"><h2>Reiseübersicht</h2><span class="chip" id="trip-lifecycle-status"></span></div><div class="sec-b"><div id="trip-overview-details"></div><p class="help">Zusatzformulare, Buchungen und Auswertungen folgen in den weiteren Umsetzungsschritten. Die bisherige Planung und Abrechnung sind verfügbar.</p><div class="event-toolbar"><button type="button" class="btn btn-o" id="trip-duplicate">Reise duplizieren</button><button type="button" class="btn btn-p" id="trip-close">Abrechnung abschließen</button><button type="button" class="btn btn-o" id="trip-reopen">Begründet wiederöffnen</button></div></div></section></div>
+<div class="tab-pane fade" id="panel-anmeldungen" role="tabpanel" aria-labelledby="tab-anmeldungen"><div class="empty-state"><h2>Anmeldungen</h2><p>Die zentrale Buchungsverwaltung folgt in Schritt 5. Bestehende CSV- und manuelle Anmeldungen finden berechtigte Organisatoren weiterhin in der Planung.</p><button class="btn btn-o" type="button" data-trip-tab="planung">Zur Planung</button></div></div>
+<div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><div class="empty-state"><h2>Auswertung</h2><p>Die Auswertung versionierter Zusatzangaben folgt in Schritt 6. Es liegen noch keine solchen Daten vor.</p></div></div>
+<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help">Terminanlage und easyVerein-Abgleich folgen in Schritt 8 und 9. Hier werden noch keine externen Termine erstellt.</p></div></section></div>
+
         <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">
         <div class="pg">
         <div class="pg-main">
@@ -273,6 +303,8 @@
                     </div>
                     <div class="collapse show" id="sec-eckdaten-body">
                         <div class="sec-b">
+<label class="f">Veranstaltung<div class="in"><select id="trip-event-select" required></select></div></label>
+
                             <div class="fuf-grid fuf-grid-eck">
                                 <div class="f">
                                     <label for="name">Reisename</label>
@@ -1118,6 +1150,7 @@
                 </span>
                 <b id="trip-bar-kpi-value">&ndash;</b>
             </button>
+            <button id="trip-bar-team-btn" class="btn btn-p d-none" type="button">Person hinzufügen</button>
             <button id="trip-save-btn-bar" class="btn btn-p" type="submit" form="trip-form">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
                 <span id="trip-save-label-bar">Speichern</span>
@@ -1197,6 +1230,7 @@
 </div>
 <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/management.js"></script>
 </body>
 </html>
 

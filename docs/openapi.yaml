@@ -1,7 +1,9 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.0.0
+  version: 1.1.0
+security:
+  - calculatorSession: []
 servers:
   - url: /
 paths:
@@ -15,6 +17,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Settings'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
     put:
       summary: Globale Defaults aktualisieren
       requestBody:
@@ -32,10 +40,17 @@ paths:
                 $ref: '#/components/schemas/Settings'
         '422':
           $ref: '#/components/responses/ValidationError'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips:
     get:
-      summary: Alle Reisen als Liste
+      summary: Ausschließlich freigegebene Reisen als Liste
       responses:
         '200':
           description: OK
@@ -45,6 +60,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TripListItem'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
     post:
       summary: Reise anlegen
       requestBody:
@@ -62,33 +83,48 @@ paths:
                 $ref: '#/components/schemas/Trip'
         '422':
           $ref: '#/components/responses/ValidationError'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}:
     get:
       summary: Reise laden
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Trip'
+                anyOf:
+                - $ref: '#/components/schemas/Trip'
+                - $ref: '#/components/schemas/TripSummary'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+      description: trip.view erforderlich. Ohne calculation.manage oder settlement.view nur Stammdaten und Freigaben,
+        keine Finanzwerte.
     put:
       summary: Reise aktualisieren
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       requestBody:
         required: true
         content:
@@ -106,16 +142,21 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/calculate:
     post:
       summary: Reisepreise berechnen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -125,16 +166,21 @@ paths:
                 $ref: '#/components/schemas/CalculationResult'
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/registrations:
     get:
       summary: Anmeldungen einer Reise laden
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -146,14 +192,18 @@ paths:
                   $ref: '#/components/schemas/RegistrationWithBilling'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
     post:
       summary: Anmeldung manuell hinzufuegen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       requestBody:
         required: true
         content:
@@ -173,14 +223,20 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
     delete:
       summary: Alle Anmeldungen einer Reise loeschen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -194,21 +250,26 @@ paths:
                     example: deleted
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/registrations/{registrationId}:
     delete:
       summary: Einzelne Anmeldung loeschen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: registrationId
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: registrationId
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -220,23 +281,29 @@ paths:
                   $ref: '#/components/schemas/RegistrationWithBilling'
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/registrations/import:
     post:
       summary: CSV-Datei mit Anmeldungen importieren
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [csv_file]
+              required:
+              - csv_file
               properties:
                 csv_file:
                   type: string
@@ -254,16 +321,21 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/registrations/recalculate:
     post:
       summary: Abrechnungen aller Anmeldungen neu berechnen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -275,16 +347,21 @@ paths:
                   $ref: '#/components/schemas/RegistrationWithBilling'
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/actual-expenses:
     get:
       summary: Tatsaechliche Ausgaben einer Reise laden
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -296,14 +373,18 @@ paths:
                   $ref: '#/components/schemas/ActualExpense'
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
     post:
       summary: Tatsaechliche Ausgabe hinzufuegen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       requestBody:
         required: true
         content:
@@ -321,21 +402,26 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/actual-expenses/{expenseId}:
     put:
       summary: Tatsaechliche Ausgabe aktualisieren
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: expenseId
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: integer
       requestBody:
         required: true
         content:
@@ -353,19 +439,25 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
     delete:
       summary: Tatsaechliche Ausgabe loeschen
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: expenseId
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -379,16 +471,21 @@ paths:
                     example: deleted
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/trips/{id}/settlement:
     get:
       summary: Abrechnung / Settlement einer Reise
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -398,7 +495,10 @@ paths:
                 $ref: '#/components/schemas/SettlementResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Fähigkeit fehlt
   /api/auth/me:
     get:
       summary: Aktuell angemeldeten Benutzer laden
@@ -411,7 +511,10 @@ paths:
                 $ref: '#/components/schemas/CurrentUser'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
   /api/auth/invite:
     post:
       summary: Einladung an eine E-Mail-Adresse senden
@@ -438,7 +541,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthErrorBody'
-
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
+        '409':
+          description: Abgerechnete Reise gesperrt
   /api/users:
     get:
       summary: Alle Benutzer auflisten
@@ -451,16 +559,19 @@ paths:
                 $ref: '#/components/schemas/UserListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Reise nicht freigegeben oder Ressource fehlt
   /api/users/{id}:
     delete:
       summary: Benutzer loeschen (nur Admin)
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       responses:
         '200':
           description: OK
@@ -480,8 +591,598 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthErrorBody'
+        '409':
+          description: Abgerechnete Reise gesperrt
+  /api/events:
+    get:
+      summary: Erlaubte Veranstaltungen suchen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventListItem'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: archived
+        in: query
+        schema:
+          type: boolean
+          default: false
+    post:
+      summary: Veranstaltung anlegen
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+  /api/events/{id}:
+    get:
+      summary: Veranstaltung und ausschließlich erlaubte Reisen lesen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+    put:
+      summary: Stammdaten ändern, archivieren oder reaktivieren
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      description: revision muss dem aktuellen Stand entsprechen. Archivierung erhält historische Reisen und sperrt
+        neue Anlage.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/events/{id}/access:
+    get:
+      summary: Veranstaltungsrechte lesen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMember'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: access.manage am Ziel oder globaler Admin erforderlich.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/events/{id}/access/{userId}:
+    put:
+      summary: Veranstaltungsrechte vergeben oder widerrufen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantInput'
+      description: Leere capabilities widerruft. Kein impliziter fachlicher Zugriff für Admins. Nicht-Admins dürfen
+        keine über eigenen Freigaben hinausgehenden Reiserechte delegieren. Die Veranstaltungsvorlage ist eine unabhängige
+        Kopiervorlage.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/events/{id}/default-team:
+    get:
+      summary: Unabhängiges Standardteam lesen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMember'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: access.manage am Ziel oder globaler Admin erforderlich.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/events/{id}/default-team/{userId}:
+    put:
+      summary: Unabhängiges Standardteam vergeben oder widerrufen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantInput'
+      description: Leere capabilities widerruft. Kein impliziter fachlicher Zugriff für Admins. Nicht-Admins dürfen
+        keine über eigenen Freigaben hinausgehenden Reiserechte delegieren. Die Veranstaltungsvorlage ist eine unabhängige
+        Kopiervorlage.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/team:
+    get:
+      summary: Reiseteam lesen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMember'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: access.manage am Ziel oder globaler Admin erforderlich.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/team/{userId}:
+    put:
+      summary: Reiseteam vergeben oder widerrufen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantInput'
+      description: Leere capabilities widerruft. Kein impliziter fachlicher Zugriff für Admins. Nicht-Admins dürfen
+        keine über eigenen Freigaben hinausgehenden Reiserechte delegieren. Die Veranstaltungsvorlage ist eine unabhängige
+        Kopiervorlage.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/events/{id}/people:
+    get:
+      summary: Wählbare Kontoidentitäten für Teamverwaltung
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamPerson'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: access.manage am Ziel oder globaler Admin. Nur ID/E-Mail, keine Rolle, Passwörter oder Token.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/people:
+    get:
+      summary: Wählbare Kontoidentitäten für Teamverwaltung
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamPerson'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: access.manage am Ziel oder globaler Admin. Nur ID/E-Mail, keine Rolle, Passwörter oder Token.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/event:
+    put:
+      summary: Reise gezielt zuordnen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventAssignment'
+      description: trip.manage sowie event.manage der alten und neuen Veranstaltung. Abgerechnete Reise gesperrt.
+        Keine Änderung von Teilnehmern, Planung oder Reiserechten.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/close:
+    post:
+      summary: Abrechnung einfrieren
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonInput'
+      description: settlement.close, trip.view und settlement.view erforderlich. Finanzstände werden gespeichert.
+        Alle Finanzschreibwege und calculate sind anschließend gesperrt.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/reopen:
+    post:
+      summary: Abrechnung begründet wiederöffnen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonInput'
+      description: Separate Ausnahmeaktion mit settlement.reopen, Grund und Audit.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/trips/{id}/duplicate:
+    post:
+      summary: Planung als neue Reise kopieren
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    minimum: 1
+                required:
+                - id
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateInput'
+      description: trip.manage und calculation.manage am Original, event.manage der Veranstaltung. Kopiert Planungsdaten und aktuelle Standardteamvorlage,
+        niemals Teilnehmer, Antworten, Ist-Ausgaben, externe Referenzen oder Abschluss.
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  /api/admin/legacy-access:
+    get:
+      summary: Alt-Rechteübernahme vorschauen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegacyCandidate'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      description: Nur globaler Admin. Kandidaten sind der Benutzer-/Reisebestand zum Migrationszeitpunkt, noch
+        keine Freigabe.
+    post:
+      summary: Explizit ausgewählte Alt-Zuordnungen protokolliert übernehmen
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '401':
+          description: Anmeldung fehlt oder Konto gelöscht
+        '403':
+          description: Fähigkeit fehlt
+        '404':
+          description: Ressource fehlt oder Reise nicht freigegeben
+        '409':
+          description: Abgerechnet, archiviert oder Revisionskonflikt
+        '422':
+          description: Ungültige Eingaben
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacyAccessInput'
+      description: Nur Zuordnungen aus der Vorschau. Neue Benutzer erben keine Altfreigaben. Ohne capabilities wird
+        der bisherige funktionale Umfang konkret je Reise übernommen.
 
 components:
+  securitySchemes:
+    calculatorSession:
+      type: apiKey
+      in: cookie
+      name: fufsid
   responses:
     ValidationError:
       description: Validation error
@@ -531,6 +1232,263 @@ components:
             $ref: '#/components/schemas/AuthErrorBody'
 
   schemas:
+    EventInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        archived:
+          type: boolean
+        revision:
+          type: integer
+          minimum: 1
+      required:
+      - name
+    EventListItem:
+      allOf:
+      - $ref: '#/components/schemas/EventInput'
+      - type: object
+        properties:
+          id:
+            type: integer
+            minimum: 1
+          tripCount:
+            type: integer
+          nextTripDate:
+            type: string
+            format: date
+            nullable: true
+          capabilities:
+            type: array
+            items:
+              type: string
+        required:
+        - id
+        - tripCount
+        - nextTripDate
+        - capabilities
+    EventDetail:
+      allOf:
+      - $ref: '#/components/schemas/EventInput'
+      - type: object
+        properties:
+          id:
+            type: integer
+            minimum: 1
+          trips:
+            type: array
+            items:
+              $ref: '#/components/schemas/TripListItem'
+          capabilities:
+            type: array
+            items:
+              type: string
+        required:
+        - id
+        - trips
+        - capabilities
+    TeamMember:
+      type: object
+      properties:
+        userId:
+          type: integer
+          minimum: 1
+        email:
+          type: string
+          format: email
+        capabilities:
+          type: array
+          items:
+            type: string
+      required:
+      - userId
+      - email
+      - capabilities
+    GrantInput:
+      type: object
+      properties:
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum:
+            - trip.view
+            - trip.manage
+            - registration.view
+            - registration.manage
+            - answers.view
+            - answers.correct
+            - answers.export
+            - analytics.view
+            - calculation.manage
+            - settlement.view
+            - settlement.close
+            - settlement.reopen
+            - expense.view
+            - expense.manage
+            - term.manage
+            - access.manage
+            - event.view
+            - event.manage
+            - form.manage
+            - form.publish
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - capabilities
+      - reason
+    ReasonInput:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason
+    EventAssignment:
+      type: object
+      properties:
+        eventId:
+          type: integer
+          nullable: true
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - eventId
+      - reason
+    DuplicateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - name
+      - startDate
+    LegacyCandidate:
+      type: object
+      properties:
+        tripId:
+          type: integer
+          minimum: 1
+        tripName:
+          type: string
+        userId:
+          type: integer
+          minimum: 1
+        email:
+          type: string
+      required:
+      - tripId
+      - tripName
+      - userId
+      - email
+    LegacyAccessInput:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        pairs:
+          type: array
+          items:
+            type: object
+            properties:
+              tripId:
+                type: integer
+                minimum: 1
+              userId:
+                type: integer
+                minimum: 1
+              capabilities:
+                type: array
+                items:
+                  type: string
+            required:
+            - tripId
+            - userId
+      required:
+      - reason
+      - pairs
+    TeamPerson:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        email:
+          type: string
+      required:
+      - id
+      - email
+    ActionResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+      - ok
+    TripSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        eventId:
+          type: integer
+          nullable: true
+        closedAt:
+          type: string
+          nullable: true
+        closedBy:
+          type: integer
+          nullable: true
+        capabilities:
+          type: array
+          items:
+            type: string
+        calculationSnapshot:
+          allOf:
+          - $ref: '#/components/schemas/CalculationResult'
+          nullable: true
+      required:
+      - id
+      - name
+      - startDate
+      - endDate
+      - eventId
+      - closedAt
+      - closedBy
+      - capabilities
+      - calculationSnapshot
     Settings:
       type: object
       required:
@@ -615,6 +1573,11 @@ components:
         - bookings
         - groupExpenses
       properties:
+        eventId:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Veranstaltung für neue Durchführungen; ohne Angabe bleibt der bestehende API-Anlageweg kompatibel.
         name:
           type: string
         startDate:
@@ -666,18 +1629,27 @@ components:
 
     Trip:
       allOf:
-        - $ref: '#/components/schemas/CreateTripRequest'
-        - type: object
-          required: [id]
-          properties:
-            id:
-              type: integer
+      - $ref: '#/components/schemas/CreateTripRequest'
+      - type: object
+        required:
+        - id
+        properties:
+          id:
+            type: integer
+      - $ref: '#/components/schemas/TripSummary'
 
     TripListItem:
       type: object
       required:
-        [id, name, startDate, endDate, nights, plannedParticipants, registeredParticipants,
-         surplus, surplusBasis]
+      - id
+      - name
+      - startDate
+      - endDate
+      - nights
+      - plannedParticipants
+      - registeredParticipants
+      - surplus
+      - surplusBasis
       properties:
         id:
           type: integer
@@ -695,22 +1667,31 @@ components:
         plannedParticipants:
           type: integer
           description: Summe der geplanten Teilnehmer ueber alle Zimmerbuchungen.
+          nullable: true
         registeredParticipants:
           type: integer
           description: Summe der Teilnehmer ueber alle Anmeldungen.
+          nullable: true
         surplus:
           type: number
           format: float
           nullable: true
-          description: >-
-            Ueberschuss bzw. Defizit. null, wenn er fuer die Reise nicht bestimmbar ist.
+          description: Ueberschuss bzw. Defizit. null, wenn er fuer die Reise nicht bestimmbar
+            ist.
         surplusBasis:
           type: string
           nullable: true
-          enum: [calculation, settlement]
-          description: >-
-            Grundlage des Ueberschusses. "settlement", sobald Anmeldungen vorliegen, sonst
-            "calculation". null, wenn surplus null ist.
+          enum:
+          - calculation
+          - settlement
+          description: Grundlage des Ueberschusses. "settlement", sobald Anmeldungen vorliegen,
+            sonst "calculation". null, wenn surplus null ist.
+        eventId:
+          type: integer
+          nullable: true
+        closedAt:
+          type: string
+          nullable: true
 
     CalculationResult:
       type: object
@@ -916,8 +1897,14 @@ components:
 
     SettlementResponse:
       type: object
-      required: [totalRevenue, plannedCostItems, totalPlannedCosts, totalAdditionalExpenses, totalAllExpenses, surplus, expenses]
+      required: [participantCount, registrationCount, totalRevenue, plannedCostItems, totalPlannedCosts, totalAdditionalExpenses, totalAllExpenses, surplus, expenses]
       properties:
+        participantCount:
+          type: integer
+          minimum: 0
+        registrationCount:
+          type: integer
+          minimum: 0
         totalRevenue:
           type: number
           format: float

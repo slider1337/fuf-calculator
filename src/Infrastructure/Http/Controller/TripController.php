@@ -17,7 +17,8 @@ final readonly class TripController
 {
     public function __construct(
         private TripService $service,
-        private TripListService $listService
+        private TripListService $listService,
+        private \App\Application\AccessPolicy $policy
     ) {
     }
 
@@ -99,37 +100,15 @@ final readonly class TripController
 
     private function tripToArray($trip): array
     {
-        return [
-            'id' => $trip->id(),
-            'name' => $trip->name(),
-            'startDate' => $trip->startDate()->format('Y-m-d'),
-            'endDate' => $trip->endDate()?->format('Y-m-d'),
-            'markupPercent' => $trip->pricingPolicy()->markupPercent()->value(),
-            'clubFeePercent' => $trip->pricingPolicy()->clubFeePercent()->value(),
-            'distributionMethod' => $trip->pricingPolicy()->distributionMethod()->value,
-            'spaTaxPerPerson' => $trip->pricingPolicy()->spaTaxPerPerson(),
-            'spaTaxAgeThreshold' => $trip->pricingPolicy()->spaTaxAgeThreshold(),
-            'adultAgeThreshold' => $trip->pricingPolicy()->adultAgeThreshold(),
-            'averageAdultPrice' => $trip->pricingPolicy()->averageAdultPrice(),
-            'spaTaxCount' => $trip->spaTaxCount(),
-            'bookings' => array_map(static fn ($booking) => [
-                'categoryType' => $booking->categoryType()->value,
-                'count' => $booking->count(),
-                'basePricePerPerson' => $booking->basePricePerPerson(),
-                'salesPricePerPerson' => $booking->salesPricePerPerson(),
-            ], $trip->bookings()),
-            'groupExpenses' => array_map(static fn ($expense) => [
-                'label' => $expense->label(),
-                'amount' => $expense->amount(),
-            ], $trip->groupExpenses()),
-            'roomReservations' => array_map(static fn ($reservation) => [
-                'roomType' => $reservation->roomType(),
-                'count' => $reservation->count(),
-            ], $trip->roomReservations()),
+        $meta = $this->policy->metadata($trip->id());
+        $data = \App\Application\TripData::fromTrip($trip);
+        if (!$this->policy->can('trip', $trip->id(), 'calculation.manage') && !$this->policy->can('trip', $trip->id(), 'settlement.view')) {
+            $data = array_intersect_key($data, array_flip(['id', 'name', 'startDate', 'endDate']));
+        }
+        return $data + [
+            'eventId' => $trip->eventId(), 'closedAt' => $trip->closedAt(), 'closedBy' => $trip->closedBy(),
+            'capabilities' => $this->policy->capabilities('trip', $trip->id()),
+            'calculationSnapshot' => isset($meta['calculation_snapshot']) && $this->policy->can('trip', $trip->id(), 'settlement.view') ? json_decode($meta['calculation_snapshot'], true) : null,
         ];
     }
 }
-
-
-
-

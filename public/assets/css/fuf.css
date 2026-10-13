@@ -4289,3 +4289,38 @@ textarea {
 .in:has(input.is-invalid):focus-within {
     box-shadow: 0 0 0 3px rgba(155, 44, 44, .12);
 }
+
+/* Veranstaltungsverwaltung: existing FuF tokens, flexible cards, scoped tables. */
+.event-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:16px 0; }
+.event-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:16px; }
+.event-card { display:flex; flex-direction:column; gap:10px; padding:18px; color:var(--fuf-brown-900); background:white; border:1px solid var(--fuf-sand-400); border-radius:12px; text-decoration:none; min-width:0; }
+.event-card:hover { border-color:var(--fuf-green-600); }
+.event-card h2,.event-card h3 { font-size:20px; margin:0; }
+.event-card p { margin:0; overflow-wrap:anywhere; }
+.event-card-title { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.event-card-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-top:1px solid var(--fuf-sand-300); padding-top:12px; gap:12px; }
+.event-card-stats span,.event-card-stats b { display:block; }
+.event-tabs { display:flex; gap:8px; overflow-x:auto; margin-bottom:20px; }
+.event-tabs button { white-space:nowrap; min-height:46px; }
+.event-tabs .is-active { color:var(--fuf-green-600); border-bottom:3px solid var(--fuf-green-600); }
+.event-table-wrap { overflow-x:auto; }
+.empty-state { padding:32px 20px; border:1px dashed var(--fuf-sand-500); border-radius:12px; background:white; }
+.team-member { display:flex; gap:12px; align-items:center; justify-content:space-between; border-bottom:1px solid var(--fuf-sand-300); padding:12px 0; }
+.team-member p { margin:4px 0; }
+.capability-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:16px 0; }
+.capability-grid label { min-height:44px; display:flex; align-items:center; gap:8px; }
+#management-fields { display:flex; flex-direction:column; gap:12px; }
+#management-fields textarea,#event-settings-form textarea { width:100%; padding:10px; border:0; background:transparent; }
+.trip-tabs { max-width:100%; overflow-x:auto; flex-wrap:nowrap; }
+.trip-tabs .nav-link { white-space:nowrap; min-height:46px; }
+.trip-head-right { min-width:0; }
+@media(min-width:992px) { .trip-head { flex-wrap:wrap; } .trip-head-right { flex:1 1 100%; justify-content:space-between; } }
+@media(max-width:991.98px) { .trip-tabs { display:flex!important; width:100%; } .trip-tabs .nav-item { flex:0 0 auto!important; } .event-toolbar > .in { flex:1 1 100%; } #event-create-btn { position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:16px; right:16px; z-index:20; } #event-list-section { padding-bottom:80px; } .team-member { flex-wrap:wrap; } }
+
+body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display:none!important; }
+@media(max-width:991.98px) {
+  .nav-tabs.trip-tabs { background:transparent; padding:0; border-radius:0; }
+  .nav-tabs.trip-tabs .nav-link.active { background:transparent; box-shadow:none; border-bottom:3px solid var(--fuf-green-600); font-weight:700; }
+  #event-detail-section { padding-bottom:80px; }
+  #event-new-trip,#default-team-add,#event-settings-form button[type="submit"] { position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:16px; right:16px; z-index:20; }
+}

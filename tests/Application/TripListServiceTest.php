@@ -36,7 +36,8 @@ final class TripListServiceTest extends TestCase
         $this->expenseService = new ActualExpenseService(
             new InMemoryActualExpenseRepository(),
             $this->tripRepo,
-            $this->regRepo
+            $this->regRepo,
+            \Tests\Support\AllowedPolicy::make()
         );
     }
 
@@ -46,7 +47,8 @@ final class TripListServiceTest extends TestCase
             $this->tripRepo,
             $registrationRepository ?? $this->regRepo,
             $this->calculator,
-            $this->expenseService
+            $this->expenseService,
+            \Tests\Support\AllowedPolicy::make()
         );
     }
 

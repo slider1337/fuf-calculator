@@ -995,7 +995,7 @@ function observeHeadScroll() {
 }
 
 function activeTabName() {
-  return byId("tab-abrechnung").classList.contains("active") ? "abrechnung" : "planung";
+  return document.querySelector('#tripTabs .nav-link.active')?.id.replace('tab-', '') || 'planung';
 }
 
 // DESIGN: Die wichtigste Zahl des jeweiligen Bereichs, damit man sie aus jeder
@@ -1006,7 +1006,8 @@ function renderHeadKpi() {
   const source = isSettlement ? byId("settlement-surplus") : byId("panel-surplus");
   const value = source.textContent.trim();
   const label = isSettlement ? "Überschuss Ist" : "Überschuss";
-  const shown = value === "" ? "–" : value;
+  const allowed = !state.currentTrip || state.currentTrip.capabilities.some(c => ["calculation.manage","settlement.view"].includes(c));
+  const shown = allowed ? (value === "" ? "–" : value) : "Nicht freigegeben";
   const isNegative = value.includes("−") || value.startsWith("-");
 
   byId("trip-head-kpi-label").textContent = label;
@@ -1066,14 +1067,17 @@ function observeSheetSwipe() {
 }
 
 function renderHeadTabState() {
+  document.body.dataset.tripTab = activeTabName();
   byId("trip-head").classList.toggle("is-abrechnung", activeTabName() === "abrechnung");
   renderHeadKpi();
+  renderManagementBar();
 }
 
 // DESIGN: Der Tab steht im Hash, damit Zurueck-Button, Neuladen und geteilte
 // Links denselben Bereich zeigen.
 function tabFromHash() {
-  return window.location.hash === "#abrechnung" ? "abrechnung" : "planung";
+  const value = window.location.hash.slice(1);
+  return ['uebersicht','planung','anmeldungen','auswertung','abrechnung','team'].includes(value) ? value : 'uebersicht';
 }
 
 function showTab(name) {
@@ -1081,7 +1085,8 @@ function showTab(name) {
     return;
   }
 
-  const trigger = byId(name === "abrechnung" ? "tab-abrechnung" : "tab-planung");
+  const trigger = byId(`tab-${name}`);
+  if (!trigger || trigger.classList.contains('d-none')) { return; }
   if (window.bootstrap && window.bootstrap.Tab) {
     window.bootstrap.Tab.getOrCreateInstance(trigger).show();
   } else {
@@ -1199,6 +1204,7 @@ async function api(url, options = {}) {
 }
 
 function showListSection() {
+  hideEventSections();
   byId("trip-list-section").classList.remove("d-none");
   byId("trip-editor-section").classList.add("d-none");
   // DESIGN: Ohne offene Reise zeigt die Kopfleiste auf dem Handy wieder das Logo.
@@ -1265,6 +1271,7 @@ function setSectionsOnMobile(openIds = []) {
 }
 
 function showEditorSection(titleText, breadcrumbText, openSections = []) {
+  hideEventSections();
   byId("trip-editor-title").textContent = titleText;
   // DESIGN: Auf dem Handy traegt die App-Kopfleiste den Reisenamen, weil im
   // 52-px-Kopf darunter nur der Umschalter Platz hat.
@@ -1284,6 +1291,9 @@ function showEditorSection(titleText, breadcrumbText, openSections = []) {
 }
 
 function matchRoute(pathname) {
+  if (pathname === '/events') { return { name: 'events' }; }
+  const eventMatch = pathname.match(/^\/events\/(\d+)$/);
+  if (eventMatch) { return { name: 'event', eventId: Number(eventMatch[1]) }; }
   if (pathname === "/") {
     return { name: "list" };
   }
@@ -1304,6 +1314,7 @@ async function navigateTo(pathname, options = {}) {
   const { replace = false } = options;
   const currentPath = window.location.pathname;
 
+  if (currentPath !== pathname && !allowManagementNavigation()) { return; }
   if (currentPath !== pathname) {
     const method = replace ? "replaceState" : "pushState";
     window.history[method]({}, "", pathname);
@@ -1315,6 +1326,14 @@ async function navigateTo(pathname, options = {}) {
 async function renderCurrentRoute(options = {}) {
   const { reuseLoadedTrip = false } = options;
   const route = matchRoute(window.location.pathname);
+  byId('nav-events').classList.toggle('is-active', ['events', 'event'].includes(route.name));
+  byId('nav-trips').classList.toggle('is-active', !['events', 'event'].includes(route.name));
+  if (route.name === 'events') { await showEvents(); return; }
+  if (route.name === 'event') {
+    if (reuseLoadedTrip && management.event?.id === route.eventId) { await showEventTab(window.location.hash.slice(1) || 'reisen'); }
+    else { await showEvent(route.eventId); }
+    return;
+  }
 
   if (route.name === "list") {
     state.currentTripId = null;
@@ -1326,8 +1345,13 @@ async function renderCurrentRoute(options = {}) {
 
   if (route.name === "new-trip") {
     state.currentTripId = null;
+    state.currentTrip = null;
     clearTripFormWithDefaults();
+    await loadEventSelector();
+    snapshotTripForm();
+    resetTripPermissions();
     showEditorSection("Neue Reise", "Neue Reise", NEW_TRIP_OPEN_SECTIONS);
+    showTab('planung');
     return;
   }
 
@@ -1674,7 +1698,7 @@ function tripListRow(trip) {
       <td class="help fuf-num tb-col-id">#${trip.id}</td>
       <td class="tb-head"><button class="tb-title" type="button" data-trip-id="${trip.id}">${escapeHtml(trip.name)}</button></td>
       <td class="fuf-num tb-trip-meta">${iconCalendarSm}${formatTripPeriod(trip)}${nightsInfo}</td>
-      <td class="r tb-trip-meta">${iconUsersSm}${trip.registeredParticipants} / ${trip.plannedParticipants}</td>
+      <td class="r tb-trip-meta">${iconUsersSm}${trip.registeredParticipants ?? '–'} / ${trip.plannedParticipants ?? '–'}</td>
       ${tripSurplusCell(trip)}
       <td class="r tb-act">
         <span class="fuf-actions">
@@ -1710,7 +1734,7 @@ function renderTripList() {
   const tripWord = trips.length === 1 ? "Reise" : "Reisen";
   const participants = trips.reduce((sum, trip) => sum + effectiveParticipants(trip), 0);
   byId("trip-list-summary").textContent = hasTrips
-    ? `${trips.length} ${tripWord} · ${participants} Teilnehmer`
+    ? (trips.every(t => t.registeredParticipants !== null && t.plannedParticipants !== null) ? `${trips.length} ${tripWord} · ${participants} Teilnehmer` : `${trips.length} ${tripWord} · Teilnehmerzahlen teilweise nicht freigegeben`)
     : "";
   byId("trip-list-count").textContent = hasTrips
     ? `${matches.length} von ${trips.length} ${tripWord}`
@@ -1752,13 +1776,22 @@ async function loadTripList() {
 async function openTrip(tripId) {
   const trip = await api(`/api/trips/${tripId}`);
   state.currentTripId = trip.id;
-  fillTripForm(trip);
+  state.currentTrip = trip;
+  await loadEventSelector(trip.eventId);
+  if (Array.isArray(trip.bookings)) { fillTripForm(trip); } else { clearTripFormWithDefaults(); byId('tripFormId').value = trip.id; }
   showEditorSection(trip.name, `Reise #${trip.id}`);
+  renderTripManagement(trip);
   showTab(tabFromHash());
+  if (byId(`tab-${tabFromHash()}`).classList.contains('d-none')) {
+    showTab(trip.capabilities.includes('settlement.view') ? 'abrechnung' : 'uebersicht');
+  }
   byId("retentionPercent").value = formatDecimal(trip.clubFeePercent);
-  await calculateTripResult(String(trip.id));
-  await loadRegistrations(String(trip.id));
-  await loadSettlement(String(trip.id));
+  resetCalculationResult(); resetRegistrations(); resetSettlement();
+  if (trip.closedAt && trip.calculationSnapshot) { renderCalculationResult(trip.calculationSnapshot); }
+  else if (trip.capabilities.includes('calculation.manage')) { await calculateTripResult(String(trip.id)); }
+  if (trip.capabilities.includes('registration.view')) { await loadRegistrations(String(trip.id)); }
+  if (trip.capabilities.includes('settlement.view')) { await loadSettlement(String(trip.id)); }
+  applyTripWriteControls();
 }
 
 async function calculateTripResult(tripId) {
@@ -2244,6 +2277,7 @@ async function loadRegistrations(tripId) {
   try {
     const registrations = await api(`/api/trips/${tripId}/registrations`);
     renderRegistrations(registrations);
+  applyTripWriteControls();
   } catch (error) {
     resetRegistrations();
   }
@@ -2296,7 +2330,7 @@ function renderSettlement(settlement) {
   state.currentSettlement = settlement;
 
   const registrations = state.currentRegistrations || [];
-  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+  const participants = settlement.participantCount;
 
   byId("settlement-total-revenue").textContent = formatCurrency(settlement.totalRevenue);
   byId("settlement-total-expenses").textContent = formatCurrency(settlement.totalAllExpenses);
@@ -2412,7 +2446,7 @@ function renderSettlementPanel() {
   const distributable = round2(Number(settlement.surplus) - retention);
 
   const registrations = state.currentRegistrations || [];
-  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+  const participants = settlement.participantCount;
   const planned = Number(settlement.totalPlannedCosts);
   const additional = Number(settlement.totalAdditionalExpenses);
   const positiveRetention = Math.max(0, retention);
@@ -2550,6 +2584,7 @@ async function loadSettlement(tripId) {
   try {
     const settlement = await api(`/api/trips/${tripId}/settlement`);
     renderSettlement(settlement);
+  applyTripWriteControls();
   } catch (error) {
     resetSettlement();
   }
@@ -2576,6 +2611,7 @@ async function loadCurrentUser() {
       // DESIGN: Initialen fuer den Avatar in der Kopfleiste
       byId("current-user-avatar").textContent = initialsFromEmail(me.email);
     }
+    for (const id of ['open-users-btn', 'open-settings-btn']) { byId(id).classList.toggle('d-none', me?.role !== 'admin'); }
     const badge = byId("current-user-role-badge");
     if (me && me.role === "admin") {
       badge.classList.remove("d-none");
@@ -2878,7 +2914,7 @@ byId("trip-search").addEventListener("input", () => {
 byId("back-to-list-btn").addEventListener("click", async (event) => {
   // DESIGN: Der Breadcrumb-Link ersetzt den Button, das Routing bleibt clientseitig.
   event.preventDefault();
-  await navigateTo("/");
+  await navigateTo(event.currentTarget.getAttribute("href"));
 });
 
 // DESIGN: Denselben Weg zurueck gibt es zweimal - im Reisekopf auf dem Desktop,
@@ -2927,6 +2963,8 @@ byId("trip-form").addEventListener("submit", async (event) => {
 
   try {
     const payload = tripPayloadFromForm();
+    if (!tripIdValue) { payload.eventId = Number(byId('trip-event-select').value); }
+    else if (Number(byId('trip-event-select').value) !== (state.currentTrip?.eventId || 0)) { throw new Error('Die Zuordnung bestehender Reisen erfolgt in der Veranstaltung.'); }
     const trip = tripIdValue
       ? await api(`/api/trips/${tripIdValue}`, { method: "PUT", body: JSON.stringify(payload) })
       : await api("/api/trips", { method: "POST", body: JSON.stringify(payload) });
@@ -3100,6 +3138,7 @@ byId("recalculate-billings-btn").addEventListener("click", async () => {
   try {
     const registrations = await api(`/api/trips/${tripId}/registrations/recalculate`, { method: "POST" });
     renderRegistrations(registrations);
+  applyTripWriteControls();
     alert("Abrechnungen wurden neu berechnet.");
   } catch (error) {
     alert("Fehler bei Neuberechnung: " + error.message);
@@ -3197,6 +3236,7 @@ byId("manual-registration-form").addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
     renderRegistrations(registrations);
+  applyTripWriteControls();
     // Reset form
     byId("manual-registration-form").reset();
     const container = byId("manual-participants-container");
@@ -3239,6 +3279,7 @@ byId("registrations-accordion").addEventListener("click", async (event) => {
   try {
     const registrations = await api(`/api/trips/${tripId}/registrations/${deleteRegId}`, { method: "DELETE" });
     renderRegistrations(registrations);
+  applyTripWriteControls();
   } catch (error) {
     alert("Fehler beim Löschen: " + error.message);
   }
@@ -3315,7 +3356,7 @@ byId("tab-abrechnung").addEventListener("shown.bs.tab", async () => {
   renderHeadTabState();
   const tripId = byId("tripFormId").value;
   if (tripId) {
-    await loadSettlement(tripId);
+    if (state.currentTrip?.capabilities.includes('settlement.view')) { await loadSettlement(tripId); }
   }
 });
 

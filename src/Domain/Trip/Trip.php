@@ -26,6 +26,9 @@ final readonly class Trip
         private int $spaTaxCount = 0,
         private ?DateTimeImmutable $endDate = null,
         private array $roomReservations = [],
+        private ?int $eventId = null,
+        private ?string $closedAt = null,
+        private ?int $closedBy = null,
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Trip name is required.');
@@ -63,7 +66,10 @@ final readonly class Trip
             $this->plannedTotalRevenue,
             $this->spaTaxCount,
             $this->endDate,
-            $this->roomReservations
+            $this->roomReservations,
+            $this->eventId,
+            $this->closedAt,
+            $this->closedBy
         );
     }
 
@@ -119,6 +125,10 @@ final readonly class Trip
     {
         return $this->endDate;
     }
+
+    public function eventId(): ?int { return $this->eventId; }
+    public function closedAt(): ?string { return $this->closedAt; }
+    public function closedBy(): ?int { return $this->closedBy; }
 
     public function nights(): int
     {

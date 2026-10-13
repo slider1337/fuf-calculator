@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Website · Formular-Zustände</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+.w{font-family:'Figtree',system-ui,sans-serif;color:#2E2217;background:#F4EBDD;font-size:16px;line-height:1.45}
+.w *{box-sizing:border-box}
+.zs{font-family:'Zilla Slab',Georgia,serif;font-weight:700}
+.wcard{background:#FFFBF3;border:1px solid #E3D3B8;border-radius:24px;box-shadow:0 20px 44px rgba(74,46,26,.12);overflow:hidden}
+.wood{color:#FBF5EA;background-color:#8A5A34;background-image:repeating-linear-gradient(180deg,rgba(58,34,18,.22) 0,rgba(58,34,18,.22) 1px,transparent 1px,transparent 5px),repeating-linear-gradient(180deg,rgba(255,226,180,.12) 0,rgba(255,226,180,.12) 2px,transparent 2px,transparent 11px)}
+.muted{color:#6B5540;font-size:14px}
+.pill{min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #D2B98F;background:#FFFBF3;color:#4A2E1A;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.pill.on{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.pill.bad{border-color:#B3261E}
+.prow{padding:12px 14px;border:2px solid #E3D3B8;border-radius:16px;display:flex;gap:12px;align-items:center;background:#FFFBF3;width:100%;font:inherit;text-align:left;cursor:pointer;color:#2E2217}
+.prow.on{border-color:#3F7F3A;background:#EEF1E2}
+.box26{width:26px;height:26px;border-radius:8px;border:2px solid #8A5A34;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#FFFBF3}
+.prow.on .box26{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.wav{width:40px;height:40px;border-radius:50%;border:2px solid #8A5A34;display:flex;align-items:center;justify-content:center;font-family:'Zilla Slab',Georgia,serif;font-weight:700;font-size:14px;flex-shrink:0;background:#F9E3B8}
+.wbtn{min-height:52px;padding:0 24px;border-radius:999px;border:0;background:#E4702A;color:#2A1A0E;font:inherit;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(228,112,42,.3);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.wbtn2{min-height:48px;padding:0 20px;border-radius:999px;border:2px solid #7A4B2A;background:transparent;color:#4A2E1A;font:inherit;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.winp{display:flex;align-items:center;min-height:48px;border:2px solid #D2B98F;border-radius:12px;background:#fff;overflow:hidden}
+.winp input,.winp textarea{border:0;outline:0;background:transparent;flex-grow:1;min-width:0;padding:10px 14px;font:inherit;font-size:16px;color:#2E2217}
+.winp span{padding:0 14px;align-self:stretch;display:flex;align-items:center;background:#F5EFE4;color:#6B5540;font-weight:600;font-size:14px}
+.wq{display:flex;flex-direction:column;gap:8px}
+.wq>b{font-size:16px}
+.werr{border-left:0;background:#FBE4E1;color:#7A1A14;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+.wchk{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:2px solid #E3D3B8;border-radius:16px;background:#FFFBF3;font:inherit;text-align:left;cursor:pointer;color:#2E2217;width:100%}
+.wchk.on{border-color:#3F7F3A;background:#EEF1E2}.wchk.bad{border-color:#B3261E;background:#FFF4F2}
+.wchk.on .box26{background:#3F7F3A;border-color:#3F7F3A;color:#FBF5EA}
+.wstep{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#8A7762}
+.wstep i{width:24px;height:24px;border-radius:50%;border:2px solid #D2B98F;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+.wstep.on{color:#2E2217}.wstep.on i{background:#4A2E1A;border-color:#4A2E1A;color:#FBF5EA}.wstep.done{color:#3F7F3A}.wstep.done i{border-color:#3F7F3A}
+.sumrow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed #E3D3B8;font-size:15px}
+.sumrow b{text-align:right}
+</style>
+</helmet>
+<div class="w" style="padding:40px;min-height:1200px"><h1 class="zs" style="margin:0 0 6px;font-size:36px">Website-Formular · Zustände</h1><p class="muted" style="margin:0 0 28px">Mitgliederseite im Stil „Holz &amp; Lagerfeuer“. Formulardefinition kommt aus dem Calculator.</p>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Pflichtfehler</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><div class="werr" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><span>2 Angaben fehlen – bitte unten ergänzen.</span></div><button type="button" class="wchk bad"><span class="box26"></span><span>Ich übernehme für alle angemeldeten Kinder die Aufsichtspflicht. *</span></button><span style="color:#B3261E;font-weight:700;font-size:14px">Diese Bestätigung ist nötig, weil Kinder angemeldet sind.</span><div class="wq"><b>Skikurs gewünscht? · Paul *</b><div style="display:flex;gap:8px"><button type="button" class="pill bad">Ja</button><button type="button" class="pill bad">Nein</button></div><span style="color:#B3261E;font-weight:700;font-size:14px">Bitte Ja oder Nein wählen.</span></div></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Formular wurde aktualisiert</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><div style="background:#F9E1C8;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><b>Das Anmeldeformular hat sich geändert, während du es ausgefüllt hast.</b><span style="font-size:14px">Deine bisherigen Angaben sind übernommen. Bitte ergänze nur die neue Frage.</span></div><div class="sumrow"><span>Vegetarische Essen</span><b style="color:#3F7F3A">übernommen</b></div><div class="sumrow"><span>Ankunftszeit</span><b style="color:#3F7F3A">übernommen</b></div><div class="wq"><b>Neu: Skikurs gewünscht? · Lena *</b><div style="display:flex;gap:8px"><button type="button" class="pill">Ja</button><button type="button" class="pill">Nein</button></div></div><button type="button" class="wbtn">Weiter zur Zusammenfassung</button></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Teilfehler nach dem Absenden</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><span class="zs" style="font-size:22px">Fast geschafft</span><span>Anmeldung gespeichert (B-2027-0013).</span><div class="sumrow"><span>Maria, Stefan, Paul</span><b style="color:#3F7F3A">bestätigt</b></div><div class="sumrow"><span>Lena</span><b style="color:#B4501A">wird noch geprüft</b></div><div style="background:#F9E1C8;border-radius:12px;padding:12px 14px;font-size:14px">Bitte nicht erneut abschicken – es entsteht keine doppelte Anmeldung.</div></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Angaben ergänzen (Mein Bereich)</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><div style="background:#EEF1E2;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><b>Winterfreizeit 2027 · bitte Angaben ergänzen</b><span style="font-size:14px">Das Orgateam hat eine neue Frage hinzugefügt. Deine Anmeldung bleibt gültig.</span></div><a href="W01-Anmeldung.dc.html" class="wbtn" style="align-self:flex-start">Angaben ergänzen</a></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Erfolg</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><span style="width:52px;height:52px;border-radius:50%;background:#3F7F3A;color:#FBF5EA;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"></path></svg></span><span class="zs" style="font-size:22px">Ihr seid angemeldet!</span><span>Buchung B-2027-0013 · 4 Personen · 1.156 €</span></div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><b class="zs" style="font-size:18px">Anmeldung gesperrt</b><div class="wcard" style="padding:18px;display:flex;flex-direction:column;gap:12px"><div style="background:#F5EFE4;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><b>Anmeldung noch nicht geöffnet</b><span style="font-size:14px">Der Termin wird gerade in der Vereinsverwaltung angelegt. Schau bald wieder vorbei.</span></div><span class="muted">Erscheint, solange keine bestätigte Termin-ID vorliegt.</span></div></div>
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

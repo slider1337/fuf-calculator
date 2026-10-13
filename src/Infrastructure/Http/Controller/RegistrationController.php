@@ -15,7 +15,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class RegistrationController
 {
-    public function __construct(private RegistrationService $service)
+    public function __construct(private RegistrationService $service, private \App\Application\AccessPolicy $policy)
     {
     }
 
@@ -25,6 +25,7 @@ final readonly class RegistrationController
      */
     public function import(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
+        $this->policy->trip((int) $id, 'registration.manage', true);
         $uploadedFiles = $request->getUploadedFiles();
         $csvFile = $uploadedFiles['csv_file'] ?? null;
 

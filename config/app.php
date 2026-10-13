@@ -19,6 +19,15 @@ return static function (?ContainerInterface $container = null): App {
     $displayErrors = (bool) (getenv('APP_DEBUG') ?: false);
     $errorMiddleware = $app->addErrorMiddleware($displayErrors, false, false);
     $errorMiddleware->setDefaultErrorHandler(static function ($request, Throwable $exception, bool $displayErrorDetails) use ($app) {
+        if ($exception instanceof \App\Application\AccessException) {
+            return \App\Infrastructure\Http\JsonResponder::write($app->getResponseFactory()->createResponse(), ['error' => $exception->error], $exception->status);
+        }
+        if ($exception instanceof \App\Application\ValidationException) {
+            return \App\Infrastructure\Http\JsonResponder::write($app->getResponseFactory()->createResponse(), ['error' => 'validation_error', 'details' => $exception->errors()], 422);
+        }
+        if ($exception instanceof \App\Application\NotFoundException) {
+            return \App\Infrastructure\Http\JsonResponder::write($app->getResponseFactory()->createResponse(), ['error' => 'not_found'], 404);
+        }
         $response = $app->getResponseFactory()->createResponse(500);
         $response->getBody()->write((string)json_encode([
                                                             'error' => 'server_error',

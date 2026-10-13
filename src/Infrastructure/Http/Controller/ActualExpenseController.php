@@ -61,7 +61,7 @@ final readonly class ActualExpenseController
         $payload = (array) $request->getParsedBody();
 
         try {
-            $expense = $this->service->updateExpense((int) $expenseId, $payload);
+            $expense = $this->service->updateExpense((int) $expenseId, $payload, (int) $id);
         } catch (ValidationException $exception) {
             return JsonResponder::write($response, [
                 'error' => 'validation_error',
@@ -80,7 +80,7 @@ final readonly class ActualExpenseController
     public function delete(ServerRequestInterface $request, ResponseInterface $response, string $id, string $expenseId): ResponseInterface
     {
         try {
-            $this->service->deleteExpense((int) $expenseId);
+            $this->service->deleteExpense((int) $expenseId, (int) $id);
         } catch (NotFoundException) {
             return JsonResponder::write($response, ['error' => 'not_found'], 404);
         }
@@ -101,6 +101,8 @@ final readonly class ActualExpenseController
 
         return JsonResponder::write($response, [
             'totalRevenue' => $settlement['totalRevenue'],
+            'participantCount' => $settlement['participantCount'],
+            'registrationCount' => $settlement['registrationCount'],
             'plannedCostItems' => $settlement['plannedCostItems'],
             'totalPlannedCosts' => $settlement['totalPlannedCosts'],
             'totalAdditionalExpenses' => $settlement['totalAdditionalExpenses'],

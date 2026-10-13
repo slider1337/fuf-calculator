@@ -15,7 +15,7 @@ use Throwable;
 
 final readonly class AuthController
 {
-    public function __construct(private AuthService $service, private \App\Infrastructure\Http\Auth\EasyVereinProvider $easyVerein)
+    public function __construct(private AuthService $service, private \App\Infrastructure\Http\Auth\EasyVereinProvider $easyVerein, private \App\Application\AccessPolicy $policy)
     {
     }
 
@@ -167,7 +167,7 @@ final readonly class AuthController
     {
         return JsonResponder::write($response, [
             'email' => Session::userEmail(),
-            'role' => Session::userRole(),
+            'role' => $this->policy->isAdmin() ? 'admin' : 'user',
         ]);
     }
 }

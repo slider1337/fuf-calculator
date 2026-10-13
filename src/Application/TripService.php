@@ -22,23 +22,43 @@ final readonly class TripService
 {
     public function __construct(
         private TripRepositoryInterface $repository,
-        private PriceCalculatorService $calculator
+        private PriceCalculatorService $calculator,
+        private AccessPolicy $policy,
+        private \App\Application\Port\EventRepositoryInterface $events
     ) {
     }
 
     public function createFromArray(array $payload): Trip
     {
-        return $this->repository->save($this->mapPayloadToTrip($payload, null));
+        $this->policy->actorId();
+        return $this->policy->transaction(function () use ($payload) {
+            $eventId = isset($payload['eventId']) ? (int) $payload['eventId'] : null;
+            if ($eventId !== null) {
+                $this->policy->require('event', $eventId, 'event.manage');
+                $event = $this->events->get($eventId) ?? throw new NotFoundException('Event not found');
+                if ($event->archived) { throw new AccessException('event_archived', 409); }
+            }
+            $trip = $this->repository->save($this->mapPayloadToTrip($payload, null));
+            $this->policy->setMetadata($trip->id(), ['event_id' => $eventId]);
+            $this->policy->initializeTrip($trip->id(), $eventId);
+            return $this->repository->getById($trip->id());
+        });
     }
 
     public function updateFromArray(int $id, array $payload): Trip
+    {
+        return $this->policy->writeTrip($id, 'calculation.manage', fn () => $this->updateInternal($id, $payload));
+    }
+
+    private function updateInternal(int $id, array $payload): Trip
     {
         $existing = $this->repository->getById($id);
         if ($existing === null) {
             throw new NotFoundException('Trip not found.');
         }
 
-        return $this->repository->update($this->mapPayloadToTrip($payload, $id));
+        $this->repository->update($this->mapPayloadToTrip($payload, $id));
+        return $this->repository->getById($id);
     }
 
     private function mapPayloadToTrip(array $payload, ?int $id): Trip
@@ -186,6 +206,7 @@ final readonly class TripService
 
     public function getTrip(int $id): Trip
     {
+        $this->policy->trip($id, 'trip.view');
         $trip = $this->repository->getById($id);
         if ($trip === null) {
             throw new NotFoundException('Trip not found.');
@@ -196,6 +217,7 @@ final readonly class TripService
 
     public function calculate(int $tripId): array
     {
+        $this->policy->trip($tripId, 'calculation.manage', true);
         return $this->calculator->calculate($this->getTrip($tripId));
     }
 }

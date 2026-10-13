@@ -12,6 +12,8 @@ use Slim\Psr7\Factory\ResponseFactory;
 
 final class AuthMiddleware implements MiddlewareInterface
 {
+    public function __construct(private \App\Application\AccessPolicy $policy) {}
+
     private const PUBLIC_PATHS = [
         '/login',
         '/auth/easyverein',
@@ -26,6 +28,14 @@ final class AuthMiddleware implements MiddlewareInterface
         Session::start();
 
         $path = $request->getUri()->getPath();
+        if (Session::userId() !== null && !$this->isPublic($path)) {
+            try {
+                $this->policy->actorId();
+                if ($path === '/api/users' || str_starts_with($path, '/api/users/') || $path === '/api/auth/invite' || ($path === '/api/settings' && $request->getMethod() !== 'GET')) { $this->policy->admin(); }
+            } catch (\App\Application\AccessException $e) {
+                return \App\Infrastructure\Http\JsonResponder::write((new ResponseFactory())->createResponse(), ['error' => $e->error], $e->status);
+            }
+        }
         if (Session::userId() !== null || $this->isPublic($path)) {
             return $handler->handle($request);
         }

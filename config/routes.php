@@ -36,6 +36,8 @@ return static function (App $app): void {
 
     $app->get('/', $renderSpa);
     $app->get('/trips/new', $renderSpa);
+    $app->get('/events', $renderSpa);
+    $app->get('/events/{id:[0-9]+}', $renderSpa);
     $app->get('/trips/{id:[0-9]+}', $renderSpa);
 
     $app->get('/api/auth/me', [AuthController::class, 'me']);
@@ -65,6 +67,24 @@ return static function (App $app): void {
     $app->put('/api/trips/{id}/actual-expenses/{expenseId}', [ActualExpenseController::class, 'update']);
     $app->delete('/api/trips/{id}/actual-expenses/{expenseId}', [ActualExpenseController::class, 'delete']);
     $app->get('/api/trips/{id}/settlement', [ActualExpenseController::class, 'settlement']);
+
+    $eventController = \App\Infrastructure\Http\Controller\EventController::class;
+    $app->get('/api/events/{id:[0-9]+}/people', [$eventController, 'people']);
+    $app->get('/api/trips/{id:[0-9]+}/people', [$eventController, 'people']);
+    $app->get('/api/events', [$eventController, 'list']);
+    $app->post('/api/events', [$eventController, 'create']);
+    $app->get('/api/events/{id:[0-9]+}', [$eventController, 'get']);
+    $app->put('/api/events/{id:[0-9]+}', [$eventController, 'update']);
+    foreach (['/api/events/{id:[0-9]+}/access', '/api/events/{id:[0-9]+}/default-team', '/api/trips/{id:[0-9]+}/team'] as $teamPath) {
+        $app->get($teamPath, [$eventController, 'team']);
+        $app->put($teamPath . '/{userId:[0-9]+}', [$eventController, 'grant']);
+    }
+    $app->put('/api/trips/{id:[0-9]+}/event', [$eventController, 'assign']);
+    $app->post('/api/trips/{id:[0-9]+}/close', [$eventController, 'close']);
+    $app->post('/api/trips/{id:[0-9]+}/reopen', [$eventController, 'reopen']);
+    $app->post('/api/trips/{id:[0-9]+}/duplicate', [$eventController, 'duplicate']);
+    $app->get('/api/admin/legacy-access', [$eventController, 'legacyPreview']);
+    $app->post('/api/admin/legacy-access', [$eventController, 'legacyImport']);
 
     $app->get('/docs', static function ($request, $response) {
         $html = file_get_contents(__DIR__ . '/../public/docs/index.html');

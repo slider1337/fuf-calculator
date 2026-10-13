@@ -17,7 +17,7 @@ final class TripServiceTest extends TestCase
 {
     public function testCreateFromArrayRequiresAllFields(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $this->expectException(ValidationException::class);
         $service->createFromArray(['name' => 'Unvollstaendig']);
@@ -25,7 +25,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayMapsAdultAgeThreshold(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload(['adultAgeThreshold' => 14]));
 
@@ -34,7 +34,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayWithoutAdultAgeThresholdThrowsValidation(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
         $payload = $this->validPayload();
         unset($payload['adultAgeThreshold']);
 
@@ -44,7 +44,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayMapsAverageAdultPrice(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload(['averageAdultPrice' => true]));
 
@@ -53,7 +53,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayWithoutAverageAdultPriceDefaultsToOff(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload());
 
@@ -62,7 +62,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayMapsRoomReservations(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload(['roomReservations' => [
             ['roomType' => '2-Bettzimmer', 'count' => 4],
@@ -78,7 +78,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayWithoutRoomReservationsHasNone(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload());
 
@@ -87,7 +87,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArraySkipsRoomReservationWithoutTypeAndCount(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $trip = $service->createFromArray($this->validPayload(['roomReservations' => [
             ['roomType' => '2-Bettzimmer', 'count' => 4],
@@ -99,7 +99,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayRejectsRoomReservationWithoutTypeButWithCount(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         try {
             $service->createFromArray($this->validPayload(['roomReservations' => [
@@ -113,7 +113,7 @@ final class TripServiceTest extends TestCase
 
     public function testCreateFromArrayRejectsDuplicateRoomType(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         try {
             $service->createFromArray($this->validPayload(['roomReservations' => [
@@ -152,7 +152,7 @@ final class TripServiceTest extends TestCase
 
     public function testGetTripThrowsNotFoundForUnknownId(): void
     {
-        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService());
+        $service = new TripService(new InMemoryTripRepository(), new PriceCalculatorService(), \Tests\Support\AllowedPolicy::make(), \Tests\Support\AllowedPolicy::events());
 
         $this->expectException(NotFoundException::class);
         $service->getTrip(9999);

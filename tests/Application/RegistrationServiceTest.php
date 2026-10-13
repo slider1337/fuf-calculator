@@ -33,7 +33,7 @@ final class RegistrationServiceTest extends TestCase
         $registrationRepo = new InMemoryRegistrationRepository();
         $this->tripRepo = new InMemoryTripRepository();
         $billingService = new RegistrationBillingService(new PriceCalculatorService());
-        $this->service = new RegistrationService($registrationRepo, $this->tripRepo, $billingService);
+        $this->service = new RegistrationService($registrationRepo, $this->tripRepo, $billingService, \Tests\Support\AllowedPolicy::make());
     }
 
     private function createTrip(): Trip

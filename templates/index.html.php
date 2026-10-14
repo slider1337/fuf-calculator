@@ -1,3 +1,6 @@
+<?php
+$assetVersion = static fn (string $path): string => substr(hash_file('sha256', __DIR__ . '/../public' . $path), 0, 12);
+?>
 <!doctype html>
 <html lang="de">
 <head>
@@ -5,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/assets/css/fuf.css">
+    <link rel="stylesheet" href="/assets/css/fuf.css?v=<?= $assetVersion('/assets/css/fuf.css') ?>">
 </head>
 <body>
 <div class="app-shell">
@@ -1239,11 +1242,11 @@
     </footer>
 </div>
 <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/assets/js/app.js"></script>
-<script src="/assets/js/management.js"></script>
-<script src="/assets/js/forms.js"></script>
-<script src="/assets/js/bookings.js"></script>
-<script src="/assets/js/workflows.js"></script>
+<script src="/assets/js/app.js?v=<?= $assetVersion('/assets/js/app.js') ?>"></script>
+<script src="/assets/js/management.js?v=<?= $assetVersion('/assets/js/management.js') ?>"></script>
+<script src="/assets/js/forms.js?v=<?= $assetVersion('/assets/js/forms.js') ?>"></script>
+<script src="/assets/js/bookings.js?v=<?= $assetVersion('/assets/js/bookings.js') ?>"></script>
+<script src="/assets/js/workflows.js?v=<?= $assetVersion('/assets/js/workflows.js') ?>"></script>
 </body>
 </html>
 

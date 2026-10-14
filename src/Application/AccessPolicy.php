@@ -35,6 +35,7 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
     public function trip(int $id, string $capability, bool $write = false): void
     {
         $this->require('trip', $id, $capability);
+        if ($write && ($this->access->metadata($id)['archived_at'] ?? null) !== null) { throw new AccessException('trip_archived', 409); }
         if ($write && ($this->access->metadata($id)['closed_at'] ?? null) !== null) { throw new AccessException('trip_closed', 409); }
     }
     public function writeTrip(int $id, string $capability, callable $operation): mixed

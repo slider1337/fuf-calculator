@@ -12,9 +12,9 @@ final readonly class MemberBookingService {
   if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),503);}
   $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
   if(!$s||!(bool)$s['enabled']||!$this->store->link($trip)){throw new NotFoundException('Member trip');}
-  if((int)$s['retention_until']<time()){throw new AccessException('member_retention_period_expired',410);}
+  if($mode!=='read'&&($this->access->metadata($trip)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
   if(($this->access->metadata($trip)['closed_at']??null)!==null&&$mode!=='read'){throw new AccessException('trip_closed',409);}
-  if($mode!=='read'&&(int)$s[match($mode){'cancel'=>'cancel_until','correct'=>'correction_until',default=>'booking_until'}]<time()){throw new AccessException('member_deadline_passed',409);}
+  if($mode!=='read'&&(int)$s['booking_until']<time()){throw new AccessException('member_deadline_passed',409);}
   return $s;
  }
  private function profile(MemberIdentity $identity): array {
@@ -32,7 +32,7 @@ final readonly class MemberBookingService {
  public function context(int $trip,MemberIdentity $identity): array {
   $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip);$snapshot=$this->external->snapshot($link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $binding=$this->forms->binding($trip);$v=$binding['versionId']===null?null:$this->forms->get($binding['versionId']);
-  return ['contractVersion'=>'1.5.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>$profile['persons'],'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'canceled'=>$snapshot['canceled'],'bookingUntil'=>min((int)$s['booking_until'],$snapshot['bookingUntil']),'correctionUntil'=>(int)$s['correction_until'],'cancelUntil'=>(int)$s['cancel_until']];
+  return ['contractVersion'=>'1.5.1','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>min((int)$s['booking_until'],$snapshot['bookingUntil']),'correctionUntil'=>min((int)$s['booking_until'],$snapshot['bookingUntil']),'cancelUntil'=>min((int)$s['booking_until'],$snapshot['bookingUntil'])];
  }
  private function engine(int $trip,MemberIdentity $identity): BookingService {return new BookingService($this->bookings,$this->forms,$this->trips,new MemberBookingPolicy($trip,$identity,$this->access,$this->store),$this->validator,$this->registrations);}
  private function owned(int $trip,int $booking,MemberIdentity $identity): array {
@@ -93,14 +93,14 @@ final readonly class MemberBookingService {
   });
  }
  public function correct(int $trip,int $booking,MemberIdentity $identity,array $p): array {
-  $this->allowed($trip,'correct');$this->profile($identity);$this->owned($trip,$booking,$identity);
+  $this->allowed($trip,'correct');if($this->context($trip,$identity)['correctionUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$this->owned($trip,$booking,$identity);
   if(array_key_exists('persons',$p)){throw new ValidationException(['persons'=>'profile_changes_require_provider_review']);}
   if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
   $key=PlanningTransferService::operationKey($p);$p['operationKey']='mc_'.hash('sha256',$identity->memberReference.':'.$key);
   return $this->access->transaction(function()use($trip,$booking,$identity,$p){$this->allowed($trip,'correct');$this->owned($trip,$booking,$identity);return $this->output($this->engine($trip,$identity)->correct($trip,$booking,$p));});
  }
  public function cancel(int $trip,int $booking,MemberIdentity $identity,array $p): array {
-  $this->allowed($trip,'cancel');$this->profile($identity);$hash=PlanningTransferService::hash($p);$key='member_cancel_'.hash('sha256',$identity->memberReference.':'.PlanningTransferService::operationKey($p));
+  $this->allowed($trip,'cancel');if($this->context($trip,$identity)['cancelUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$hash=PlanningTransferService::hash($p);$key='member_cancel_'.hash('sha256',$identity->memberReference.':'.PlanningTransferService::operationKey($p));
   return $this->access->transaction(function()use($trip,$booking,$identity,$p,$hash,$key){
    $this->allowed($trip,'cancel');$b=$this->owned($trip,$booking,$identity);$op=$this->bookings->operation($trip,$key);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($b);}
    if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}

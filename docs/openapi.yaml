@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.5.0
+  version: 1.5.1
 security:
   - calculatorSession: []
 servers:
@@ -2161,8 +2161,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2195,8 +2193,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2230,8 +2226,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2275,8 +2269,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2314,8 +2306,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2354,8 +2344,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2387,8 +2375,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2427,8 +2413,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2463,8 +2447,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2499,8 +2481,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2545,8 +2525,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2580,8 +2558,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2627,8 +2603,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2668,8 +2642,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2715,8 +2687,6 @@ paths:
           description: Trip/booking not released or not owned
         '409':
           description: Revision/form/price/idempotency/closure conflict
-        '410':
-          description: Member retention access period expired
         '413':
           description: Request exceeds 256 KiB
         '422':
@@ -2733,6 +2703,57 @@ paths:
               $ref: '#/components/schemas/MemberCancellationRequest'
       security:
       - memberDelegation: []
+  /api/trips/{id}/archive:
+    put:
+      summary: Reise archivieren/wiederherstellen; Daten und Abschluss erhalten
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - archived
+              - archivedAt
+              - reason
+              properties:
+                archived:
+                  type: boolean
+                archivedAt:
+                  type: string
+                  nullable: true
+                reason:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Archivstand aktualisiert
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - archivedAt
+                properties:
+                  archivedAt:
+                    type: string
+                    nullable: true
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: trip.manage erforderlich
+        '404':
+          description: Nicht freigegeben
+        '409':
+          description: Veralteter Archivstand
+        '422':
+          description: Feldfehler
 components:
   securitySchemes:
     memberDelegation:
@@ -5279,19 +5300,10 @@ components:
       required:
       - enabled
       - bookingUntil
-      - correctionUntil
-      - cancelUntil
-      - retentionUntil
       properties:
         enabled: &id001
           type: boolean
         bookingUntil:
-          type: integer
-        correctionUntil:
-          type: integer
-        cancelUntil:
-          type: integer
-        retentionUntil:
           type: integer
     MemberSettingsResult:
       type: object
@@ -5307,7 +5319,6 @@ components:
           - booking_until
           - correction_until
           - cancel_until
-          - retention_until
           properties:
             trip_id:
               type: integer
@@ -5318,8 +5329,6 @@ components:
             correction_until:
               type: integer
             cancel_until:
-              type: integer
-            retention_until:
               type: integer
           nullable: true
         blockedReason:

@@ -90,3 +90,5 @@ Die CI fuehrt Syntax-Checks, PHPUnit und Coverage auf PHP 8.4 aus.
 
 
 
+
+Reisen können archiviert und wiederhergestellt werden; ihre Daten bleiben erhalten. Mitgliederänderungen und Stornos gelten bis Anmeldeschluss. Die lesende easyVerein-Mitgliederintegration wird serverseitig über `EASYVEREIN_API_TOKEN` konfiguriert; externe Schreibaktionen bleiben gesperrt. [Prüfstand 14.10.](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-14-10.md).

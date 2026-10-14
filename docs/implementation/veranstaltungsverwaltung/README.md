@@ -40,3 +40,5 @@ Vor jedem Schritt aktuellen `master`, offene/kürzlich gemergte PRs und vorhande
 ## Prompt für Schritt 1
 
 > Arbeite im Repository slider1337/fuf-calculator ausschließlich an docs/implementation/veranstaltungsverwaltung/AUFGABE-01-grundlagen.md. Lies zuerst vorhandene AGENTS.md, README.md, GRUNDLAGEN.md, ABNAHME.md, Konzept 09 sowie die dort verlinkten Rechte-/Abschlusskonzepte. Prüfe aktuellen master und offene/kürzlich gemergte PRs; führe vorhandene Arbeit weiter. Implementiere migrationsfähige Veranstaltungs-/Reisegrundlagen, serverseitige Reiserechte für bestehende Endpunkte, Audit und die Sperre abrechnungswirksamer Änderungen bei abgerechneten Reisen. Erhalte Altbestand und bestehende Berechnungen. Ergänze OpenAPI und sinnvolle Domain-/Integrationsprüfungen, dokumentiere Migrations- und Rechteübernahme. Keine Website-Änderungen, keine externen Schreibaktionen oder Mails und keine Browser-/Lighthouse-Prüfungen. Schritte 2–11 gehören nicht zum Auftrag.
+
+Folgeprüfung 14.10.: [Öffentliche API-Doku, gemeinsamer Anmeldeschluss und Reise-Archivierung](PRUEFUNG-14-10.md). Löschplanung ist nach Nutzerentscheidung kein Teil des Auftrags.

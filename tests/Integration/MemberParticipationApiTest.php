@@ -156,11 +156,11 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
- public function testDeadlineRetentionFamilyRevocationAndReadIsolation(): void {
+ public function testDeadlineArchiveAndReadIsolation(): void {
   $b=$this->create($this->payload(1));$list=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings",null,200,'99');self::assertSame([],$list['items']);
   $this->db->exec('UPDATE member_trip_settings SET booking_until=1');$this->worker();self::assertSame(0,$this->provider->writes);self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
   $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$this->payload(1),409);
-  $this->db->exec('UPDATE member_trip_settings SET retention_until=1');$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}",null,410);
+  $this->db->exec("UPDATE trips SET archived_at='2026-10-14'");self::assertSame($b['id'],$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['id']);
  }
  public function testLostResponseAndRevokedRightsCannotQueueAnotherRegistration(): void {
   $this->provider->timeout=true;$b=$this->create($this->payload(1));$this->worker(1);$this->db->exec('UPDATE member_trip_settings SET enabled=0');$this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->worker(1);self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());

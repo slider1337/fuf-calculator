@@ -198,6 +198,7 @@
             </div>
         </div>
 
+        <label class="fld"><input type="checkbox" id="trip-archive-filter"> Archivierte Reisen anzeigen</label>
         <div id="trip-list-card" class="sec sec-cards">
             <table class="tb tb-trips">
                 <thead>
@@ -281,7 +282,7 @@
              sie auf dem Desktop neben der Ueberschrift und kann nicht an beiden Orten sein. -->
         <div class="trip-meta-m d-lg-none"><span class="help" id="trip-editor-meta-mobile"></span></div>
 
-        <div class="tab-content" id="tripTabContent"><div class="tab-pane fade" id="panel-uebersicht" role="tabpanel" aria-labelledby="tab-uebersicht"><section class="sec"><div class="sec-h"><h2>Reiseübersicht</h2><span class="chip" id="trip-lifecycle-status"></span></div><div class="sec-b"><div id="trip-overview-details"></div><div class="event-toolbar"><button type="button" class="btn btn-o d-none" id="trip-event-assign" disabled>Veranstaltung zuordnen / ändern</button></div><p class="help" id="trip-event-assignment-note"></p><div id="trip-form-binding"></div><p class="help">Die ausgewählte Formularversion bestimmt die Zusatzfragen für diese Reise.</p><div class="event-toolbar"><button type="button" class="btn btn-o" id="trip-duplicate">Reise duplizieren</button><button type="button" class="btn btn-p" id="trip-close">Abrechnung abschließen</button><button type="button" class="btn btn-o" id="trip-reopen">Begründet wiederöffnen</button></div></div></section></div>
+        <div class="tab-content" id="tripTabContent"><div class="tab-pane fade" id="panel-uebersicht" role="tabpanel" aria-labelledby="tab-uebersicht"><section class="sec"><div class="sec-h"><h2>Reiseübersicht</h2><span class="chip" id="trip-lifecycle-status"></span></div><div class="sec-b"><div id="trip-overview-details"></div><div class="event-toolbar"><button type="button" class="btn btn-o d-none" id="trip-event-assign" disabled>Veranstaltung zuordnen / ändern</button></div><p class="help" id="trip-event-assignment-note"></p><div id="trip-form-binding"></div><p class="help">Die ausgewählte Formularversion bestimmt die Zusatzfragen für diese Reise.</p><div class="event-toolbar"><button type="button" class="btn btn-o" id="trip-archive">Reise archivieren</button><button type="button" class="btn btn-o" id="trip-duplicate">Reise duplizieren</button><button type="button" class="btn btn-p" id="trip-close">Abrechnung abschließen</button><button type="button" class="btn btn-o" id="trip-reopen">Begründet wiederöffnen</button></div></div></section></div>
 <div class="tab-pane fade" id="panel-anmeldungen" role="tabpanel" aria-labelledby="tab-anmeldungen">            <section class="sec" id="registrations-section">
                 <div class="sec-h">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>

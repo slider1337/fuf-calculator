@@ -24,10 +24,9 @@ final readonly class MemberController {
  public function configure(Request $request,Response $response,string $id): Response {
   $trip=(int)$id;$p=(array)$request->getParsedBody();$this->policy->writeTrip($trip,'trip.manage',function()use($trip,$p){
    $this->policy->trip($trip,'term.manage');if(!is_bool($p['enabled']??null)){throw new ValidationException(['enabled'=>'boolean']);}
-   foreach(['bookingUntil','correctionUntil','cancelUntil','retentionUntil'] as $k){if(!is_int($p[$k]??null)||$p[$k]<1){throw new ValidationException([$k=>'explicit_unix_timestamp']);}}
-   if($p['retentionUntil']<max($p['bookingUntil'],$p['correctionUntil'],$p['cancelUntil'])){throw new ValidationException(['retentionUntil'=>'after_all_deadlines']);}
+   foreach(['bookingUntil'] as $k){if(!is_int($p[$k]??null)||$p[$k]<1){throw new ValidationException([$k=>'explicit_unix_timestamp']);}}
    if($p['enabled']&&(!$this->store->link($trip)||$this->directory->blockedReason()!==null||$this->external->blockedReason()!==null)){throw new AccessException('member_release_blocked',409);}
-   $this->store->query('INSERT INTO member_trip_settings (trip_id,enabled,booking_until,correction_until,cancel_until,retention_until) VALUES (?,?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET enabled=excluded.enabled,booking_until=excluded.booking_until,correction_until=excluded.correction_until,cancel_until=excluded.cancel_until,retention_until=excluded.retention_until',[$trip,(int)$p['enabled'],$p['bookingUntil'],$p['correctionUntil'],$p['cancelUntil'],$p['retentionUntil']]);$this->policy->audit('member.configure','trip',$trip,'Mitgliederfreigabe '.($p['enabled']?'aktiviert':'gesperrt'));
+   $this->store->query('INSERT INTO member_trip_settings (trip_id,enabled,booking_until,correction_until,cancel_until) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET enabled=excluded.enabled,booking_until=excluded.booking_until,correction_until=excluded.correction_until,cancel_until=excluded.cancel_until',[$trip,(int)$p['enabled'],$p['bookingUntil'],$p['bookingUntil'],$p['bookingUntil']]);$this->policy->audit('member.configure','trip',$trip,'Mitgliederfreigabe '.($p['enabled']?'aktiviert':'gesperrt'));
   });return $this->settings($request,$response,$id);
  }
 }

@@ -8,7 +8,7 @@ Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHM
 
 Separate serverseitige Website-Authentifizierung und geprüfte Mitgliederdelegation implementieren. Bestehenden Website-Loginvertrag read-only prüfen, sichere Zuordnung zur easyVerein-Mitglieds-ID belegen; Subject/E-Mail allein nicht als Mitgliedsrecht verwenden. Kurzlebiger Kontext mit Ziel/Aussteller/Ablauf/Replay-Schutz, begrenzte Service-Scopes und Rotation. Keine unbegrenzte Service-Antwortliste. Integration läuft unabhängig von Calculator-Verwaltungssession.
 
-Vollständigen Vertrag mit Testclient umsetzen: verfügbare Reise/Formularversion, berechtigte Personen/Preisgruppen, Vorschau/Validierung, verbindliche Buchung, eigene Buchung/Korrektur/Storno/Ergänzung und Ergebnis je Person. Neue Pflichtfragen nach Versionskonflikt ausdrücklich erneut bestätigen. Fristen, Aufbewahrung/Löschung, Preisabweichung, Fehler-/Auftragsantworten, Limits und Featurefreigabe dokumentieren. Alle Prüffälle aus ABNAHME.md durchführen; sichere Übergabe an Website vorbereiten.
+Vollständigen Vertrag mit Testclient umsetzen: verfügbare Reise/Formularversion, berechtigte Personen/Preisgruppen, Vorschau/Validierung, verbindliche Buchung, eigene Buchung/Korrektur/Storno/Ergänzung und Ergebnis je Person. Neue Pflichtfragen nach Versionskonflikt ausdrücklich erneut bestätigen. Gemeinsamen Anmeldeschluss, Reise-Archivierung, Preisabweichung, Fehler-/Auftragsantworten, Limits und Featurefreigabe dokumentieren. Alle Prüffälle aus ABNAHME.md durchführen; sichere Übergabe an Website vorbereiten.
 
 ## Betroffene Bereiche
 

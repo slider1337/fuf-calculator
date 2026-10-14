@@ -50,6 +50,7 @@ final readonly class EventController
         $p = (array) $request->getParsedBody(); $this->management->reopen((int) $id, (string) ($p['reason'] ?? ''));
         return JsonResponder::write($response, ['ok' => true]);
     }
+    public function archive(Request $request, Response $response, string $id): Response { return JsonResponder::write($response,$this->management->archive((int)$id,(array)$request->getParsedBody())); }
     public function duplicate(Request $request, Response $response, string $id): Response { return JsonResponder::write($response, $this->management->duplicate((int) $id, (array) $request->getParsedBody()), 201); }
     public function legacyPreview(Request $request, Response $response): Response { return JsonResponder::write($response, $this->policy->candidates()); }
     public function legacyImport(Request $request, Response $response): Response

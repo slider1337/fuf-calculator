@@ -19,6 +19,7 @@ final readonly class ParticipationWorker {
   try {
    if($claim['mode']==='execute'){
     $s=$this->external->snapshot($payload['eventId']);$this->sync->validateSnapshot($s,$payload['eventId']);
+    if($j['member_actor']!==null&&$s['bookingUntil']<time()){throw new ParticipationRejected('event_unavailable');}
     if($j['kind']==='register'){
      if($s['canceled']||$s['bookingUntil']<time()||$s['capacityRemaining']<1){throw new ParticipationRejected('event_unavailable');}
      $groups=array_column($s['groups'],null,'id');
@@ -53,11 +54,11 @@ final readonly class ParticipationWorker {
   });return true;
  }
  private function allowed(array $j): bool {
-  if(($this->access->metadata((int)$j['trip_id'])['closed_at']??null)!==null){return false;}
+  if(($this->access->metadata((int)$j['trip_id'])['archived_at']??null)!==null||($this->access->metadata((int)$j['trip_id'])['closed_at']??null)!==null){return false;}
   if($j['member_actor']!==null){
    $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$j['trip_id']])->fetch(\PDO::FETCH_ASSOC);
    $owner=$this->store->query('SELECT owner_member_reference FROM registrations WHERE id=? AND trip_id=?',[$j['registration_id'],$j['trip_id']])->fetchColumn();
-   return $s&&(bool)$s['enabled']&&$owner===$j['member_actor']&&(int)$s[$j['kind']==='cancel'?'cancel_until':'booking_until']>=time();
+   return $s&&(bool)$s['enabled']&&$owner===$j['member_actor']&&(int)$s['booking_until']>=time();
   }
   return in_array('registration.manage',$this->access->capabilities('trip',(int)$j['trip_id'],(int)$j['actor_id']),true);
  }

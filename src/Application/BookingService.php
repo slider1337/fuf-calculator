@@ -77,6 +77,7 @@ final readonly class BookingService
     {
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$p){
             $this->policy->trip($tripId,'answers.correct');
+            if(($this->policy->metadata($tripId)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
             [$key,$hash,$op]=$this->repeat($tripId,$p,'create');
             if($op){return $this->get($tripId,(int)$op['registration_id']);}
             $v=$this->version($tripId,$p['versionId']??null,true);
@@ -94,7 +95,8 @@ final readonly class BookingService
     public function correct(int $tripId,int $id,array $p): array
     {
         return $this->policy->transaction(function()use($tripId,$id,$p){
-            $this->policy->trip($tripId,'answers.correct');$this->policy->trip($tripId,'answers.view');
+            $this->policy->trip($tripId,'answers.correct');
+            if(($this->policy->metadata($tripId)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}$this->policy->trip($tripId,'answers.view');
             $b=$this->load($tripId,$id);[$key,$hash,$op]=$this->repeat($tripId,$p,'correct',$id);if($op){return $this->get($tripId,$id);}
             $reason=$this->reason($p);$this->revision($b,$p);
             if($b['status']==='cancelled'){throw new AccessException('booking_cancelled',409);}

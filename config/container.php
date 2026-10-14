@@ -43,7 +43,8 @@ return static function (): ContainerInterface {
 
     $builder->addDefinitions([
         App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => $c->get(App\Application\AccessPolicy::class)),
-        App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\DisabledMemberDirectory::class),
+        App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),
+        App\Application\Port\EasyVereinReadClient::class => factory(static fn() => new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN') ?: '')),
         App\Application\Port\ParticipationPort::class => autowire(App\Infrastructure\DisabledParticipationAdapter::class),
         App\Application\Port\AccessRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteAccessRepository::class),
         App\Application\Port\ActorInterface::class => autowire(App\Infrastructure\Http\Auth\SessionActor::class),

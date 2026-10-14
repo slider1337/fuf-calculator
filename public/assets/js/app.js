@@ -1697,7 +1697,7 @@ function tripListRow(trip) {
 
   return `
       <td class="help fuf-num tb-col-id">#${trip.id}</td>
-      <td class="tb-head"><button class="tb-title" type="button" data-trip-id="${trip.id}">${escapeHtml(trip.name)}</button></td>
+      <td class="tb-head"><button class="tb-title" type="button" data-trip-id="${trip.id}">${escapeHtml(trip.name)}</button>${trip.archivedAt?' <span class="chip c-grey">Archiviert</span>':''}</td>
       <td class="fuf-num tb-trip-meta">${iconCalendarSm}${formatTripPeriod(trip)}${nightsInfo}</td>
       <td class="r tb-trip-meta">${iconUsersSm}${trip.registeredParticipants ?? '–'} / ${trip.plannedParticipants ?? '–'}</td>
       ${tripSurplusCell(trip)}
@@ -1760,7 +1760,7 @@ function renderTripList() {
 }
 
 async function loadTripList() {
-  const trips = await api("/api/trips");
+  const trips = await api("/api/trips" + (byId("trip-archive-filter")?.checked ? "?archived=true" : ""));
   trips.sort((left, right) => {
     const dateCompare = String(right.startDate).localeCompare(String(left.startDate));
     if (dateCompare !== 0) {
@@ -3375,3 +3375,5 @@ bootstrapPage().catch((error) => {
 });
 
 
+
+byId("trip-archive-filter").addEventListener("change",()=>performManagement(loadTripList));

@@ -26,7 +26,7 @@ services:
       - caddy-data:/data
       - caddy-config:/config
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    environment:
+    environment: &calculator-environment
       - DB_PATH=/app/database/fuf.sqlite
       - APP_DEBUG=0
       - SERVER_NAME=fuf-calc.benna.me
@@ -35,6 +35,27 @@ services:
       - MAIL_FROM=${MAIL_FROM}
       - EASYVEREIN_CLIENT_ID=${EASYVEREIN_CLIENT_ID:-}
       - EASYVEREIN_CLIENT_SECRET=${EASYVEREIN_CLIENT_SECRET:-}
+      - EASYVEREIN_API_TOKEN=${EASYVEREIN_API_TOKEN:-}
+      - EASYVEREIN_WRITE_MODE=${EASYVEREIN_WRITE_MODE:-off}
+      - EASYVEREIN_REQUESTS_PER_MINUTE=${EASYVEREIN_REQUESTS_PER_MINUTE:-60}
+      - MAIL_DELIVERY_MODE=${MAIL_DELIVERY_MODE:-test}
+      - FUF_INTEGRATION_AUDIENCE=${FUF_INTEGRATION_AUDIENCE:-}
+      - FUF_INTEGRATION_SERVICES=${FUF_INTEGRATION_SERVICES:-}
+      - FUF_WORKER_BATCH=${FUF_WORKER_BATCH:-10}
+      - FUF_WORKER_INTERVAL=${FUF_WORKER_INTERVAL:-60}
+      - FUF_RECONCILE_ACTOR_ID=${FUF_RECONCILE_ACTOR_ID:-0}
+      - FUF_RECONCILE_INTERVAL=${FUF_RECONCILE_INTERVAL:-300}
+
+  worker:
+    image: ghcr.io/slider1337/fuf-calculator:latest
+    command: ["php", "scripts/workers.php"]
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - sqlite-data:/app/database
+    environment: *calculator-environment
 
 volumes:
   sqlite-data:

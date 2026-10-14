@@ -64,7 +64,7 @@ jobs:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "deploy/docker-compose.prod.yml,deploy/Caddyfile"
+          source: "deploy/docker-compose.prod.yml,deploy/Caddyfile,deploy/write-env.py"
           target: /opt/fuf-calculator
           strip_components: 1
 
@@ -76,27 +76,35 @@ jobs:
           MAIL_FROM: ${{ vars.MAIL_FROM }}
           EASYVEREIN_CLIENT_ID: ${{ vars.EASYVEREIN_CLIENT_ID }}
           EASYVEREIN_CLIENT_SECRET: ${{ secrets.EASYVEREIN_CLIENT_SECRET }}
+          EASYVEREIN_API_TOKEN: ${{ secrets.EASYVEREIN_API_TOKEN }}
+          EASYVEREIN_WRITE_MODE: ${{ vars.EASYVEREIN_WRITE_MODE }}
+          EASYVEREIN_REQUESTS_PER_MINUTE: ${{ vars.EASYVEREIN_REQUESTS_PER_MINUTE }}
+          MAIL_DELIVERY_MODE: ${{ vars.MAIL_DELIVERY_MODE }}
+          FUF_INTEGRATION_AUDIENCE: ${{ vars.FUF_INTEGRATION_AUDIENCE }}
+          FUF_INTEGRATION_SERVICES: ${{ secrets.FUF_INTEGRATION_SERVICES }}
+          FUF_WORKER_BATCH: ${{ vars.FUF_WORKER_BATCH }}
+          FUF_WORKER_INTERVAL: ${{ vars.FUF_WORKER_INTERVAL }}
+          FUF_RECONCILE_ACTOR_ID: ${{ vars.FUF_RECONCILE_ACTOR_ID }}
+          FUF_RECONCILE_INTERVAL: ${{ vars.FUF_RECONCILE_INTERVAL }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: APP_URL,MAILER_DSN,MAIL_FROM,EASYVEREIN_CLIENT_ID,EASYVEREIN_CLIENT_SECRET
+          envs: APP_URL,MAILER_DSN,MAIL_FROM,EASYVEREIN_CLIENT_ID,EASYVEREIN_CLIENT_SECRET,EASYVEREIN_API_TOKEN,EASYVEREIN_WRITE_MODE,EASYVEREIN_REQUESTS_PER_MINUTE,MAIL_DELIVERY_MODE,FUF_INTEGRATION_AUDIENCE,FUF_INTEGRATION_SERVICES,FUF_WORKER_BATCH,FUF_WORKER_INTERVAL,FUF_RECONCILE_ACTOR_ID,FUF_RECONCILE_INTERVAL
           script: |
             set -e
             cd /opt/fuf-calculator
 
             # Write .env file for docker compose
             umask 077
-            cat > .env <<EOF
-            APP_URL=${APP_URL}
-            MAILER_DSN=${MAILER_DSN}
-            MAIL_FROM=${MAIL_FROM}
-            EASYVEREIN_CLIENT_ID=${EASYVEREIN_CLIENT_ID}
-            EASYVEREIN_CLIENT_SECRET=${EASYVEREIN_CLIENT_SECRET}
-            EOF
+            python3 write-env.py
 
             # Pull latest image
             docker pull ghcr.io/${{ github.repository }}:latest
+
+            # Stop all writers and create a consistent backup before migration.
+            docker compose -f docker-compose.prod.yml stop app worker
+            docker compose -f docker-compose.prod.yml run --rm --no-deps app php scripts/backup.php
 
             # Run database migrations using the new image (one-shot, shares the DB volume)
             docker compose -f docker-compose.prod.yml run --rm --no-deps app php scripts/migrate.php

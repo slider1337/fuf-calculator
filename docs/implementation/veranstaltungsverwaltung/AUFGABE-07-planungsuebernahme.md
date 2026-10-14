@@ -1,6 +1,6 @@
 # Schritt 07 – Anmeldedaten kontrolliert in Planung übernehmen
 
-Status: **offen** · Voraussetzung: Schritt 06 abgenommen.
+Status: **technisch umgesetzt und geprüft; manuelle Designabnahme offen** · Voraussetzung: Schritt 06 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

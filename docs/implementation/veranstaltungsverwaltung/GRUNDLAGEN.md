@@ -105,7 +105,7 @@ Mitgliedervertrag muss vor Websitebau vollständig funktionieren: Formulardefini
 | Entscheidung | Spätester Schritt | Regel bis zur Klärung |
 | --- | --- | --- |
 | Alt-Reiserechte übernehmen | 01 | Vorschau und explizite Zuweisung; keine erratenen Eigentümer |
-| Korrektur-/Stornofristen und Aufbewahrung | 05/10 | Keine fiktiven Fristen fest codieren; explizite Reisekonfiguration, Löschkonzept vor Websitefreigabe |
+| Korrektur-/Stornofristen und Aufbewahrung | 05/10 | Nutzerentscheidung 14.10.: Änderungen/Storno bis Anmeldeschluss; Reisen archivieren/wiederherstellen. Kein zusätzlicher automatischer Lösch-/Ablaufauftrag. |
 | API-Schreibfähigkeit und Benachrichtigungen | 08/09 | Nur Adapter/Fakes; reale Operation mit unvermeidbarem Mailversand gesperrt |
 | Abgleichintervall/Worker-Aufruf | 09 | Konfigurierbar, begrenzte Batches; Server-Cron statt GitHub-Sync. Intervall nach dokumentiertem API-Budget wählen |
 | Externe Preisänderung | 09/10 | Konflikt und erneute bewusste Preisbestätigung; kein rückwirkendes automatisches Umbepreisen |

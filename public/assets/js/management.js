@@ -113,7 +113,7 @@ byId('event-settings-form').addEventListener('submit', event => { event.preventD
   const updated = await api(`/api/events/${e.id}`, {method:'PUT',body:JSON.stringify({name:byId('event-setting-name').value,description:byId('event-setting-description').value,archived:byId('event-setting-archived').checked,revision:e.revision})});
   management.event = updated; await showEvent(e.id);
 }); });
-byId('event-new-trip').addEventListener('click', () => performManagement(async () => { management.newEventId = management.event.id; await startNewTrip(); }));
+byId('event-new-trip').addEventListener('click', () => performManagement(async () => { management.newEventId = management.event.id; await openTermWizard(null, management.event); }));
 async function loadEventSelector(selected = null) {
   const events = await api('/api/events');
   const creating = state.currentTripId === null;
@@ -166,6 +166,7 @@ function resetTripPermissions() {
 }
 function renderTripManagement(trip) {
   resetTripPermissions(); const caps = trip.capabilities;
+  if (typeof loadWorkflowStatus === "function") { performManagement(() => loadWorkflowStatus(trip)); }
   byId('trip-event-assign').disabled = true;
   byId('trip-event-assign').classList.toggle('d-none', !caps.includes('trip.manage') || !!trip.closedAt);
   byId('trip-event-assignment-note').textContent = '';
@@ -175,21 +176,23 @@ function renderTripManagement(trip) {
   const canAccess = caps.includes('access.manage') || state.currentUser?.role === 'admin';
   byId('trip-team-add').classList.toggle('d-none', !canAccess);
   byId('trip-team-list').textContent = canAccess ? 'Team wird beim Öffnen geladen.' : 'Für die Teamverwaltung fehlt die Berechtigung.';
-  byId('trip-lifecycle-status').textContent = trip.closedAt ? 'Abgerechnet' : 'Offen'; byId('trip-lifecycle-status').className = `chip ${trip.closedAt ? 'c-grey' : 'c-green'}`;
-  byId('trip-overview-details').innerHTML = `<p>${escapeHtml(trip.name)} · ${formatDate(trip.startDate)}${trip.endDate ? ' – ' + formatDate(trip.endDate) : ''}</p>${trip.closedAt ? '<p class="status-note">Abgerechnet: Finanzänderungen und Neuberechnung sind gesperrt.</p>' : ''}<p class="help">${trip.eventId ? 'Veranstaltung #' + trip.eventId : 'Alt-Reise ohne Veranstaltungszuordnung'}</p>`;
+  byId('trip-lifecycle-status').textContent = trip.archivedAt ? 'Archiviert' : trip.closedAt ? 'Abgerechnet' : 'Offen'; byId('trip-lifecycle-status').className = `chip ${trip.archivedAt || trip.closedAt ? 'c-grey' : 'c-green'}`;
+  byId('trip-overview-details').innerHTML = `${trip.archivedAt?'<p class="status-note">Archiviert: Daten bleiben lesbar. Zum Bearbeiten zuerst aus dem Archiv holen.</p>':''}<p>${escapeHtml(trip.name)} · ${formatDate(trip.startDate)}${trip.endDate ? ' – ' + formatDate(trip.endDate) : ''}</p>${trip.closedAt ? '<p class="status-note">Abgerechnet: Finanzänderungen und Neuberechnung sind gesperrt.</p>' : ''}<p class="help">${trip.eventId ? 'Veranstaltung #' + trip.eventId : 'Alt-Reise ohne Veranstaltungszuordnung'}</p>`;
   if (trip.eventId) {
     const crumb = byId('trip-editor-breadcrumb'); crumb.textContent = trip.name;
     const first = byId('back-to-list-btn'); first.href = `/events/${trip.eventId}`; first.textContent = 'Veranstaltung';
     api(`/api/events/${trip.eventId}`).then(e => { if (state.currentTripId === trip.id) { first.textContent = e.name; } }).catch(() => {});
   } else { byId('back-to-list-btn').href = '/'; byId('back-to-list-btn').textContent = 'Alle Reisen'; }
   byId('trip-duplicate').classList.toggle('d-none', !(caps.includes('trip.manage') && caps.includes('calculation.manage')));
-  byId('trip-close').classList.toggle('d-none', !!trip.closedAt || !caps.includes('settlement.close'));
-  byId('trip-reopen').classList.toggle('d-none', !trip.closedAt || !caps.includes('settlement.reopen'));
-  const readOnly = !!trip.closedAt || !caps.includes('calculation.manage');
+  byId('trip-close').classList.toggle('d-none', !!trip.archivedAt || !!trip.closedAt || !caps.includes('settlement.close'));
+  byId('trip-reopen').classList.toggle('d-none', !!trip.archivedAt || !trip.closedAt || !caps.includes('settlement.reopen'));
+  byId('trip-archive').classList.toggle('d-none', !caps.includes('trip.manage'));
+  byId('trip-archive').textContent = trip.archivedAt ? 'Reise aus Archiv holen' : 'Reise archivieren';
+  const readOnly = !!trip.archivedAt || !!trip.closedAt || !caps.includes('calculation.manage');
   byId('trip-form').querySelectorAll('input,select,button:not([data-bs-toggle])').forEach(e => e.disabled = readOnly || e.id === 'trip-event-select');
   for (const id of ['trip-save-btn-head','trip-save-btn','trip-save-btn-sticky','trip-save-btn-bar','calculate-btn']) { if (byId(id)) byId(id).disabled = readOnly; }
   byId('registrations-section').classList.toggle('d-none', !caps.includes('registration.view'));
-  byId('actual-expense-form')?.querySelectorAll('input,button').forEach(e => e.disabled = !!trip.closedAt || !caps.includes('expense.manage'));
+  byId('actual-expense-form')?.querySelectorAll('input,button').forEach(e => e.disabled = !!trip.archivedAt || !!trip.closedAt || !caps.includes('expense.manage'));
 }
 byId('trip-event-assign').addEventListener('click', () => performManagement(async () => {
   const trip = state.currentTrip;
@@ -234,8 +237,8 @@ document.addEventListener('click', event => {
     byId('management-fields').querySelectorAll('[data-capability]').forEach(e => e.checked = caps.includes(e.dataset.capability));
   }
 });
-for (const name of ['uebersicht','anmeldungen','auswertung','team']) {
-  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
+for (const name of ['uebersicht','planung','anmeldungen','auswertung','team']) {
+  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (['planung','team'].includes(name) && typeof loadWorkflowStatus === 'function' && state.currentTrip) { performManagement(() => loadWorkflowStatus(state.currentTrip)); } if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
 }
 window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'function' && formDirty()) || (!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) || (!byId('event-detail-section').classList.contains('d-none') && eventSettingsDirty())) { event.preventDefault(); event.returnValue = ''; } });
 
@@ -271,3 +274,11 @@ window.addEventListener('hashchange', () => {
     performManagement(() => showEventTab(['reisen','formular','standardteam','einstellungen'].includes(tab) ? tab : 'reisen'));
   }
 });
+
+byId('trip-archive').addEventListener('click',()=>performManagement(async()=>{
+  const trip=state.currentTrip;if(dirtyPlanning())throw new Error('Bitte die Planungsänderungen zuerst speichern.');
+  const archived=!trip.archivedAt;
+  showManagementModal(archived?'Reise archivieren':'Reise aus Archiv holen','<p>'+ (archived?'Die Reise verschwindet aus der aktiven Liste. Buchungen, Antworten, Revisionen und Finanzdaten bleiben erhalten. Mitgliederänderungen und externe Aufträge sind im Archiv gesperrt.':'Die Reise erscheint wieder in der aktiven Liste. Ein bestehender Abrechnungsabschluss bleibt bestehen.')+'</p>'+reasonField(),async()=>{
+    await api(`/api/trips/${trip.id}/archive`,{method:'PUT',body:JSON.stringify({archived,archivedAt:trip.archivedAt??null,reason:byId('action-reason').value})});await openTrip(trip.id);await loadTripList();
+  },archived?'Archivieren':'Aus Archiv holen');
+}));

@@ -1,12 +1,12 @@
 # Schritt 08 – Reise-/Terminwizard und dauerhafte Terminaufträge
 
-Status: **offen** · Voraussetzung: Schritte 01–07 abgenommen.
+Status: **lokal und mit Fakes umgesetzt; produktiver easyVerein-Adapter gesperrt; manuelle Designabnahme offen** · Voraussetzung: Schritte 01–07 abgenommen.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 
 ## Umfang
 
-Vor externen Schreibaktionen aktuellen easyVerein-Vertrag, Rechte und Benachrichtigungsverhalten mit Primärdokumentation belegen; konkrete API-Felder in Adaptervertrag festhalten, nicht aus Mockup-Labels ableiten. Versandverbot gilt: unvermeidbarer Versand sperrt echte Operation. Ohne geklärten API-Vertrag bleiben Adapter/Fakes und verständliche Funktionssperre.
+Vor externen Schreibaktionen aktuellen easyVerein-Vertrag, Rechte und Benachrichtigungsverhalten mit Primärdokumentation belegen; konkrete API-Felder in Adaptervertrag festhalten, nicht aus Mockup-Labels ableiten. Nutzerpräzisierung 14.10.: Tests ausschließlich an me@benna.me; normale Benachrichtigungen im späteren Produktivbetrieb erwünscht. Entwicklung/Tests erzeugen keine echten Provider-Schreibaktionen. Ohne geklärten API-Vertrag bleiben Adapter/Fakes und verständliche Funktionssperre.
 
 Wizard Eckdaten→Kalender/Anmeldung→Preisgruppen→Formular/Team→Prüfen umsetzen, Entwurf ohne externe Anlage speicherbar. Vorhandenen Termin verknüpfen oder eindeutigen dauerhaften Erstellauftrag absenden. Feld- und Preisvorschau nennt echte externe Änderungen. Reise-Termin-Zuordnung auf lokaler Datenbankebene eindeutig; vorhandene Bindung prüfen. Anmeldung erst nach bestätigter Referenz, nicht bei angenommener Operation. Timeout/Absturz: unklar, abgleichen/verknüpfen statt blind erneut erstellen.
 

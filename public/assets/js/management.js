@@ -162,7 +162,7 @@ async function editTeam(type, userId = null) {
 }
 for (const [id,type] of [['default-team-add','default'],['event-access-add','event'],['trip-team-add','trip']]) { byId(id).addEventListener('click', () => performManagement(() => editTeam(type))); }
 function resetTripPermissions() {
-  for (const name of ['uebersicht','planung','anmeldungen','auswertung','abrechnung','team']) { byId(`tab-${name}`).classList.remove('d-none'); }
+  for (const name of ['uebersicht','planung','termin','anmeldungen','auswertung','abrechnung','team']) { byId(`tab-${name}`).classList.remove('d-none'); }
   byId('trip-form').querySelectorAll('input,select,textarea,button').forEach(e => e.disabled = false);
   for (const id of ['trip-save-btn-head','trip-save-btn','trip-save-btn-sticky','trip-save-btn-bar','calculate-btn']) { if (byId(id)) byId(id).disabled = false; }
 }
@@ -242,8 +242,8 @@ document.addEventListener('click', event => {
     byId('management-fields').querySelectorAll('[data-capability]').forEach(e => e.checked = caps.includes(e.dataset.capability));
   }
 });
-for (const name of ['uebersicht','planung','anmeldungen','auswertung','team']) {
-  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (['planung','team'].includes(name) && typeof loadWorkflowStatus === 'function' && state.currentTrip) { performManagement(() => loadWorkflowStatus(state.currentTrip)); } if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
+for (const name of ['uebersicht','planung','termin','anmeldungen','auswertung','team']) {
+  byId(`tab-${name}`).addEventListener('shown.bs.tab', () => { writeTabHash(name); renderHeadTabState(); if (['planung','termin'].includes(name) && typeof loadWorkflowStatus === 'function' && state.currentTrip) { performManagement(() => loadWorkflowStatus(state.currentTrip)); } if (name === 'team' && (hasTripCapability('access.manage') || state.currentUser?.role === 'admin')) { performManagement(() => loadTeam('trip')); } });
 }
 window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'function' && formDirty()) || (!byId('trip-editor-section').classList.contains('d-none') && dirtyPlanning()) || (!byId('event-detail-section').classList.contains('d-none') && eventSettingsDirty())) { event.preventDefault(); event.returnValue = ''; } });
 
@@ -298,7 +298,9 @@ function applyRegistrationModeLayout(trip){
   byId('trip-registration-mode-choice').value=trip.registrationMode||'clubdesk_csv';byId('trip-registration-mode-choice').disabled=true;
   for(const id of ['trip-term-section','planning-transfer-section','trip-form-binding']){byId(id).classList.toggle('d-none',!easy);}
   byId('trip-form-binding').nextElementSibling?.classList.toggle('d-none',!easy);
-  byId('tab-team').textContent=easy?'Team & Termin':'Team';
+  byId('tab-team').textContent='Team';
+  byId('tab-termin').classList.toggle('d-none',!easy||!trip.capabilities.includes('term.manage'));
+  byId('panel-termin').classList.toggle('d-none',!easy||!trip.capabilities.includes('term.manage'));
   byId('tab-anmeldungen').classList.toggle('d-none',!trip.capabilities.includes('registration.view'));
   byId('tab-auswertung').classList.toggle('d-none',!easy||!trip.capabilities.includes('analytics.view'));
   byId('csv-upload-form').classList.toggle('d-none',easy);

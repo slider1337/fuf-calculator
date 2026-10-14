@@ -22,7 +22,9 @@ final class TripArchiveApiTest extends ApiTestCase {
   $t=$this->json('POST','/api/trips',$this->validTripPayload(),201)['id'];$db=$this->app->getContainer()->get(PDO::class);$db->exec("INSERT INTO users (id,email,role,created_at) VALUES (2,'other@example.invalid','admin','2026-10-14')");$_SESSION['user_id']=2;$this->json('PUT',"/api/trips/$t/archive",['archived'=>true,'archivedAt'=>null,'reason'=>'Unberechtigt'],404);$_SESSION['user_id']=1;
   $this->json('PUT',"/api/trips/$t",$this->validTripPayload()+['archivedAt'=>'forged']);self::assertNull($this->json('GET',"/api/trips/$t")['archivedAt']);$this->json('PUT',"/api/trips/$t/archive",['archived'=>true,'archivedAt'=>null,'reason'=>''],422);
  }
- public function testSingleDeadlineNoRetentionField(): void {
-  $t=$this->json('POST','/api/trips',$this->validTripPayload(),201)['id'];$deadline=time()+2000;$settings=$this->json('PUT',"/api/trips/$t/member-settings",['enabled'=>false,'bookingUntil'=>$deadline])['settings'];self::assertSame($deadline,$settings['booking_until']);self::assertSame($deadline,$settings['correction_until']);self::assertSame($deadline,$settings['cancel_until']);self::assertArrayNotHasKey('retention_until',$settings);
+ public function testDisabledReleaseNeedsNoSeparateDeadlineAndCannotEnableWithoutTerm(): void {
+  $t=$this->json('POST','/api/trips',$this->validTripPayload(),201)['id'];$result=$this->json('PUT',"/api/trips/$t/member-settings",['enabled'=>false]);$settings=$result['settings'];
+  self::assertSame(PHP_INT_MAX,$settings['booking_until']);self::assertSame(PHP_INT_MAX,$settings['correction_until']);self::assertSame(PHP_INT_MAX,$settings['cancel_until']);self::assertArrayNotHasKey('retention_until',$settings);self::assertNull($result['bookingUntil']);self::assertNotNull($result['blockedReason']);
+  $this->json('PUT',"/api/trips/$t/member-settings",['enabled'=>true],409);
  }
 }

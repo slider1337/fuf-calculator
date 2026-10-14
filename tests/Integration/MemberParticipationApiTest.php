@@ -7,6 +7,7 @@ use PDO;
 use Slim\Psr7\Factory\{ServerRequestFactory,StreamFactory};
 
 final class FakeParticipationProvider implements ParticipationPort {
+ public ?int $bookingUntil=null;
  public int $writes=0;
  public array $rows=[];
  public array $outcomes=[];
@@ -19,7 +20,7 @@ final class FakeParticipationProvider implements ParticipationPort {
  public bool $guestsAllowed=false;
  public array $termFields=[];
  public function blockedReason(): ?string {return null;}
- public function snapshot(string $eventId): array {return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
+ public function snapshot(string $eventId): array {return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>$this->bookingUntil??time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
  public function execute(string $kind,array $person,string $operationReference): array {
   $this->writes++;if($this->onExecute!==null){($this->onExecute)();}
   if(($this->outcomes[$person['memberReference']]??null)==='reject'){throw new ParticipationRejected('provider_rejected');}
@@ -161,9 +162,20 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
+ public function testReleaseInheritsLiveTermDeadlineAndIgnoresOldCutoff(): void {
+  $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true,'bookingUntil'=>1]);
+  self::assertSame(200,$r->getStatusCode());$result=json_decode((string)$r->getBody(),true);self::assertSame($this->provider->bookingUntil,$result['bookingUntil']);
+  $this->db->exec('UPDATE member_trip_settings SET booking_until=1');$_SESSION=[];
+  self::assertSame($this->provider->bookingUntil,$this->call('GET',"/integration/v1/trips/{$this->trip}/context")['bookingUntil']);
+  $this->create($this->payload(1));$this->worker();self::assertSame(1,$this->provider->writes);
+  $_SESSION['user_id']=1;$this->provider->bookingUntil=PHP_INT_MAX;
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true]);self::assertSame(200,$r->getStatusCode());self::assertNull(json_decode((string)$r->getBody(),true)['bookingUntil']);
+ }
+
  public function testDeadlineArchiveAndReadIsolation(): void {
   $b=$this->create($this->payload(1));$list=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings",null,200,'99');self::assertSame([],$list['items']);
-  $this->db->exec('UPDATE member_trip_settings SET booking_until=1');$this->worker();self::assertSame(0,$this->provider->writes);self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
+  $this->provider->bookingUntil=1;$this->worker();self::assertSame(0,$this->provider->writes);self::assertSame('failed',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
   $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$this->payload(1),409);
   $this->db->exec("UPDATE trips SET archived_at='2026-10-14'");self::assertSame($b['id'],$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['id']);
  }

@@ -64,7 +64,7 @@ final readonly class ParticipationWorker {
   if($j['member_actor']!==null){
    $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$j['trip_id']])->fetch(\PDO::FETCH_ASSOC);
    $owner=$this->store->query('SELECT owner_member_reference FROM registrations WHERE id=? AND trip_id=?',[$j['registration_id'],$j['trip_id']])->fetchColumn();
-   return $s&&(bool)$s['enabled']&&$owner===$j['member_actor']&&(int)$s['booking_until']>=time();
+   return $s&&(bool)$s['enabled']&&$owner===$j['member_actor'];
   }
   return in_array('registration.manage',$this->access->capabilities('trip',(int)$j['trip_id'],(int)$j['actor_id']),true);
  }

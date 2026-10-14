@@ -1077,7 +1077,7 @@ function renderHeadTabState() {
 // Links denselben Bereich zeigen.
 function tabFromHash() {
   const value = window.location.hash.slice(1);
-  return ['uebersicht','planung','anmeldungen','auswertung','abrechnung','team'].includes(value) ? value : 'uebersicht';
+  return ['uebersicht','planung','termin','anmeldungen','auswertung','abrechnung','team'].includes(value) ? value : 'uebersicht';
 }
 
 function showTab(name) {
@@ -1351,6 +1351,8 @@ async function renderCurrentRoute(options = {}) {
     await loadEventSelector();
     snapshotTripForm();
     resetTripPermissions();
+    byId("tab-termin").classList.add("d-none");
+    byId("panel-termin").classList.add("d-none");
     showEditorSection("Neue Reise", "Neue Reise", NEW_TRIP_OPEN_SECTIONS);
     showTab('planung');
     return;

@@ -263,6 +263,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                         <span class="chip c-amber tab-chip d-none" id="tab-planung-count"></span>
                     </button>
                 </li>
+<li class="nav-item" role="presentation"><button class="nav-link d-none" id="tab-termin" data-bs-toggle="tab" data-bs-target="#panel-termin" type="button" role="tab" aria-controls="panel-termin" aria-selected="false">Termin</button></li>
 <li class="nav-item" role="presentation"><button class="nav-link" id="tab-anmeldungen" data-bs-toggle="tab" data-bs-target="#panel-anmeldungen" type="button" role="tab" aria-controls="panel-anmeldungen" aria-selected="false">Anmeldungen</button></li><li class="nav-item" role="presentation"><button class="nav-link" id="tab-auswertung" data-bs-toggle="tab" data-bs-target="#panel-auswertung" type="button" role="tab" aria-controls="panel-auswertung" aria-selected="false">Auswertung</button></li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-abrechnung" data-bs-toggle="tab" data-bs-target="#panel-abrechnung" type="button" role="tab" aria-controls="panel-abrechnung" aria-selected="false">
@@ -271,7 +272,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                         <span class="chip c-amber tab-chip d-none" id="tab-abrechnung-count"></span>
                     </button>
                 </li>
-<li class="nav-item" role="presentation"><button class="nav-link" id="tab-team" data-bs-toggle="tab" data-bs-target="#panel-team" type="button" role="tab" aria-controls="panel-team" aria-selected="false">Team &amp; Termin</button></li>
+<li class="nav-item" role="presentation"><button class="nav-link" id="tab-team" data-bs-toggle="tab" data-bs-target="#panel-team" type="button" role="tab" aria-controls="panel-team" aria-selected="false">Team</button></li>
                 </ul>
                 <button id="trip-save-btn-head" class="btn btn-p btn-s" type="submit" form="trip-form">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
@@ -427,7 +428,8 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
 
 </div>
 <div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><section class="sec"><div class="sec-h"><h2>Auswertung</h2></div><div class="sec-b" id="analytics-workspace"></div></section></div>
-<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec" id="trip-term-section"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help"><span id="term-status" role="status">Terminstand wird geladen.</span></p><button type="button" class="btn btn-p" id="term-wizard">Termin vorbereiten</button><div id="term-details"></div><h3>Teilnahmeabgleich</h3><div id="participation-details" aria-live="polite"></div></div></section></div>
+<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section></div>
+<div class="tab-pane fade" id="panel-termin" role="tabpanel" aria-labelledby="tab-termin"><section class="sec" id="trip-term-section"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help"><span id="term-status" role="status">Terminstand wird geladen.</span></p><button type="button" class="btn btn-p" id="term-wizard">Termin vorbereiten</button><div id="term-details"></div><h3>Teilnahmeabgleich</h3><div id="participation-details" aria-live="polite"></div></div></section></div>
 
         <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung"><section class="sec" id="planning-transfer-section"><div class="sec-h"><h2>Anmeldedaten übernehmen</h2><button id="planning-transfer-btn" type="button" class="btn btn-p">Übernahme vorbereiten</button></div><div class="sec-b"><p id="planning-transfer-status" role="status">Noch kein übernommener Stand.</p></div></section>
         <div class="pg">

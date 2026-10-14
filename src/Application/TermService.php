@@ -37,7 +37,7 @@ final readonly class TermService
             $reason=($this->policy->metadata($id)['registration_mode']??'clubdesk_csv')!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));
             if($reason===null&&(!$settings||!(bool)$settings['enabled'])){$reason='member_release_disabled';}
             if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
-            if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null||(int)$settings['booking_until']<time())){$reason='trip_closed_or_booking_deadline_passed';}
+            if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null||$this->participations->snapshot($link['externalId'])['bookingUntil']<time())){$reason='trip_closed_or_booking_deadline_passed';}
             return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
         });
     }

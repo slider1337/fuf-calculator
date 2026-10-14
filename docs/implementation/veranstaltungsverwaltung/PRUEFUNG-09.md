@@ -33,3 +33,6 @@ Batch 1–25 über Argument, Standard 10; Lease 300s, Abgleich-Backoff 60–3600
 Quellen/Prüfgrenze: [easyVerein API](https://easyverein.com/api/documentation/), [v3.0](https://easyverein.com/api/v3.0/documentation), [API-Hilfe](https://hilfe.easyverein.com/en/articles/360898). Die erste Abrufmethode lieferte nur einen unvollständigen Textauszug. Am 14.10. wurde die öffentlich eingebettete OpenAPI vollständig ausgelesen; der fehlende öffentliche Zugang ist damit widerlegt. Die Benachrichtigungsfreiheit aller Operationen und fehlende Detailschemas sind weiterhin gesondert zu prüfen. Keine echten Aufrufe zum Erproben.
 
 Aktualisierung 14.10.: öffentliche vollständige API-Doku erfolgreich ausgelesen; lesender Mitglieder-Adapter implementiert. Gemeinsamer Anmeldeschluss und Reise-Archivierung gemäß Nutzerentscheidung, kein zusätzlicher Lösch-/Ablaufauftrag. Siehe [Folgeprüfung](PRUEFUNG-14-10.md) und [Providerprüfung](../../integration/easyverein-v3-review.md).
+
+
+Aktuelle Fortsetzung: [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) mit feldweiser Terminbearbeitung, Mitgliederfreigabe-Oberfläche und vorbereiteten Serverworkern/Sicherung. Historische fehlende Implementierungen dieses Protokolls wurden inzwischen ergänzt; manuelle/echte Abnahme und tatsächliche Bereitstellung bleiben offen.

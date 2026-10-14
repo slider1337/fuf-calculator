@@ -7,7 +7,7 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
  private array $memberCache=[];
  public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
  public function snapshot(string $eventId): array {
-  $eventId=EasyVereinData::id($eventId,'event');$event=$this->client->get('event/'.$eventId.'/', ['query'=>'{id,updated_at,canceled,access,end_participation,start_participation,max_participators}']);
+  $eventId=EasyVereinData::id($eventId,'event');$event=$this->client->get('event/'.$eventId.'/', ['query'=>'{id,updated_at,canceled,access,end_participation,start_participation,max_participators,name,start,end,location_name,prologue,show_memberarea}']);
   if(EasyVereinData::id($event['id']??null,'event')!==$eventId||!is_bool($event['canceled']??null)||!is_int($event['access']??null)||!in_array($event['access'],[0,1,2,3],true)||!is_int($event['max_participators']??null)||$event['max_participators']<0){throw new AccessException('provider_event_invalid',503);}
   $groups=[];$groupMap=[];
   foreach(EasyVereinData::collection($this->client,'price-group/',['event'=>$eventId,'query'=>'{id,event,name,selling_price}']) as $g){
@@ -42,7 +42,8 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
   $deadline=($event['end_participation']??null)===null?PHP_INT_MAX:EasyVereinData::timestamp($event['end_participation']);
   $notStarted=($event['start_participation']??null)!==null&&EasyVereinData::timestamp($event['start_participation'])>time();
   $revision=hash('sha256',json_encode([$event,$groups],JSON_THROW_ON_ERROR));
-  return ['eventId'=>$eventId,'revision'=>$revision,'canceled'=>$event['canceled']||$event['access']===0||$notStarted,'bookingUntil'=>$deadline,'capacityConfirmed'=>$event['max_participators']>0,'capacity'=>$event['max_participators'],'capacityRemaining'=>$event['max_participators']===0?null:max(0,$event['max_participators']-$confirmed),'groups'=>$groups,'participants'=>$participants,'guestsAllowed'=>$event['access']===2];
+  $termFields=array_diff(array_values(EasyVereinTermFields::MAP),array_keys($event))===[]?['termFields'=>EasyVereinTermFields::read($event)]:[];
+  return $termFields+['eventId'=>$eventId,'revision'=>$revision,'canceled'=>$event['canceled']||$event['access']===0||$notStarted,'bookingUntil'=>$deadline,'capacityConfirmed'=>$event['max_participators']>0,'capacity'=>$event['max_participators'],'capacityRemaining'=>$event['max_participators']===0?null:max(0,$event['max_participators']-$confirmed),'groups'=>$groups,'participants'=>$participants,'guestsAllowed'=>$event['access']===2];
  }
  public function execute(string $kind,array $p,string $operationReference): array {
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}

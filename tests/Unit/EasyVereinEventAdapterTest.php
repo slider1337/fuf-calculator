@@ -45,4 +45,14 @@ final class EasyVereinEventAdapterTest extends TestCase {
   $d=$this->draft();$d['priceGroups'][]=['label'=>'Zweite Gruppe','price'=>'14','category'=>'ADULT_MULTI'];[$c,$a]=$this->setupAdapter($d);$c->lose='price-group/';try{$a->create($d,'calculator-term-1-term_operation_01');}catch(\RuntimeException){}
   $writes=count($c->writes);self::assertNull($a->reconcile('calculator-term-1-term_operation_01'));self::assertSame($writes,count($c->writes));
  }
+ public function testSelectedTermPatchMapsOnlyExplicitFieldsAndPreservesProviderNote(): void {
+  [$c,$a]=$this->setupAdapter($this->draft(false));$a->create($this->draft(false),'calculator-term-1-term_operation_01');$before=count($c->writes);$note=$c->events[77]['note'];
+  $a->patch('77',['location'=>'Neuer Ort','start'=>'2027-01-02T10:00:00Z','end'=>'2027-01-02T12:00:00Z','registrationDeadline'=>null]);
+  self::assertCount($before+1,$c->writes);self::assertSame('PATCH',$c->writes[$before][0]);self::assertSame(['end','location_name','end_participation','start'],array_keys($c->writes[$before][2]));self::assertSame($note,$c->events[77]['note']);self::assertSame('2027-01-02T10:00:00+00:00',$a->fields('77')['start']);self::assertNull($a->fields('77')['registrationDeadline']);
+ }
+ public function testTermFieldReaderDoesNotInventMissingProviderValues(): void {
+  [$c,$a]=$this->setupAdapter($this->draft(false));$a->create($this->draft(false),'calculator-term-1-term_operation_01');unset($c->events[77]['show_memberarea']);
+  $this->expectException(\App\Application\AccessException::class);$a->fields('77');
+ }
+
 }

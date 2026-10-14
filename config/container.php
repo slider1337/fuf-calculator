@@ -53,6 +53,7 @@ return static function (): ContainerInterface {
         App\Application\Port\FormRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteFormRepository::class),
         App\Application\Port\BookingRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteBookingRepository::class),
         App\Application\Port\ExternalEventPort::class => autowire(App\Infrastructure\EasyVereinEventAdapter::class),
+        App\Application\Port\ExternalTermUpdatePort::class => autowire(App\Infrastructure\EasyVereinEventAdapter::class),
         PDO::class => static function (): PDO {
             $dbPath = getenv('DB_PATH') ?: (__DIR__ . '/../database/fuf.sqlite');
             return SqliteConnection::create($dbPath);

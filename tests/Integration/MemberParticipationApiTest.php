@@ -17,8 +17,9 @@ final class FakeParticipationProvider implements ParticipationPort {
  public int $capacity=100;
  public bool $canceled=false;
  public bool $guestsAllowed=false;
+ public array $termFields=[];
  public function blockedReason(): ?string {return null;}
- public function snapshot(string $eventId): array {return ['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
+ public function snapshot(string $eventId): array {return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
  public function execute(string $kind,array $person,string $operationReference): array {
   $this->writes++;if($this->onExecute!==null){($this->onExecute)();}
   if(($this->outcomes[$person['memberReference']]??null)==='reject'){throw new ParticipationRejected('provider_rejected');}
@@ -209,6 +210,23 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings",['operationKey'=>'direct_fixture_001','versionId'=>null,'contactIdentity'=>'Fiktiver Kontakt','persons'=>[['id'=>'p1','name'=>'Manuell zugeordnet','birthDate'=>'1980-01-01']],'answers'=>[]]);$b=json_decode((string)$r->getBody(),true);$person=$b['persons'][0]['id'];
   $this->provider->rows['777']=['eventId'=>'77','externalId'=>'777','memberReference'=>'11','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
   $p=['bookingId'=>$b['id'],'personId'=>$person,'revision'=>$b['revision'],'memberReference'=>'11','confirmed'=>true,'reason'=>'Stabile Mitgliedsreferenz bewusst zugeordnet'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/clarifications/777/assign",$p);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$r=$this->dispatch('GET',"/api/trips/{$this->trip}/bookings/{$b['id']}");$next=json_decode((string)$r->getBody(),true);self::assertSame('777',$next['persons'][0]['externalReference']);self::assertSame('confirmed',$next['status']);self::assertSame('assigned',$this->db->query('SELECT status FROM external_clarifications')->fetchColumn());
+ }
+
+ public function testScheduledReconcileUsesConfiguredIdentityIntervalAndRevokedAccess(): void {
+  $b=$this->create($this->payload(1));$this->worker();$id=$b['persons'][0]['id'];$external=array_key_first($this->provider->rows);$this->provider->rows[$external]['status']='cancelled';
+  $poll=$this->app->getContainer()->get(\App\Application\ScheduledReconciliation::class);self::assertFalse($poll->runOne(0));self::assertSame('confirmed',$this->db->query('SELECT participation_status FROM registration_participants WHERE id='.$id)->fetchColumn());
+  self::assertTrue($poll->runOne(1));self::assertSame('cancelled',$this->db->query('SELECT participation_status FROM registration_participants WHERE id='.$id)->fetchColumn());self::assertFalse($poll->runOne(1));self::assertSame(1,$this->provider->writes);
+  $this->db->exec('UPDATE reconciliation_schedule SET attempted_at=0');$this->db->exec("DELETE FROM trip_access WHERE capability='term.manage'");self::assertFalse($poll->runOne(1));
+ }
+ public function testScheduledArchivedTripIsExcludedAndClosedTripShowsConflict(): void {
+  $b=$this->create($this->payload(1));$this->worker();$external=array_key_first($this->provider->rows);$this->provider->rows[$external]['status']='cancelled';
+  $poll=$this->app->getContainer()->get(\App\Application\ScheduledReconciliation::class);$this->db->exec("UPDATE trips SET archived_at='2026-10-14' WHERE id=".$this->trip);self::assertFalse($poll->runOne(1));
+  $this->db->exec("UPDATE trips SET archived_at=NULL,closed_at='2026-10-14' WHERE id=".$this->trip);self::assertTrue($poll->runOne(1));self::assertSame('confirmed',$this->db->query('SELECT participation_status FROM registration_participants WHERE id='.$b['persons'][0]['id'])->fetchColumn());self::assertStringContainsString('person:',$this->db->query('SELECT conflicts_json FROM external_observations')->fetchColumn());
+ }
+ public function testTermFieldConflictCanBeAcknowledgedIndividually(): void {
+  $_SESSION['user_id']=1;$this->provider->termFields=['title'=>'Extern neuer Titel','location'=>'Extern neuer Ort'];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);self::assertContains('term:title',array_column($d['observation']['conflicts'],'field'));
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['term:title'],'confirmed'=>true,'reason'=>'Titel bewusst geprüft']);self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);self::assertNotContains('term:title',array_column($d['observation']['conflicts'],'field'));self::assertContains('term:location',array_column($d['observation']['conflicts'],'field'));self::assertSame(0,$this->provider->writes);
  }
 
 }

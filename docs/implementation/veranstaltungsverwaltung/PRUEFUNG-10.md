@@ -25,3 +25,6 @@ Die Abnahmematrix bleibt ehrlich: lokale Fachabläufe sind geprüft, aber echte 
 Daher ist AUFGABE-10 nicht vollständig abgenommen und AUFGABE-11 bleibt am ausdrücklich dokumentierten Gate. Kein Umbau im fuf-website-Repository, kein neuer parallel aktiver Anmeldeweg, keine Mails, keine realen Testtermine/Teilnahmen, keine Browser-/Lighthouse-Automation. Für Websiteübergabe liegt der versionsgebundene Vertrag bereits bereit; eine betriebsfähige Integration wird damit noch nicht behauptet.
 
 Aktualisierung 14.10.: öffentliche vollständige API-Doku erfolgreich ausgelesen; lesender Mitglieder-Adapter implementiert. Gemeinsamer Anmeldeschluss und Reise-Archivierung gemäß Nutzerentscheidung, kein zusätzlicher Lösch-/Ablaufauftrag. Siehe [Folgeprüfung](PRUEFUNG-14-10.md) und [Providerprüfung](../../integration/easyverein-v3-review.md).
+
+
+Aktuelle Fortsetzung: [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) mit feldweiser Terminbearbeitung, Mitgliederfreigabe-Oberfläche und vorbereiteten Serverworkern/Sicherung. Historische fehlende Implementierungen dieses Protokolls wurden inzwischen ergänzt; manuelle/echte Abnahme und tatsächliche Bereitstellung bleiben offen.

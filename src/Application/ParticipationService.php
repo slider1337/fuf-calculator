@@ -77,6 +77,7 @@ final readonly class ParticipationService {
    $this->policy->trip($trip,'term.manage');if($this->store->link($trip)['externalId']!==$link['externalId']){throw new AccessException('term_changed',409);}
    $old=$this->store->query('SELECT revision FROM external_observations WHERE trip_id=?',[$trip])->fetchColumn();$conflicts=[];
    $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==$snapshot[$field]){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>$snapshot[$field]];}}
+   foreach($snapshot['termFields']??[] as $field=>$value){if(($baseline['termFields'][$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>$baseline['termFields'][$field]??null,'external'=>$value];}}
    foreach($snapshot['participants'] as $row){
     $known=$this->store->query('SELECT p.*,r.trip_id FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.external_reference=? AND r.trip_id=?',[$row['externalId'],$trip])->fetchAll(\PDO::FETCH_ASSOC);
     if($row['memberReference']===null||count($known)!==1||$known[0]['member_reference']!==$row['memberReference']){
@@ -97,8 +98,8 @@ final readonly class ParticipationService {
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}
    if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $conflicts=json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR);$fields=$p['fields']??null;
-   if(!is_array($fields)||!array_is_list($fields)||!$fields||array_diff($fields,['revision','canceled','bookingUntil','capacity','capacityRemaining','groups'])){throw new ValidationException(['fields'=>'event_fields_only']);}
-   $link=$this->store->link($trip);$data=$link['data'];$external=json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR);foreach($fields as $field){$data[$field]=$external[$field];}
+   if(!is_array($fields)||!array_is_list($fields)||!$fields||array_diff($fields,array_merge(['revision','canceled','bookingUntil','capacity','capacityRemaining','groups'],array_map(fn($key)=>'term:'.$key,TermFields::KEYS)))){throw new ValidationException(['fields'=>'event_fields_only']);}
+   $link=$this->store->link($trip);$data=$link['data'];$external=json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR);foreach($fields as $field){if(str_starts_with($field,'term:')){$key=substr($field,5);if(!array_key_exists($key,$external['termFields']??[])){throw new ValidationException(['fields'=>'observed_field_required']);}$data['termFields'][$key]=$external['termFields'][$key];}else{if(!array_key_exists($field,$external)){throw new ValidationException(['fields'=>'observed_field_required']);}$data[$field]=$external[$field];}}
    $conflicts=array_values(array_filter($conflicts,fn($c)=>!in_array($c['field'],$fields,true)));
    $this->store->query('UPDATE external_event_links SET external_json=? WHERE trip_id=?',[json_encode($data,JSON_THROW_ON_ERROR),$trip]);
    $this->store->query('UPDATE external_observations SET revision=revision+1,conflicts_json=? WHERE trip_id=?',[json_encode($conflicts,JSON_THROW_ON_ERROR),$trip]);

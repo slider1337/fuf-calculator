@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.6.0
+  version: 1.7.0
 security:
   - calculatorSession: []
 servers:
@@ -2943,6 +2943,122 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PersonConflictResolution'
+  /api/trips/{id}/term/updates:
+    get:
+      summary: Aktuellen externen Terminstand und Änderungsaufträge lesen
+      description: Benötigt term.manage. Schreibaktionen sind bei Archiv/Abschluss gesperrt. Frischer Stand und reviewHash;
+        nur ausgewählte Felder. Worker prüft vor einem PATCH erneut. Nach Timeout/Leaseablauf ausschließlich GET-Abgleich;
+        kein erneuter PATCH. Normale Provider-Benachrichtigungen nur im expliziten Produktivmodus. Ungeklärter Auftrag
+        blockiert einen weiteren Auftrag.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermUpdateState'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: term.manage fehlt
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: trip_archived, trip_closed, confirmed_term_required, term_review_changed, idempotency_conflict,
+            term_update_in_progress oder Schreibmodus aus
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Providerstand nicht vollständig nachweisbar
+  /api/trips/{id}/term/updates/preview:
+    post:
+      summary: Ausgewählte Terminänderungen frisch prüfen, ohne zu schreiben
+      description: Benötigt term.manage. Schreibaktionen sind bei Archiv/Abschluss gesperrt. Frischer Stand und reviewHash;
+        nur ausgewählte Felder. Worker prüft vor einem PATCH erneut. Nach Timeout/Leaseablauf ausschließlich GET-Abgleich;
+        kein erneuter PATCH. Normale Provider-Benachrichtigungen nur im expliziten Produktivmodus. Ungeklärter Auftrag
+        blockiert einen weiteren Auftrag.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermUpdatePreview'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: term.manage fehlt
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: trip_archived, trip_closed, confirmed_term_required, term_review_changed, idempotency_conflict,
+            term_update_in_progress oder Schreibmodus aus
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Providerstand nicht vollständig nachweisbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - changes
+              properties:
+                changes:
+                  $ref: '#/components/schemas/TermChanges'
+  /api/trips/{id}/term/updates/request:
+    post:
+      summary: Begründeten Terminänderungsauftrag dauerhaft annehmen
+      description: Benötigt term.manage. Schreibaktionen sind bei Archiv/Abschluss gesperrt. Frischer Stand und reviewHash;
+        nur ausgewählte Felder. Worker prüft vor einem PATCH erneut. Nach Timeout/Leaseablauf ausschließlich GET-Abgleich;
+        kein erneuter PATCH. Normale Provider-Benachrichtigungen nur im expliziten Produktivmodus. Ungeklärter Auftrag
+        blockiert einen weiteren Auftrag.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermUpdateReceipt'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: term.manage fehlt
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: trip_archived, trip_closed, confirmed_term_required, term_review_changed, idempotency_conflict,
+            term_update_in_progress oder Schreibmodus aus
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Providerstand nicht vollständig nachweisbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermUpdateRequest'
 components:
   securitySchemes:
     memberDelegation:
@@ -6005,3 +6121,201 @@ components:
           - true
         reason:
           type: string
+    TermChanges:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        registrationDeadline:
+          type: string
+          format: date-time
+          nullable: true
+        visibleToMembers:
+          type: boolean
+    TermFields:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - start
+      - end
+      - location
+      - description
+      - capacity
+      - registrationDeadline
+      - visibleToMembers
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        capacity:
+          type: integer
+          minimum: 0
+        registrationDeadline:
+          type: string
+          format: date-time
+          nullable: true
+        visibleToMembers:
+          type: boolean
+    TermUpdateJobs:
+      type: array
+      items:
+        type: object
+        required:
+        - id
+        - status
+        - errorCode
+        - createdAt
+        - completedAt
+        properties:
+          id:
+            type: integer
+          status:
+            type: string
+            enum:
+            - pending
+            - running
+            - unknown
+            - reconciling
+            - succeeded
+            - conflict
+            - blocked
+          errorCode:
+            type: string
+            nullable: true
+          createdAt:
+            type: string
+          completedAt:
+            type: string
+            nullable: true
+    TermUpdateState:
+      type: object
+      required:
+      - externalId
+      - fields
+      - blockedReason
+      - jobs
+      properties:
+        externalId:
+          type: string
+        fields:
+          $ref: '#/components/schemas/TermFields'
+        blockedReason:
+          type: string
+          nullable: true
+        jobs:
+          $ref: '#/components/schemas/TermUpdateJobs'
+    TermUpdatePreview:
+      type: object
+      required:
+      - externalId
+      - before
+      - changes
+      - reviewHash
+      - blockedReason
+      properties:
+        externalId:
+          type: string
+        before:
+          type: object
+          properties:
+            title:
+              type: string
+              minLength: 1
+              maxLength: 200
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+            location:
+              type: string
+              maxLength: 500
+            description:
+              type: string
+              maxLength: 10000
+            capacity:
+              type: integer
+              minimum: 0
+            registrationDeadline:
+              type: string
+              format: date-time
+              nullable: true
+            visibleToMembers:
+              type: boolean
+        changes:
+          $ref: '#/components/schemas/TermChanges'
+        reviewHash:
+          type: string
+        blockedReason:
+          type: string
+          nullable: true
+    TermUpdateReceipt:
+      type: object
+      required:
+      - jobId
+      - jobs
+      properties:
+        jobId:
+          type: integer
+        jobs:
+          $ref: '#/components/schemas/TermUpdateJobs'
+    TermUpdateRequest:
+      type: object
+      required:
+      - operationKey
+      - changes
+      - reviewHash
+      - confirmed
+      - reason
+      properties:
+        operationKey:
+          type: string
+          minLength: 8
+          maxLength: 100
+        changes:
+          $ref: '#/components/schemas/TermChanges'
+        reviewHash:
+          type: string
+        confirmed:
+          type: boolean
+          enum:
+          - true
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500

@@ -1,6 +1,6 @@
 # Abnahme und Freigabe zur Website-Anpassung
 
-Alle Punkte zunächst **offen**. Jeder Umsetzungsschritt ergänzt ein Prüfprotokoll; diese Liste behauptet keine bereits bestandenen Tests. Sinnvolle Domain-, Application-, Migrations- und API-Integrationstests verwenden. Änderungen an reinem Layout manuell anhand der Referenzen abnehmen. Keine Browser-/Lighthouse-Automation und keine echten Nachrichten oder externen Testbuchungen.
+Aktueller Nachweis: [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md). Die technischen Fälle sind mit lokalen/Fake-Tests belegt; manuelle Design-/echte Providerabnahme sowie Bereitstellung und Website sind weiterhin offen. Die folgende Matrix definiert die Kriterien. Historische Ausgangslage: alle Punkte zunächst offen. Jeder Umsetzungsschritt ergänzt ein Prüfprotokoll; diese Liste behauptet keine bereits bestandenen Tests. Sinnvolle Domain-, Application-, Migrations- und API-Integrationstests verwenden. Änderungen an reinem Layout manuell anhand der Referenzen abnehmen. Keine Browser-/Lighthouse-Automation und keine echten Nachrichten oder externen Testbuchungen.
 
 ## Fachliche Prüfmatrix
 

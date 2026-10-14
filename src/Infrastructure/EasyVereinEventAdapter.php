@@ -3,12 +3,24 @@ declare(strict_types=1);
 namespace App\Infrastructure;
 use App\Application\{AccessException,Port\ExternalEventPort,Port\EasyVereinWriteClient};
 use App\Infrastructure\Persistence\SqliteWorkflowRepository;
-final readonly class EasyVereinEventAdapter implements ExternalEventPort {
+final readonly class EasyVereinEventAdapter implements ExternalEventPort, \App\Application\Port\ExternalTermUpdatePort {
  public function __construct(private EasyVereinWriteClient $client,private EasyVereinParticipationAdapter $participations,private SqliteWorkflowRepository $store) {}
  public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
  public function get(string $id): ?array {
   $s=$this->participations->snapshot($id);$event=$this->client->get('event/'.$id.'/', ['query'=>'{id,name,start,end,location_name,note,calendar,access}']);
   return $s+['externalId'=>EasyVereinData::id($event['id']??null,'event'),'title'=>$event['name']??null,'start'=>$event['start']??null,'end'=>$event['end']??null,'calendarReference'=>EasyVereinData::id($event['calendar']??null,'calendar')];
+ }
+ public function fields(string $eventId): array {
+  $id=EasyVereinData::id($eventId,'event');
+  $row=$this->client->get('event/'.$id.'/', ['query'=>'{id,name,start,end,location_name,prologue,max_participators,end_participation,show_memberarea}']);
+  if(EasyVereinData::id($row['id']??null,'event')!==$id){throw new AccessException('provider_term_fields_unproven',503);}
+  return EasyVereinTermFields::read($row);
+ }
+ public function patch(string $eventId,array $changes): void {
+  if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
+  $id=EasyVereinData::id($eventId,'event');$changes=\App\Application\TermFields::changes($changes);$body=[];
+  foreach($changes as $field=>$value){$body[EasyVereinTermFields::MAP[$field]]=$value;}
+  $this->client->write('PATCH','event/'.$id.'/',$body);
  }
  public function create(array $d,string $reference): array {
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}

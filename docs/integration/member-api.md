@@ -1,6 +1,6 @@
 # Mitgliedervertrag 1.6.0 – Calculator vor Website
 
-Stand: 14.10.2026. Die Schnittstelle ist implementiert und mit Fakes geprüft. **Kein produktiver Mitgliederweg freigegeben.** Echte Termin-/Teilnahme-/Directoryadapter sind implementiert. Standardmäßig sind externe Schreibaktionen mit `EASYVEREIN_WRITE_MODE=off` deaktiviert; `production` darf erst nach Abnahme/Bereitstellung gesetzt werden. Kein Payload/Session-Benutzer kann das umgehen. Normale produktive Providerbenachrichtigungen sind nach Nutzerpräzisierung ausdrücklich vorgesehen; echte Tests dürfen nur an me@benna.me mailen, externe Schreibtests bleiben Fakes. Serverseitiger API-Token erforderlich.
+Stand: 14.10.2026. Mitgliedervertrag 1.6.0 bleibt unverändert; OpenAPI 1.7.0 ergänzt die Orga-Terminbearbeitung. Die Schnittstelle ist implementiert und mit Fakes geprüft. **Kein produktiver Mitgliederweg freigegeben.** Echte Termin-/Teilnahme-/Directoryadapter sind implementiert. Standardmäßig sind externe Schreibaktionen mit `EASYVEREIN_WRITE_MODE=off` deaktiviert; `production` darf erst nach Abnahme/Bereitstellung gesetzt werden. Kein Payload/Session-Benutzer kann das umgehen. Normale produktive Providerbenachrichtigungen sind nach Nutzerpräzisierung ausdrücklich vorgesehen; echte Tests dürfen nur an me@benna.me mailen, externe Schreibtests bleiben Fakes. Serverseitiger API-Token erforderlich.
 
 
 ## Identitätsnachweis und Vertrauen
@@ -77,3 +77,5 @@ Nach erfülltem Gate: erst Calculator migrationsfähig bereitstellen, dann pro b
 Öffentlicher API-Abruf und Grenzen: [Prüfung vom 14.10.](easyverein-v3-review.md).
 
 Schreib-/Mailregel und aktuelle Betriebsgrenzen: [Folgeprüfung](../implementation/veranstaltungsverwaltung/PRUEFUNG-14-10-SCHREIBWEGE.md).
+
+Produktionskonfiguration, Worker, Sicherung und Aktivierungsreihenfolge: [Betrieb](../implementation/veranstaltungsverwaltung/BETRIEB.md).

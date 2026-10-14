@@ -1,6 +1,6 @@
 # Schritt 10 – Mitglieder-API und Calculator-Abnahme vor Websitebau
 
-Status: **lokale technische Grundlage implementiert; produktive Abnahme offen** · Voraussetzung: Schritte 01–09 abgenommen; reale Integration nur soweit ihr Vertrag geklärt ist.
+Status: **technisch implementiert einschließlich realer Adapter; manuelle/produktive Abnahme offen** · Voraussetzung: Schritte 01–09 abgenommen; reale Integration nur soweit ihr Vertrag geklärt ist.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 
@@ -25,3 +25,5 @@ Freigabekriterium: Calculator-Funktionen und versionierter Vertrag stehen unabh�
 Nach Abschluss Prüfprotokoll mit konkreten Änderungen, Tests, Datenmigration, offenen Punkten und Betriebsanweisungen ergänzen. Keine echten Mails oder Testtermine/-teilnahmen erzeugen. Keine folgenden Schritte vorziehen.
 
 Aktueller Prüfstand: [PRUEFUNG-10.md](PRUEFUNG-10.md). Offene Provider-/Freigabekriterien bleiben Voraussetzung; Fakes sind kein produktiver Nachweis.
+
+Aktueller Abschlussstand: [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md), [Betrieb](BETRIEB.md). Historische Sperren wurden gemäß Mailpräzisierung und realer Adapterimplementierung aktualisiert.

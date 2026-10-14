@@ -74,6 +74,9 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/preview', [$workflow, 'planningPreview']);
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/apply', [$workflow, 'planningApply']);
     $app->get('/api/trips/{id:[0-9]+}/term', [$workflow, 'term']);
+    $app->get('/api/trips/{id:[0-9]+}/term/updates', [$workflow, 'termUpdates']);
+    $app->post('/api/trips/{id:[0-9]+}/term/updates/preview', [$workflow, 'termUpdatePreview']);
+    $app->post('/api/trips/{id:[0-9]+}/term/updates/request', [$workflow, 'termUpdateRequest']);
     $app->put('/api/trips/{id:[0-9]+}/term/draft', [$workflow, 'draft']);
     $app->post('/api/trips/{id:[0-9]+}/term/review', [$workflow, 'review']);
     $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);

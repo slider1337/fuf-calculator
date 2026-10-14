@@ -1,6 +1,6 @@
 # Veranstaltungsverwaltung – Umsetzung des Designs
 
-Stand: 14.10.2026 · **Calculator-Grundlagen und reale Schreibadapter, Orga-Gastfreigaben sowie gezielte Personen-/Preisklärung implementiert und technisch geprüft. Produktivbetrieb standardmäßig aus; manuelle Design-/Providerabnahme und Bereitstellung offen. Website Schritt 11 anschließend.**
+Stand: 14.10.2026 · **Calculator-Schritte 01–10 technisch implementiert und mit lokalen/Fake-Tests geprüft. Feldweise Terminänderungen, Mitgliederfreigabe in der Oberfläche und Serverbetrieb ergänzt. Manuelle Design-/Providerabnahme und tatsächliche Bereitstellung offen; Website-Schritt 11 folgt danach.**
 
 Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator, erst zum Schluss die Website anpassen.** Calculator, easyVerein und WordPress behalten ihre Aufgaben aus [Konzept 09](../../concepts/09-veranstaltungsverwaltung-formulare.md). Diese Reihenfolge ersetzt für diese Erweiterung die frühere Reihenfolge in Konzept 09, Abschnitt 13. Vor Schritt 11 gibt es keine Änderung im Website-Repository und keinen Wechsel des produktiven Anmeldewegs.
 
@@ -15,7 +15,7 @@ Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator,
 
 ## Schritte
 
-Jeder Schritt wird separat umgesetzt und geprüft. Aktueller Stand: Schritte 01–07 und lokale/Fake-Grundlagen von Schritt 08 technisch umgesetzt; Prüfprotokolle [01](PRUEFUNG-01.md), [02](PRUEFUNG-02.md), [03](PRUEFUNG-03.md), [04](PRUEFUNG-04.md), [05](PRUEFUNG-05.md) und [06](PRUEFUNG-06.md). Die manuelle Designabnahme ist noch offen. Lokale Grundlagen von 09/10 sind mit Fakes geprüft; produktive Abnahme und echte Adapter bleiben offen, Schritt 11 blockiert. Prüfprotokolle [09](PRUEFUNG-09.md), [10](PRUEFUNG-10.md) und [11](PRUEFUNG-11.md). Prüfprotokolle [07](PRUEFUNG-07.md) und [08](PRUEFUNG-08.md). Reihenfolge ist eine Abhängigkeit, kein Auftrag zur sofortigen Gesamtimplementierung.
+Aktueller technischer Stand: Schritte 01–10 implementiert. Die historischen Prüfprotokolle dokumentieren den jeweiligen Zwischenstand, die [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) den aktuellen Stand. Reale Adapter sind implementiert; Tests verwenden Fakes. Die manuelle Design-/Providerabnahme bleibt offen. [Betrieb, Konfiguration und Einführung](BETRIEB.md) sind vorbereitet. Website-Schritt 11 ist bis zur Abnahme/Bereitstellung gesperrt.
 
 | Schritt | Ergebnis | Aufgabe |
 | --- | --- | --- |

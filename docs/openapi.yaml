@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.8.0
+  version: 1.9.0
 security:
   - calculatorSession: []
 servers:
@@ -2109,6 +2109,53 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TermLinkRequest'
+  /api/trip-wizard/catalog/{resource}:
+    get:
+      summary: Read-only named easyVerein event/calendar search (50 results per page)
+      description: Authenticated trip creators, or term.manage and easyverein mode for an existing trip. No participants, notes or provider writes.
+      parameters:
+      - {name: resource, in: path, required: true, schema: {type: string, enum: [events, calendars]}}
+      - {name: q, in: query, schema: {type: string, maxLength: 200}}
+      - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 10000, default: 0}}
+      - {name: from, in: query, description: Optional earliest event start date, schema: {type: string}}
+      - {name: selected, in: query, description: Read the saved selection by internal provider reference, schema: {type: string, pattern: '^[1-9][0-9]{0,18}$'}}
+      responses:
+        '200':
+          description: Named selections and next offset; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermCatalogPage'
+        '401': {description: Session required}
+        '403': {description: term.manage required}
+        '404': {description: Trip unavailable}
+        '409': {description: easyVerein registration mode required}
+        '422': {description: Invalid search parameters}
+        '503': {description: 'Provider unavailable, unconfigured or malformed response'}
+  /api/trips/{id}/term/catalog/{resource}:
+    get:
+      summary: Read-only named easyVerein event/calendar search (50 results per page)
+      description: Authenticated trip creators, or term.manage and easyverein mode for an existing trip. No participants, notes or provider writes.
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
+      - {name: resource, in: path, required: true, schema: {type: string, enum: [events, calendars]}}
+      - {name: q, in: query, schema: {type: string, maxLength: 200}}
+      - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 10000, default: 0}}
+      - {name: from, in: query, description: Optional earliest event start date, schema: {type: string}}
+      - {name: selected, in: query, description: Read the saved selection by internal provider reference, schema: {type: string, pattern: '^[1-9][0-9]{0,18}$'}}
+      responses:
+        '200':
+          description: Named selections and next offset; no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermCatalogPage'
+        '401': {description: Session required}
+        '403': {description: term.manage required}
+        '404': {description: Trip unavailable}
+        '409': {description: easyVerein registration mode required}
+        '422': {description: Invalid search parameters}
+        '503': {description: 'Provider unavailable, unconfigured or malformed response'}
   /api/trip-wizard:
     post:
       summary: Atomically create local trip, selected default team, form binding and
@@ -5247,6 +5294,24 @@ components:
           $ref: '#/components/schemas/CalculationSnapshot'
           nullable: true
         stale: *id004_2
+    TermCatalogPage:
+      type: object
+      required: [items, nextOffset]
+      properties:
+        nextOffset: {type: integer, nullable: true}
+        items:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: {type: string}
+              name: {type: string}
+              start: {type: string, format: date-time}
+              end: {type: string, format: date-time}
+              calendarId: {type: string}
+              canceled: {type: boolean}
     TermPriceGroup:
       type: object
       required:

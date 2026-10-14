@@ -71,6 +71,8 @@ return static function (App $app): void {
     $workflow = \App\Infrastructure\Http\Controller\WorkflowController::class;
     $app->get('/api/trips/{id:[0-9]+}/registration-mode', [$workflow, 'registrationMode']);
     $app->put('/api/trips/{id:[0-9]+}/registration-mode', [$workflow, 'changeRegistrationMode']);
+    $app->get('/api/trip-wizard/catalog/{resource:events|calendars}', [$workflow, 'catalogue']);
+    $app->get('/api/trips/{id:[0-9]+}/term/catalog/{resource:events|calendars}', [$workflow, 'tripCatalogue']);
     $app->post('/api/trip-wizard', [$workflow, 'createTrip']);
     $app->get('/api/trips/{id:[0-9]+}/planning-transfer', [$workflow, 'planningStatus']);
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/preview', [$workflow, 'planningPreview']);

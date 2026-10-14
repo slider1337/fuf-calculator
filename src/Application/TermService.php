@@ -81,15 +81,15 @@ final readonly class TermService
             $this->policy->trip($id,'term.manage');$draft=$this->store->draft($id)??throw new ValidationException(['draft'=>'save_first']);$d=$this->validate($id,$draft['data']);
             $trip=$this->trips->getById($id);$issues=[];
             if($trip->name()!==$d['title']||$trip->startDate()->format('Y-m-d')!==$d['startDate']||$trip->endDate()?->format('Y-m-d')!==$d['endDate']){$issues[]='Eckdaten weichen von der gespeicherten Reise ab.';}
-            if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Eine stabile numerische easyVerein-Kalender-ID ist erforderlich.';}
+            if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Bitte einen easyVerein-Kalender auswählen.';}
             foreach($d['priceGroups'] as $g){if($g['price']===null){$issues[]='Preis fehlt: '.$g['label'];}}
-            if($d['mode']==='link'&&$d['externalId']===''){$issues[]='Termin-ID fehlt.';}
+            if($d['mode']==='link'&&$d['externalId']===''){$issues[]='Bitte einen bestehenden easyVerein-Termin auswählen.';}
             $binding=$this->forms->binding($id);
             if($d['formVersionId']!==($binding['versionId']??null)){$issues[]='Formularvorschlag zuerst im Formularbereich bewusst binden.';}
             $team=array_column($this->access->team('trip',$id),'userId');
             if(array_diff($d['teamUserIds'],$team)!==[]){$issues[]='Teamvorschlag zuerst in der Teamverwaltung freigeben.';}
             $payload=['draft'=>$draft,'trip'=>['title'=>$trip->name(),'startDate'=>$trip->startDate()->format('Y-m-d'),'endDate'=>$trip->endDate()?->format('Y-m-d')],'binding'=>$binding,'team'=>$team];
-            return ['revision'=>$draft['revision'],'reviewHash'=>PlanningTransferService::hash($payload),'data'=>$d,'issues'=>$issues,'blockedReason'=>$this->external->blockedReason(),'externalAction'=>$d['mode']==='create'?'Ein Termin; keine Teilnahmen':'Bestehende Termin-ID prüfen; kein externer Schreibauftrag'];
+            return ['revision'=>$draft['revision'],'reviewHash'=>PlanningTransferService::hash($payload),'data'=>$d,'issues'=>$issues,'blockedReason'=>$this->external->blockedReason(),'externalAction'=>$d['mode']==='create'?'Ein Termin; keine Teilnahmen':'Ausgewählten Termin prüfen; kein externer Schreibauftrag'];
         });
     }
     public function request(int $id,array $p): array

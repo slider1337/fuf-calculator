@@ -1490,7 +1490,7 @@ function roomReservationRowIds() {
 }
 
 function clearTripFormWithDefaults() {
-  byId('trip-registration-mode-summary').classList.add('d-none');byId('trip-registration-mode-choice').disabled=false;
+  byId('trip-registration-mode-summary').classList.add('d-none');byId('trip-registration-mode-create').classList.remove('d-none');byId('trip-registration-mode-choice').disabled=false;
   const form = byId("trip-form");
   form.reset();
   byId("tripFormId").value = "";

@@ -290,17 +290,17 @@ byId('trip-archive').addEventListener('click',()=>performManagement(async()=>{
 
 function tripUsesEasyVerein(trip=state.currentTrip){return trip?.registrationMode==='easyverein';}
 function applyRegistrationModeLayout(trip){
-  const easy=tripUsesEasyVerein(trip),legacyInPlanning=!easy&&trip.capabilities.includes('calculation.manage');
+  const easy=tripUsesEasyVerein(trip);
   byId('trip-registration-mode-label').textContent=easy?'easyVerein · Zusatzformular':'Clubdesk / CSV · bisheriger Ablauf';
   byId('trip-registration-mode-change').disabled=!!trip.archivedAt||!!trip.closedAt||!trip.capabilities.includes('trip.manage');
   byId('trip-registration-mode-summary').classList.remove('d-none');
+  byId('trip-registration-mode-create').classList.add('d-none');
   byId('trip-registration-mode-choice').value=trip.registrationMode||'clubdesk_csv';byId('trip-registration-mode-choice').disabled=true;
   for(const id of ['trip-term-section','planning-transfer-section','trip-form-binding']){byId(id).classList.toggle('d-none',!easy);}
   byId('trip-form-binding').nextElementSibling?.classList.toggle('d-none',!easy);
   byId('tab-team').textContent=easy?'Team & Termin':'Team';
-  byId('tab-anmeldungen').classList.toggle('d-none',legacyInPlanning||!trip.capabilities.includes('registration.view'));
+  byId('tab-anmeldungen').classList.toggle('d-none',!trip.capabilities.includes('registration.view'));
   byId('tab-auswertung').classList.toggle('d-none',!easy||!trip.capabilities.includes('analytics.view'));
-  const parent=legacyInPlanning?document.querySelector('#panel-planung .pg-main'):byId('panel-anmeldungen');parent.append(byId('registrations-section'));
   byId('csv-upload-form').classList.toggle('d-none',easy);
   byId('booking-contact-field').classList.toggle('d-none',!easy);byId('booking-contact').required=easy;
   byId('booking-intake-note').classList.toggle('d-none',!easy);byId('booking-extra-fields').classList.toggle('d-none',!easy);

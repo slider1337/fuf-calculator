@@ -17,6 +17,22 @@ final class Decimal
         $fraction = rtrim($fraction, '0');
         return ($negative && ($whole !== '0' || $fraction !== '') ? '-' : '') . $whole . ($fraction !== '' ? '.' . $fraction : '');
     }
+    /** Arbitrary-size exact decimal sum, without float or extension requirements. */
+    public static function sum(array $values): string
+    {
+        $positive = '0'; $negative = '0';
+        $add = static function (string $a, string $b): string {
+            $a=strrev($a);$b=strrev($b);$carry=0;$out='';
+            for($i=0;$i<max(strlen($a),strlen($b))||$carry;$i++){$n=(int)($a[$i]??0)+(int)($b[$i]??0)+$carry;$out.=($n%10);$carry=intdiv($n,10);}
+            return strrev($out);
+        };
+        foreach($values as $v){[$whole,$fraction]=array_pad(explode('.',ltrim((string)$v,'-')),2,'');$scaled=ltrim($whole.str_pad($fraction,6,'0'),'0')?:'0';if(str_starts_with((string)$v,'-')){$negative=$add($negative,$scaled);}else{$positive=$add($positive,$scaled);}}
+        $cmp=strlen($positive)<=>strlen($negative);if($cmp===0){$cmp=strcmp($positive,$negative);} $minus=$cmp<0;
+        $a=strrev($minus?$negative:$positive);$b=strrev($minus?$positive:$negative);$out='';$borrow=0;
+        for($i=0;$i<strlen($a);$i++){$n=(int)$a[$i]-(int)($b[$i]??0)-$borrow;$borrow=$n<0?1:0;$out.=($n+10)%10;}
+        $out=ltrim(strrev($out),'0')?:'0';$out=str_pad($out,7,'0',STR_PAD_LEFT);$whole=ltrim(substr($out,0,-6),'0')?:'0';$fraction=rtrim(substr($out,-6),'0');
+        return ($minus&&($whole!=='0'||$fraction!=='')?'-':'').$whole.($fraction!==''?'.'.$fraction:'');
+    }
     public static function compare(string $a, string $b): int
     {
         $scaled = static function (string $v): int {

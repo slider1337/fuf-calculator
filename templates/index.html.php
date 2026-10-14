@@ -176,7 +176,7 @@
         <nav class="event-tabs" aria-label="Veranstaltungsbereiche">
             <button class="btn btn-o" type="button" data-event-tab="reisen">Reisen</button><button class="btn btn-o" type="button" data-event-tab="formular">Formular</button><button class="btn btn-o" type="button" data-event-tab="standardteam">Standardteam</button><button class="btn btn-o" type="button" data-event-tab="einstellungen">Einstellungen</button>
         </nav>
-        <div id="event-panel-reisen"><div class="event-toolbar"><button type="button" id="event-new-trip" class="btn btn-a">Neue Reise</button><button type="button" id="event-assign-trip" class="btn btn-o">Bestehende Reise zuordnen</button></div><div id="event-trips"></div></div>
+        <div id="event-panel-reisen"><button type="button" class="btn btn-o" id="event-analytics-open">Auswertung ausgewählter Reisen</button><div class="event-toolbar"><button type="button" id="event-new-trip" class="btn btn-a">Neue Reise</button><button type="button" id="event-assign-trip" class="btn btn-o">Bestehende Reise zuordnen</button></div><div id="event-trips"></div></div>
         <div id="event-panel-formular" class="d-none"><div id="form-workspace"></div></div>
         <div id="event-panel-standardteam" class="d-none"><section class="sec"><div class="sec-h"><h2>Standardteam</h2><button type="button" class="btn btn-o" id="default-team-add">Person hinzufügen</button></div><div class="sec-b"><p class="help">Beim Anlegen wird das Team unabhängig in die Reise kopiert. Spätere Änderungen wirken nur auf neue Reisen.</p><div id="default-team-list"></div></div></section><section class="sec"><div class="sec-h"><h2>Veranstaltungsverwaltung</h2><button type="button" class="btn btn-o" id="event-access-add">Person hinzufügen</button></div><div id="event-access-list" class="sec-b"></div></section></div>
         <div id="event-panel-einstellungen" class="d-none"><form id="event-settings-form" class="sec"><div class="sec-h"><h2>Einstellungen</h2></div><div class="sec-b"><label class="f">Name<div class="in"><input id="event-setting-name" required maxlength="200"></div></label><label class="f">Beschreibung<div class="in"><textarea id="event-setting-description" maxlength="10000" rows="4"></textarea></div></label><label><input id="event-setting-archived" type="checkbox"> Archiviert</label><span class="help">Das Archiv erhält historische Reisen. Neue Reisen sind bis zur Reaktivierung gesperrt.</span><button type="submit" class="btn btn-p">Speichern</button></div></form></div>
@@ -282,8 +282,145 @@
         <div class="trip-meta-m d-lg-none"><span class="help" id="trip-editor-meta-mobile"></span></div>
 
         <div class="tab-content" id="tripTabContent"><div class="tab-pane fade" id="panel-uebersicht" role="tabpanel" aria-labelledby="tab-uebersicht"><section class="sec"><div class="sec-h"><h2>Reiseübersicht</h2><span class="chip" id="trip-lifecycle-status"></span></div><div class="sec-b"><div id="trip-overview-details"></div><div class="event-toolbar"><button type="button" class="btn btn-o d-none" id="trip-event-assign" disabled>Veranstaltung zuordnen / ändern</button></div><p class="help" id="trip-event-assignment-note"></p><div id="trip-form-binding"></div><p class="help">Die ausgewählte Formularversion bestimmt die Zusatzfragen für diese Reise.</p><div class="event-toolbar"><button type="button" class="btn btn-o" id="trip-duplicate">Reise duplizieren</button><button type="button" class="btn btn-p" id="trip-close">Abrechnung abschließen</button><button type="button" class="btn btn-o" id="trip-reopen">Begründet wiederöffnen</button></div></div></section></div>
-<div class="tab-pane fade" id="panel-anmeldungen" role="tabpanel" aria-labelledby="tab-anmeldungen"><div class="empty-state"><h2>Anmeldungen</h2><p>Die zentrale Buchungsverwaltung folgt in Schritt 5. Bestehende CSV- und manuelle Anmeldungen finden berechtigte Organisatoren weiterhin in der Planung.</p><button class="btn btn-o" type="button" data-trip-tab="planung">Zur Planung</button></div></div>
-<div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><div class="empty-state"><h2>Auswertung</h2><p>Die Auswertung versionierter Zusatzangaben folgt in Schritt 6. Es liegen noch keine solchen Daten vor.</p></div></div>
+<div class="tab-pane fade" id="panel-anmeldungen" role="tabpanel" aria-labelledby="tab-anmeldungen">            <section class="sec" id="registrations-section">
+                <div class="sec-h">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                    <h2>Anmeldungen</h2>
+                    <span class="sum" id="sum-anmeldungen"></span>
+                    <button id="recalculate-billings-btn" class="btn btn-g btn-s d-none" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
+                        Abrechnungen neu berechnen
+                    </button>
+                    <button id="delete-registrations-btn" class="btn btn-d btn-s d-none" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                        Alle l&ouml;schen
+                    </button>
+                    <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#registrations-section-body" aria-expanded="true" aria-controls="registrations-section-body" aria-label="Anmeldungen ein- oder ausklappen">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                </div>
+                <div class="collapse show" id="registrations-section-body">
+                    <div class="sec-b">
+                        <div id="registrations-summary" class="fuf-grid fuf-grid-3 d-none">
+                            <div class="kpi">
+                                <span>Anmeldungen</span>
+                                <b id="reg-count">&ndash;</b>
+                                <small class="help" id="reg-count-note"></small>
+                            </div>
+                            <div class="kpi" id="reg-participant-kpi">
+                                <span>Teilnehmer gesamt</span>
+                                <b id="reg-participant-count">&ndash;</b>
+                                <small class="help" id="reg-participant-note"></small>
+                            </div>
+                            <div class="kpi">
+                                <span>Abrechnungssumme</span>
+                                <b id="reg-billing-total">&ndash;</b>
+                                <small class="help" id="reg-billing-note"></small>
+                            </div>
+                        </div>
+
+                        <div class="fuf-grid fuf-grid-intake">
+                            <form id="csv-upload-form" class="dropzone">
+                                <span class="dropzone-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                </span>
+                                <span class="dropzone-text">
+                                    <b class="dropzone-drag">CSV hierher ziehen oder <label for="csvFile">ausw&auml;hlen</label></b>
+                                    <!-- DESIGN: Ziehen gibt es auf dem Handy nicht. Unter 901 px tritt
+                                         dieser Knopf an die Stelle der Zone, ab 901 px ist er weg und
+                                         die Zeile darueber uebernimmt wieder. Zwei <label> auf dasselbe
+                                         Feld sind erlaubt, #csvFile bleibt damit unberuehrt. -->
+                                    <label for="csvFile" class="btn btn-o dropzone-pick">CSV ausw&auml;hlen</label>
+                                    <span class="help">Semikolon-getrennt mit Kopfzeile. Ersetzt nur fr&uuml;here CSV-Anmeldungen &ndash; manuelle bleiben.</span>
+                                    <span class="help" id="csv-file-name"></span>
+                                </span>
+                                <input id="csvFile" class="dropzone-input" name="csv_file" type="file" accept=".csv">
+                                <button class="btn btn-o" type="submit">Importieren</button>
+                            </form>
+
+                            <form id="manual-registration-form" class="reg-manual">
+                                <div class="reg-manual-head">
+                                    <b>Manuell hinzuf&uuml;gen</b>
+                                    <span class="chip c-amber">Manuell</span>
+                                </div>
+                                <div class="reg-manual-row">
+                                    <div class="f f-cat">
+                                        <label for="manualRoomCategory">Zimmerkategorie</label>
+                                        <div class="in">
+                                            <select id="manualRoomCategory"><option value="">Ohne Unterkunft</option>
+                                                <option value="2-Bettzimmer">2-Bettzimmer</option>
+                                                <option value="3-Bettzimmer">3-Bettzimmer</option>
+                                                <option value="4-Bettzimmer">4-Bettzimmer</option>
+                                                <option value="5-Bettzimmer">5-Bettzimmer</option>
+                                            </select>
+                                            <span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+                                        </div>
+                                    </div>
+                                    <div class="f">
+                                        <label for="manualComment">Kommentar</label>
+                                        <div class="in"><input id="manualComment" type="text" placeholder="optional"></div>
+                                    </div>
+                                </div>
+                                <div id="manual-participants-container" class="reg-manual-participants">
+                                    <div class="reg-manual-row manual-participant-row">
+                                        <div class="f">
+                                            <label for="manualParticipantName1">Teilnehmer 1</label>
+                                            <div class="in"><input class="manual-participant-name" type="text" required id="manualParticipantName1" placeholder="Name"></div>
+                                        </div>
+                                        <div class="f f-date">
+                                            <label for="manualParticipantBirthdate1">Geburtsdatum</label>
+                                            <div class="in"><input class="manual-participant-birthdate" type="date" required id="manualParticipantBirthdate1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <label class="f" for="booking-contact">Kontakt / Buchende Person<div class="in"><input id="booking-contact" required maxlength="200"></div></label>
+                                <p class="help">Lokaler Eingang · externe Teilnahme ausstehend. Zusatzfragen gemäß gebundener Version.</p><div id="booking-extra-fields"></div><p id="booking-intake-error" class="help" role="alert" tabindex="-1"></p>
+                                <div class="reg-manual-foot">
+                                    <button type="button" id="add-participant-row-btn" class="ib" aria-label="Teilnehmer hinzuf&uuml;gen" title="Teilnehmer hinzuf&uuml;gen">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    </button>
+                                    <button type="button" id="remove-participant-row-btn" class="ib d-none" aria-label="Letzten Teilnehmer entfernen" title="Letzten Teilnehmer entfernen">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                                    </button>
+                                    <button type="submit" class="btn btn-p btn-s">Anmeldung hinzuf&uuml;gen</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div id="registrations-controls" class="reg-controls d-none">
+                            <div class="reg-filters" role="group" aria-label="Anmeldungen filtern">
+                                <button type="button" class="chip chip-btn is-active" id="reg-filter-all" data-reg-filter="all">Alle</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-csv" data-reg-filter="csv">CSV</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-manual" data-reg-filter="manual">Manuell</button>
+                            </div>
+                            <div class="in in-search">
+                                <span class="p">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                                </span>
+                                <input id="reg-search" type="search" placeholder="Name suchen &hellip;" aria-label="Anmeldung suchen">
+                            </div>
+                        </div>
+
+                        <div id="registrations-table-wrapper" class="d-none">
+                            <div id="registrations-accordion" class="reg-list"></div>
+                            <p id="registrations-no-match" class="help reg-no-match d-none">Keine Anmeldung passt zu Filter und Suche.</p>
+                        </div>
+
+                        <div id="registrations-empty" class="fuf-empty">
+                            <div class="fuf-empty-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                            </div>
+                            <div class="fuf-empty-text">
+                                <b>Noch keine Anmeldungen</b>
+                                <span class="help">CSV importieren oder eine Anmeldung manuell hinzuf&uuml;gen.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+</div>
+<div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><section class="sec"><div class="sec-h"><h2>Auswertung</h2></div><div class="sec-b" id="analytics-workspace"></div></section></div>
 <div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help">Terminanlage und easyVerein-Abgleich folgen in Schritt 8 und 9. Hier werden noch keine externen Termine erstellt.</p></div></section></div>
 
         <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung">
@@ -598,141 +735,7 @@
                 </div><!-- end sec-kalkulation-body -->
             </section>
 
-            <section class="sec" id="registrations-section">
-                <div class="sec-h">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-                    <h2>Anmeldungen</h2>
-                    <span class="sum" id="sum-anmeldungen"></span>
-                    <button id="recalculate-billings-btn" class="btn btn-g btn-s d-none" type="button">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
-                        Abrechnungen neu berechnen
-                    </button>
-                    <button id="delete-registrations-btn" class="btn btn-d btn-s d-none" type="button">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-                        Alle l&ouml;schen
-                    </button>
-                    <button class="chev" type="button" data-bs-toggle="collapse" data-bs-target="#registrations-section-body" aria-expanded="true" aria-controls="registrations-section-body" aria-label="Anmeldungen ein- oder ausklappen">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
-                    </button>
-                </div>
-                <div class="collapse show" id="registrations-section-body">
-                    <div class="sec-b">
-                        <div id="registrations-summary" class="fuf-grid fuf-grid-3 d-none">
-                            <div class="kpi">
-                                <span>Anmeldungen</span>
-                                <b id="reg-count">&ndash;</b>
-                                <small class="help" id="reg-count-note"></small>
-                            </div>
-                            <div class="kpi" id="reg-participant-kpi">
-                                <span>Teilnehmer gesamt</span>
-                                <b id="reg-participant-count">&ndash;</b>
-                                <small class="help" id="reg-participant-note"></small>
-                            </div>
-                            <div class="kpi">
-                                <span>Abrechnungssumme</span>
-                                <b id="reg-billing-total">&ndash;</b>
-                                <small class="help" id="reg-billing-note"></small>
-                            </div>
-                        </div>
-
-                        <div class="fuf-grid fuf-grid-intake">
-                            <form id="csv-upload-form" class="dropzone">
-                                <span class="dropzone-icon" aria-hidden="true">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                </span>
-                                <span class="dropzone-text">
-                                    <b class="dropzone-drag">CSV hierher ziehen oder <label for="csvFile">ausw&auml;hlen</label></b>
-                                    <!-- DESIGN: Ziehen gibt es auf dem Handy nicht. Unter 901 px tritt
-                                         dieser Knopf an die Stelle der Zone, ab 901 px ist er weg und
-                                         die Zeile darueber uebernimmt wieder. Zwei <label> auf dasselbe
-                                         Feld sind erlaubt, #csvFile bleibt damit unberuehrt. -->
-                                    <label for="csvFile" class="btn btn-o dropzone-pick">CSV ausw&auml;hlen</label>
-                                    <span class="help">Semikolon-getrennt mit Kopfzeile. Ersetzt nur fr&uuml;here CSV-Anmeldungen &ndash; manuelle bleiben.</span>
-                                    <span class="help" id="csv-file-name"></span>
-                                </span>
-                                <input id="csvFile" class="dropzone-input" name="csv_file" type="file" accept=".csv">
-                                <button class="btn btn-o" type="submit">Importieren</button>
-                            </form>
-
-                            <form id="manual-registration-form" class="reg-manual">
-                                <div class="reg-manual-head">
-                                    <b>Manuell hinzuf&uuml;gen</b>
-                                    <span class="chip c-amber">Manuell</span>
-                                </div>
-                                <div class="reg-manual-row">
-                                    <div class="f f-cat">
-                                        <label for="manualRoomCategory">Zimmerkategorie</label>
-                                        <div class="in">
-                                            <select id="manualRoomCategory" required>
-                                                <option value="2-Bettzimmer">2-Bettzimmer</option>
-                                                <option value="3-Bettzimmer">3-Bettzimmer</option>
-                                                <option value="4-Bettzimmer">4-Bettzimmer</option>
-                                                <option value="5-Bettzimmer">5-Bettzimmer</option>
-                                            </select>
-                                            <span class="u"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
-                                        </div>
-                                    </div>
-                                    <div class="f">
-                                        <label for="manualComment">Kommentar</label>
-                                        <div class="in"><input id="manualComment" type="text" placeholder="optional"></div>
-                                    </div>
-                                </div>
-                                <div id="manual-participants-container" class="reg-manual-participants">
-                                    <div class="reg-manual-row manual-participant-row">
-                                        <div class="f">
-                                            <label for="manualParticipantName1">Teilnehmer 1</label>
-                                            <div class="in"><input class="manual-participant-name" type="text" required id="manualParticipantName1" placeholder="Name"></div>
-                                        </div>
-                                        <div class="f f-date">
-                                            <label for="manualParticipantBirthdate1">Geburtsdatum</label>
-                                            <div class="in"><input class="manual-participant-birthdate" type="date" required id="manualParticipantBirthdate1"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="reg-manual-foot">
-                                    <button type="button" id="add-participant-row-btn" class="ib" aria-label="Teilnehmer hinzuf&uuml;gen" title="Teilnehmer hinzuf&uuml;gen">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                                    </button>
-                                    <button type="button" id="remove-participant-row-btn" class="ib d-none" aria-label="Letzten Teilnehmer entfernen" title="Letzten Teilnehmer entfernen">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
-                                    </button>
-                                    <button type="submit" class="btn btn-p btn-s">Anmeldung hinzuf&uuml;gen</button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div id="registrations-controls" class="reg-controls d-none">
-                            <div class="reg-filters" role="group" aria-label="Anmeldungen filtern">
-                                <button type="button" class="chip chip-btn is-active" id="reg-filter-all" data-reg-filter="all">Alle</button>
-                                <button type="button" class="chip chip-btn" id="reg-filter-csv" data-reg-filter="csv">CSV</button>
-                                <button type="button" class="chip chip-btn" id="reg-filter-manual" data-reg-filter="manual">Manuell</button>
-                            </div>
-                            <div class="in in-search">
-                                <span class="p">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-                                </span>
-                                <input id="reg-search" type="search" placeholder="Name suchen &hellip;" aria-label="Anmeldung suchen">
-                            </div>
-                        </div>
-
-                        <div id="registrations-table-wrapper" class="d-none">
-                            <div id="registrations-accordion" class="reg-list"></div>
-                            <p id="registrations-no-match" class="help reg-no-match d-none">Keine Anmeldung passt zu Filter und Suche.</p>
-                        </div>
-
-                        <div id="registrations-empty" class="fuf-empty">
-                            <div class="fuf-empty-icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-                            </div>
-                            <div class="fuf-empty-text">
-                                <b>Noch keine Anmeldungen</b>
-                                <span class="help">CSV importieren oder eine Anmeldung manuell hinzuf&uuml;gen.</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
+            <section class="sec"><div class="sec-b"><button type="button" class="btn btn-o" data-trip-tab="anmeldungen">Anmeldungen verwalten</button><p class="help">Erfassung und Buchungsdetails findest du im Tab Anmeldungen.</p></div></section>
             <section class="sec d-none" id="room-summary-section">
                 <div class="sec-h">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fuf-amber-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V4a1 1 0 011-1h9a1 1 0 011 1v17M14 12h.01"/></svg>
@@ -811,7 +814,7 @@
                 <a class="jump" href="#sec-unterkunft"><span class="dot"></span>Unterkunft &amp; Teilnehmer</a>
                 <a class="jump" href="#sec-zusatz"><span class="dot"></span>Zusatzausgaben</a>
                 <a class="jump" href="#sec-kalkulation"><span class="dot"></span>Kalkulation &amp; Verkaufspreise</a>
-                <a class="jump" href="#registrations-section"><span class="dot"></span>Anmeldungen<span class="chip c-grey jump-chip d-none" id="jump-reg-count"></span></a>
+                <a class="jump" href="#registrations-section" data-trip-tab="anmeldungen"><span class="dot"></span>Anmeldungen<span class="chip c-grey jump-chip d-none" id="jump-reg-count"></span></a>
                 <a class="jump" href="#room-summary-section"><span class="dot"></span>Zimmerbedarf</a>
                 <span class="jump-sep" aria-hidden="true"></span>
                 <a class="jump jump-switch" href="#abrechnung"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/></svg>Zur Abrechnung<span class="help jump-switch-count" id="jump-to-abrechnung-count"></span></a>
@@ -1155,6 +1158,7 @@
                 </span>
                 <b id="trip-bar-kpi-value">&ndash;</b>
             </button>
+            <button id="booking-save-btn-bar" class="btn btn-p d-none" type="submit" form="manual-registration-form">Buchung speichern</button>
             <button id="trip-bar-team-btn" class="btn btn-p d-none" type="button">Person hinzufügen</button>
             <button id="trip-save-btn-bar" class="btn btn-p" type="submit" form="trip-form">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
@@ -1237,6 +1241,7 @@
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/management.js"></script>
 <script src="/assets/js/forms.js"></script>
+<script src="/assets/js/bookings.js"></script>
 </body>
 </html>
 

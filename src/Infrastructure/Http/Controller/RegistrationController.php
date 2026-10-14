@@ -140,6 +140,8 @@ final readonly class RegistrationController
                 'comment' => $reg->comment(),
                 'source' => $reg->source(),
                 'participants' => array_map(static fn ($p) => [
+                    'id' => $p->id(),
+                    'status' => $p->status(),
                     'name' => $p->name(),
                     'birthDate' => $p->birthDate()->format('Y-m-d'),
                 ], $reg->participants()),

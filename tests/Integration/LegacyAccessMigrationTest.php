@@ -42,6 +42,10 @@ final class LegacyAccessMigrationTest extends TestCase
                 $after=$pdo->query("SELECT * FROM $table ORDER BY id")->fetchAll();
                 foreach ($after as $i=>$row) { self::assertSame($before[$table][$i],array_intersect_key($row,$before[$table][$i]),$table); }
             }
+            self::assertSame(['ALT-91','ALT-92'],$pdo->query('SELECT reference FROM registrations ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
+            self::assertSame(['confirmed','confirmed'],$pdo->query('SELECT booking_status FROM registrations ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
+            self::assertSame(['local_only','local_only'],$pdo->query('SELECT sync_status FROM registrations ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
+            self::assertSame(0,(int)$pdo->query('SELECT COUNT(*) FROM answer_revisions')->fetchColumn());
             self::assertSame(0,(int)$pdo->query('SELECT COUNT(*) FROM trip_access')->fetchColumn());
             self::assertSame(2,(int)$pdo->query('SELECT COUNT(*) FROM legacy_access_candidates')->fetchColumn());
             $pdo->exec("INSERT INTO users(id,email,role,created_at) VALUES(13,'new@example.com','user','2026-10-13')");

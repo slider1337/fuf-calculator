@@ -1792,6 +1792,7 @@ async function openTrip(tripId) {
   else if (trip.capabilities.includes('calculation.manage')) { await calculateTripResult(String(trip.id)); }
   if (trip.capabilities.includes('registration.view')) { await loadRegistrations(String(trip.id)); }
   if (trip.capabilities.includes('settlement.view')) { await loadSettlement(String(trip.id)); }
+  if (typeof loadAnalyticsWorkspace === "function" && trip.capabilities.includes('analytics.view')) { await loadAnalyticsWorkspace(); }
   applyTripWriteControls();
 }
 
@@ -1901,7 +1902,7 @@ function roomFillRows(registrations, reservations) {
     rowFor(reservation.roomType).reserved += reservation.count;
   });
   registrations.forEach((reg) => {
-    rowFor(reg.roomCategory).registered += 1;
+    if (reg.roomCategory && reg.participants.some(p => !p.status || p.status === 'confirmed')) { rowFor(reg.roomCategory).registered += 1; }
   });
 
   return Array.from(rows.values())
@@ -2102,7 +2103,7 @@ function registrationItem(reg, index, startDate, adultAgeThreshold) {
         <span class="reg-name">${escapeHtml(primaryName)}</span>
         <span class="chip c-green">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V4a1 1 0 011-1h9a1 1 0 011 1v17M14 12h.01"/></svg>
-          ${escapeHtml(reg.roomCategory)}
+          ${escapeHtml(reg.roomCategory || 'Ohne Unterkunft')}
         </span>
         <span class="chip c-grey">${reg.participants.length} Pers.</span>
         ${sourceChip}
@@ -2278,6 +2279,7 @@ async function loadRegistrations(tripId) {
   try {
     const registrations = await api(`/api/trips/${tripId}/registrations`);
     renderRegistrations(registrations);
+    if (typeof loadBookingWorkspace === "function") { await loadBookingWorkspace(Number(tripId)); }
   applyTripWriteControls();
   } catch (error) {
     resetRegistrations();
@@ -2567,7 +2569,7 @@ function renderRefundDistribution() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="tb-head"><b>${escapeHtml(primaryName)}</b><span class="help reg-age">${escapeHtml(reg.roomCategory)}</span></td>
+      <td class="tb-head"><b>${escapeHtml(primaryName)}</b><span class="help reg-age">${escapeHtml(reg.roomCategory || 'Ohne Unterkunft')}</span></td>
       <td class="r refund-paid" data-col="Gezahlt">${formatCurrency(reg.billingTotal)}</td>
       <td class="r help refund-share" data-col="Anteil">${formatPercentTwo(sharePercent)}</td>
       <td class="r ${refundAmount >= 0 ? "fuf-pos" : "fuf-neg"}" data-col="Erstattung">${signedCurrency(refundAmount)}</td>
@@ -3186,7 +3188,7 @@ byId("add-participant-row-btn").addEventListener("click", () => {
   `;
   container.appendChild(row);
   byId("remove-participant-row-btn").classList.remove("d-none");
-  if (container.querySelectorAll(".manual-participant-row").length >= 5) {
+  if (container.querySelectorAll(".manual-participant-row").length >= 100) {
     byId("add-participant-row-btn").disabled = true;
   }
 });
@@ -3202,63 +3204,7 @@ byId("remove-participant-row-btn").addEventListener("click", () => {
   }
 });
 
-byId("manual-registration-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const tripId = byId("tripFormId").value;
-  if (!tripId) {
-    alert("Bitte erst Reise speichern.");
-    return;
-  }
-
-  const names = document.querySelectorAll(".manual-participant-name");
-  const dates = document.querySelectorAll(".manual-participant-birthdate");
-  const participants = [];
-  names.forEach((nameInput, i) => {
-    const name = nameInput.value.trim();
-    const birthDate = dates[i].value;
-    if (name && birthDate) {
-      participants.push({ name, birthDate });
-    }
-  });
-
-  if (participants.length === 0) {
-    alert("Mindestens ein Teilnehmer mit Name und Geburtsdatum ist erforderlich.");
-    return;
-  }
-
-  const payload = {
-    roomCategory: byId("manualRoomCategory").value,
-    comment: byId("manualComment").value,
-    participants,
-  };
-
-  try {
-    const registrations = await api(`/api/trips/${tripId}/registrations`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    renderRegistrations(registrations);
-  applyTripWriteControls();
-    // Reset form
-    byId("manual-registration-form").reset();
-    const container = byId("manual-participants-container");
-    const rows = container.querySelectorAll(".manual-participant-row");
-    while (rows.length > 1) {
-      rows[rows.length - 1].remove();
-      break;
-    }
-    // Keep only first row, remove extras
-    const allRows = container.querySelectorAll(".manual-participant-row");
-    for (let i = allRows.length - 1; i > 0; i--) {
-      allRows[i].remove();
-    }
-    byId("remove-participant-row-btn").classList.add("d-none");
-    byId("add-participant-row-btn").disabled = false;
-    alert("Anmeldung erfolgreich hinzugefügt!");
-  } catch (error) {
-    alert("Fehler beim Hinzufügen: " + error.message);
-  }
-});
+byId("manual-registration-form").addEventListener("submit", event => bookingCreate(event));
 
 // --- Single Registration Deletion ---
 
@@ -3276,6 +3222,7 @@ byId("registrations-accordion").addEventListener("click", async (event) => {
   const tripId = byId("tripFormId").value;
   if (!tripId) return;
 
+  if (typeof bookingUI !== "undefined" && bookingUI.items.some(b => b.id === Number(deleteRegId) && b.managed)) { await openBookingDetail(Number(deleteRegId)); return; }
   if (!confirm("Diese Anmeldung wirklich löschen?")) return;
 
   try {

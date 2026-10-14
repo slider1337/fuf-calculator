@@ -4388,3 +4388,21 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 .form-diff-scroll .tb th,
 .form-diff-scroll .tb td { display:table-cell; white-space:normal; overflow-wrap:anywhere; width:auto; text-align:left; }
 .form-diff-scroll .tb td::before { display:none; }
+
+/* Buchungen / versionierte Auswertung: gleiche Komponenten auf Desktop und Mobil. */
+.booking-meta {padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid var(--fuf-border,#E2D9C8)}
+.booking-persons {display:grid;gap:12px}
+.booking-answer {margin:14px 0}
+.booking-control input:not([type=checkbox]),.booking-control select,.booking-control textarea {width:100%;min-height:42px;padding:8px;border:1px solid #D4CBB9;border-radius:8px;font:inherit;background:white;color:inherit}
+.booking-control select[multiple] {min-height:100px}
+.booking-control input[type=checkbox] {width:24px;height:24px}
+.booking-warning {background:#FAEEDA;padding:12px;border-radius:8px}
+.analytics-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin:16px 0}
+.analytics-grid .kpi {gap:8px;overflow-wrap:anywhere}
+.analytics-grid .kpi h3 {margin:0;font-size:18px}
+.analytics-grid .kpi b {font-family:Georgia,serif;font-size:34px}
+.analytics-table {overflow-x:auto;max-width:100%}
+.analytics-table .tb {min-width:650px}
+#analytics-workspace .event-toolbar input,#analytics-workspace .event-toolbar select {max-width:220px;min-height:42px}
+#booking-extra-fields fieldset,#booking-correction-fields fieldset {min-width:0;padding:12px;border:1px solid #E2D9C8;border-radius:8px;margin:12px 0}
+@media(max-width:900px){.analytics-grid{grid-template-columns:1fr}.booking-meta .btn{min-height:44px}.booking-meta small{white-space:normal;overflow-wrap:anywhere}.booking-persons{grid-template-columns:1fr}}

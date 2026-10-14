@@ -31,7 +31,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
 
         $stmt->execute([
             ':tripId' => $registration->tripId(),
-            ':roomCategory' => $registration->roomCategory(),
+            ':roomCategory' => $registration->roomCategory() ?? '',
             ':receivedAt' => $registration->receivedAt(),
             ':comment' => $registration->comment(),
             ':source' => $registration->source(),
@@ -117,14 +117,15 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
             $registrations[] = new Registration(
                 id: $registrationId,
                 tripId: (int) $row['trip_id'],
-                roomCategory: (string) $row['room_category'],
+                roomCategory: $row['room_category'] === '' ? null : (string) $row['room_category'],
                 receivedAt: $row['received_at'] !== null ? (string) $row['received_at'] : null,
                 comment: (string) $row['comment'],
                 participants: $participants,
                 source: (string) ($row['source'] ?? Registration::SOURCE_CSV),
                 billingCalculatedAt: $billingCalc,
                 billingTotal: $row['billing_total'] !== null ? (float) $row['billing_total'] : null,
-                billingItems: $billingItems
+                billingItems: $billingItems,
+                managed: (bool) $row['managed_booking']
             );
         }
 
@@ -154,19 +155,21 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         return new Registration(
             id: $registrationId,
             tripId: (int) $row['trip_id'],
-            roomCategory: (string) $row['room_category'],
+            roomCategory: $row['room_category'] === '' ? null : (string) $row['room_category'],
             receivedAt: $row['received_at'] !== null ? (string) $row['received_at'] : null,
             comment: (string) $row['comment'],
             participants: $participants,
             source: (string) ($row['source'] ?? Registration::SOURCE_CSV),
             billingCalculatedAt: $billingCalc,
             billingTotal: $row['billing_total'] !== null ? (float) $row['billing_total'] : null,
-            billingItems: $billingItems
+            billingItems: $billingItems,
+                managed: (bool) $row['managed_booking']
         );
     }
 
     public function deleteByTripId(int $tripId): void
     {
+        $this->guardManaged($tripId);
         $regIds = $this->pdo->prepare('SELECT id FROM registrations WHERE trip_id = :tripId');
         $regIds->execute([':tripId' => $tripId]);
         $ids = $regIds->fetchAll(PDO::FETCH_COLUMN);
@@ -187,7 +190,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
 
     public function deleteCsvByTripId(int $tripId): void
     {
-        $regIds = $this->pdo->prepare("SELECT id FROM registrations WHERE trip_id = :tripId AND source = 'csv'");
+        $regIds = $this->pdo->prepare("SELECT id FROM registrations WHERE trip_id = :tripId AND source = 'csv' AND managed_booking = 0 AND NOT EXISTS (SELECT 1 FROM answer_revisions WHERE registration_id=registrations.id) AND NOT EXISTS (SELECT 1 FROM participant_revisions pr JOIN registration_participants p ON p.id=pr.participant_id WHERE p.registration_id=registrations.id)");
         $regIds->execute([':tripId' => $tripId]);
         $ids = $regIds->fetchAll(PDO::FETCH_COLUMN);
 
@@ -201,12 +204,13 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
                 ->execute($ids);
         }
 
-        $this->pdo->prepare("DELETE FROM registrations WHERE trip_id = :tripId AND source = 'csv'")
+        $this->pdo->prepare("DELETE FROM registrations WHERE trip_id = :tripId AND source = 'csv' AND managed_booking = 0 AND NOT EXISTS (SELECT 1 FROM answer_revisions WHERE registration_id=registrations.id) AND NOT EXISTS (SELECT 1 FROM participant_revisions pr JOIN registration_participants p ON p.id=pr.participant_id WHERE p.registration_id=registrations.id)")
             ->execute([':tripId' => $tripId]);
     }
 
     public function deleteById(int $id): void
     {
+        $this->guardManaged(null, $id);
         $this->pdo->prepare('DELETE FROM registration_billing_items WHERE registration_id = :id')
             ->execute([':id' => $id]);
 
@@ -232,11 +236,20 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         foreach ($stmt->fetchAll() as $row) {
             $participants[] = new Participant(
                 (string) $row['name'],
-                new DateTimeImmutable((string) $row['birth_date'])
+                new DateTimeImmutable((string) $row['birth_date']),
+                (int) $row['id'],
+                (string) $row['participation_status']
             );
         }
 
         return $participants;
+    }
+
+    private function guardManaged(?int $tripId, ?int $id = null): void
+    {
+        $s = $this->pdo->prepare('SELECT COUNT(*) FROM registrations WHERE '.($tripId !== null ? 'trip_id' : 'id').'=? AND (managed_booking=1 OR EXISTS (SELECT 1 FROM answer_revisions WHERE registration_id=registrations.id) OR EXISTS (SELECT 1 FROM participant_revisions pr JOIN registration_participants p ON p.id=pr.participant_id WHERE p.registration_id=registrations.id))');
+        $s->execute([$tripId ?? $id]);
+        if ((int) $s->fetchColumn() > 0) { throw new \App\Application\AccessException('booking_requires_cancellation',409); }
     }
 
     /** @return BillingLineItem[] */

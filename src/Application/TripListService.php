@@ -45,6 +45,7 @@ final readonly class TripListService
     {
         $item = [
             'id' => (int) $row['id'],
+            'registrationMode'=>$this->policy->metadata((int)$row['id'])['registration_mode']??'clubdesk_csv',
             'eventId' => isset($this->policy->metadata((int) $row['id'])['event_id']) ? (int) $this->policy->metadata((int) $row['id'])['event_id'] : null,
             'archivedAt' => $this->policy->metadata((int) $row['id'])['archived_at'] ?? null,
             'closedAt' => $this->policy->metadata((int) $row['id'])['closed_at'] ?? null,

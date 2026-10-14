@@ -56,6 +56,7 @@ final readonly class TripManagementService
             $copy = TripData::fromTrip($trip);
             unset($copy['id']);
             $copy['eventId'] = $trip->eventId();
+            $copy['registrationMode']=$payload['registrationMode']??$this->policy->metadata($id)['registration_mode'];
             // Explicit dates/name, existing planning only. Creator + current template;
             // never copy members, participants, closure, invoices or external references.
             $copy['name'] = $payload['name']; $copy['startDate'] = $payload['startDate']; $copy['endDate'] = $payload['endDate'] ?? null;

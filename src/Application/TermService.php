@@ -16,7 +16,7 @@ final readonly class TermService
             $old=$this->store->query('SELECT * FROM trip_wizard_operations WHERE actor_id=? AND operation_key=?',[$actor,$key])->fetch(\PDO::FETCH_ASSOC);
             if($old){if(!hash_equals($old['request_hash'],$hash)){throw new AccessException('idempotency_conflict',409);}$this->policy->trip((int)$old['trip_id'],'trip.view');return ['tripId'=>(int)$old['trip_id']];}
             if(!is_array($p['planning']??null)||!is_array($p['draft']??null)){throw new ValidationException(['wizard'=>'planning_and_draft_required']);}
-            $trip=$this->tripService->createFromArray($p['planning']);$id=$trip->id();$draft=$this->validate($id,$p['draft']);
+            $planning=$p['planning'];$planning['registrationMode']=$planning['registrationMode']??'easyverein';if($planning['registrationMode']!=='easyverein'){throw new ValidationException(['registrationMode'=>'wizard_requires_easyverein']);}$trip=$this->tripService->createFromArray($planning);$id=$trip->id();$draft=$this->validate($id,$p['draft']);
             $selected=$draft['teamUserIds'];
             foreach($this->access->team('trip',$id) as $member){if($member['userId']!==$actor&&!in_array($member['userId'],$selected,true)){$this->policy->grant('trip',$id,$member['userId'],[],'Wizard: Teamvorschlag nicht übernommen');}}
             $actual=array_column($this->access->team('trip',$id),'userId');
@@ -34,7 +34,7 @@ final readonly class TermService
             $draft=$this->store->draft($id);$link=$this->store->link($id);$job=$this->store->job($id);
             if($job){unset($job['leaseToken'],$job['requestHash'],$job['payload']);}
             $settings=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$id])->fetch(\PDO::FETCH_ASSOC);
-            $reason=$link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason());
+            $reason=($this->policy->metadata($id)['registration_mode']??'clubdesk_csv')!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));
             if($reason===null&&(!$settings||!(bool)$settings['enabled'])){$reason='member_release_disabled';}
             if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
             if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null||(int)$settings['booking_until']<time())){$reason='trip_closed_or_booking_deadline_passed';}

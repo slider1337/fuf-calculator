@@ -35,6 +35,7 @@ final readonly class RegistrationService
 
     private function importCsvInternal(int $tripId, string $csvContent): array
     {
+        $this->policy->requireRegistrationMode($tripId,'clubdesk_csv');
         $trip = $this->tripRepository->getById($tripId);
         if ($trip === null) {
             throw new NotFoundException('Trip not found.');
@@ -73,7 +74,7 @@ final readonly class RegistrationService
             throw new NotFoundException('Trip not found.');
         }
 
-        if (($this->policy->metadata($tripId)['form_version_id'] ?? null) !== null) { throw new AccessException('versioned_booking_endpoint_required',409); }
+        if (($this->policy->metadata($tripId)['registration_mode']??'clubdesk_csv')==='easyverein') { throw new AccessException('versioned_booking_endpoint_required',409); }
         $errors = [];
         $roomCategory = trim($data['roomCategory'] ?? '');
 

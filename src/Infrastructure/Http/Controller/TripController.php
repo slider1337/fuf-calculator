@@ -106,6 +106,7 @@ final readonly class TripController
             $data = array_intersect_key($data, array_flip(['id', 'name', 'startDate', 'endDate']));
         }
         return $data + [
+            'registrationMode'=>$meta['registration_mode'],'registrationModeRevision'=>(int)$meta['registration_mode_revision'],
             'eventId' => $trip->eventId(), 'archivedAt' => $this->policy->metadata($trip->id())['archived_at'] ?? null, 'closedAt' => $trip->closedAt(), 'closedBy' => $trip->closedBy(),
             'capabilities' => $this->policy->capabilities('trip', $trip->id()),
             'calculationSnapshot' => isset($meta['calculation_snapshot']) && $this->policy->can('trip', $trip->id(), 'settlement.view') ? json_decode($meta['calculation_snapshot'], true) : null,

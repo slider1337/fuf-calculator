@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.7.0
+  version: 1.8.0
 security:
   - calculatorSession: []
 servers:
@@ -3059,6 +3059,71 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TermUpdateRequest'
+  /api/trips/{id}/registration-mode:
+    get:
+      summary: Anmeldeverfahren je Reise lesen
+      description: clubdesk_csv ist Standard. easyverein aktiviert den neuen Buchungsweg. PUT benötigt trip.manage,
+        aktuelle Revision, Bestätigung und Grund. Kein Wechsel bei aktiven/unklaren Aufträgen. Rückwechsel gesperrt
+        bei neuen Buchungen/aktiven Gastfreigaben. Vorhandene Anmeldungen/Finanzwerte bleiben unverändert.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationModeState'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: trip.manage fehlt
+        '404':
+          description: Reise fehlt/nicht zugänglich
+        '409':
+          description: revision_conflict, trip_closed, trip_archived, registration_mode_operation_in_progress, registration_mode_managed_bookings_exist
+            oder registration_mode_guest_approvals_exist
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      summary: Anmeldeverfahren bewusst wechseln
+      description: clubdesk_csv ist Standard. easyverein aktiviert den neuen Buchungsweg. PUT benötigt trip.manage,
+        aktuelle Revision, Bestätigung und Grund. Kein Wechsel bei aktiven/unklaren Aufträgen. Rückwechsel gesperrt
+        bei neuen Buchungen/aktiven Gastfreigaben. Vorhandene Anmeldungen/Finanzwerte bleiben unverändert.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationModeState'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: trip.manage fehlt
+        '404':
+          description: Reise fehlt/nicht zugänglich
+        '409':
+          description: revision_conflict, trip_closed, trip_archived, registration_mode_operation_in_progress, registration_mode_managed_bookings_exist
+            oder registration_mode_guest_approvals_exist
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationModeRequest'
 components:
   securitySchemes:
     memberDelegation:
@@ -3337,6 +3402,12 @@ components:
     TripSummary:
       type: object
       properties:
+        registrationMode:
+          type: string
+          enum: [clubdesk_csv, easyverein]
+        registrationModeRevision:
+          type: integer
+          minimum: 0
         id:
           type: integer
           minimum: 1
@@ -3460,6 +3531,11 @@ components:
         - bookings
         - groupExpenses
       properties:
+        registrationMode:
+          type: string
+          enum: [clubdesk_csv, easyverein]
+          default: clubdesk_csv
+          description: Beim Anlegen wählbar; bei PUT nur unveränderten Wert mitsenden. Wechsel über registration-mode, nicht über die Planung.
         eventId:
           type: integer
           nullable: true
@@ -3538,6 +3614,9 @@ components:
       - surplus
       - surplusBasis
       properties:
+        registrationMode:
+          type: string
+          enum: [clubdesk_csv, easyverein]
         id:
           type: integer
         name:
@@ -6311,6 +6390,40 @@ components:
           $ref: '#/components/schemas/TermChanges'
         reviewHash:
           type: string
+        confirmed:
+          type: boolean
+          enum:
+          - true
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RegistrationModeState:
+      type: object
+      required:
+      - registrationMode
+      - revision
+      properties:
+        registrationMode:
+          type: string
+          enum:
+          - clubdesk_csv
+          - easyverein
+        revision: &id002
+          type: integer
+          minimum: 0
+    RegistrationModeRequest:
+      type: object
+      required:
+      - registrationMode
+      - revision
+      - confirmed
+      - reason
+      properties:
+        registrationMode:
+          type: string
+          enum: [clubdesk_csv, easyverein]
+        revision: *id002
         confirmed:
           type: boolean
           enum:

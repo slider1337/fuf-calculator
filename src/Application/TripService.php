@@ -32,6 +32,7 @@ final readonly class TripService
     {
         $this->policy->actorId();
         return $this->policy->transaction(function () use ($payload) {
+            $mode=RegistrationModeService::validate($payload['registrationMode']??'clubdesk_csv');
             $eventId = $payload['eventId'] ?? null;
             if ($eventId !== null && (!is_int($eventId) || $eventId < 1)) {
                 throw new ValidationException(['eventId' => 'positive_integer_or_null_required']);
@@ -42,7 +43,7 @@ final readonly class TripService
                 if ($event->archived) { throw new AccessException('event_archived', 409); }
             }
             $trip = $this->repository->save($this->mapPayloadToTrip($payload, null));
-            $this->policy->setMetadata($trip->id(), ['event_id' => $eventId]);
+            $this->policy->setMetadata($trip->id(), ['event_id' => $eventId,'registration_mode'=>$mode]);
             $this->policy->initializeTrip($trip->id(), $eventId);
             return $this->repository->getById($trip->id());
         });
@@ -55,6 +56,7 @@ final readonly class TripService
 
     private function updateInternal(int $id, array $payload): Trip
     {
+        if(array_key_exists('registrationMode',$payload)&&RegistrationModeService::validate($payload['registrationMode'])!==$this->policy->metadata($id)['registration_mode']){throw new AccessException('use_registration_mode_endpoint',409);}
         $existing = $this->repository->getById($id);
         if ($existing === null) {
             throw new NotFoundException('Trip not found.');

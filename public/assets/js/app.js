@@ -1490,6 +1490,7 @@ function roomReservationRowIds() {
 }
 
 function clearTripFormWithDefaults() {
+  byId('trip-registration-mode-summary').classList.add('d-none');byId('trip-registration-mode-choice').disabled=false;
   const form = byId("trip-form");
   form.reset();
   byId("tripFormId").value = "";
@@ -1545,6 +1546,7 @@ function tripPayloadFromForm() {
   const adultSalesPrice = averageAdultPrice ? state.salesPrices.ADULT : null;
 
   return {
+    registrationMode: state.currentTripId ? state.currentTrip.registrationMode : byId('trip-registration-mode-choice').value,
     name: form.name.value,
     startDate: form.startDate.value,
     endDate: form.endDate.value,
@@ -1582,6 +1584,7 @@ function tripPayloadFromForm() {
 }
 
 function fillTripForm(trip) {
+  byId('trip-registration-mode-choice').value=trip.registrationMode||'clubdesk_csv';
   const form = byId("trip-form");
   byId("tripFormId").value = String(trip.id);
   form.name.value = trip.name;
@@ -1784,7 +1787,7 @@ async function openTrip(tripId) {
   renderTripManagement(trip);
   showTab(tabFromHash());
   if (byId(`tab-${tabFromHash()}`).classList.contains('d-none')) {
-    showTab(trip.capabilities.includes('settlement.view') ? 'abrechnung' : 'uebersicht');
+    showTab(!tripUsesEasyVerein(trip)&&trip.capabilities.includes('calculation.manage')?'planung':trip.capabilities.includes('settlement.view') ? 'abrechnung' : 'uebersicht');
   }
   byId("retentionPercent").value = formatDecimal(trip.clubFeePercent);
   resetCalculationResult(); resetRegistrations(); resetSettlement();
@@ -1792,7 +1795,7 @@ async function openTrip(tripId) {
   else if (trip.capabilities.includes('calculation.manage')) { await calculateTripResult(String(trip.id)); }
   if (trip.capabilities.includes('registration.view')) { await loadRegistrations(String(trip.id)); }
   if (trip.capabilities.includes('settlement.view')) { await loadSettlement(String(trip.id)); }
-  if (typeof loadAnalyticsWorkspace === "function" && trip.capabilities.includes('analytics.view')) { await loadAnalyticsWorkspace(); }
+  if (typeof loadAnalyticsWorkspace === "function" && tripUsesEasyVerein(trip) && trip.capabilities.includes('analytics.view')) { await loadAnalyticsWorkspace(); }
   applyTripWriteControls();
 }
 

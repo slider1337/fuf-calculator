@@ -69,6 +69,8 @@ return static function (App $app): void {
     $app->get('/api/trips/{id}/settlement', [ActualExpenseController::class, 'settlement']);
 
     $workflow = \App\Infrastructure\Http\Controller\WorkflowController::class;
+    $app->get('/api/trips/{id:[0-9]+}/registration-mode', [$workflow, 'registrationMode']);
+    $app->put('/api/trips/{id:[0-9]+}/registration-mode', [$workflow, 'changeRegistrationMode']);
     $app->post('/api/trip-wizard', [$workflow, 'createTrip']);
     $app->get('/api/trips/{id:[0-9]+}/planning-transfer', [$workflow, 'planningStatus']);
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/preview', [$workflow, 'planningPreview']);

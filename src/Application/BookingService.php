@@ -76,6 +76,7 @@ final readonly class BookingService
     public function create(int $tripId,array $p): array
     {
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$p){
+            if(($this->policy->metadata($tripId)['registration_mode']??'clubdesk_csv')!=='easyverein'){throw new AccessException('registration_mode_easyverein_required',409);}
             $this->policy->trip($tripId,'answers.correct');
             if(($this->policy->metadata($tripId)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
             [$key,$hash,$op]=$this->repeat($tripId,$p,'create');

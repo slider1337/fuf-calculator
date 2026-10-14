@@ -285,6 +285,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
              sie auf dem Desktop neben der Ueberschrift und kann nicht an beiden Orten sein. -->
         <div class="trip-meta-m d-lg-none"><span class="help" id="trip-editor-meta-mobile"></span></div>
 
+        <div class="event-toolbar" id="trip-registration-mode-summary"><span class="chip c-grey" id="trip-registration-mode-label"></span><button type="button" class="btn btn-g btn-s" id="trip-registration-mode-change">Anmeldeverfahren ändern</button></div>
         <div class="tab-content" id="tripTabContent"><div class="tab-pane fade" id="panel-uebersicht" role="tabpanel" aria-labelledby="tab-uebersicht"><section class="sec"><div class="sec-h"><h2>Reiseübersicht</h2><span class="chip" id="trip-lifecycle-status"></span></div><div class="sec-b"><div id="trip-overview-details"></div><div class="event-toolbar"><button type="button" class="btn btn-o d-none" id="trip-event-assign" disabled>Veranstaltung zuordnen / ändern</button></div><p class="help" id="trip-event-assignment-note"></p><div id="trip-form-binding"></div><p class="help">Die ausgewählte Formularversion bestimmt die Zusatzfragen für diese Reise.</p><div class="event-toolbar"><button type="button" class="btn btn-o" id="trip-archive">Reise archivieren</button><button type="button" class="btn btn-o" id="trip-duplicate">Reise duplizieren</button><button type="button" class="btn btn-p" id="trip-close">Abrechnung abschließen</button><button type="button" class="btn btn-o" id="trip-reopen">Begründet wiederöffnen</button></div></div></section></div>
 <div class="tab-pane fade" id="panel-anmeldungen" role="tabpanel" aria-labelledby="tab-anmeldungen">            <section class="sec" id="registrations-section">
                 <div class="sec-h">
@@ -377,8 +378,8 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                                         </div>
                                     </div>
                                 </div>
-                                <label class="f" for="booking-contact">Kontakt / Buchende Person<div class="in"><input id="booking-contact" required maxlength="200"></div></label>
-                                <p class="help">Lokaler Eingang · externe Teilnahme ausstehend. Zusatzfragen gemäß gebundener Version.</p><div id="booking-extra-fields"></div><p id="booking-intake-error" class="help" role="alert" tabindex="-1"></p>
+                                <label class="f" id="booking-contact-field" for="booking-contact">Kontakt / Buchende Person<div class="in"><input id="booking-contact" required maxlength="200"></div></label>
+                                <p class="help" id="booking-intake-note">Lokaler Eingang · externe Teilnahme ausstehend. Zusatzfragen gemäß gebundener Version.</p><div id="booking-extra-fields"></div><p id="booking-intake-error" class="help" role="alert" tabindex="-1"></p>
                                 <div class="reg-manual-foot">
                                     <button type="button" id="add-participant-row-btn" class="ib" aria-label="Teilnehmer hinzuf&uuml;gen" title="Teilnehmer hinzuf&uuml;gen">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -425,9 +426,9 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
 
 </div>
 <div class="tab-pane fade" id="panel-auswertung" role="tabpanel" aria-labelledby="tab-auswertung"><section class="sec"><div class="sec-h"><h2>Auswertung</h2></div><div class="sec-b" id="analytics-workspace"></div></section></div>
-<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help"><span id="term-status" role="status">Terminstand wird geladen.</span></p><button type="button" class="btn btn-p" id="term-wizard">Termin vorbereiten</button><div id="term-details"></div><h3>Teilnahmeabgleich</h3><div id="participation-details" aria-live="polite"></div></div></section></div>
+<div class="tab-pane fade" id="panel-team" role="tabpanel" aria-labelledby="tab-team"><section class="sec"><div class="sec-h"><h2>Reiseteam</h2><button class="btn btn-o" type="button" id="trip-team-add">Person hinzufügen</button></div><div id="trip-team-list" class="sec-b"></div></section><section class="sec" id="trip-term-section"><div class="sec-h"><h2>Termin</h2></div><div class="sec-b"><p class="help"><span id="term-status" role="status">Terminstand wird geladen.</span></p><button type="button" class="btn btn-p" id="term-wizard">Termin vorbereiten</button><div id="term-details"></div><h3>Teilnahmeabgleich</h3><div id="participation-details" aria-live="polite"></div></div></section></div>
 
-        <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung"><section class="sec"><div class="sec-h"><h2>Anmeldedaten übernehmen</h2><button id="planning-transfer-btn" type="button" class="btn btn-p">Übernahme vorbereiten</button></div><div class="sec-b"><p id="planning-transfer-status" role="status">Noch kein übernommener Stand.</p></div></section>
+        <div class="tab-pane fade show active" id="panel-planung" role="tabpanel" aria-labelledby="tab-planung"><section class="sec" id="planning-transfer-section"><div class="sec-h"><h2>Anmeldedaten übernehmen</h2><button id="planning-transfer-btn" type="button" class="btn btn-p">Übernahme vorbereiten</button></div><div class="sec-b"><p id="planning-transfer-status" role="status">Noch kein übernommener Stand.</p></div></section>
         <div class="pg">
         <div class="pg-main">
             <form id="trip-form" class="pg-form">
@@ -442,7 +443,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
                         </button>
                     </div>
-                    <div class="collapse show" id="sec-eckdaten-body">
+                    <div class="collapse show" id="sec-eckdaten-body"><div class="sec-b"><label class="f" for="trip-registration-mode-choice">Anmeldeverfahren<div class="in"><select id="trip-registration-mode-choice"><option value="clubdesk_csv">Clubdesk / CSV · bisheriger Ablauf</option><option value="easyverein">easyVerein · Anmeldung mit Zusatzformular</option></select></div></label><p class="help">Für jede Reise separat. Bei gespeicherten Reisen über „Anmeldeverfahren ändern“ wechseln.</p></div>
                         <div class="sec-b">
 <div class="f">
     <label for="trip-event-select">Veranstaltung (optional)</label>

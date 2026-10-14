@@ -14,6 +14,7 @@ final readonly class PlanningTransferService
     private function permissions(int $id,bool $write=false): void
     {
         $this->policy->trip($id,'calculation.manage',$write);
+        if($write){$this->policy->requireRegistrationMode($id,'easyverein');}
         $this->policy->trip($id,'registration.view');
         $this->policy->trip($id,'answers.view');
         $this->policy->trip($id,'analytics.view');

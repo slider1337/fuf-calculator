@@ -81,7 +81,7 @@ final readonly class TermService
             $this->policy->trip($id,'term.manage');$draft=$this->store->draft($id)??throw new ValidationException(['draft'=>'save_first']);$d=$this->validate($id,$draft['data']);
             $trip=$this->trips->getById($id);$issues=[];
             if($trip->name()!==$d['title']||$trip->startDate()->format('Y-m-d')!==$d['startDate']||$trip->endDate()?->format('Y-m-d')!==$d['endDate']){$issues[]='Eckdaten weichen von der gespeicherten Reise ab.';}
-            if($d['calendarReference']===''){$issues[]='Kalenderreferenz fehlt.';}
+            if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Eine stabile numerische easyVerein-Kalender-ID ist erforderlich.';}
             foreach($d['priceGroups'] as $g){if($g['price']===null){$issues[]='Preis fehlt: '.$g['label'];}}
             if($d['mode']==='link'&&$d['externalId']===''){$issues[]='Termin-ID fehlt.';}
             $binding=$this->forms->binding($id);

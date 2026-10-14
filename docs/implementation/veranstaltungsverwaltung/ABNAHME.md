@@ -33,7 +33,7 @@ Alle Punkte zunächst **offen**. Jeder Umsetzungsschritt ergänzt ein Prüfproto
 | Externer Konflikt | Frist/Kapazität/Preis feldweise bewusst auflösen; keine automatische Überschreibschleife | 09 |
 | Integration | Ohne Calculator-Verwaltungskonto buchen; fremde Buchung/Person/abgelaufene oder gefälschte Delegation verboten | 10 |
 | API-Wiederholung | Derselbe Schlüssel/Inhalt gleiche Buchung, anderer Inhalt 409, parallele Requests keine Duplikate | 05/09/10 |
-| Keine E-Mail | Prüfpfade mit Fakes, realer Versand technisch gesperrt, Ergänzung als Portalhinweis | 08–11 |
+| Testmailregel | Application-Testmail ausschließlich me@benna.me, Provider-Tests mit Fakes; normaler Produktivversand erst nach Freigabe. Ergänzung bleibt Portalhinweis | 08–11 |
 
 ## Manuelle Designabnahme im Calculator
 

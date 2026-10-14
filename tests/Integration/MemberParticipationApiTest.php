@@ -16,13 +16,15 @@ final class FakeParticipationProvider implements ParticipationPort {
  public array $groups=[['id'=>'21','price'=>'12']];
  public int $capacity=100;
  public bool $canceled=false;
+ public bool $guestsAllowed=false;
  public function blockedReason(): ?string {return null;}
- public function snapshot(string $eventId): array {return ['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows)];}
+ public function snapshot(string $eventId): array {return ['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
  public function execute(string $kind,array $person,string $operationReference): array {
   $this->writes++;if($this->onExecute!==null){($this->onExecute)();}
   if(($this->outcomes[$person['memberReference']]??null)==='reject'){throw new ParticipationRejected('provider_rejected');}
   $id=$person['externalId']??(string)(1000+$this->writes);
   $row=['eventId'=>$person['eventId'],'externalId'=>$id,'memberReference'=>$person['memberReference'],'status'=>$kind==='cancel'?'cancelled':'confirmed','priceGroupId'=>$person['priceGroupId'],'price'=>$person['price']];
+  if(isset($person['guestId'])){$row+=['isCompanion'=>true,'companionName'=>$person['guestName'],'parentExternalId'=>'1001'];}
   $this->rows[$id]=$row;$this->outcomes[$operationReference]=$row;
   if($this->timeout){$this->timeout=false;throw new \RuntimeException('Secret provider body must never be stored');}
   return $row;
@@ -182,6 +184,31 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $path="/integration/v1/trips/{$this->trip}/bookings";$r=$this->signed('POST',$path,$this->payload(1));$r=$r->withBody((new StreamFactory())->createStream('{}'));self::assertSame(401,$this->app->handle($r)->getStatusCode());
   $insert=$this->db->prepare('INSERT INTO integration_replays (service_id,nonce,expires_at) VALUES (?,?,?)');for($i=0;$i<120;$i++){$insert->execute(['website','test_nonce_'.str_pad((string)$i,16,'0',STR_PAD_LEFT),time()+60]);}
   $this->call('GET',"/integration/v1/trips/{$this->trip}/context",null,429);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+ }
+
+ public function testApprovedGuestOnlyOwnerCanBookAndImmutableApprovalSurvivesCancellation(): void {
+  $this->provider->guestsAllowed=true;$_SESSION['user_id']=1;
+  $p=['operationKey'=>'guest_approval_001','ownerMemberReference'=>'11','parentMemberReference'=>'11','name'=>'Fiktiver Gast','birthDate'=>'2000-01-01','priceGroupId'=>'21','expectedPrice'=>'12','reason'=>'Orga hat Gast und Preis freigegeben'];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests",$p);self::assertSame(201,$r->getStatusCode(),(string)$r->getBody());$guest=json_decode((string)$r->getBody(),true)[0];$id=(int)$guest['id'];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests",$p);self::assertSame(201,$r->getStatusCode());self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());$_SESSION=[];
+  $ctx=$this->call('GET',"/integration/v1/trips/{$this->trip}/context");self::assertCount(1,$ctx['guests']);self::assertSame([],$this->call('GET',"/integration/v1/trips/{$this->trip}/context",null,200,'99')['guests']);
+  $p=$this->payload(1);$p['persons'][]=['guestId'=>$id,'priceGroupId'=>'21','expectedPrice'=>'12'];$b=$this->create($p);$this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$b['status']);self::assertSame($id,$b['persons'][1]['guestId']);self::assertSame('member:11',$b['contactIdentity']);
+  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests/$id/revoke",['reason'=>'Nicht heimlich widerrufen']);self::assertSame(409,$r->getStatusCode());
+ }
+ public function testForeignUnapprovedGuestCannotBeCreatedByMemberPayload(): void {
+  $this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][]=['guestId'=>999,'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+ }
+ public function testExternalPriceConflictAcceptedSeparatelyFromOriginalQuote(): void {
+  $b=$this->create($this->payload(1));$this->worker();$this->provider->rows[array_key_first($this->provider->rows)]['price']='13';$_SESSION['user_id']=1;
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());$s=json_decode((string)$r->getBody(),true);$person=$b['persons'][0]['id'];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/persons/$person/resolve",['revision'=>$s['observation']['revision'],'confirmed'=>true,'reason'=>'Externen Preis bewusst geprüft']);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());
+  $b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('12',$b['persons'][0]['expectedPrice']);self::assertSame('13',$b['persons'][0]['externalPrice']);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM person_observation_history')->fetchColumn());
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);$s=json_decode((string)$r->getBody(),true);self::assertNotContains('person:'.$person,array_column($s['observation']['conflicts'],'field'));
+ }
+ public function testDirectParticipationExplicitAssignmentNeverGuessesBookFamily(): void {
+  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings",['operationKey'=>'direct_fixture_001','versionId'=>null,'contactIdentity'=>'Fiktiver Kontakt','persons'=>[['id'=>'p1','name'=>'Manuell zugeordnet','birthDate'=>'1980-01-01']],'answers'=>[]]);$b=json_decode((string)$r->getBody(),true);$person=$b['persons'][0]['id'];
+  $this->provider->rows['777']=['eventId'=>'77','externalId'=>'777','memberReference'=>'11','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+  $p=['bookingId'=>$b['id'],'personId'=>$person,'revision'=>$b['revision'],'memberReference'=>'11','confirmed'=>true,'reason'=>'Stabile Mitgliedsreferenz bewusst zugeordnet'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/clarifications/777/assign",$p);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$r=$this->dispatch('GET',"/api/trips/{$this->trip}/bookings/{$b['id']}");$next=json_decode((string)$r->getBody(),true);self::assertSame('777',$next['persons'][0]['externalReference']);self::assertSame('confirmed',$next['status']);self::assertSame('assigned',$this->db->query('SELECT status FROM external_clarifications')->fetchColumn());
  }
 
 }

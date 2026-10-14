@@ -79,6 +79,11 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);
     $app->post('/api/trips/{id:[0-9]+}/term/link', [$workflow, 'link']);
 
+    $guest = \App\Infrastructure\Http\Controller\GuestController::class;
+    $app->get('/api/trips/{id:[0-9]+}/guests', [$guest,'list']);
+    $app->post('/api/trips/{id:[0-9]+}/guests', [$guest,'approve']);
+    $app->post('/api/trips/{id:[0-9]+}/guests/{guestId:[0-9]+}/revoke', [$guest,'revoke']);
+
     $member = \App\Infrastructure\Http\Controller\MemberController::class;
     $app->get('/integration/v1/events/{eventId:[0-9]+}/trip', [$member, 'resolve']);
     $app->get('/integration/v1/trips/{id:[0-9]+}/context', [$member, 'context']);
@@ -93,6 +98,8 @@ return static function (App $app): void {
 
     $participation = \App\Infrastructure\Http\Controller\ParticipationController::class;
     $app->get('/api/trips/{id:[0-9]+}/participation-sync', [$participation, 'read']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/clarifications/{externalId:[0-9]+}/assign', [$participation, 'assign']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/persons/{personId:[0-9]+}/resolve', [$participation, 'resolvePerson']);
     $app->post('/api/trips/{id:[0-9]+}/participation-sync/reconcile', [$participation, 'reconcile']);
     $app->post('/api/trips/{id:[0-9]+}/participation-sync/acknowledge', [$participation, 'acknowledge']);
     $app->post('/api/trips/{id:[0-9]+}/participation-sync/jobs/{jobId:[0-9]+}/retry', [$participation, 'retry']);

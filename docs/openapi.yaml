@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.5.1
+  version: 1.6.0
 security:
   - calculatorSession: []
 servers:
@@ -2754,6 +2754,195 @@ paths:
           description: Veralteter Archivstand
         '422':
           description: Feldfehler
+  /api/trips/{id}/guests:
+    get:
+      summary: Gastfreigaben verwalten
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GuestApproval'
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: Konkrete Reisefähigkeit erforderlich
+        '404':
+          description: Ressource nicht zugänglich
+        '409':
+          description: Version/Preis/Identität/Abschluss/Archiv/Auftrag in Konflikt
+        '422':
+          description: Feldfehler
+        '503':
+          description: Provider-Nachweis nicht verfügbar
+    post:
+      summary: Gast und Preis ausdrücklich durch Orga freigeben
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GuestApproval'
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: Konkrete Reisefähigkeit erforderlich
+        '404':
+          description: Ressource nicht zugänglich
+        '409':
+          description: Version/Preis/Identität/Abschluss/Archiv/Auftrag in Konflikt
+        '422':
+          description: Feldfehler
+        '503':
+          description: Provider-Nachweis nicht verfügbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestApprovalRequest'
+  /api/trips/{id}/guests/{guestId}/revoke:
+    post:
+      summary: Externen Personenstand prüfen; ursprüngliche Buchungspreise erhalten
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: guestId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GuestApproval'
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: Konkrete Reisefähigkeit erforderlich
+        '404':
+          description: Ressource nicht zugänglich
+        '409':
+          description: Version/Preis/Identität/Abschluss/Archiv/Auftrag in Konflikt
+        '422':
+          description: Feldfehler
+        '503':
+          description: Provider-Nachweis nicht verfügbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+  /api/trips/{id}/participation-sync/clarifications/{externalId}/assign:
+    post:
+      summary: Externe Teilnahme explizit an lokale Person binden
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: externalId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: Konkrete Reisefähigkeit erforderlich
+        '404':
+          description: Ressource nicht zugänglich
+        '409':
+          description: Version/Preis/Identität/Abschluss/Archiv/Auftrag in Konflikt
+        '422':
+          description: Feldfehler
+        '503':
+          description: Provider-Nachweis nicht verfügbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPersonAssignment'
+  /api/trips/{id}/participation-sync/persons/{personId}/resolve:
+    post:
+      summary: Externen Personenstand prüfen; ursprüngliche Buchungspreise erhalten
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: personId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationSyncResult'
+        '401':
+          description: Anmeldung erforderlich
+        '403':
+          description: Konkrete Reisefähigkeit erforderlich
+        '404':
+          description: Ressource nicht zugänglich
+        '409':
+          description: Version/Preis/Identität/Abschluss/Archiv/Auftrag in Konflikt
+        '422':
+          description: Feldfehler
+        '503':
+          description: Provider-Nachweis nicht verfügbar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonConflictResolution'
 components:
   securitySchemes:
     memberDelegation:
@@ -5295,6 +5484,7 @@ components:
             - bookingUntil
             - capacityRemaining
             - groups
+            - capacity
     MemberSettingsRequest:
       type: object
       required:
@@ -5365,6 +5555,8 @@ components:
       - bookingUntil
       - correctionUntil
       - cancelUntil
+      - guests
+      - guestsAllowed
       properties:
         contractVersion:
           type: string
@@ -5400,13 +5592,21 @@ components:
           type: string
         capacityRemaining:
           type: integer
-        canceled: *id001
+          nullable: true
+        canceled:
+          type: boolean
         bookingUntil:
           type: integer
         correctionUntil:
           type: integer
         cancelUntil:
           type: integer
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestAvailability'
+        guestsAllowed:
+          type: boolean
     MemberPersonChoice:
       type: object
       required:
@@ -5439,11 +5639,14 @@ components:
           nullable: true
         priceRevision:
           type: string
-        confirmed: *id001
+        confirmed:
+          type: boolean
         persons:
           type: array
           items:
-            $ref: '#/components/schemas/MemberPersonChoice'
+            oneOf:
+            - $ref: '#/components/schemas/MemberPersonChoice'
+            - $ref: '#/components/schemas/GuestChoice'
         answers:
           $ref: '#/components/schemas/BookingAnswers'
     MemberPreview:
@@ -5647,3 +5850,158 @@ components:
       - value
       - createdAt
       - bookingRevision
+    GuestApproval:
+      type: object
+      required:
+      - id
+      - trip_id
+      - owner_member
+      - parent_member
+      - name
+      - birth_date
+      - price_group
+      - price
+      - status
+      - actor_id
+      - created_at
+      - reason
+      - operation_key
+      - request_hash
+      - participant_id
+      properties:
+        id:
+          type: integer
+          nullable: false
+        trip_id:
+          type: integer
+          nullable: false
+        owner_member:
+          type: string
+        parent_member:
+          type: string
+        name:
+          type: string
+        birth_date:
+          type: string
+        price_group:
+          type: string
+        price:
+          type: string
+        status:
+          type: string
+        actor_id:
+          type: integer
+          nullable: false
+        created_at:
+          type: string
+        reason:
+          type: string
+        operation_key:
+          type: string
+        request_hash:
+          type: string
+        participant_id:
+          type: integer
+          nullable: true
+    GuestApprovalRequest:
+      type: object
+      required:
+      - operationKey
+      - ownerMemberReference
+      - parentMemberReference
+      - name
+      - birthDate
+      - priceGroupId
+      - expectedPrice
+      - reason
+      properties:
+        operationKey:
+          type: string
+        ownerMemberReference:
+          type: string
+        parentMemberReference:
+          type: string
+        name:
+          type: string
+        birthDate:
+          type: string
+        priceGroupId:
+          type: string
+        expectedPrice:
+          type: string
+        reason:
+          type: string
+    GuestChoice:
+      type: object
+      required:
+      - guestId
+      - priceGroupId
+      - expectedPrice
+      properties:
+        guestId:
+          type: integer
+        priceGroupId:
+          type: string
+        expectedPrice:
+          type: string
+    GuestAvailability:
+      type: object
+      required:
+      - id
+      - name
+      - birthDate
+      - parentMemberReference
+      - priceGroupId
+      - expectedPrice
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        birthDate:
+          type: string
+        parentMemberReference:
+          type: string
+        priceGroupId:
+          type: string
+        expectedPrice:
+          type: string
+    PersonConflictResolution:
+      type: object
+      required:
+      - revision
+      - confirmed
+      - reason
+      properties:
+        revision:
+          type: integer
+        confirmed:
+          type: boolean
+          enum:
+          - true
+        reason:
+          type: string
+    ExternalPersonAssignment:
+      type: object
+      required:
+      - bookingId
+      - personId
+      - revision
+      - memberReference
+      - confirmed
+      - reason
+      properties:
+        bookingId:
+          type: integer
+        personId:
+          type: integer
+        revision:
+          type: integer
+        memberReference:
+          type: string
+        confirmed:
+          type: boolean
+          enum:
+          - true
+        reason:
+          type: string

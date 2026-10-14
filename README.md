@@ -67,7 +67,7 @@ Vor dem Upgrade SQLite sichern und die explizite Alt-Rechteübernahme durchführ
 
 ## Anmeldeverfahren je Reise
 
-Neue Reisen verwenden standardmäßig den bisherigen Clubdesk-/CSV-Ablauf. Unter Eckdaten kann alternativ easyVerein mit Zusatzformular gewählt werden; gespeicherte Reisen wechseln über „Anmeldeverfahren ändern“. CSV-Anmeldungen bleiben beim Wechsel erhalten; kein automatischer Providerimport. Rückwechsel sind vor neuen Buchungen/Gastfreigaben/aktiven oder unklaren Übertragungen möglich. [Verhalten, Migration und Prüfstand](docs/fixes/2026-10-14-reise-anmeldeverfahren.md).
+Neue Reisen verwenden standardmäßig den bisherigen Clubdesk-/CSV-Ablauf. Unter Eckdaten kann alternativ easyVerein mit Zusatzformular gewählt werden; gespeicherte Reisen wechseln ausschließlich im Tab „Anmeldungen“ über „Anmeldeverfahren ändern“. Auch Clubdesk-/CSV-Reisen haben einen eigenen Anmeldungs-Tab mit CSV-Import und manueller Erfassung. CSV-Anmeldungen bleiben beim Wechsel erhalten; kein automatischer Providerimport. Rückwechsel sind vor neuen Buchungen/Gastfreigaben/aktiven oder unklaren Übertragungen möglich. [Verhalten, Migration und Prüfstand](docs/fixes/2026-10-14-reise-anmeldeverfahren.md).
 
 ## Tests
 

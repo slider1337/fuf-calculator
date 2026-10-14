@@ -42,12 +42,18 @@ return static function (): ContainerInterface {
     $builder = new ContainerBuilder();
 
     $builder->addDefinitions([
+        App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => $c->get(App\Application\AccessPolicy::class)),
+        App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),
+        App\Application\Port\EasyVereinReadClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN') ?: '',$c->get(App\Infrastructure\ProviderRequestBudget::class))),
+        App\Application\Port\EasyVereinWriteClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinWriteHttpClient($c->get(App\Application\Port\EasyVereinReadClient::class),getenv('EASYVEREIN_API_TOKEN') ?: '',getenv('EASYVEREIN_WRITE_MODE') ?: 'off',$c->get(App\Infrastructure\ProviderRequestBudget::class))),
+        App\Application\Port\ParticipationPort::class => autowire(App\Infrastructure\EasyVereinParticipationAdapter::class),
         App\Application\Port\AccessRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteAccessRepository::class),
         App\Application\Port\ActorInterface::class => autowire(App\Infrastructure\Http\Auth\SessionActor::class),
         App\Application\Port\EventRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteEventRepository::class),
         App\Application\Port\FormRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteFormRepository::class),
         App\Application\Port\BookingRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteBookingRepository::class),
-        App\Application\Port\ExternalEventPort::class => autowire(App\Infrastructure\Http\DisabledExternalEventAdapter::class),
+        App\Application\Port\ExternalEventPort::class => autowire(App\Infrastructure\EasyVereinEventAdapter::class),
+        App\Application\Port\ExternalTermUpdatePort::class => autowire(App\Infrastructure\EasyVereinEventAdapter::class),
         PDO::class => static function (): PDO {
             $dbPath = getenv('DB_PATH') ?: (__DIR__ . '/../database/fuf.sqlite');
             return SqliteConnection::create($dbPath);
@@ -61,7 +67,8 @@ return static function (): ContainerInterface {
         MailerInterface::class => factory(static function (): MailerInterface {
             $dsn = getenv('MAILER_DSN') ?: 'null://null';
             $from = getenv('MAIL_FROM') ?: 'noreply@example.com';
-            return new SymfonyMailer($dsn, $from);
+            $mailer = new SymfonyMailer($dsn, $from);
+            return getenv('MAIL_DELIVERY_MODE') === 'production' ? $mailer : new App\Infrastructure\Mail\TestRecipientMailer($mailer);
         }),
         App\Infrastructure\Http\Auth\EasyVereinProvider::class => factory(static function (): App\Infrastructure\Http\Auth\EasyVereinProvider {
             return new App\Infrastructure\Http\Auth\EasyVereinProvider(

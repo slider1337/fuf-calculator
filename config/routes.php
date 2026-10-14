@@ -74,10 +74,39 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/preview', [$workflow, 'planningPreview']);
     $app->post('/api/trips/{id:[0-9]+}/planning-transfer/apply', [$workflow, 'planningApply']);
     $app->get('/api/trips/{id:[0-9]+}/term', [$workflow, 'term']);
+    $app->get('/api/trips/{id:[0-9]+}/term/updates', [$workflow, 'termUpdates']);
+    $app->post('/api/trips/{id:[0-9]+}/term/updates/preview', [$workflow, 'termUpdatePreview']);
+    $app->post('/api/trips/{id:[0-9]+}/term/updates/request', [$workflow, 'termUpdateRequest']);
     $app->put('/api/trips/{id:[0-9]+}/term/draft', [$workflow, 'draft']);
     $app->post('/api/trips/{id:[0-9]+}/term/review', [$workflow, 'review']);
     $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);
     $app->post('/api/trips/{id:[0-9]+}/term/link', [$workflow, 'link']);
+
+    $guest = \App\Infrastructure\Http\Controller\GuestController::class;
+    $app->get('/api/trips/{id:[0-9]+}/guests', [$guest,'list']);
+    $app->post('/api/trips/{id:[0-9]+}/guests', [$guest,'approve']);
+    $app->post('/api/trips/{id:[0-9]+}/guests/{guestId:[0-9]+}/revoke', [$guest,'revoke']);
+
+    $member = \App\Infrastructure\Http\Controller\MemberController::class;
+    $app->get('/integration/v1/events/{eventId:[0-9]+}/trip', [$member, 'resolve']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/context', [$member, 'context']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/bookings', [$member, 'list']);
+    $app->get('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}', [$member, 'get']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/preview', [$member, 'preview']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/bookings', [$member, 'create']);
+    $app->put('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/answers', [$member, 'correct']);
+    $app->post('/integration/v1/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/cancel', [$member, 'cancel']);
+    $app->get('/api/trips/{id:[0-9]+}/member-settings', [$member, 'settings']);
+    $app->put('/api/trips/{id:[0-9]+}/member-settings', [$member, 'configure']);
+
+    $participation = \App\Infrastructure\Http\Controller\ParticipationController::class;
+    $app->get('/api/trips/{id:[0-9]+}/participation-sync', [$participation, 'read']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/clarifications/{externalId:[0-9]+}/assign', [$participation, 'assign']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/persons/{personId:[0-9]+}/resolve', [$participation, 'resolvePerson']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/reconcile', [$participation, 'reconcile']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/acknowledge', [$participation, 'acknowledge']);
+    $app->post('/api/trips/{id:[0-9]+}/participation-sync/jobs/{jobId:[0-9]+}/retry', [$participation, 'retry']);
+    $app->post('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/participations', [$participation, 'request']);
 
     $booking = \App\Infrastructure\Http\Controller\BookingController::class;
     $app->get('/api/trips/{id:[0-9]+}/bookings', [$booking, 'list']);
@@ -114,6 +143,7 @@ return static function (App $app): void {
         $app->put($teamPath . '/{userId:[0-9]+}', [$eventController, 'grant']);
     }
     $app->put('/api/trips/{id:[0-9]+}/event', [$eventController, 'assign']);
+    $app->put('/api/trips/{id:[0-9]+}/archive', [$eventController, 'archive']);
     $app->post('/api/trips/{id:[0-9]+}/close', [$eventController, 'close']);
     $app->post('/api/trips/{id:[0-9]+}/reopen', [$eventController, 'reopen']);
     $app->post('/api/trips/{id:[0-9]+}/duplicate', [$eventController, 'duplicate']);

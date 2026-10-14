@@ -46,7 +46,7 @@ final readonly class TripController
      */
     public function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return JsonResponder::write($response, $this->listService->listTrips());
+        return JsonResponder::write($response, $this->listService->listTrips(($request->getQueryParams()['archived'] ?? '') === 'true'));
     }
 
     /**
@@ -106,7 +106,7 @@ final readonly class TripController
             $data = array_intersect_key($data, array_flip(['id', 'name', 'startDate', 'endDate']));
         }
         return $data + [
-            'eventId' => $trip->eventId(), 'closedAt' => $trip->closedAt(), 'closedBy' => $trip->closedBy(),
+            'eventId' => $trip->eventId(), 'archivedAt' => $this->policy->metadata($trip->id())['archived_at'] ?? null, 'closedAt' => $trip->closedAt(), 'closedBy' => $trip->closedBy(),
             'capabilities' => $this->policy->capabilities('trip', $trip->id()),
             'calculationSnapshot' => isset($meta['calculation_snapshot']) && $this->policy->can('trip', $trip->id(), 'settlement.view') ? json_decode($meta['calculation_snapshot'], true) : null,
         ];

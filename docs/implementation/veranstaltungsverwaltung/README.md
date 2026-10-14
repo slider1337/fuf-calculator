@@ -1,6 +1,6 @@
 # Veranstaltungsverwaltung – Umsetzung des Designs
 
-Stand: 13.10.2026 · **Schritte 01–07 und lokale/Fake-Grundlagen von Schritt 08 umgesetzt und technisch geprüft; manuelle Designabnahme offen. Schritte 09–11 offen; echter Terminzugriff in 08 gesperrt.**
+Stand: 14.10.2026 · **Calculator-Schritte 01–10 technisch implementiert und mit lokalen/Fake-Tests geprüft. Feldweise Terminänderungen, Mitgliederfreigabe in der Oberfläche und Serverbetrieb ergänzt. Manuelle Design-/Providerabnahme und tatsächliche Bereitstellung offen; Website-Schritt 11 folgt danach.**
 
 Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator, erst zum Schluss die Website anpassen.** Calculator, easyVerein und WordPress behalten ihre Aufgaben aus [Konzept 09](../../concepts/09-veranstaltungsverwaltung-formulare.md). Diese Reihenfolge ersetzt für diese Erweiterung die frühere Reihenfolge in Konzept 09, Abschnitt 13. Vor Schritt 11 gibt es keine Änderung im Website-Repository und keinen Wechsel des produktiven Anmeldewegs.
 
@@ -15,7 +15,7 @@ Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator,
 
 ## Schritte
 
-Jeder Schritt wird separat umgesetzt und geprüft. Aktueller Stand: Schritte 01–07 und lokale/Fake-Grundlagen von Schritt 08 technisch umgesetzt; Prüfprotokolle [01](PRUEFUNG-01.md), [02](PRUEFUNG-02.md), [03](PRUEFUNG-03.md), [04](PRUEFUNG-04.md), [05](PRUEFUNG-05.md) und [06](PRUEFUNG-06.md). Die manuelle Designabnahme ist noch offen. Schritte 09–11 sind offen; der echte Terminadapter bleibt in 08 gesperrt. Prüfprotokolle [07](PRUEFUNG-07.md) und [08](PRUEFUNG-08.md). Reihenfolge ist eine Abhängigkeit, kein Auftrag zur sofortigen Gesamtimplementierung.
+Aktueller technischer Stand: Schritte 01–10 implementiert. Die historischen Prüfprotokolle dokumentieren den jeweiligen Zwischenstand, die [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) den aktuellen Stand. Reale Adapter sind implementiert; Tests verwenden Fakes. Die manuelle Design-/Providerabnahme bleibt offen. [Betrieb, Konfiguration und Einführung](BETRIEB.md) sind vorbereitet. Website-Schritt 11 ist bis zur Abnahme/Bereitstellung gesperrt.
 
 | Schritt | Ergebnis | Aufgabe |
 | --- | --- | --- |
@@ -40,3 +40,7 @@ Vor jedem Schritt aktuellen `master`, offene/kürzlich gemergte PRs und vorhande
 ## Prompt für Schritt 1
 
 > Arbeite im Repository slider1337/fuf-calculator ausschließlich an docs/implementation/veranstaltungsverwaltung/AUFGABE-01-grundlagen.md. Lies zuerst vorhandene AGENTS.md, README.md, GRUNDLAGEN.md, ABNAHME.md, Konzept 09 sowie die dort verlinkten Rechte-/Abschlusskonzepte. Prüfe aktuellen master und offene/kürzlich gemergte PRs; führe vorhandene Arbeit weiter. Implementiere migrationsfähige Veranstaltungs-/Reisegrundlagen, serverseitige Reiserechte für bestehende Endpunkte, Audit und die Sperre abrechnungswirksamer Änderungen bei abgerechneten Reisen. Erhalte Altbestand und bestehende Berechnungen. Ergänze OpenAPI und sinnvolle Domain-/Integrationsprüfungen, dokumentiere Migrations- und Rechteübernahme. Keine Website-Änderungen, keine externen Schreibaktionen oder Mails und keine Browser-/Lighthouse-Prüfungen. Schritte 2–11 gehören nicht zum Auftrag.
+
+Folgeprüfung 14.10.: [Öffentliche API-Doku, gemeinsamer Anmeldeschluss und Reise-Archivierung](PRUEFUNG-14-10.md). Löschplanung ist nach Nutzerentscheidung kein Teil des Auftrags.
+
+Stand nach Mailpräzisierung 14.10.: [Echte Schreibadapter, Orga-Gastfreigaben und konkrete Konfliktklärung](PRUEFUNG-14-10-SCHREIBWEGE.md) implementiert. Standard-Schreibbetrieb aus, produktive Abnahme/Bereitstellung noch offen; Website anschließend.

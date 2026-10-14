@@ -1,0 +1,500 @@
+{
+  "source": "https://easyverein.com/api/v3.0/documentation",
+  "retrievedAt": "2026-10-14",
+  "htmlSha256": "5d14dea6148b0825cd840c79f5bc842fa0f195df45bb0039b7810197a1b3d607",
+  "paths": {
+    "/api/v3.0/event": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "post": {
+        "requestFields": {
+          "location_object": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prologue": {
+            "type": "string"
+          },
+          "min_participators": {
+            "type": "integer"
+          },
+          "max_participators": {
+            "type": "integer"
+          },
+          "start_participation": {
+            "type": "string"
+          },
+          "end_participation": {
+            "type": "string"
+          },
+          "access": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "all_day": {
+            "type": "boolean"
+          },
+          "confirmation_to_addresses": {
+            "type": "array"
+          },
+          "send_mail_check": {
+            "type": "boolean"
+          },
+          "show_memberarea": {
+            "type": "boolean"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "canceled": {
+            "type": "boolean"
+          },
+          "is_reservation": {
+            "type": "boolean"
+          },
+          "creator": {
+            "type": "integer"
+          },
+          "reservation_parent_event": {
+            "type": "integer"
+          },
+          "allow_multiple_price_groups_per_participation": {
+            "type": "boolean"
+          },
+          "change_participation_state_to_unclear_when_event_moved": {
+            "type": "boolean"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400",
+          "201"
+        ]
+      }
+    },
+    "/api/v3.0/event/{pk}": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "delete": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "204"
+        ]
+      },
+      "patch": {
+        "requestFields": {
+          "location_object": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "prologue": {
+            "type": "string"
+          },
+          "min_participators": {
+            "type": "integer"
+          },
+          "max_participators": {
+            "type": "integer"
+          },
+          "start_participation": {
+            "type": "string"
+          },
+          "end_participation": {
+            "type": "string"
+          },
+          "access": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "all_day": {
+            "type": "boolean"
+          },
+          "confirmation_to_addresses": {
+            "type": "array"
+          },
+          "send_mail_check": {
+            "type": "boolean"
+          },
+          "show_memberarea": {
+            "type": "boolean"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "canceled": {
+            "type": "boolean"
+          },
+          "is_reservation": {
+            "type": "boolean"
+          },
+          "creator": {
+            "type": "integer"
+          },
+          "reservation_parent_event": {
+            "type": "integer"
+          },
+          "allow_multiple_price_groups_per_participation": {
+            "type": "boolean"
+          },
+          "change_participation_state_to_unclear_when_event_moved": {
+            "type": "boolean"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400"
+        ]
+      }
+    },
+    "/api/v3.0/participation": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "post": {
+        "requestFields": {
+          "participation_address": {
+            "type": "integer"
+          },
+          "show_name": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "is_companion": {
+            "type": "boolean"
+          },
+          "companion_name": {
+            "type": "string"
+          },
+          "companion_email": {
+            "type": "string"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400",
+          "201"
+        ]
+      }
+    },
+    "/api/v3.0/participation/{pk}": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "delete": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "204"
+        ]
+      },
+      "patch": {
+        "requestFields": {
+          "participation_address": {
+            "type": "integer"
+          },
+          "show_name": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "is_companion": {
+            "type": "boolean"
+          },
+          "companion_name": {
+            "type": "string"
+          },
+          "companion_email": {
+            "type": "string"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400"
+        ]
+      }
+    },
+    "/api/v3.0/participation/create-participation-with-price-groups": {
+      "post": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400",
+          "201"
+        ]
+      }
+    },
+    "/api/v3.0/member/{pk}": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "delete": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "204"
+        ]
+      },
+      "patch": {
+        "requestFields": {
+          "join_date": {
+            "type": "string"
+          },
+          "resignation_date": {
+            "type": "string"
+          },
+          "resignation_notice_date": {
+            "type": "string"
+          },
+          "declaration_of_application": {
+            "type": "string"
+          },
+          "payment_start_date": {
+            "type": "string"
+          },
+          "payment_amount": {
+            "type": "number"
+          },
+          "payment_intervall_months": {
+            "type": "integer"
+          },
+          "related_member": {
+            "type": "integer"
+          },
+          "use_balance_for_membership_fee": {
+            "type": "boolean"
+          },
+          "bulletin_board_new_post_notification": {
+            "type": "boolean"
+          },
+          "integration_dosb_sport": {
+            "type": "array"
+          },
+          "integration_dosb_gender": {
+            "type": "string"
+          },
+          "integration_lsb_sport": {
+            "type": "array"
+          },
+          "integration_lsb_gender": {
+            "type": "string"
+          },
+          "is_application": {
+            "type": "boolean"
+          },
+          "membership_number": {
+            "type": "string"
+          },
+          "sepa_mandate_file": {
+            "type": "string"
+          },
+          "is_chairman": {
+            "type": "boolean"
+          },
+          "chairman_permission_group": {
+            "type": "integer"
+          },
+          "profile_picture": {
+            "type": "string"
+          },
+          "contact_details": {
+            "type": "integer"
+          },
+          "email_or_user_name": {
+            "type": "string"
+          },
+          "editable_by_related_members": {
+            "type": "boolean"
+          },
+          "require_password_change": {
+            "type": "boolean"
+          },
+          "is_blocked": {
+            "type": "boolean"
+          },
+          "block_reason": {
+            "type": "string"
+          },
+          "show_warnings_and_notes_to_admins_in_profile": {
+            "type": "boolean"
+          },
+          "is_matrix_searchable": {
+            "type": "boolean"
+          },
+          "matrix_block_reason": {
+            "type": "string"
+          },
+          "blocked_from_matrix": {
+            "type": "boolean"
+          },
+          "matrix_communication_permission": {
+            "type": "integer"
+          },
+          "use_matrix_group_settings": {
+            "type": "boolean"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400"
+        ]
+      }
+    },
+    "/api/v3.0/price-group": {
+      "get": {
+        "requestFields": null,
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200"
+        ]
+      },
+      "post": {
+        "requestFields": {
+          "billing_account": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "pieces": {
+            "type": "number"
+          },
+          "selling_price": {
+            "type": "number"
+          },
+          "tax_rate": {
+            "type": "number"
+          },
+          "tax_name": {
+            "type": "string"
+          },
+          "cost_centre": {
+            "type": "string"
+          },
+          "sphere": {
+            "type": "integer"
+          },
+          "gross": {
+            "type": "boolean"
+          },
+          "event": {
+            "type": "integer"
+          },
+          "maximum_pieces_per_participation": {
+            "type": "number"
+          }
+        },
+        "statuses": [
+          "401",
+          "403",
+          "500",
+          "200",
+          "400",
+          "201"
+        ]
+      }
+    }
+  }
+}

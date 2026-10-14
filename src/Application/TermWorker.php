@@ -39,6 +39,6 @@ final readonly class TermWorker
     }
     private function allowed(array $job): bool
     {
-        return ($this->access->metadata($job['tripId'])['closed_at']??null)===null&&in_array('term.manage',$this->access->capabilities('trip',$job['tripId'],$job['actorId']),true);
+        return ($this->access->metadata($job['tripId'])['archived_at']??null)===null&&($this->access->metadata($job['tripId'])['closed_at']??null)===null&&in_array('term.manage',$this->access->capabilities('trip',$job['tripId'],$job['actorId']),true);
     }
 }

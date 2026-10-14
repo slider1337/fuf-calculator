@@ -5,7 +5,7 @@ namespace App\Application;
 use App\Application\Port\AccessRepositoryInterface;
 use App\Application\Port\ActorInterface;
 
-final readonly class AccessPolicy
+final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
 {
     public const TRIP_CAPABILITIES = ['trip.view', 'trip.manage', 'registration.view', 'registration.manage', 'answers.view', 'answers.correct', 'answers.export', 'analytics.view', 'calculation.manage', 'settlement.view', 'settlement.close', 'settlement.reopen', 'expense.view', 'expense.manage', 'term.manage', 'access.manage'];
     public const EVENT_CAPABILITIES = ['event.view', 'event.manage', 'form.manage', 'form.publish', 'access.manage'];
@@ -35,6 +35,7 @@ final readonly class AccessPolicy
     public function trip(int $id, string $capability, bool $write = false): void
     {
         $this->require('trip', $id, $capability);
+        if ($write && ($this->access->metadata($id)['archived_at'] ?? null) !== null) { throw new AccessException('trip_archived', 409); }
         if ($write && ($this->access->metadata($id)['closed_at'] ?? null) !== null) { throw new AccessException('trip_closed', 409); }
     }
     public function writeTrip(int $id, string $capability, callable $operation): mixed

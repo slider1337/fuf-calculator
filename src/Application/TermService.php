@@ -8,7 +8,7 @@ use App\Domain\Form\{FormSchema,Decimal};
 
 final readonly class TermService
 {
-    public function __construct(private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService) {}
+    public function __construct(private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members) {}
     public function createTrip(array $p): array
     {
         return $this->policy->transaction(function() use($p){
@@ -33,8 +33,12 @@ final readonly class TermService
         return $this->policy->transaction(function() use($id){
             $draft=$this->store->draft($id);$link=$this->store->link($id);$job=$this->store->job($id);
             if($job){unset($job['leaseToken'],$job['requestHash'],$job['payload']);}
-            // Step 09/10 adds the member booking release. A term reference alone is not sufficient.
-            return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>false,'registrationReason'=>'member_booking_contract_pending_steps_9_10'];
+            $settings=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$id])->fetch(\PDO::FETCH_ASSOC);
+            $reason=$link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason());
+            if($reason===null&&(!$settings||!(bool)$settings['enabled'])){$reason='member_release_disabled';}
+            if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
+            if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null||(int)$settings['booking_until']<time())){$reason='trip_closed_or_booking_deadline_passed';}
+            return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
         });
     }
     private function validate(int $id,array $d): array
@@ -77,7 +81,7 @@ final readonly class TermService
             $this->policy->trip($id,'term.manage');$draft=$this->store->draft($id)??throw new ValidationException(['draft'=>'save_first']);$d=$this->validate($id,$draft['data']);
             $trip=$this->trips->getById($id);$issues=[];
             if($trip->name()!==$d['title']||$trip->startDate()->format('Y-m-d')!==$d['startDate']||$trip->endDate()?->format('Y-m-d')!==$d['endDate']){$issues[]='Eckdaten weichen von der gespeicherten Reise ab.';}
-            if($d['calendarReference']===''){$issues[]='Kalenderreferenz fehlt.';}
+            if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Eine stabile numerische easyVerein-Kalender-ID ist erforderlich.';}
             foreach($d['priceGroups'] as $g){if($g['price']===null){$issues[]='Preis fehlt: '.$g['label'];}}
             if($d['mode']==='link'&&$d['externalId']===''){$issues[]='Termin-ID fehlt.';}
             $binding=$this->forms->binding($id);

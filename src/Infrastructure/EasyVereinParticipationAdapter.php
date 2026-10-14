@@ -1,0 +1,89 @@
+<?php
+declare(strict_types=1);
+namespace App\Infrastructure;
+use App\Application\{AccessException,ParticipationRejected,Port\ParticipationPort,Port\EasyVereinWriteClient};
+final class EasyVereinParticipationAdapter implements ParticipationPort {
+ public function __construct(private readonly EasyVereinWriteClient $client) {}
+ private array $memberCache=[];
+ public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
+ public function snapshot(string $eventId): array {
+  $eventId=EasyVereinData::id($eventId,'event');$event=$this->client->get('event/'.$eventId.'/', ['query'=>'{id,updated_at,canceled,access,end_participation,start_participation,max_participators,name,start,end,location_name,prologue,show_memberarea}']);
+  if(EasyVereinData::id($event['id']??null,'event')!==$eventId||!is_bool($event['canceled']??null)||!is_int($event['access']??null)||!in_array($event['access'],[0,1,2,3],true)||!is_int($event['max_participators']??null)||$event['max_participators']<0){throw new AccessException('provider_event_invalid',503);}
+  $groups=[];$groupMap=[];
+  foreach(EasyVereinData::collection($this->client,'price-group/',['event'=>$eventId,'query'=>'{id,event,name,selling_price}']) as $g){
+   $id=EasyVereinData::id($g['id']??null,'price-group');if(EasyVereinData::id($g['event']??null,'event')!==$eventId||isset($groupMap[$id])){throw new AccessException('provider_price_invalid',503);}
+   $group=['id'=>$id,'price'=>EasyVereinData::money($g['selling_price']??null),'label'=>is_string($g['name']??null)?$g['name']:'#'.$id];$groups[]=$group;$groupMap[$id]=$group;
+  }
+  $rows=EasyVereinData::collection($this->client,'participation/',['participation_event'=>$eventId,'query'=>'{id,participation_event,participation_address,state,is_companion,companion_name,parent,description,participation_price_groups{id,participation,price_group,pieces}}']);
+  if(count($rows)>5&&$this->memberCache===[]){
+   $ids=[];foreach($rows as $row){$ids[EasyVereinData::id($row['participation_address']??null,'contact-details')]=true;}
+   foreach(EasyVereinData::collection($this->client,'member/',['query'=>'{id,contact_details{id}}']) as $m){$address=EasyVereinData::id($m['contact_details']['id']??null,'contact-details');if(!isset($ids[$address])){continue;}if(array_key_exists($address,$this->memberCache)){throw new AccessException('provider_contact_ambiguous',503);}$this->memberCache[$address]=EasyVereinData::id($m['id']??null,'member');}
+  }
+  $participants=[];$members=$this->memberCache;$confirmed=0;$seen=[];
+  foreach($rows as $row){
+   $id=EasyVereinData::id($row['id']??null,'participation');$address=EasyVereinData::id($row['participation_address']??null,'contact-details');
+   if(EasyVereinData::id($row['participation_event']??null,'event')!==$eventId||isset($seen[$id])||!is_int($row['state']??null)||!in_array($row['state'],[0,1,2,3,4,5],true)||!is_bool($row['is_companion']??null)){throw new AccessException('provider_participation_invalid',503);}$seen[$id]=true;
+   if(!array_key_exists($address,$members)){
+    $m=EasyVereinData::collection($this->client,'member/',['contact_details'=>$address,'query'=>'{id,contact_details{id}}']);
+    if(count($m)>1){throw new AccessException('provider_contact_ambiguous',503);}$members[$address]=count($m)===1?EasyVereinData::id($m[0]['id']??null,'member'):null;
+    if($m&&EasyVereinData::id($m[0]['contact_details']['id']??null,'contact-details')!==$address){throw new AccessException('provider_contact_ambiguous',503);}
+   }
+   $this->memberCache[$address]=$members[$address];
+   $status=$row['state']===0?'cancelled':(in_array($row['state'],[1,4,5],true)?'confirmed':'pending');if($status==='confirmed'){$confirmed++;}
+   $assignments=$row['participation_price_groups']??null;if(!is_array($assignments)||!array_is_list($assignments)){throw new AccessException('provider_price_invalid',503);}
+   $gid=null;$price=null;$priceConflict=false;
+   if(count($assignments)===1){$a=$assignments[0];$gid=EasyVereinData::id($a['price_group']??null,'price-group');
+    if(EasyVereinData::id($a['participation']??null,'participation')!==$id||EasyVereinData::money($a['pieces']??null)!=='1'){ $priceConflict=true; }
+    $price=$groupMap[$gid]['price']??null;if($price===null){$priceConflict=true;}
+   }elseif($assignments!==[]||$groups!==[]){$priceConflict=true;}
+   $participants[]=['eventId'=>$eventId,'externalId'=>$id,'memberReference'=>$members[$address],'contactReference'=>$address,'status'=>$status,'priceGroupId'=>$gid,'price'=>$price,'priceConflict'=>$priceConflict,'isCompanion'=>$row['is_companion'],'companionName'=>$row['companion_name']??null,'parentExternalId'=>$row['is_companion']?EasyVereinData::id($row['parent']??null,'participation'):null,'operationReference'=>is_string($row['description']??null)&&preg_match('/^calculator-person-[1-9][0-9]*$/D',$row['description'])?$row['description']:null];
+  }
+  $byId=array_column($participants,null,'externalId');foreach($participants as &$r){if($r['isCompanion']){$parent=$byId[$r['parentExternalId']]??null;if(!$parent||$parent['isCompanion']||$parent['contactReference']!==$r['contactReference']){$r['memberReference']=null;}}}unset($r);
+  $deadline=($event['end_participation']??null)===null?PHP_INT_MAX:EasyVereinData::timestamp($event['end_participation']);
+  $notStarted=($event['start_participation']??null)!==null&&EasyVereinData::timestamp($event['start_participation'])>time();
+  $revision=hash('sha256',json_encode([$event,$groups],JSON_THROW_ON_ERROR));
+  $termFields=array_diff(array_values(EasyVereinTermFields::MAP),array_keys($event))===[]?['termFields'=>EasyVereinTermFields::read($event)]:[];
+  return $termFields+['eventId'=>$eventId,'revision'=>$revision,'canceled'=>$event['canceled']||$event['access']===0||$notStarted,'bookingUntil'=>$deadline,'capacityConfirmed'=>$event['max_participators']>0,'capacity'=>$event['max_participators'],'capacityRemaining'=>$event['max_participators']===0?null:max(0,$event['max_participators']-$confirmed),'groups'=>$groups,'participants'=>$participants,'guestsAllowed'=>$event['access']===2];
+ }
+ public function execute(string $kind,array $p,string $operationReference): array {
+  if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
+  $event=EasyVereinData::id($p['eventId']??null,'event');$member=EasyVereinData::id($p['memberReference']??null,'member');
+  $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
+  if(EasyVereinData::id($profile['id']??null,'member')!==$member){throw new ParticipationRejected('member_reference_changed');}$contact=EasyVereinData::id($profile['contact_details']['id']??null,'contact-details');
+  $current=$this->snapshot($event);$guest=($p['guestId']??null)!==null;
+  if($kind==='cancel'){
+   $id=EasyVereinData::id($p['externalId']??null,'participation');$row=$this->find($current,$id);
+   if(!$row||$row['memberReference']!==$member||$row['contactReference']!==$contact){throw new ParticipationRejected('participation_reference_changed');}
+   if(!$row['isCompanion']&&array_filter($current['participants'],fn($g)=>$g['isCompanion']&&$g['parentExternalId']===$id&&$g['status']!=='cancelled')){throw new ParticipationRejected('cancel_dependents_first');}
+   $this->client->write('PATCH','participation/'.$id.'/', ['state'=>0]);
+   return $this->proved($event,$p,$id,'cancelled');
+  }
+  if($kind!=='register'||$current['canceled']||$current['bookingUntil']<time()||!is_int($current['capacityRemaining'])||$current['capacityRemaining']<1){throw new ParticipationRejected('event_unavailable');}
+  $groups=array_column($current['groups'],null,'id');$gid=$p['priceGroupId']??null;
+  if(($groups&&(!isset($groups[$gid??''])||$groups[$gid]['price']!==($p['price']??null)))||(!$groups&&($gid!==null||($p['price']??null)!==null))){throw new ParticipationRejected('price_conflict');}
+  $body=['participation_event'=>(int)$event,'participation_address'=>(int)$contact,'state'=>1,'description'=>$operationReference];
+  foreach($current['participants'] as $row){if(!$guest&&!$row['isCompanion']&&$row['contactReference']===$contact&&$row['status']!=='cancelled'){throw new ParticipationRejected('existing_participation_requires_clarification');}}
+  if($guest){
+   if(!$current['guestsAllowed']||!is_string($p['guestName']??null)||trim($p['guestName'])===''){throw new ParticipationRejected('guest_not_allowed');}
+   $parents=array_values(array_filter($current['participants'],fn($r)=>!$r['isCompanion']&&$r['memberReference']===$member&&$r['status']==='confirmed'));
+   if(count($parents)!==1){throw new ParticipationRejected('guest_parent_not_confirmed');}
+   $body+=['is_companion'=>true,'companion_name'=>$p['guestName'],'parent'=>(int)$parents[0]['externalId']];
+  }
+  $path='participation/';if($groups){$path='participation/create-participation-with-price-groups/';$body['participation_price_groups']=[['price_group'=>(int)$gid,'pieces'=>1]];}
+  $created=$this->client->write('POST',$path,$body);
+  if(!isset($created['id'])){return $this->reconcile('register',$p,$operationReference)??throw new \RuntimeException('provider_result_unproven');}
+  $id=EasyVereinData::id($created['id'],'participation');return $this->proved($event,$p,$id,'confirmed');
+ }
+ public function reconcile(string $kind,array $p,string $reference): ?array {
+  $profile=$this->client->get('member/'.$p['memberReference'].'/',['query'=>'{id,contact_details{id}}']);
+  if(EasyVereinData::id($profile['id']??null,'member')!==$p['memberReference']){return null;}$contact=EasyVereinData::id($profile['contact_details']['id']??null,'contact-details');
+  $s=$this->snapshot($p['eventId']);if($kind==='cancel'){$row=$this->find($s,$p['externalId']);return $row&&$row['status']==='cancelled'&&$row['contactReference']===$contact?$row:null;}
+  $matches=array_values(array_filter($s['participants'],fn($row)=>$row['operationReference']===$reference&&$row['memberReference']===$p['memberReference']&&$row['contactReference']===$contact));
+  return count($matches)===1&&$matches[0]['status']==='confirmed'?$matches[0]:null;
+ }
+ private function proved(string $event,array $p,string $id,string $status): array {
+  $r=$this->find($this->snapshot($event),$id);
+  if(!$r||$r['status']!==$status||$r['memberReference']!==$p['memberReference']||$r['priceConflict']){throw new \RuntimeException('provider_result_unproven');}return $r;
+ }
+ private function find(array $s,string $id): ?array {foreach($s['participants'] as $r){if($r['externalId']===$id){return $r;}}return null;}
+}

@@ -32,6 +32,20 @@ final readonly class TripManagementService
             $this->policy->audit('settlement.reopen', 'trip', $id, $reason);
         });
     }
+    public function archive(int $id, array $p): array
+    {
+        return $this->policy->transaction(function () use ($id, $p) {
+            $this->policy->trip($id, 'trip.manage');
+            if (!is_bool($p['archived'] ?? null)) { throw new ValidationException(['archived'=>'boolean_required']); }
+            $metadata = $this->policy->metadata($id);
+            if (!array_key_exists('archivedAt', $p) || $p['archivedAt'] !== ($metadata['archived_at'] ?? null)) { throw new AccessException('revision_conflict',409); }
+            $reason = $this->policy->reason(is_string($p['reason'] ?? null) ? $p['reason'] : '');
+            $archivedAt = $p['archived'] ? (($metadata['archived_at'] ?? null) ?? gmdate(DATE_ATOM)) : null;
+            $this->policy->setMetadata($id, ['archived_at'=>$archivedAt]);
+            $this->policy->audit($p['archived']?'trip.archive':'trip.restore','trip',$id,$reason);
+            return ['archivedAt'=>$archivedAt];
+        });
+    }
     public function duplicate(int $id, array $payload): array
     {
         return $this->policy->transaction(function () use ($id, $payload) {

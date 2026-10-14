@@ -29,11 +29,12 @@ final readonly class TripListService
      * @return array<int, array{id:int,name:string,startDate:string,endDate:?string,nights:int,
      *     plannedParticipants:int,registeredParticipants:int,surplus:?float,surplusBasis:?string}>
      */
-    public function listTrips(): array
+    public function listTrips(bool $archived = false): array
     {
         $items = [];
         foreach ($this->tripRepository->findAll() as $row) {
             if (!$this->policy->can('trip', (int) $row['id'], 'trip.view')) { continue; }
+            if ((($this->policy->metadata((int)$row['id'])['archived_at']??null)!==null) !== $archived) { continue; }
             $items[] = $this->toListItem($row);
         }
 
@@ -45,6 +46,7 @@ final readonly class TripListService
         $item = [
             'id' => (int) $row['id'],
             'eventId' => isset($this->policy->metadata((int) $row['id'])['event_id']) ? (int) $this->policy->metadata((int) $row['id'])['event_id'] : null,
+            'archivedAt' => $this->policy->metadata((int) $row['id'])['archived_at'] ?? null,
             'closedAt' => $this->policy->metadata((int) $row['id'])['closed_at'] ?? null,
             'name' => (string) $row['name'],
             'startDate' => (string) $row['startDate'],

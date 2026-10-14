@@ -33,6 +33,8 @@ function managementError(error) {
 }
 async function performManagement(operation) { try { setStatusNote('management-status','',null); await operation(); } catch (error) { managementError(error); } }
 function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
+  byId('management-modal').classList.remove('is-term-wizard');
+  byId('wizard-footer-navigation')?.remove();
   management.modal ||= new bootstrap.Modal(byId('management-modal'));
   byId('management-title').textContent = title; byId('management-fields').innerHTML = fields;
   byId('management-modal-error').textContent = ''; byId('management-submit').textContent = submitLabel; management.submit = submit;

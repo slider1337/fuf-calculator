@@ -5749,18 +5749,24 @@ components:
       type: object
       required:
       - enabled
-      - bookingUntil
       properties:
         enabled: &id001
           type: boolean
         bookingUntil:
           type: integer
+          deprecated: true
+          description: Ignored; the current easyVerein term deadline is authoritative.
     MemberSettingsResult:
       type: object
       required:
       - settings
       - blockedReason
+      - bookingUntil
       properties:
+        bookingUntil:
+          type: integer
+          nullable: true
+          description: Current term deadline; null when unset or unavailable.
         settings:
           type: object
           required:

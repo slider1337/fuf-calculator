@@ -4523,3 +4523,8 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 }
 
 .wizard-footer-navigation [hidden],.wizard-fields [hidden] { display:none!important; }
+
+/* Named easyVerein choices in the term wizard. */
+#wizard-event-picker,#wizard-calendar-picker,#wizard-calendar-selected { grid-column:1/-1; min-width:0; }
+.catalog-results { display:grid; gap:8px; margin:12px 0; }
+.catalog-result { width:100%; text-align:left; white-space:normal; justify-content:flex-start; overflow-wrap:anywhere; }

@@ -65,6 +65,10 @@ Der [Umsetzungsplan mit elf Aufgaben](docs/implementation/veranstaltungsverwaltu
 
 Vor dem Upgrade SQLite sichern und die explizite Alt-Rechteübernahme durchführen; siehe [Migrations- und Betriebsanweisung](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-01.md).
 
+## Anmeldeverfahren je Reise
+
+Neue Reisen verwenden standardmäßig den bisherigen Clubdesk-/CSV-Ablauf. Unter Eckdaten kann alternativ easyVerein mit Zusatzformular gewählt werden; gespeicherte Reisen wechseln über „Anmeldeverfahren ändern“. CSV-Anmeldungen bleiben beim Wechsel erhalten; kein automatischer Providerimport. Rückwechsel sind vor neuen Buchungen/Gastfreigaben/aktiven oder unklaren Übertragungen möglich. [Verhalten, Migration und Prüfstand](docs/fixes/2026-10-14-reise-anmeldeverfahren.md).
+
 ## Tests
 
 ```bash

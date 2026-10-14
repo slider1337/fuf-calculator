@@ -37,12 +37,12 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
     }
     public function metadata(int $tripId): array
     {
-        $s = $this->pdo->prepare('SELECT archived_at, form_version_id, form_revision, event_id, closed_at, closed_by, settlement_snapshot, calculation_snapshot FROM trips WHERE id = ?');
+        $s = $this->pdo->prepare('SELECT registration_mode, registration_mode_revision, archived_at, form_version_id, form_revision, event_id, closed_at, closed_by, settlement_snapshot, calculation_snapshot FROM trips WHERE id = ?');
         $s->execute([$tripId]); return $s->fetch(PDO::FETCH_ASSOC) ?: [];
     }
     public function setMetadata(int $tripId, array $values): void
     {
-        $allowed = ['archived_at', 'event_id', 'closed_at', 'closed_by', 'settlement_snapshot', 'calculation_snapshot'];
+        $allowed = ['registration_mode', 'archived_at', 'event_id', 'closed_at', 'closed_by', 'settlement_snapshot', 'calculation_snapshot'];
         if (array_diff(array_keys($values), $allowed) !== []) { throw new \InvalidArgumentException('Invalid metadata'); }
         $set = implode(', ', array_map(static fn ($k) => "$k = ?", array_keys($values)));
         $this->pdo->prepare("UPDATE trips SET $set WHERE id = ?")->execute([...array_values($values), $tripId]);

@@ -48,3 +48,8 @@ Im Calculator unter „Team & Termin“: bestätigte Termin-ID, Formularstand/Pr
 Datumsänderungen können normale Providerbenachrichtigungen und Teilnehmerstatusänderungen auslösen; die Vorschau weist darauf hin. Während Entwicklung keine echten Provider-Testschreibvorgänge: deren Empfänger lassen sich nicht auf me@benna.me begrenzen. Application-Testmails gehen ausschließlich an me@benna.me. Normale produktive Benachrichtigungen sind ausdrücklich für später vorgesehen.
 
 Website-Schritt 11 beginnt nach dokumentierter Calculator-Design-/Providerabnahme und kompatibler Bereitstellung. Die bisherige Website nutzt bis dahin ihren bestehenden Anmeldeweg. Kein automatischer Rückfall oder doppelter Writer.
+
+
+## Wahl des Anmeldeverfahrens (14.10.)
+
+Migration 20261014210000 nach den bisherigen Migrationen. Neue normale Reisen starten Clubdesk/CSV; easyVerein ist eine bewusste Option je Reise. Bestehende ausdrücklich vorbereitete neue Abläufe bleiben erhalten. CSV-Reisen werden vom Providerworker/periodischen Abgleich nicht verarbeitet und sind im Mitgliedervertrag nicht verfügbar. Ein zulässiger Rückwechsel deaktiviert die Mitgliederfreigabe. [Vollständige Regeln und Nachweise](../../fixes/2026-10-14-reise-anmeldeverfahren.md).

@@ -79,3 +79,5 @@ Nach erfülltem Gate: erst Calculator migrationsfähig bereitstellen, dann pro b
 Schreib-/Mailregel und aktuelle Betriebsgrenzen: [Folgeprüfung](../implementation/veranstaltungsverwaltung/PRUEFUNG-14-10-SCHREIBWEGE.md).
 
 Produktionskonfiguration, Worker, Sicherung und Aktivierungsreihenfolge: [Betrieb](../implementation/veranstaltungsverwaltung/BETRIEB.md).
+
+Anmeldeverfahren seit OpenAPI 1.8.0: Der Mitgliederweg ist ausschließlich für easyVerein-Reisen verfügbar; Clubdesk-/CSV-Reisen liefern nicht verfügbar. Verfahren je Reise, keine automatische Umstellung durch einen Mitgliederrequest. [Wechselregeln](../fixes/2026-10-14-reise-anmeldeverfahren.md).

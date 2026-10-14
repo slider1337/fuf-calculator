@@ -44,11 +44,13 @@ function answerFields(version,people,answers,trip) {
   return `<h3>Zusatzangaben · ${version.number?'v'+version.number:'kein Zusatzformular'}</h3>${render('booking')}${people.map(p=>`<fieldset><legend>${escapeHtml(p.name||'Person')} · ${escapeHtml(String(p.id))}</legend>${render('person',p)}</fieldset>`).join('')}`;
 }
 function renderBookingIntake() {
+  if(!tripUsesEasyVerein()){byId('booking-extra-fields').innerHTML='';return;}
   const root=byId('booking-extra-fields');
   const read=readBookingInputs(root);bookingUI.answers.booking={...bookingUI.answers.booking,...read.booking};for(const [p,v] of Object.entries(read.persons)){bookingUI.answers.persons[p]={...bookingUI.answers.persons[p],...v};}
   root.innerHTML=bookingUI.version?answerFields(bookingUI.version,bookingPeople(),bookingUI.answers,state.currentTrip):'<p class="help">Kein Zusatzformular.</p>';
 }
 async function loadBookingWorkspace(tripId) {
+  if(!tripUsesEasyVerein()){bookingUI.items=[];bookingUI.version=null;renderBookingIntake();byId('manual-registration-form').classList.toggle('d-none',!hasTripCapability('registration.manage'));return;}
   if(bookingUI.tripId!==tripId){bookingUI.answers={booking:{},persons:{}};bookingUI.payload=null;bookingUI.operation=null;bookingUI.tripId=tripId;}
   const [items,binding]=await Promise.all([api(`/api/trips/${tripId}/bookings`),api(`/api/trips/${tripId}/form`)]);
   if(state.currentTripId!==tripId)return;
@@ -68,6 +70,7 @@ async function loadBookingWorkspace(tripId) {
 async function bookingCreate(event) {
   event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type=submit]');button.disabled=true;
   try {
+    if(!tripUsesEasyVerein()){await api(`/api/trips/${state.currentTripId}/registrations`,{method:'POST',body:JSON.stringify({roomCategory:byId('manualRoomCategory').value||null,comment:byId('manualComment').value,participants:bookingPeople().map(p=>({name:p.name,birthDate:p.birthDate}))})});form.reset();await loadRegistrations(String(state.currentTripId));await loadSettlement(String(state.currentTripId));return;}
     const data={versionId:bookingUI.version?.id??null,persons:bookingPeople(),contactIdentity:byId('booking-contact').value,roomCategory:byId('manualRoomCategory').value||null,comment:byId('manualComment').value,answers:readBookingInputs(byId('booking-extra-fields'))};
     const serialized=JSON.stringify(data);if(bookingUI.payload!==serialized){bookingUI.operation=operationKey();bookingUI.payload=serialized;}
     await api(`/api/trips/${state.currentTripId}/bookings`,{method:'POST',body:JSON.stringify({...data,operationKey:bookingUI.operation})});

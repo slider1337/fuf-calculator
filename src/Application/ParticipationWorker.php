@@ -59,6 +59,7 @@ final readonly class ParticipationWorker {
   });return true;
  }
  private function allowed(array $j): bool {
+  if(($this->access->metadata((int)$j['trip_id'])['registration_mode']??'clubdesk_csv')!=='easyverein'){return false;}
   if(($this->access->metadata((int)$j['trip_id'])['archived_at']??null)!==null||($this->access->metadata((int)$j['trip_id'])['closed_at']??null)!==null){return false;}
   if($j['member_actor']!==null){
    $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$j['trip_id']])->fetch(\PDO::FETCH_ASSOC);

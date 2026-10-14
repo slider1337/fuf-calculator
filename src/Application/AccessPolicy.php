@@ -37,6 +37,7 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
         $this->require('trip', $id, $capability);
         if ($write && ($this->access->metadata($id)['archived_at'] ?? null) !== null) { throw new AccessException('trip_archived', 409); }
         if ($write && ($this->access->metadata($id)['closed_at'] ?? null) !== null) { throw new AccessException('trip_closed', 409); }
+        if($write&&$capability==='term.manage'){$this->requireRegistrationMode($id,'easyverein');}
     }
     public function writeTrip(int $id, string $capability, callable $operation): mixed
     {
@@ -45,6 +46,10 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
         });
     }
     public function transaction(callable $operation): mixed { return $this->access->transaction($operation); }
+    public function requireRegistrationMode(int $id,string $mode): void
+    {
+        if(($this->metadata($id)['registration_mode']??'clubdesk_csv')!==$mode){throw new AccessException('registration_mode_'.$mode.'_required',409);}
+    }
     public function metadata(int $id): array { return $this->access->metadata($id); }
     public function setMetadata(int $id, array $values): void { $this->access->setMetadata($id, $values); }
     public function capabilities(string $type, int $id): array { return $this->access->capabilities($type, $id, $this->actorId()); }

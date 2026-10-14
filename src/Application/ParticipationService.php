@@ -8,14 +8,14 @@ use App\Domain\Form\Decimal;
 final readonly class ParticipationService {
  public function __construct(private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ParticipationPort $external,private BookingRepositoryInterface $bookings,private AccessRepositoryInterface $access) {}
  public function read(int $trip): array {
-  $this->policy->trip($trip,'term.manage');
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $jobs=$this->store->query('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
   $o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
   $cases=$this->store->query('SELECT external_id AS externalId,status,observed_at AS observedAt FROM external_clarifications WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
   return ['blockedReason'=>$this->external->blockedReason(),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR)]:null,'clarifications'=>$cases];
  }
  public function request(int $trip,int $booking,array $p): array {
-  $this->policy->trip($trip,'term.manage');
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->trip($trip,'registration.manage',true);
   $this->access->transaction(function()use($trip,$booking,$p){
    $this->policy->trip($trip,'registration.manage',true);
@@ -46,6 +46,7 @@ final readonly class ParticipationService {
  }
  /** Internal transaction-only entry used by the scoped member workflow. */
  public function enqueue(int $trip,int $booking,int $person,string $kind,string $key,string $hash,array $payload,int $actor,?string $member): void {
+  $this->policy->requireRegistrationMode($trip,'easyverein');
   $status=$this->external->blockedReason()===null?'pending':'blocked';
   $this->store->query('INSERT INTO participation_jobs (trip_id,registration_id,participant_id,kind,operation_key,request_hash,payload_json,actor_id,member_actor,status,error_code,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[$trip,$booking,$person,$kind,$key,$hash,json_encode($payload,JSON_THROW_ON_ERROR),$actor,$member,$status,$this->external->blockedReason(),gmdate(DATE_ATOM)]);
   $this->store->query('UPDATE registration_participants SET member_reference=?,price_group_reference=?,expected_price=?,sync_status=? WHERE registration_id=? AND id=?',[$payload['memberReference'],$payload['priceGroupId'],$payload['price'],$status==='blocked'?'error':'pending',$booking,$person]);
@@ -58,7 +59,7 @@ final readonly class ParticipationService {
   $this->store->query('UPDATE registrations SET booking_status=?,sync_status=? WHERE id=?',[$status,$sync,$booking]);
  }
  public function retry(int $trip,int $jobId): array {
-  $this->policy->trip($trip,'term.manage');
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$jobId){
    $j=$this->store->query('SELECT * FROM participation_jobs WHERE id=? AND trip_id=?',[$jobId,$trip])->fetch(\PDO::FETCH_ASSOC)?:throw new NotFoundException('Job');
    if($j['status']!=='failed'){throw new AccessException('only_proven_rejection_retryable',409);}
@@ -71,10 +72,10 @@ final readonly class ParticipationService {
   });return $this->read($trip);
  }
  public function reconcile(int $trip): array {
-  $this->policy->trip($trip,'term.manage');if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
   $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$snapshot=$this->external->snapshot($link['externalId']);$this->validateSnapshot($snapshot,$link['externalId']);
   $this->access->transaction(function()use($trip,$link,$snapshot){
-   $this->policy->trip($trip,'term.manage');if($this->store->link($trip)['externalId']!==$link['externalId']){throw new AccessException('term_changed',409);}
+   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if($this->store->link($trip)['externalId']!==$link['externalId']){throw new AccessException('term_changed',409);}
    $old=$this->store->query('SELECT revision FROM external_observations WHERE trip_id=?',[$trip])->fetchColumn();$conflicts=[];
    $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==$snapshot[$field]){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>$snapshot[$field]];}}
    foreach($snapshot['termFields']??[] as $field=>$value){if(($baseline['termFields'][$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>$baseline['termFields'][$field]??null,'external'=>$value];}}
@@ -107,7 +108,7 @@ final readonly class ParticipationService {
   });return $this->read($trip);
  }
  public function assignExternal(int $trip,string $externalId,array $p): array {
-  $this->policy->trip($trip,'term.manage');
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$externalId,$p){
    $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');
    if(($p['confirmed']??null)!==true||!is_int($p['bookingId']??null)||!is_int($p['personId']??null)){throw new ValidationException(['assignment'=>'explicit_booking_person_confirmation_required']);}
@@ -127,7 +128,7 @@ final readonly class ParticipationService {
   });return $this->read($trip);
  }
  public function resolvePerson(int $trip,int $personId,array $p): array {
-  $this->policy->trip($trip,'term.manage');
+  $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$personId,$p){
    $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}

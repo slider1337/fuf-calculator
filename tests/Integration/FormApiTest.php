@@ -6,6 +6,8 @@ use PDO;
 
 final class FormApiTest extends ApiTestCase
 {
+ protected function validTripPayload(): array {return parent::validTripPayload()+['registrationMode'=>'easyverein'];}
+
     private function json(string $method,string $path,?array $payload=null,int $status=200): array
     {
         $r=$this->dispatch($method,$path,$payload);self::assertSame($status,$r->getStatusCode(), "$method $path: ".$r->getBody());return json_decode((string)$r->getBody(),true,512,JSON_THROW_ON_ERROR);

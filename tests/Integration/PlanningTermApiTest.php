@@ -25,6 +25,8 @@ final class MemoryEventAdapter implements ExternalEventPort
 }
 final class PlanningTermApiTest extends ApiTestCase
 {
+ protected function validTripPayload(): array {return parent::validTripPayload()+['registrationMode'=>'easyverein'];}
+
     private function json(string $m,string $url,?array $p=null,int $status=200): array
     {
         $r=$this->dispatch($m,$url,$p);self::assertSame($status,$r->getStatusCode(),"$m $url: ".$r->getBody());$decoded=json_decode((string)$r->getBody(),true,512,JSON_THROW_ON_ERROR);

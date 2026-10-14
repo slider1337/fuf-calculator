@@ -168,13 +168,15 @@ function resetTripPermissions() {
 }
 function renderTripManagement(trip) {
   resetTripPermissions(); const caps = trip.capabilities;
+  applyRegistrationModeLayout(trip);
   if (typeof loadWorkflowStatus === "function") { performManagement(() => loadWorkflowStatus(trip)); }
   byId('trip-event-assign').disabled = true;
   byId('trip-event-assign').classList.toggle('d-none', !caps.includes('trip.manage') || !!trip.closedAt);
   byId('trip-event-assignment-note').textContent = '';
-  performManagement(() => loadTripFormBinding(trip.id));
+  if(tripUsesEasyVerein(trip)){performManagement(() => loadTripFormBinding(trip.id));}else{byId('trip-event-assign').disabled=false;}
   byId('trip-event-select').disabled = true;
   for (const [tab,cap] of [['planung','calculation.manage'],['anmeldungen','registration.view'],['auswertung','analytics.view'],['abrechnung','settlement.view']]) { byId(`tab-${tab}`).classList.toggle('d-none', !caps.includes(cap)); }
+  applyRegistrationModeLayout(trip);
   const canAccess = caps.includes('access.manage') || state.currentUser?.role === 'admin';
   byId('trip-team-add').classList.toggle('d-none', !canAccess);
   byId('trip-team-list').textContent = canAccess ? 'Team wird beim Öffnen geladen.' : 'Für die Teamverwaltung fehlt die Berechtigung.';
@@ -192,6 +194,7 @@ function renderTripManagement(trip) {
   byId('trip-archive').textContent = trip.archivedAt ? 'Reise aus Archiv holen' : 'Reise archivieren';
   const readOnly = !!trip.archivedAt || !!trip.closedAt || !caps.includes('calculation.manage');
   byId('trip-form').querySelectorAll('input,select,button:not([data-bs-toggle])').forEach(e => e.disabled = readOnly || e.id === 'trip-event-select');
+  byId('trip-registration-mode-choice').disabled=true;
   for (const id of ['trip-save-btn-head','trip-save-btn','trip-save-btn-sticky','trip-save-btn-bar','calculate-btn']) { if (byId(id)) byId(id).disabled = readOnly; }
   byId('registrations-section').classList.toggle('d-none', !caps.includes('registration.view'));
   byId('actual-expense-form')?.querySelectorAll('input,button').forEach(e => e.disabled = !!trip.archivedAt || !!trip.closedAt || !caps.includes('expense.manage'));
@@ -246,8 +249,8 @@ window.addEventListener('beforeunload', event => { if ((typeof formDirty === 'fu
 
 function applyTripWriteControls() {
   const trip = state.currentTrip; if (!trip) { return; }
-  const registrationReadOnly = !!trip.closedAt || !hasTripCapability('registration.manage');
-  for (const id of ['csv-upload-form','manual-registration-form']) { byId(id).querySelectorAll('input,select,textarea,button').forEach(e => e.disabled = registrationReadOnly); }
+  const registrationReadOnly = !!trip.archivedAt || !!trip.closedAt || !hasTripCapability('registration.manage');
+  for (const id of ['csv-upload-form','manual-registration-form']) { byId(id).querySelectorAll('input,select,textarea,button').forEach(e => e.disabled = registrationReadOnly || (id==='csv-upload-form'&&tripUsesEasyVerein(trip)) || (e.id==='booking-contact'&&!tripUsesEasyVerein(trip))); }
   for (const id of ['recalculate-billings-btn','delete-registrations-btn']) { byId(id).disabled = registrationReadOnly || (id === 'delete-registrations-btn' && typeof bookingUI !== 'undefined' && bookingUI.items.some(b => b.managed)); }
   document.querySelectorAll('[data-delete-registration]').forEach(e => e.disabled = registrationReadOnly);
   const expenseReadOnly = !!trip.closedAt || !hasTripCapability('expense.manage');
@@ -263,7 +266,7 @@ function applyTripWriteControls() {
 function renderManagementBar() {
   if (!state.currentTripId) { return; }
   const tab = activeTabName();
-  byId('booking-save-btn-bar').classList.toggle('d-none', tab !== 'anmeldungen' || !hasTripCapability('registration.manage') || !hasTripCapability('answers.correct'));
+  byId('booking-save-btn-bar').classList.toggle('d-none', !tripUsesEasyVerein(state.currentTrip) || tab !== 'anmeldungen' || !hasTripCapability('registration.manage') || !hasTripCapability('answers.correct'));
   byId('booking-save-btn-bar').disabled = !!state.currentTrip?.closedAt;
   byId('trip-save-btn-bar').classList.toggle('d-none', tab !== 'planung');
   byId('trip-bar-team-btn').classList.toggle('d-none', tab !== 'team' || !(hasTripCapability('access.manage') || state.currentUser?.role === 'admin'));
@@ -283,4 +286,31 @@ byId('trip-archive').addEventListener('click',()=>performManagement(async()=>{
   showManagementModal(archived?'Reise archivieren':'Reise aus Archiv holen','<p>'+ (archived?'Die Reise verschwindet aus der aktiven Liste. Buchungen, Antworten, Revisionen und Finanzdaten bleiben erhalten. Mitgliederänderungen und externe Aufträge sind im Archiv gesperrt.':'Die Reise erscheint wieder in der aktiven Liste. Ein bestehender Abrechnungsabschluss bleibt bestehen.')+'</p>'+reasonField(),async()=>{
     await api(`/api/trips/${trip.id}/archive`,{method:'PUT',body:JSON.stringify({archived,archivedAt:trip.archivedAt??null,reason:byId('action-reason').value})});await openTrip(trip.id);await loadTripList();
   },archived?'Archivieren':'Aus Archiv holen');
+}));
+
+function tripUsesEasyVerein(trip=state.currentTrip){return trip?.registrationMode==='easyverein';}
+function applyRegistrationModeLayout(trip){
+  const easy=tripUsesEasyVerein(trip),legacyInPlanning=!easy&&trip.capabilities.includes('calculation.manage');
+  byId('trip-registration-mode-label').textContent=easy?'easyVerein · Zusatzformular':'Clubdesk / CSV · bisheriger Ablauf';
+  byId('trip-registration-mode-change').disabled=!!trip.archivedAt||!!trip.closedAt||!trip.capabilities.includes('trip.manage');
+  byId('trip-registration-mode-summary').classList.remove('d-none');
+  byId('trip-registration-mode-choice').value=trip.registrationMode||'clubdesk_csv';byId('trip-registration-mode-choice').disabled=true;
+  for(const id of ['trip-term-section','planning-transfer-section','trip-form-binding']){byId(id).classList.toggle('d-none',!easy);}
+  byId('trip-form-binding').nextElementSibling?.classList.toggle('d-none',!easy);
+  byId('tab-team').textContent=easy?'Team & Termin':'Team';
+  byId('tab-anmeldungen').classList.toggle('d-none',legacyInPlanning||!trip.capabilities.includes('registration.view'));
+  byId('tab-auswertung').classList.toggle('d-none',!easy||!trip.capabilities.includes('analytics.view'));
+  const parent=legacyInPlanning?document.querySelector('#panel-planung .pg-main'):byId('panel-anmeldungen');parent.append(byId('registrations-section'));
+  byId('csv-upload-form').classList.toggle('d-none',easy);
+  byId('booking-contact-field').classList.toggle('d-none',!easy);byId('booking-contact').required=easy;
+  byId('booking-intake-note').classList.toggle('d-none',!easy);byId('booking-extra-fields').classList.toggle('d-none',!easy);
+}
+byId('trip-registration-mode-change').addEventListener('click',()=>performManagement(async()=>{
+  if(dirtyPlanning())throw new Error('Bitte die Planungsänderungen zuerst speichern.');
+  const trip=state.currentTrip,current=await api(`/api/trips/${trip.id}/registration-mode`);
+  showManagementModal('Anmeldeverfahren wählen',`<p>Clubdesk / CSV nutzt den bisherigen Import und die bisherige Abrechnung. easyVerein ergänzt versionierte Formulare, Mitgliederbuchungen und den Teilnahmeabgleich.</p><label class="f">Verfahren<div class="in"><select id="registration-mode-target"><option value="clubdesk_csv">Clubdesk / CSV · bisheriger Ablauf</option><option value="easyverein">easyVerein · mit Zusatzformular</option></select></div></label><p class="help">Vorhandene CSV-Anmeldungen bleiben beim Wechsel erhalten. Ein Rückwechsel ist möglich, solange keine neuen Buchungen, Gastfreigaben oder laufenden Übertragungen vorliegen.</p>${reasonField()}`,async()=>{
+    try{await api(`/api/trips/${trip.id}/registration-mode`,{method:'PUT',body:JSON.stringify({registrationMode:byId('registration-mode-target').value,revision:current.revision,confirmed:true,reason:byId('action-reason').value})});}
+    catch(error){let detail;try{detail=JSON.parse(error.message);}catch{};const text={registration_mode_managed_bookings_exist:'Für diese Reise gibt es bereits Buchungen im neuen Verfahren. Ein Rückwechsel würde sie vom Anmeldeweg trennen.',registration_mode_operation_in_progress:'Eine Übertragung läuft oder ist noch ungeklärt. Bitte zuerst den Auftrag klären.',registration_mode_guest_approvals_exist:'Bitte zuerst die offenen Gastfreigaben widerrufen.',revision_conflict:'Das Verfahren wurde inzwischen geändert. Bitte den Dialog neu öffnen.'};throw new Error(text[detail?.error]||error.message);}
+    await openTrip(trip.id);
+  },'Verfahren übernehmen');byId('registration-mode-target').value=current.registrationMode;
 }));

@@ -7,6 +7,8 @@ use App\Domain\Form\Decimal;
 
 final class BookingAnalyticsApiTest extends ApiTestCase
 {
+ protected function validTripPayload(): array {return parent::validTripPayload()+['registrationMode'=>'easyverein'];}
+
     private function json(string $method,string $path,?array $p=null,int $status=200): array
     {
         $r=$this->dispatch($method,$path,$p);self::assertSame($status,$r->getStatusCode(),"$method $path: ".$r->getBody());
@@ -139,7 +141,7 @@ final class BookingAnalyticsApiTest extends ApiTestCase
         [$e,$t,$v]=$this->fixture([['type'=>'number','label'=>'Zahl','required'=>true]]);$p=$this->payload($v,1);$this->json('POST',"/api/trips/$t/bookings",$p,422);$p['answers']=['booking'=>[$v['fields'][0]['id']=>'0']];
         foreach([['persons'=>false],['persons'=>[['id'=>'x','name'=>'Test','birthDate'=>'2026-02-30']]],['contactIdentity'=>[]],['versionId'=>[]],['answers'=>false]] as $bad){$this->json('POST',"/api/trips/$t/bookings",array_replace($p,$bad),422);}
         $b=$this->json('POST',"/api/trips/$t/bookings",$p,201);$db=$this->app->getContainer()->get(PDO::class);$before=$db->query("SELECT * FROM registrations WHERE id={$b['id']}")->fetch(PDO::FETCH_ASSOC);
-        $service=$this->app->getContainer()->get(\App\Application\RegistrationService::class);$csv="Zimmerkategorie;Name Teilnehmer 1;Geburtsdatum Teilnehmer 1\n2-Bettzimmer;CSV Test;01.01.1986\n";$service->importCsv($t,$csv);$service->importCsv($t,$csv);self::assertSame($before,$db->query("SELECT * FROM registrations WHERE id={$b['id']}")->fetch(PDO::FETCH_ASSOC));self::assertSame($b,$this->json('GET',"/api/trips/$t/bookings/{$b['id']}"));
+        $service=$this->app->getContainer()->get(\App\Application\RegistrationService::class);$csv="Zimmerkategorie;Name Teilnehmer 1;Geburtsdatum Teilnehmer 1\n2-Bettzimmer;CSV Test;01.01.1986\n";try{$service->importCsv($t,$csv);self::fail('CSV write must be disabled in easyVerein mode');}catch(\App\Application\AccessException $e){self::assertSame('registration_mode_clubdesk_csv_required',$e->getMessage());}self::assertSame($before,$db->query("SELECT * FROM registrations WHERE id={$b['id']}")->fetch(PDO::FETCH_ASSOC));self::assertSame($b,$this->json('GET',"/api/trips/$t/bookings/{$b['id']}"));
         $this->json('DELETE',"/api/trips/$t/registrations/{$b['id']}",null,409);$this->json('DELETE',"/api/trips/$t/registrations",null,409);
         foreach(['status=bad','page=0','pageSize=999','fieldId=bad','versionId=no'] as $query){$this->json('GET',"/api/trips/$t/analytics?$query",null,422);}
         self::assertSame('1000000000000',Decimal::sum(['999999999999.999999','0.000001']));self::assertSame('-0.3',Decimal::sum(['0.1','-0.4']));

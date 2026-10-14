@@ -19,6 +19,8 @@ final class TermUpdateFixture implements ExternalTermUpdatePort
 }
 final class TermUpdateApiTest extends ApiTestCase
 {
+ protected function validTripPayload(): array {return parent::validTripPayload()+['registrationMode'=>'easyverein'];}
+
     private int $trip;
     private PDO $db;
     private TermUpdateFixture $provider;

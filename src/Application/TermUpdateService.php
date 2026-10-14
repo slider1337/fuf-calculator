@@ -11,10 +11,10 @@ final readonly class TermUpdateService
 
     public function read(int $trip): array
     {
-        $this->policy->trip($trip, 'term.manage');
+        $this->policy->trip($trip, 'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
         $link = $this->store->link($trip) ?? throw new AccessException('confirmed_term_required',409);
         $fields = $this->external->fields($link['externalId']);
-        $this->policy->trip($trip, 'term.manage');
+        $this->policy->trip($trip, 'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
         return ['externalId'=>$link['externalId'], 'fields'=>$fields, 'blockedReason'=>$this->external->blockedReason(), 'jobs'=>$this->jobs($trip)];
     }
     private function jobs(int $trip): array

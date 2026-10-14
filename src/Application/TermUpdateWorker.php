@@ -67,7 +67,7 @@ final readonly class TermUpdateWorker
     private function allowed(array $job): bool
     {
         $id=(int)$job['trip_id']; $metadata=$this->access->metadata($id);
-        return ($metadata['archived_at']??null)===null && ($metadata['closed_at']??null)===null
+        return ($metadata['registration_mode']??'clubdesk_csv')==='easyverein' && ($metadata['archived_at']??null)===null && ($metadata['closed_at']??null)===null
             && in_array('term.manage',$this->access->capabilities('trip',$id,(int)$job['actor_id']),true)
             && ($this->store->link($id)['externalId']??null)===$job['external_id'];
     }

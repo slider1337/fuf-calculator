@@ -8,6 +8,7 @@ use App\Domain\Form\{AnswerValidator,FormSchema};
 final readonly class MemberBookingService {
  public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private SqliteWorkflowRepository $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync) {}
  private function allowed(int $trip,string $mode): array {
+  if(($this->access->metadata($trip)['registration_mode']??'clubdesk_csv')!=='easyverein'){throw new NotFoundException('Member trip');}
   if($this->directory->blockedReason()!==null){throw new AccessException($this->directory->blockedReason(),503);}
   if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),503);}
   $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);

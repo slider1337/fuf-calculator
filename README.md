@@ -35,7 +35,7 @@ Webanwendung zur Kalkulation von Einzelpreisen fuer Gruppenreisen (Kompaktmodus)
 
 ## Schnellstart
 
-Hinweis: In der aktuellen Umgebung war `composer` beim Check nicht installiert. Falls lokal vorhanden, so starten:
+Voraussetzung: PHP 8.4 mit den in `composer.json` angegebenen Erweiterungen und Composer.
 
 ```bash
 composer install
@@ -102,3 +102,7 @@ Reisen können archiviert und wiederhergestellt werden; ihre Daten bleiben erhal
 Echte Termin-/Teilnahmeschreibadapter und Orga-Gastfreigaben sind vorhanden. `EASYVEREIN_WRITE_MODE=production` aktiviert den späteren echten Betrieb nach Abnahme; standardmäßig aus. Testmails des Calculators gehen ausschließlich an me@benna.me, normale Empfänger erst bei `MAIL_DELIVERY_MODE=production`. [Aktuelle Prüfung/Betrieb](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-14-10-SCHREIBWEGE.md).
 
 Im Reise-/Terminwizard werden bestehende easyVerein-Termine nach Name und Datum gesucht und Kalender nach Name ausgewählt. Beim Verknüpfen wird der Kalender des ausgewählten Termins übernommen; IDs werden intern gespeichert. [Bedienung und Prüfstand](docs/fixes/2026-10-14-easyverein-terminkalendersuche.md).
+
+## Sicherheit
+
+Browser-Schreibanfragen benötigen einen CSRF-Token. Login und Passwortreset sind persistent begrenzt; Passwortänderungen widerrufen weitere Resetlinks und bestehende Sitzungen. Änderungen und Betriebshinweise: [Sicherheitsverbesserungen vom 15.10.2026](docs/fixes/2026-10-15-security-hardening.md).

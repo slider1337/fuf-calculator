@@ -71,6 +71,28 @@ final readonly class SqliteAuthTokenRepository implements AuthTokenRepositoryInt
         ]);
     }
 
+    public function transaction(callable $operation): mixed
+    {
+        if ($this->pdo->inTransaction()) { return $operation(); }
+        $this->pdo->beginTransaction();
+        try {
+            // Obtain the writer before reading/consuming tokens.
+            $this->pdo->exec('UPDATE auth_tokens SET id = id WHERE 0');
+            $result = $operation();
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function revokeForEmail(string $email): void
+    {
+        $this->pdo->prepare('UPDATE auth_tokens SET used_at = ? WHERE email = ? AND used_at IS NULL')
+            ->execute([(new DateTimeImmutable())->format(DATE_ATOM), strtolower($email)]);
+    }
+
     public function deleteExpired(): void
     {
         $this->pdo->prepare('DELETE FROM auth_tokens WHERE expires_at < :now')

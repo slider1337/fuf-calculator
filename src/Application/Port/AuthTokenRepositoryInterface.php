@@ -15,4 +15,12 @@ interface AuthTokenRepositoryInterface
     public function markUsed(AuthToken $token): void;
 
     public function deleteExpired(): void;
+
+    /** @template T
+     * @param callable(): T $operation
+     * @return T
+     */
+    public function transaction(callable $operation): mixed;
+
+    public function revokeForEmail(string $email): void;
 }

@@ -25,6 +25,7 @@ final class UserApiIntegrationTest extends ApiTestCase
         $this->bootstrapUsers(['admin@example.com' => User::ROLE_ADMIN]);
         $_SESSION['user_id'] = $this->userIdByEmail('admin@example.com');
         $_SESSION['user_email'] = 'admin@example.com';
+        $_SESSION['credential_fingerprint'] = hash('sha256', $this->container()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id'])->passwordHash() ?? '');
         $_SESSION['user_role'] = User::ROLE_ADMIN;
 
         $response = $this->dispatch('GET', '/api/users');
@@ -48,6 +49,7 @@ final class UserApiIntegrationTest extends ApiTestCase
         $adminId = $this->userIdByEmail('admin@example.com');
         $_SESSION['user_id'] = $adminId;
         $_SESSION['user_email'] = 'admin@example.com';
+        $_SESSION['credential_fingerprint'] = hash('sha256', $this->container()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id'])->passwordHash() ?? '');
         $_SESSION['user_role'] = User::ROLE_ADMIN;
 
         $otherId = $this->userIdByEmail('other@example.com');
@@ -72,6 +74,7 @@ final class UserApiIntegrationTest extends ApiTestCase
         $userId = $this->userIdByEmail('other@example.com');
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_email'] = 'other@example.com';
+        $_SESSION['credential_fingerprint'] = hash('sha256', $this->container()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id'])->passwordHash() ?? '');
         $_SESSION['user_role'] = User::ROLE_USER;
 
         $adminId = $this->userIdByEmail('admin@example.com');
@@ -89,6 +92,7 @@ final class UserApiIntegrationTest extends ApiTestCase
         $adminId = $this->userIdByEmail('admin@example.com');
         $_SESSION['user_id'] = $adminId;
         $_SESSION['user_email'] = 'admin@example.com';
+        $_SESSION['credential_fingerprint'] = hash('sha256', $this->container()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id'])->passwordHash() ?? '');
         $_SESSION['user_role'] = User::ROLE_ADMIN;
 
         // create a second admin so the first call would normally delete admin@example.com,
@@ -103,6 +107,7 @@ final class UserApiIntegrationTest extends ApiTestCase
         $secondId = $this->userIdByEmail('second@example.com');
         $_SESSION['user_id'] = $secondId;
         $_SESSION['user_email'] = 'second@example.com';
+        $_SESSION['credential_fingerprint'] = hash('sha256', $this->container()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id'])->passwordHash() ?? '');
 
         // Delete the original admin — works because two admins exist
         $deleteFirst = $this->dispatch('DELETE', "/api/users/{$adminId}");

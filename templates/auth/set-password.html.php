@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Passwort vergeben &mdash; FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
@@ -29,6 +30,7 @@
                     <p class="text-muted small mb-3">F&uuml;r <strong><?= htmlspecialchars((string) $email, ENT_QUOTES) ?></strong></p>
                 <?php endif; ?>
                 <form method="post" action="/set-password">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
                     <input type="hidden" name="token" value="<?= htmlspecialchars((string) ($token ?? ''), ENT_QUOTES) ?>">
                     <div class="mb-3">
                         <label class="form-label" for="password">Passwort</label>

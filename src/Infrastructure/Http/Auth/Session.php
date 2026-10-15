@@ -21,8 +21,17 @@ final class Session
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
+        ini_set('session.use_strict_mode', '1');
         session_name('fufsid');
         session_start();
+    }
+
+    public static function csrfToken(): string
+    {
+        if (!is_string($_SESSION['_csrf'] ?? null)) {
+            $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['_csrf'];
     }
 
     public static function userId(): ?int
@@ -40,12 +49,14 @@ final class Session
         return isset($_SESSION['user_role']) ? (string) $_SESSION['user_role'] : null;
     }
 
-    public static function login(int $userId, string $email, string $role): void
+    public static function login(int $userId, string $email, string $role, ?string $passwordHash = null): void
     {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_email'] = $email;
         $_SESSION['user_role'] = $role;
+        $_SESSION['credential_fingerprint'] = hash('sha256', $passwordHash ?? '');
+        unset($_SESSION['_csrf']);
     }
 
     public static function logout(): void

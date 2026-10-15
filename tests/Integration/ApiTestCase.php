@@ -38,6 +38,7 @@ abstract class ApiTestCase extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['user_email'] = 'test@example.com';
         $_SESSION['user_role'] = 'admin';
+        $_SESSION['credential_fingerprint'] = hash('sha256', '');
     }
 
     protected function tearDown(): void
@@ -67,6 +68,13 @@ abstract class ApiTestCase extends TestCase
                 ->withBody($stream);
         }
 
+        if (!str_starts_with($path, '/integration/v1/')) {
+            $request = $request->withHeader('X-CSRF-Token', \App\Infrastructure\Http\Auth\Session::csrfToken());
+            if (isset($_SESSION['user_id']) && !isset($_SESSION['credential_fingerprint'])) {
+                $user = $this->app->getContainer()->get(\App\Application\Port\UserRepositoryInterface::class)->findById((int) $_SESSION['user_id']);
+                $_SESSION['credential_fingerprint'] = hash('sha256', $user?->passwordHash() ?? '');
+            }
+        }
         return $this->app->handle($request);
     }
 

@@ -27,6 +27,9 @@ jobs:
           COMPOSER_AUTH: '{}'
         run: composer install --no-interaction --prefer-dist
 
+      - name: Audit locked dependencies
+        run: composer audit --locked
+
       - name: Validate PHP syntax
         run: |
           find src config public scripts tests -type f -name "*.php" -print0 | xargs -0 -n1 php -l

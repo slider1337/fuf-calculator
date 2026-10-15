@@ -1189,8 +1189,8 @@ function observeSections() {
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content, ...options.headers },
   });
 
   const text = await response.text();
@@ -3056,6 +3056,7 @@ byId("csv-upload-form").addEventListener("submit", async (event) => {
 
   try {
     const response = await fetch(`/api/trips/${tripId}/registrations/import`, {
+      headers: { "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
       method: "POST",
       body: formData,
     });

@@ -12,7 +12,7 @@ use Slim\Psr7\Factory\ResponseFactory;
 
 final class AuthMiddleware implements MiddlewareInterface
 {
-    public function __construct(private \App\Application\AccessPolicy $policy, private IntegrationAuthenticator $integration) {}
+    public function __construct(private \App\Application\AccessPolicy $policy, private IntegrationAuthenticator $integration, private \App\Application\Port\UserRepositoryInterface $users) {}
 
     private const PUBLIC_PATHS = [
         '/login',
@@ -36,6 +36,15 @@ final class AuthMiddleware implements MiddlewareInterface
         Session::start();
 
         $path = $request->getUri()->getPath();
+        if (Session::userId() !== null) {
+            $user = $this->users->findById(Session::userId());
+            $fingerprint = $_SESSION['credential_fingerprint'] ?? null;
+            if ($user === null || !is_string($fingerprint)
+                || !hash_equals(hash('sha256', $user->passwordHash() ?? ''), $fingerprint)) {
+                Session::logout();
+                Session::start();
+            }
+        }
         if (Session::userId() !== null && !$this->isPublic($path)) {
             try {
                 $this->policy->actorId();

@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Anmelden &mdash; FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
@@ -21,6 +22,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <form method="post" action="/login">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
                 <div class="mb-3">
                     <label class="form-label" for="email">E-Mail</label>
                     <input id="email" class="form-control" type="email" name="email" value="<?= htmlspecialchars((string) ($email ?? ''), ENT_QUOTES) ?>" required autofocus>

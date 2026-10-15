@@ -11,6 +11,24 @@ use App\Domain\Trip\Trip;
 
 final class PriceCalculatorService
 {
+    /**
+     * @return array{
+     *   pricesPerCategory: array<string, float>,
+     *   priceBreakdowns: array<string, array{
+     *     basePricePerPerson: float, spaTaxPerPerson: float, nights: int,
+     *     baseTotalPerPerson: float, spaTaxTotalPerPerson: float, groupExpenseShare: float,
+     *     subtotalBeforeMarkup: float, markupPercent: float, markupAmount: float,
+     *     subtotalBeforeClubFee: float, clubFeePercent: float, clubFeeAmount: float,
+     *     finalPrice: float, salesPricePerPerson: float, salesPriceDefault: float,
+     *     salesPriceOverridden: bool, count: int, categoryRevenue: float,
+     *     averagedFrom?: list<array{categoryType: string, count: int, basePricePerPerson: float, total: float}>
+     *   }>,
+     *   totalGroupExpenses: float, totalParticipants: int, totalCalculatedRevenue: float,
+     *   totalCalculatedCosts: float, surplus: float, distributionMethod: string,
+     *   spaTaxAgeThreshold: int, adultAgeThreshold: int, averageAdultPrice: bool,
+     *   startDate: string, endDate: string|null, nights: int
+     * }
+     */
     public function calculate(Trip $trip): array
     {
         $policy = $trip->pricingPolicy();

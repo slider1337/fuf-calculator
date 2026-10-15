@@ -28,3 +28,9 @@ Der Nutzer hat ausdrücklich klargestellt: „das ist alles noch im Test also ja
 - Für beauftragte Fehleranalyse dürfen echte easyVerein-Testtermine angelegt und eigene eindeutig zugeordnete Testtermine wieder gelöscht werden. Dies ersetzt für diese Termine die frühere Einschränkung auf reine Fake-Schreibtests.
 - Der Nutzer hat das Auslesen des fehlgeschlagenen Produktionsauftrags einschließlich ausgewählter Termindaten in GitHub-Aktionsprotokollen freigegeben.
 - Zugangsdaten bleiben geheim. Unbeteiligte Termine, Mitgliederdaten und Teilnahmen sind nicht von der Löschfreigabe erfasst. Lokale automatisierte Tests verwenden weiterhin Fakes.
+
+# Statische Analyse
+
+- `composer analyse` prüft auf PHPStan Level 10 und muss vor einem PR erfolgreich sein.
+- `phpstan-baseline.neon` erfasst ausschließlich den bei der Einführung vorhandenen Typisierungsrückstand. Neue Befunde beheben; die Baseline nicht automatisch vergrößern oder Prüfpfade ausschließen. Bei behobenen Altbefunden die entsprechenden Einträge reduzieren.
+- Nach Typ-/Vertragsänderungen die betroffenen Tests und vor Abschluss die PHPUnit-Suite ausführen.

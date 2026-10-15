@@ -10,6 +10,7 @@ final readonly class Event
             throw new \InvalidArgumentException('Name erforderlich (max. 200), Beschreibung max. 10000 Zeichen.');
         }
     }
+    /** @return array{id: int|null, name: string, description: string, archived: bool, revision: int} */
     public function toArray(): array
     {
         return ['id' => $this->id, 'name' => $this->name, 'description' => $this->description, 'archived' => $this->archived, 'revision' => $this->revision];

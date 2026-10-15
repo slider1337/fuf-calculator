@@ -17,7 +17,9 @@ final class Decimal
         $fraction = rtrim($fraction, '0');
         return ($negative && ($whole !== '0' || $fraction !== '') ? '-' : '') . $whole . ($fraction !== '' ? '.' . $fraction : '');
     }
-    /** Arbitrary-size exact decimal sum, without float or extension requirements. */
+    /** Arbitrary-size exact decimal sum, without float or extension requirements.
+     * @param list<string|int> $values
+     */
     public static function sum(array $values): string
     {
         $positive = '0'; $negative = '0';

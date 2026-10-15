@@ -74,6 +74,8 @@ Neue Reisen verwenden standardmäßig den bisherigen Clubdesk-/CSV-Ablauf. Unter
 ```bash
 composer test
 composer test:coverage
+composer analyse
+composer audit --locked
 ```
 
 ## Docker Compose
@@ -92,7 +94,7 @@ docker compose down
 
 ## GitHub Actions (CI)
 
-Die CI fuehrt Syntax-Checks, PHPUnit und Coverage auf PHP 8.4 aus.
+Die CI führt Syntax-Checks, den Composer-Sicherheitsaudit, PHPStan auf Level 10 und PHPUnit mit Coverage auf PHP 8.4 aus. Auch der Deployment-Build wartet auf diese Prüfungen. Die [PHPStan-Einführung](docs/fixes/2026-10-15-phpstan-level-10.md) dokumentiert den bestehenden Typisierungsrückstand in einer Baseline.
 
 
 

@@ -27,7 +27,7 @@ final readonly class RegistrationBillingService
     public function calculateBillings(Trip $trip, array $registrations): array
     {
         $calculationResult = $this->calculator->calculate($trip);
-        $pricesPerCategory = $calculationResult['pricesPerCategory'] ?? [];
+        $pricesPerCategory = $calculationResult['pricesPerCategory'];
         $now = new DateTimeImmutable();
 
         $policy = $trip->pricingPolicy();

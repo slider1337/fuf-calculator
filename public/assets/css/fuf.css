@@ -4532,3 +4532,7 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 /* The explicit final term action appears only on the summary step. */
 #management-modal.is-term-wizard .modal-footer [hidden], #term-wizard[hidden] { display:none!important; }
 #management-modal.is-term-wizard #wizard-save-draft { order:2; background:transparent; border-color:transparent; font-size:13px; }
+
+#term-recover { white-space:normal; max-width:100%; margin-top:8px; }
+#term-recovery-more[hidden] { display:none!important; }
+#term-recovery-selected { overflow-wrap:anywhere; }

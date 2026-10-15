@@ -1,13 +1,14 @@
 // Planning transfer and a three-step term setup with one explicit final action.
-async function workflowAction(action){try{await action();}catch(error){byId('management-modal-error').textContent=error.message;byId('management-modal-error').focus();}}
+async function workflowAction(action){try{await action();}catch(error){byId('management-modal-error').textContent=managementMessage(error);byId('management-modal-error').focus();}}
 const workflowUI = {tripId:null,term:null,preview:null};
 const termBlockedText = 'Externe Schreibaktionen sind in dieser Umgebung nicht freigegeben. Entwürfe lassen sich lokal speichern.';
-function termProblemText(code){return ({confirmed_term_required:'Der Termin ist bisher nur als Entwurf gespeichert. Lege ihn zuerst in easyVerein an oder verknüpfe einen vorhandenen Termin.',easyverein_credentials_missing:'Der easyVerein-API-Zugang fehlt. Bitte die Administration kontaktieren.',easyverein_production_writes_disabled:'Das Anlegen und Ändern von easyVerein-Terminen ist noch nicht freigegeben.',provider_preflight_failed:'Der Termin konnte gerade nicht aus easyVerein gelesen werden. Bitte erneut versuchen.',integration_not_configured:'Die Website-Anbindung für Mitgliederanmeldungen ist noch nicht eingerichtet.',member_release_disabled:'Die Mitgliederanmeldung ist noch gesperrt.',trip_closed_or_booking_deadline_passed:'Die Reise ist abgeschlossen, archiviert oder der Anmeldeschluss ist erreicht.'})[code]||'Die easyVerein-Anbindung ist derzeit nicht verfügbar.';}
+function termProblemText(code){return ({term_create_unauthorized:'easyVerein hat den API-Token beim Anlegen abgelehnt. Bitte den API-Zugang prüfen.',term_create_forbidden:'Dem easyVerein-API-Token fehlt die Berechtigung zum Anlegen von Terminen.',term_create_invalid:'easyVerein hat die übermittelten Termindaten abgelehnt. Bitte die Anlage direkt in easyVerein prüfen.',term_preflight_failed:'Die Vorprüfung bei easyVerein ist fehlgeschlagen. Es wurde kein neuer Termin angelegt. Bitte Kalender und API-Zugang prüfen.',term_create_rejected:'easyVerein hat die Terminanlage abgelehnt. Bitte Schreibrechte des API-Tokens und Termindaten prüfen.',provider_read_failed:'Der Terminabgleich konnte easyVerein nicht lesen. Bitte API-Zugang und Berechtigungen prüfen.',provider_read_invalid:'easyVerein hat beim Terminabgleich eine nicht lesbare Antwort geliefert.',confirmed_term_required:'Der Termin ist bisher nur als Entwurf gespeichert. Lege ihn zuerst in easyVerein an oder verknüpfe einen vorhandenen Termin.',easyverein_credentials_missing:'Der easyVerein-API-Zugang fehlt. Bitte die Administration kontaktieren.',easyverein_production_writes_disabled:'Das Anlegen und Ändern von easyVerein-Terminen ist noch nicht freigegeben.',provider_preflight_failed:'Der Termin konnte gerade nicht aus easyVerein gelesen werden. Bitte erneut versuchen.',integration_not_configured:'Die Website-Anbindung für Mitgliederanmeldungen ist noch nicht eingerichtet.',member_release_disabled:'Die Mitgliederanmeldung ist noch gesperrt.',trip_closed_or_booking_deadline_passed:'Die Reise ist abgeschlossen, archiviert oder der Anmeldeschluss ist erreicht.'})[code]||'Die easyVerein-Anbindung ist derzeit nicht verfügbar.';}
 function termProgressText(data){
   if(data.link)return data.registrationEnabled?'Termin verbunden · Mitgliederanmeldung freigegeben.':'Termin verbunden · '+termProblemText(data.registrationReason);
-  if(data.job)return ({pending:'Der Termin wird in easyVerein angelegt. Diese Anzeige aktualisiert sich automatisch.',running:'Der Termin wird in easyVerein angelegt. Diese Anzeige aktualisiert sich automatisch.',reconciling:'Die Rückmeldung von easyVerein wird geprüft. Bitte keinen zweiten Termin anlegen.',unknown:'Die Anlage ist noch nicht eindeutig bestätigt. Der bestehende Auftrag wird geprüft; bitte keinen zweiten Termin anlegen.',blocked:'Die Terminanlage ist gesperrt. Bitte die Administration kontaktieren.',failed:'Die Terminanlage ist fehlgeschlagen. Bitte den bestehenden Auftrag prüfen.'})[data.job.status]||'Der Terminauftrag wird geprüft.';
+  if(data.job)return ({pending:'Der Termin wird in easyVerein angelegt. Diese Anzeige aktualisiert sich automatisch.',running:'Der Termin wird in easyVerein angelegt. Diese Anzeige aktualisiert sich automatisch.',reconciling:'Die Rückmeldung von easyVerein wird geprüft. Bitte keinen zweiten Termin anlegen.',unknown:'Die Anlage ist noch nicht eindeutig bestätigt. Der bestehende Auftrag wird geprüft; bitte keinen zweiten Termin anlegen.',blocked:termProblemText(data.job.errorCode),failed:'Die Terminanlage ist fehlgeschlagen. Bitte den bestehenden Auftrag prüfen.'})[data.job.status]||'Der Terminauftrag wird geprüft.';
   return data.draft?'Entwurf gespeichert. Nächster Schritt: Termin in easyVerein anlegen oder vorhandenen Termin verknüpfen.':'Verbinde diese Reise mit einem easyVerein-Termin.';
 }
+function termJobError(code){return ({external_outcome_unknown:'Die Rückmeldung der Terminanlage ist unklar. Prüfe, ob der Termin bereits in easyVerein vorhanden ist, und ordne ihn über die Suche zu.',external_result_unproven:'Der bisherige Auftrag konnte noch nicht eindeutig einem Termin zugeordnet werden. Bitte vorhandenen Termin suchen.',verified_reference_conflict:'Der gefundene Termin ist nicht eindeutig zuordenbar. Bitte die Terminzuordnung prüfen.',worker_lease_expired:'Die Übertragung wurde unterbrochen. Der bestehende Auftrag wird abgeglichen.'})[code]||termProblemText(code);}
 // The final click saves and validates internally. Retries keep the same command/key.
 async function saveTermSetup(context,draft,execute){
   if(context.command){
@@ -33,6 +34,7 @@ async function saveTermSetup(context,draft,execute){
 async function loadWorkflowStatus(trip) {
   clearTimeout(workflowUI.refreshTimer);
   workflowUI.tripId=trip.id;
+  byId('participation-details').textContent='Terminstatus wird geprüft.';
   if(!tripUsesEasyVerein(trip)){workflowUI.term=null;byId('term-status').textContent='Clubdesk / CSV: kein easyVerein-Anmeldeweg.';byId('term-details').textContent='';byId('participation-details').textContent='';return;}
   const planningAllowed=['calculation.manage','registration.view','answers.view','analytics.view'].every(c=>trip.capabilities.includes(c));
   byId('planning-transfer-btn').disabled=!!trip.archivedAt||!!trip.closedAt||!planningAllowed;
@@ -46,9 +48,10 @@ async function loadWorkflowStatus(trip) {
     byId('term-status').textContent=termProgressText(data);
     const editable=!trip.archivedAt&&!trip.closedAt;
     byId('term-wizard').textContent=data.draft?'Termin fertigstellen':'Termin einrichten';
-    byId('term-details').innerHTML=`${data.blockedReason?`<p class="status-note is-error">${escapeHtml(termProblemText(data.blockedReason))}</p>`:''}${data.link?'<button type="button" class="btn btn-o" id="term-edit-open">Termin bearbeiten</button>':''}${data.link&&trip.capabilities.includes('trip.manage')?'<button type="button" class="btn btn-p" id="member-release-open">Mitgliederanmeldung einstellen</button>':''}${data.job?'<button type="button" class="btn btn-o" id="term-refresh">Status aktualisieren</button>':''}`;
+    byId('term-details').innerHTML=`${data.blockedReason?`<p class="status-note is-error">${escapeHtml(termProblemText(data.blockedReason))}</p>`:''}${data.link?'<button type="button" class="btn btn-o" id="term-edit-open">Termin bearbeiten</button>':''}${data.link&&trip.capabilities.includes('trip.manage')?'<button type="button" class="btn btn-p" id="member-release-open">Mitgliederanmeldung einstellen</button>':''}${data.job?'<button type="button" class="btn btn-o" id="term-refresh">Status aktualisieren</button>':''}${!data.link&&data.job&&['unknown','blocked','failed'].includes(data.job.status)&&editable?'<button type="button" class="btn btn-p" id="term-recover">Vorhandenen Termin suchen und zuordnen</button>':''}${!data.link&&data.job?.errorCode&&data.job.status!=='blocked'?`<p class="help">${escapeHtml(termJobError(data.job.errorCode))}</p>`:''}`;
     byId('member-release-open')?.addEventListener('click',()=>performManagement(()=>openMemberRelease(trip)));
     byId('term-edit-open')?.addEventListener('click',()=>performManagement(()=>openTermUpdate(trip)));
+    byId('term-recover')?.addEventListener('click',()=>performManagement(()=>openTermRecovery(trip)));
     byId('term-refresh')?.addEventListener('click',()=>performManagement(()=>loadWorkflowStatus(trip)));
     byId('term-wizard').hidden=!!data.link||!!data.job;
     byId('term-wizard').disabled=!editable||!!data.link||!!data.job;
@@ -56,7 +59,7 @@ async function loadWorkflowStatus(trip) {
       workflowUI.polls=workflowUI.pollTrip===trip.id?(workflowUI.polls??0)+1:0;workflowUI.pollTrip=trip.id;
       if(workflowUI.polls<12)workflowUI.refreshTimer=setTimeout(()=>{if(state.currentTripId===trip.id&&tripUsesEasyVerein(state.currentTrip))performManagement(()=>loadWorkflowStatus(state.currentTrip));},5000);
     }else{workflowUI.polls=0;workflowUI.pollTrip=trip.id;}
-    await loadParticipationStatus(trip);
+    if(data.link){await loadParticipationStatus(trip);}else{byId('participation-details').textContent='Der Teilnahmeabgleich ist verfügbar, sobald der Termin verbunden ist.';}
   }
 }
 byId('planning-transfer-btn').addEventListener('click',()=>performManagement(async()=>{
@@ -112,6 +115,31 @@ async function openTermWizard(trip,event=null){
   function showStep(n){step=Math.max(0,Math.min(2,n));byId('management-fields').querySelectorAll('[data-wizard-panel]').forEach(el=>el.classList.toggle('d-none',Number(el.dataset.wizardPanel)!==step));byId('management-fields').querySelectorAll('[data-wizard-step]').forEach(el=>{const index=Number(el.dataset.wizardStep);el.setAttribute('aria-current',index===step?'step':'false');el.classList.toggle('is-done',index<step);el.querySelector('.wizard-step-number').textContent=index<step?'✓':String(index+1);});byId('wizard-back').disabled=step===0;byId('wizard-next').hidden=step===2;byId('management-submit').hidden=step!==2;byId('wizard-position').textContent=`Schritt ${step+1} von 3`;byId('management-fields').scrollTop=0;byId(`wizard-heading-${step}`).setAttribute('tabindex','-1');byId(`wizard-heading-${step}`).focus({preventScroll:true});if(step===1){catalogue.load();}if(step===2){const draft=collect();byId('wizard-review').innerHTML=`<h3>${escapeHtml(draft.title)}</h3><p>${escapeHtml(draft.startDate)} – ${escapeHtml(draft.endDate??'Tagesveranstaltung')} · ${escapeHtml(draft.location)}</p><p>Kalender: ${escapeHtml(catalogue.calendarName())} · ${draft.visibility==='members'?'Nur Mitglieder':'Privat'} · Kapazität ${draft.capacity}</p>${draft.mode==='link'?`<p>Bestehender Termin: ${escapeHtml(catalogue.eventName())}</p>`:''}<p>Formular #${draft.formVersionId??'–'} · ${draft.teamUserIds.length} Teamvorschläge</p><p>${draft.priceGroups.map(g=>escapeHtml(`${g.label}: ${g.price??'Preis fehlt'} €`)).join(' · ')}</p><p>${draft.registrationDeadline?`Anmeldeschluss: ${escapeHtml(draft.registrationDeadline)}`:"Kein Anmeldeschluss festgelegt."}</p>`;byId('management-submit').textContent=draft.mode==='link'?'Ausgewählten Termin verknüpfen':'Termin in easyVerein anlegen';byId('wizard-action-help').textContent=draft.mode==='link'?'Der ausgewählte Termin wird dieser Reise zugeordnet. Danach kannst du die Mitgliederanmeldung freigeben.':'Mit diesem Klick wird der Termin in easyVerein angelegt. Danach kannst du die Mitgliederanmeldung freigeben.';}}
 
   byId('wizard-back').onclick=()=>showStep(step-1);byId('wizard-next').onclick=()=>showStep(step+1);byId('management-fields').querySelectorAll('[data-wizard-step]').forEach(el=>el.onclick=()=>showStep(Number(el.dataset.wizardStep)));showStep(0);
+}
+
+async function openTermRecovery(trip){
+  let selected=null,offset=null,sequence=0;
+  showManagementModal('Terminzuordnung klären',`<p>Suche den Termin, der bereits in easyVerein angelegt wurde, und ordne ihn dieser Reise zu. Hier wird kein neuer Termin angelegt. Falls keiner vorhanden ist, prüfe die Anlage direkt in easyVerein.</p><label class="f">Termin suchen<div class="in"><input type="search" id="term-recovery-query" value="${escapeHtml(trip.name)}" maxlength="200"></div></label><button type="button" class="btn btn-o" id="term-recovery-search">Suchen</button><p id="term-recovery-status" role="status"></p><div id="term-recovery-results" class="catalog-results"></div><button type="button" class="btn btn-o" id="term-recovery-more" hidden>Weitere Termine laden</button><p id="term-recovery-selected" class="status-note" aria-live="polite"></p>`,async()=>{
+    if(!selected)throw new Error('Bitte zuerst einen Termin aus den Suchtreffern auswählen.');
+    await api(`/api/trips/${trip.id}/term/link`,{method:'POST',body:JSON.stringify({externalId:selected.id,reason:'Festhängenden Terminauftrag über die Terminsuche bewusst zugeordnet'})});
+    await loadWorkflowStatus(state.currentTrip);
+  },'Ausgewählten Termin zuordnen');
+  const root=byId('management-fields'),queryInput=byId('term-recovery-query');const active=()=>root.isConnected&&byId('term-recovery-query')===queryInput;byId('management-submit').disabled=true;
+  async function search(more=false){
+    const request=++sequence;if(!more){offset=null;selected=null;byId('term-recovery-selected').textContent='';byId('management-submit').disabled=true;byId('term-recovery-results').replaceChildren();}
+    byId('term-recovery-status').textContent='Termine werden gesucht …';byId('term-recovery-search').disabled=true;byId('term-recovery-more').hidden=true;
+    try{
+      const data=await api(`/api/trips/${trip.id}/term/catalog/events?${new URLSearchParams({q:byId('term-recovery-query').value.trim(),offset:String(more?offset??0:0),from:''})}`);
+      if(!active()||request!==sequence)return;
+      for(const item of data.items){const button=document.createElement('button');button.type='button';button.className='btn btn-o catalog-result';button.textContent=`${item.name} · ${new Date(item.start).toLocaleDateString('de-DE')} – ${new Date(item.end).toLocaleDateString('de-DE')}${item.canceled?' · abgesagt':''}`;button.disabled=!!item.canceled;button.onclick=()=>{selected=item;byId('term-recovery-selected').textContent='Ausgewählt: '+button.textContent;byId('management-submit').disabled=false;};byId('term-recovery-results').append(button);}
+      offset=data.nextOffset;byId('term-recovery-more').hidden=offset===null;byId('term-recovery-status').textContent=byId('term-recovery-results').children.length?'Bitte Datum und Termin prüfen und den passenden Treffer auswählen.':'Kein Treffer. Suchbegriff ändern oder prüfen, ob der Termin in easyVerein vorhanden ist.';
+    }catch(error){if(active()&&request===sequence)byId('term-recovery-status').textContent='Die Terminsuche ist fehlgeschlagen. Bitte API-Zugang prüfen und erneut versuchen.';}
+    finally{if(active()&&request===sequence)byId('term-recovery-search').disabled=false;}
+  }
+  byId('term-recovery-search').onclick=()=>search();byId('term-recovery-more').onclick=()=>search(true);
+  byId('term-recovery-query').onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();search();}};
+  byId('term-recovery-query').oninput=()=>{sequence++;selected=null;offset=null;byId('term-recovery-selected').textContent='';byId('management-submit').disabled=true;byId('term-recovery-search').disabled=false;byId('term-recovery-more').hidden=true;byId('term-recovery-results').replaceChildren();byId('term-recovery-status').textContent='Suche starten.';};
+  await search();
 }
 
 // Explicit searches avoid an API call on every keystroke. Provider IDs stay in hidden fields.

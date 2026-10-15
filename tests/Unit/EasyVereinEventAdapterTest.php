@@ -5,11 +5,11 @@ use App\Application\Port\EasyVereinWriteClient;
 use App\Infrastructure\{EasyVereinEventAdapter,EasyVereinParticipationAdapter,Persistence\SqliteWorkflowRepository};
 use PHPUnit\Framework\TestCase;
 final class EventProviderFixture implements EasyVereinWriteClient {
- public array $events=[];public array $groups=[];public array $writes=[];public string $lose='';
+ public array $events=[];public array $groups=[];public array $writes=[];public string $lose='';public string $reject='';public int $rejectStatus=0;public bool $badCalendar=false;
  public function configured(): bool {return true;}
  public function writeEnabled(): bool {return true;}
  public function get(string $path,array $query=[]): array {
-  if($path==='calendar/42/'){return ['id'=>42];}
+  if($path==='calendar/42/'){if($this->badCalendar)throw new \RuntimeException('sensitive remote error');return ['id'=>42];}
   if($path==='event/77/'){return $this->events[77];}
   if($path==='event/'){return ['results'=>array_values($this->events),'next'=>null];}
   if($path==='price-group/'){return ['results'=>array_values($this->groups),'next'=>null];}
@@ -18,6 +18,7 @@ final class EventProviderFixture implements EasyVereinWriteClient {
  }
  public function write(string $method,string $path,array $p): array {
   $this->writes[]=[$method,$path,$p];
+  if($this->reject===$path)throw new \App\Application\ParticipationRejected('provider_rejected',$this->rejectStatus);
   if($path==='event/'){$this->events[77]=['id'=>77,'canceled'=>false,'start_participation'=>null,'end_participation'=>null]+$p;$r=$this->events[77];}
   elseif($path==='price-group/'){$id=20+count($this->groups);$this->groups[$id]=['id'=>$id]+$p;$r=$this->groups[$id];}
   else{$this->events[77]=array_replace($this->events[77],$p);$r=$this->events[77];}
@@ -30,6 +31,25 @@ final class EasyVereinEventAdapterTest extends TestCase {
   $c=new EventProviderFixture();return [$c,new EasyVereinEventAdapter($c,new EasyVereinParticipationAdapter($c),new SqliteWorkflowRepository($pdo))];
  }
  private function draft(bool $groups=true): array {return ['calendarReference'=>'42','title'=>'Fiktiver Termin','startDate'=>'2027-01-01','endDate'=>null,'location'=>'Fiktiv','description'=>'Fiktiv','capacity'=>40,'visibility'=>'members','registrationDeadline'=>null,'priceGroups'=>$groups?[['label'=>'Gastpreis','price'=>'12','category'=>'GUEST']]:[]];}
+ public function testPreflightFailureProvesNoEventWasSent(): void {
+  [$c,$a]=$this->setupAdapter($this->draft());$c->badCalendar=true;
+  try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected preflight failure');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_preflight_failed',$e->reason);}
+  self::assertSame([],$c->writes);
+ }
+ public function testRejectedEventPostProvesNoEventButGroupRejectionDoesNot(): void {
+  [$c,$a]=$this->setupAdapter($this->draft());$c->reject='event/';
+  try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected rejection');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_create_rejected',$e->reason);}
+  self::assertSame([],$c->events);
+  [$c,$a]=$this->setupAdapter($this->draft());$c->reject='price-group/';
+  try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected partial failure');}catch(\App\Application\ParticipationRejected){self::assertArrayHasKey(77,$c->events);}
+ }
+ public function testEventRejectionExposesOnlySafeHttpCause(): void {
+  foreach([401=>'term_create_unauthorized',403=>'term_create_forbidden',400=>'term_create_invalid',422=>'term_create_invalid'] as $status=>$reason){
+   [$c,$a]=$this->setupAdapter($this->draft());$c->reject='event/';$c->rejectStatus=$status;
+   try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected rejection');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame($reason,$e->reason);}
+   self::assertSame([],$c->events);
+  }
+ }
  public function testCreateCopiesDatesCalendarAndPriceGroupAndActivatesGuestSetting(): void {
   [$c,$a]=$this->setupAdapter($this->draft());$r=$a->create($this->draft(),'calculator-term-1-term_operation_01');self::assertSame('77',$r['externalId']);self::assertSame(2,$c->events[77]['access']);self::assertSame(42,$c->writes[0][2]['calendar']);self::assertSame('2027-01-01T00:00:00+01:00',$c->events[77]['start']);self::assertSame(77,$c->groups[20]['event']);self::assertSame(1,$c->groups[20]['maximum_pieces_per_participation']);
  }

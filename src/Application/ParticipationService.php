@@ -12,7 +12,7 @@ final readonly class ParticipationService {
   $jobs=$this->store->query('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
   $o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
   $cases=$this->store->query('SELECT external_id AS externalId,status,observed_at AS observedAt FROM external_clarifications WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
-  return ['blockedReason'=>$this->external->blockedReason(),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR)]:null,'clarifications'=>$cases];
+  return ['blockedReason'=>($this->store->link($trip)===null?'confirmed_term_required':$this->external->blockedReason()),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR)]:null,'clarifications'=>$cases];
  }
  public function request(int $trip,int $booking,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');

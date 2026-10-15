@@ -14,7 +14,7 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
    $id=EasyVereinData::id($g['id']??null,'price-group');if(EasyVereinData::id($g['event']??null,'event')!==$eventId||isset($groupMap[$id])){throw new AccessException('provider_price_invalid',503);}
    $group=['id'=>$id,'price'=>EasyVereinData::money($g['selling_price']??null),'label'=>is_string($g['name']??null)?$g['name']:'#'.$id];$groups[]=$group;$groupMap[$id]=$group;
   }
-  $rows=EasyVereinData::collection($this->client,'participation/',['participation_event'=>$eventId,'query'=>'{id,participation_event,participation_address,state,is_companion,companion_name,parent,description,participation_price_groups{id,participation,price_group,pieces}}']);
+  $rows=EasyVereinData::collection($this->client,'participation/',['participation_event'=>$eventId,'query'=>'{id,participation_event,participation_address{id,name,date_of_birth},state,is_companion,companion_name,parent,description,participation_price_groups{id,participation,price_group,pieces}}']);
   if(count($rows)>5&&$this->memberCache===[]){
    $ids=[];foreach($rows as $row){$ids[EasyVereinData::id($row['participation_address']??null,'contact-details')]=true;}
    foreach(EasyVereinData::collection($this->client,'member/',['query'=>'{id,contact_details{id}}']) as $m){$address=EasyVereinData::id($m['contact_details']['id']??null,'contact-details');if(!isset($ids[$address])){continue;}if(array_key_exists($address,$this->memberCache)){throw new AccessException('provider_contact_ambiguous',503);}$this->memberCache[$address]=EasyVereinData::id($m['id']??null,'member');}
@@ -36,7 +36,10 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
     if(EasyVereinData::id($a['participation']??null,'participation')!==$id||EasyVereinData::money($a['pieces']??null)!=='1'){ $priceConflict=true; }
     $price=$groupMap[$gid]['price']??null;if($price===null){$priceConflict=true;}
    }elseif($assignments!==[]||$groups!==[]){$priceConflict=true;}
-   $participants[]=['eventId'=>$eventId,'externalId'=>$id,'memberReference'=>$members[$address],'contactReference'=>$address,'status'=>$status,'priceGroupId'=>$gid,'price'=>$price,'priceConflict'=>$priceConflict,'isCompanion'=>$row['is_companion'],'companionName'=>$row['companion_name']??null,'parentExternalId'=>$row['is_companion']?EasyVereinData::id($row['parent']??null,'participation'):null,'operationReference'=>is_string($row['description']??null)&&preg_match('/^calculator-person-[1-9][0-9]*$/D',$row['description'])?$row['description']:null];
+   $contact=is_array($row['participation_address']??null)?$row['participation_address']:[];
+   $displayName=$row['is_companion']?($row['companion_name']??null):($contact['name']??null);
+   $profileFields=['name'=>is_string($displayName)?$displayName:null,'birthDate'=>!$row['is_companion']&&\App\Domain\Form\FormSchema::date($contact['date_of_birth']??null)?$contact['date_of_birth']:null];
+   $participants[]=$profileFields+['eventId'=>$eventId,'externalId'=>$id,'memberReference'=>$members[$address],'contactReference'=>$address,'status'=>$status,'priceGroupId'=>$gid,'price'=>$price,'priceConflict'=>$priceConflict,'isCompanion'=>$row['is_companion'],'companionName'=>$row['companion_name']??null,'parentExternalId'=>$row['is_companion']?EasyVereinData::id($row['parent']??null,'participation'):null,'operationReference'=>is_string($row['description']??null)&&preg_match('/^calculator-person-[1-9][0-9]*$/D',$row['description'])?$row['description']:null];
   }
   $byId=array_column($participants,null,'externalId');foreach($participants as &$r){if($r['isCompanion']){$parent=$byId[$r['parentExternalId']]??null;if(!$parent||$parent['isCompanion']||$parent['contactReference']!==$r['contactReference']){$r['memberReference']=null;}}}unset($r);
   $deadline=($event['end_participation']??null)===null?PHP_INT_MAX:EasyVereinData::timestamp($event['end_participation']);

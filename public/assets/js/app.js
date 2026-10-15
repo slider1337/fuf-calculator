@@ -2078,7 +2078,7 @@ function registrationRows(reg, startDate) {
 function registrationItem(reg, index, startDate, adultAgeThreshold) {
   const collapseId = `reg-collapse-${index}`;
   const primaryName = reg.participants.length > 0 ? reg.participants[0].name : "Unbekannt";
-  const sourceChip = reg.source === "manual"
+  const sourceChip = reg.source === "easyverein" ? '<span class="chip c-green">easyVerein</span>' : reg.source === "manual"
     ? '<span class="chip c-amber">Manuell</span>'
     : '<span class="chip c-grey">CSV</span>';
   const amount = reg.billingTotal !== null
@@ -2100,7 +2100,7 @@ function registrationItem(reg, index, startDate, adultAgeThreshold) {
 
   const item = document.createElement("div");
   item.className = "reg-item";
-  item.setAttribute("data-reg-source", reg.source === "manual" ? "manual" : "csv");
+  item.setAttribute("data-reg-source", reg.source);
   item.setAttribute("data-reg-name", [primaryName, ...reg.participants.map((p) => p.name)].join(" ").toLowerCase());
   item.innerHTML = `
     <div class="reg-row">
@@ -2168,7 +2168,7 @@ function renderRegistrations(registrations) {
   let manualCount = 0;
 
   registrations.forEach((reg) => {
-    totalParticipants += reg.participants.length;
+    totalParticipants += reg.participants.filter(p=>p.status!=="cancelled").length;
     if (reg.billingTotal !== null) {
       totalBilling += reg.billingTotal;
     }
@@ -2177,7 +2177,8 @@ function renderRegistrations(registrations) {
     }
   });
 
-  const csvCount = registrations.length - manualCount;
+  const csvCount = registrations.filter(r=>r.source==="csv").length;
+  const easyCount = registrations.filter(r=>r.source==="easyverein").length;
   const planned = numberFromField("adultDoubleCount")
     + numberFromField("adultMultiCount")
     + numberFromField("childCount");
@@ -2187,6 +2188,7 @@ function renderRegistrations(registrations) {
   byId("reg-count-note").textContent = [
     manualCount > 0 ? `${manualCount} manuell` : null,
     csvCount > 0 ? `${csvCount} aus CSV` : null,
+    easyCount > 0 ? `${easyCount} aus easyVerein` : null,
   ].filter(Boolean).join(" · ");
 
   byId("reg-participant-count").textContent = planned > 0
@@ -2274,8 +2276,9 @@ function applyRegistrationFilter() {
   const registrations = state.currentRegistrations || [];
   const manualCount = registrations.filter((reg) => reg.source === "manual").length;
   byId("reg-filter-all").textContent = `Alle ${registrations.length}`;
-  byId("reg-filter-csv").textContent = `CSV ${registrations.length - manualCount}`;
+  byId("reg-filter-csv").textContent = `CSV ${registrations.filter(r=>r.source==="csv").length}`;
   byId("reg-filter-manual").textContent = `Manuell ${manualCount}`;
+  byId("reg-filter-easyverein").textContent = `easyVerein ${registrations.filter(r=>r.source==="easyverein").length}`;
 
   byId("registrations-no-match").classList.toggle("d-none", visible > 0 || registrations.length === 0);
 }

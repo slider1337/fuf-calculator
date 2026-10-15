@@ -63,6 +63,15 @@ final readonly class MemberBookingService {
   if(count($people)>$ctx['capacityRemaining']){throw new AccessException('capacity_conflict',409);}
   $allowed=array_column($ctx['people'],null,'memberReference');$groups=array_column($ctx['priceGroups'],null,'id');$selected=[];$ids=[];
   foreach($people as $i=>$person){
+   if(array_key_exists('guest',$person)){
+    if(($ctx['guestsAllowed']??false)!==true)throw new AccessException('provider_guests_disabled',409);
+    $g=$person['guest'];
+    if(array_diff(array_keys($person),['guest','priceGroupId','expectedPrice'])||!is_array($g)||array_diff(array_keys($g),['key','name','birthDate'])||!is_string($g['key']??null)||!preg_match('/^[a-zA-Z0-9_-]{8,100}$/D',$g['key'])||!is_string($g['name']??null)||trim($g['name'])===''||mb_strlen($g['name'])>200||!FormSchema::date($g['birthDate']??null))throw new ValidationException(['guest'=>'key_name_birth_date_required']);
+    $client='guest_'.hash('sha256',$g['key']);if(isset($ids[$client]))throw new AccessException('person_forbidden');
+    $gid=$person['priceGroupId']??null;$price=$person['expectedPrice']??null;
+    if(!array_key_exists('priceGroupId',$person)||!array_key_exists('expectedPrice',$person)||($groups&&(!is_string($gid)||!isset($groups[$gid])||$price!==$groups[$gid]['price']))||(!$groups&&($gid!==null||$price!==null)))throw new AccessException('price_conflict',409);
+    $ids[$client]=true;$selected[]=['id'=>$client,'name'=>trim($g['name']),'birthDate'=>$g['birthDate'],'memberReference'=>$identity->memberReference,'priceGroupId'=>$gid,'expectedPrice'=>$price,'guestDraft'=>$g,'guestName'=>trim($g['name'])];continue;
+   }
    if(array_key_exists('guestId',$person)){
     if(array_diff(array_keys($person),['guestId','priceGroupId','expectedPrice'])){throw new ValidationException(['guest'=>'only_approved_reference_and_price_allowed']);}
     $gid=$person['guestId'];if(!is_int($gid)||isset($ids['guest_'.$gid])){throw new AccessException('person_forbidden');}
@@ -98,6 +107,12 @@ final readonly class MemberBookingService {
   $ctx=$this->context($trip,$identity);$data=$this->payload($trip,$identity,$p,$ctx);
   return $this->access->transaction(function()use($trip,$identity,$p,$hash,$memberKey,$data,$ctx){
    $this->allowed($trip,'create',$ctx);$op=$this->bookings->operation($trip,$memberKey);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($this->owned($trip,(int)$op['registration_id'],$identity));}
+   foreach($data['persons'] as &$choice){
+    if(!isset($choice['guestDraft']))continue;
+    $g=$choice['guestDraft'];$guestKey='member_'.hash('sha256',$memberKey.':'.$g['key']);
+    $this->store->query('INSERT INTO guest_approvals(trip_id,owner_member,parent_member,name,birth_date,price_group,price,actor_id,created_at,reason,operation_key,request_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[$trip,$identity->memberReference,$identity->memberReference,$choice['name'],$choice['birthDate'],$choice['priceGroupId']??'',$choice['expectedPrice']??'',0,gmdate(DATE_ATOM),'Gastanmeldung gemäß easyVerein-Termin',$guestKey,$hash]);
+    $choice['guestId']=(int)$this->store->query('SELECT last_insert_rowid()')->fetchColumn();unset($choice['guestDraft']);
+   }unset($choice);
    // Include accepted price/version in the common engine's idempotency hash.
    $b=$this->engine($trip,$identity)->create($trip,$data);$this->store->query('UPDATE registrations SET owner_member_reference=? WHERE id=?',[$identity->memberReference,$b['id']]);
    $byClient=array_column($data['persons'],null,'id');foreach($b['persons'] as $person){$choice=$byClient[$person['clientReference']];

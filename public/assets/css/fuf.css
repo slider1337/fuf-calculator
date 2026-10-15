@@ -4449,7 +4449,7 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 .wizard-footer-navigation { display:flex; align-items:center; gap:12px; width:100%; margin:0 0 10px; }
 .wizard-footer-navigation #wizard-position { flex:1; color:var(--fuf-brown-500); text-align:center; font-size:13px; }
 .wizard-footer-navigation .btn { margin:0; }
-#management-modal.is-term-wizard #management-submit { background:#fff; border:1px solid var(--fuf-sand-500); color:var(--fuf-brown-700); }
+#management-modal.is-term-wizard #management-submit { background:var(--fuf-green-600); border:1px solid var(--fuf-green-600); color:#fff; }
 #management-modal.is-term-wizard .modal-footer>[data-bs-dismiss] { background:transparent; border-color:transparent; color:var(--fuf-brown-500); }
 .form-scope { min-width:0; margin:0 0 16px; padding:0; border:0; }
 .form-scope legend { font-size:14px; font-weight:600; color:var(--fuf-brown-700); margin-bottom:6px; float:none; width:auto; }
@@ -4528,3 +4528,7 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 #wizard-event-picker,#wizard-calendar-picker,#wizard-calendar-selected { grid-column:1/-1; min-width:0; }
 .catalog-results { display:grid; gap:8px; margin:12px 0; }
 .catalog-result { width:100%; text-align:left; white-space:normal; justify-content:flex-start; overflow-wrap:anywhere; }
+
+/* The explicit final term action appears only on the summary step. */
+#management-modal.is-term-wizard .modal-footer [hidden], #term-wizard[hidden] { display:none!important; }
+#management-modal.is-term-wizard #wizard-save-draft { order:2; background:transparent; border-color:transparent; font-size:13px; }

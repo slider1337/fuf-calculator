@@ -23,7 +23,7 @@ final readonly class TermWorker
             return ['job'=>$job,'mode'=>$mode,'token'=>$token];
         });
         if($claimed===null){return false;}if(isset($claimed['skip'])){return true;}
-        $job=$claimed['job'];$reference='calculator-term-'.$job['id'].'-'.$job['operationKey'];$result=null;$error=null;$status='unknown';
+        $job=$claimed['job'];$reference='calculator-term-'.$job['id'].'-'.$job['operationKey'];$result=null;$error=null;$validationErrors=[];$status='unknown';
         $guard=function()use($claimed,$job){$this->access->transaction(function()use($claimed,$job){
             $current=$this->store->job($job['tripId']);
             if(!$current||$current['leaseToken']!==$claimed['token']||($current['leaseUntil']??0)<=time()||!$this->allowed($current))throw new AccessException('term_resume_claim_lost',409);
@@ -38,18 +38,18 @@ final readonly class TermWorker
             }else{$result=$this->external->reconcile($reference);}
             if($result===null){$error='external_result_unproven';}
         }
-        catch(TermCreationNotStarted $e){$error=in_array($e->reason,['term_preflight_failed','term_create_rejected','term_create_unauthorized','term_create_forbidden','term_create_invalid'],true)?$e->reason:'term_preflight_failed';if($claimed['mode']!=='reconcile'){$status='blocked';}}
+        catch(TermCreationNotStarted $e){$validationErrors=$e->validationErrors;$error=in_array($e->reason,['term_preflight_failed','term_create_rejected','term_create_unauthorized','term_create_forbidden','term_create_invalid'],true)?$e->reason:'term_preflight_failed';if($claimed['mode']!=='reconcile'){$status='blocked';}}
         catch(AccessException $e){$error=in_array($e->error,['term_resume_conflict','term_resume_unsupported','term_resume_claim_lost','provider_event_invalid','provider_read_failed','provider_read_invalid','provider_calendar_invalid','provider_reference_invalid','provider_price_invalid','provider_date_invalid','provider_pagination_invalid','provider_collection_invalid','provider_collection_limit','provider_rate_limited'],true)?$e->error:'external_outcome_unknown';if($error==='term_resume_conflict')$status='blocked';}
         catch(\Throwable){$error='external_outcome_unknown';} // Do not persist provider responses containing secrets.
-        $this->access->transaction(function() use($claimed,$job,$result,$error,$status){
+        $this->access->transaction(function() use($claimed,$job,$result,$error,$status,$validationErrors){
             $current=$this->store->job($job['tripId']);if($current['leaseToken']!==$claimed['token']){return;}
             if(!$this->allowed($job)){$error='permission_revoked_or_trip_closed';}
             if($error===null){
-                try{$this->terms->bindVerified($job['tripId'],$result);$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE id=?",[$result['externalId'],$job['id']]);$this->access->audit($job['actorId'],'term.confirm','trip',$job['tripId'],'Terminreferenz bestätigt');return;}
+                try{$this->terms->bindVerified($job['tripId'],$result);$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL,validation_errors_json=NULL WHERE id=?",[$result['externalId'],$job['id']]);$this->access->audit($job['actorId'],'term.confirm','trip',$job['tripId'],'Terminreferenz bestätigt');return;}
                 catch(\Throwable){$error='verified_reference_conflict';}
             }
             // Uncertain outcomes only reconcile; another write-capable continuation requires explicit authorization.
-            $this->store->query("UPDATE sync_jobs SET status=?,lease_token=NULL,lease_until=?,error_code=? WHERE id=?",[$status,$status==='unknown'?time()+60:null,$error,$job['id']]);
+            $this->store->query("UPDATE sync_jobs SET status=?,lease_token=NULL,lease_until=?,error_code=?,validation_errors_json=? WHERE id=?",[$status,$status==='unknown'?time()+60:null,$error,json_encode($validationErrors,JSON_THROW_ON_ERROR),$job['id']]);
         });return true;
     }
     private function allowed(array $job): bool

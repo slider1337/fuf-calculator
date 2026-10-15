@@ -5,7 +5,7 @@ use App\Application\Port\EasyVereinWriteClient;
 use App\Infrastructure\{EasyVereinEventAdapter,EasyVereinParticipationAdapter,Persistence\SqliteWorkflowRepository};
 use PHPUnit\Framework\TestCase;
 final class EventProviderFixture implements EasyVereinWriteClient {
- public array $events=[];public array $reads=[];public bool $failScan=false;public array $groups=[];public array $writes=[];public string $lose='';public string $reject='';public int $rejectStatus=0;public bool $badCalendar=false;
+ public array $events=[];public array $reads=[];public bool $failScan=false;public array $groups=[];public array $writes=[];public string $lose='';public string $reject='';public int $rejectStatus=0;public bool $badCalendar=false;public array $validationErrors=[];
  public function configured(): bool {return true;}
  public function writeEnabled(): bool {return true;}
  public function get(string $path,array $query=[]): array {
@@ -19,7 +19,7 @@ final class EventProviderFixture implements EasyVereinWriteClient {
  }
  public function write(string $method,string $path,array $p): array {
   $this->writes[]=[$method,$path,$p];
-  if($this->reject===$path)throw new \App\Application\ParticipationRejected('provider_rejected',$this->rejectStatus);
+  if($this->reject===$path)throw new \App\Application\ParticipationRejected('provider_rejected',$this->rejectStatus,$this->validationErrors);
   if($path==='event/'){$this->events[77]=['id'=>77,'canceled'=>false,'start_participation'=>null,'end_participation'=>null]+$p;$r=$this->events[77];}
   elseif($path==='price-group/'){$id=20+count($this->groups);$this->groups[$id]=['id'=>$id]+$p;$r=$this->groups[$id];}
   else{$this->events[77]=array_replace($this->events[77],$p);$r=$this->events[77];}
@@ -32,6 +32,15 @@ final class EasyVereinEventAdapterTest extends TestCase {
   $c=new EventProviderFixture();return [$c,new EasyVereinEventAdapter($c,new EasyVereinParticipationAdapter($c),new SqliteWorkflowRepository($pdo))];
  }
  private function draft(bool $groups=true): array {return ['calendarReference'=>'42','title'=>'Fiktiver Termin','startDate'=>'2027-01-01','endDate'=>null,'location'=>'Fiktiv','description'=>'Fiktiv','capacity'=>40,'visibility'=>'members','registrationDeadline'=>null,'priceGroups'=>$groups?[['label'=>'Gastpreis','price'=>'12','category'=>'GUEST']]:[]];}
+ public function testEmptyOptionalTextsAreOmittedFromCreate(): void {
+  $d=$this->draft(false);$d['location']='';$d['description']='  ';[$c,$a]=$this->setupAdapter($d);$a->create($d,'calculator-term-1-term_operation_01');
+  self::assertArrayNotHasKey('location_name',$c->writes[0][2]);self::assertArrayNotHasKey('prologue',$c->writes[0][2]);self::assertSame(40,$c->writes[0][2]['max_participators']);
+ }
+ public function testSafeValidationDetailsSurviveEventRejection(): void {
+  [$c,$a]=$this->setupAdapter($this->draft());$c->reject='event/';$c->rejectStatus=400;$c->validationErrors=[['field'=>'prologue','reason'=>'blank']];
+  try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected rejection');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_create_invalid',$e->reason);self::assertSame($c->validationErrors,$e->validationErrors);}
+  self::assertSame([],$c->events);
+ }
  public function testPreflightFailureProvesNoEventWasSent(): void {
   [$c,$a]=$this->setupAdapter($this->draft());$c->badCalendar=true;
   try{$a->create($this->draft(),'calculator-term-1-term_operation_01');self::fail('Expected preflight failure');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_preflight_failed',$e->reason);}

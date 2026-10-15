@@ -120,7 +120,7 @@ final readonly class TermService
             if(!$this->external instanceof \App\Application\Port\RecoverableExternalEventPort)throw new AccessException('term_resume_unsupported',409);
             if($this->external->blockedReason()!==null)throw new AccessException($this->external->blockedReason(),409);
             $review=$this->review($id);if($review['issues']!==[])throw new ValidationException(['draft'=>implode('; ',$review['issues'])]);
-            $this->store->query("UPDATE sync_jobs SET status='resume_pending',actor_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE id=?",[$this->policy->actorId(),$job['id']]);
+            $this->store->query("UPDATE sync_jobs SET status='resume_pending',actor_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL,validation_errors_json=NULL WHERE id=?",[$this->policy->actorId(),$job['id']]);
             $this->policy->audit('term.resume_request','trip',$id,'Explizite Fortsetzung nach Prüfung vorhandener Ergebnisse · Auftrag '.$job['id'].' · Versuch '.$job['attempts']);
             return $this->read($id);
         });
@@ -138,7 +138,7 @@ final readonly class TermService
             $job=$this->store->job($id);
             if($job&&in_array($job['status'],['pending','running','reconciling','resume_pending'],true)){throw new AccessException('term_job_in_progress',409);}
             $this->bindVerified($id,$verified);
-            if($job){$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE trip_id=?",[$externalId,$id]);}
+            if($job){$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL,validation_errors_json=NULL WHERE trip_id=?",[$externalId,$id]);}
             $this->policy->audit('term.link','trip',$id,$reason.' · externalId='.$externalId);return $this->read($id);
         });
     }

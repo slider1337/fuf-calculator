@@ -17,7 +17,7 @@ final readonly class EasyVereinWriteHttpClient implements EasyVereinWriteClient 
   $body=curl_exec($h);$status=curl_getinfo($h,CURLINFO_RESPONSE_CODE);curl_close($h);
   // Never expose remote bodies/tokens. Any timeout/5xx/malformed success is ambiguous, requiring reconciliation.
   if($body===false||strlen($body)>4194304){throw new \RuntimeException('provider_outcome_unknown');}
-  if(in_array($status,[400,401,403,404,422],true)){throw new ParticipationRejected('provider_rejected',$status);}
+  if(in_array($status,[400,401,403,404,422],true)){throw new ParticipationRejected('provider_rejected',$status,in_array($status,[400,422],true)?EasyVereinValidation::fromBody($body):[]);}
   if(!in_array($status,[200,201],true)){throw new \RuntimeException('provider_outcome_unknown');}
   try{$data=json_decode($body,true,64,JSON_THROW_ON_ERROR);}catch(\Throwable){throw new \RuntimeException('provider_outcome_unknown');}
   if(!is_array($data)){throw new \RuntimeException('provider_outcome_unknown');}return $data;

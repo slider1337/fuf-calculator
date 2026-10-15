@@ -33,8 +33,8 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  assert.deepEqual(calls.map(c=>c.url),['/api/trip-wizard','/api/trips/8/term','/api/trips/8/term/review','/api/trips/8/term/request']);assert.equal(context.id,8);assert.equal(calls[0].body.operationKey,'local-key');count++;
  calls=fake();context={...existing(),id:null};await scope.saveTermSetup(context,draft,false);assert.equal(calls.length,2);assert.equal(calls[0].url,'/api/trip-wizard');count++;
  assert.match(scope.termProgressText({draft:{}}),/Nächster Schritt/);
- for(const status of ['pending','running'])assert.match(scope.termProgressText({job:{status}}),/automatisch/);
- assert.match(scope.termProgressText({job:{status:'unknown'}}),/keinen zweiten/);
+ for(const status of ['pending','running','resume_pending'])assert.match(scope.termProgressText({job:{status}}),/automatisch/);
+ assert.match(scope.termProgressText({job:{status:'unknown'}}),/prüfen und anlegen/);
  assert(!scope.termProgressText({link:{},registrationEnabled:true}).includes('gesperrt'));count++;
  // Generate real wizard markup before DOM wiring; inspect three sibling panels.
  scope.dirtyPlanning=()=>false;scope.escapeHtml=x=>String(x??'');scope.crypto={randomUUID:()=> 'fake-key'};scope.hasTripCapability=()=>false;scope.state={currentUser:{role:'member'}};scope.capabilityLabels={};
@@ -74,5 +74,8 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  let resolveSearch;scope.api=()=>new Promise(resolve=>{resolveSearch=resolve});const pending=scope.openTermRecovery(trip);await Promise.resolve();node('term-recovery-query').oninput();resolveSearch({items:[{id:'99',name:'Stale'}],nextOffset:null});await pending;assert.equal(node('term-recovery-results').children.length,0);assert.equal(node('management-submit').disabled,true);count++;
  const managementSource=fs.readFileSync('public/assets/js/management.js','utf8');vm.runInContext(managementSource.slice(managementSource.indexOf('function managementMessage'),managementSource.indexOf('async function performManagement')),scope);
  assert.match(scope.managementMessage(new Error(JSON.stringify({error:'confirmed_term_required'}))),/Terminsuche|Suche zuordnen/);assert.match(scope.managementMessage(new Error(JSON.stringify({error:'term_job_in_progress'}))),/kurz warten/);count++;
+ const resumeCalls=[];scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {job:{id:7,attempts:3,status:'unknown'},link:null}};scope.state={currentTripId:2,currentTrip:trip};scope.loadWorkflowStatus=async()=>{};
+ await scope.resumeTermSetup(trip);assert.deepEqual(resumeCalls.map(c=>c.url),['/api/trips/2/term','/api/trips/2/term/resume']);assert.deepEqual(JSON.parse(resumeCalls[1].options.body),{jobId:7,attempts:3,confirmed:true});count++;
+ resumeCalls.length=0;scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {link:{externalId:'77'},job:{id:7,attempts:4,status:'succeeded'}}};await scope.resumeTermSetup(trip);assert.equal(resumeCalls.length,1);count++;
  console.log(`${count} term setup scenarios passed.`);
 })().catch(error=>{console.error(error);process.exit(1)});

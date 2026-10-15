@@ -23,7 +23,7 @@ final readonly class RegistrationModeService
             $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');
             if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
             if($mode===$m['registration_mode']){return $this->read($trip);}
-            foreach(['sync_jobs','term_update_jobs','participation_jobs'] as $table){if($this->store->query("SELECT 1 FROM $table WHERE trip_id=? AND status IN ('pending','running','unknown','reconciling')",[$trip])->fetchColumn()!==false){throw new AccessException('registration_mode_operation_in_progress',409);}}
+            foreach(['sync_jobs','term_update_jobs','participation_jobs'] as $table){if($this->store->query("SELECT 1 FROM $table WHERE trip_id=? AND status IN ('pending','running','unknown','reconciling','resume_pending')",[$trip])->fetchColumn()!==false){throw new AccessException('registration_mode_operation_in_progress',409);}}
             if($mode==='clubdesk_csv'){
                 if($this->store->query('SELECT 1 FROM registrations WHERE trip_id=? AND managed_booking=1',[$trip])->fetchColumn()!==false){throw new AccessException('registration_mode_managed_bookings_exist',409);}
                 if($this->store->query("SELECT 1 FROM guest_approvals WHERE trip_id=? AND status='approved'",[$trip])->fetchColumn()!==false){throw new AccessException('registration_mode_guest_approvals_exist',409);}

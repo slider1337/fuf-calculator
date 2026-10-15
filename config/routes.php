@@ -84,6 +84,7 @@ return static function (App $app): void {
     $app->put('/api/trips/{id:[0-9]+}/term/draft', [$workflow, 'draft']);
     $app->post('/api/trips/{id:[0-9]+}/term/review', [$workflow, 'review']);
     $app->post('/api/trips/{id:[0-9]+}/term/request', [$workflow, 'request']);
+    $app->post('/api/trips/{id:[0-9]+}/term/resume', [$workflow, 'resume']);
     $app->post('/api/trips/{id:[0-9]+}/term/link', [$workflow, 'link']);
 
     $guest = \App\Infrastructure\Http\Controller\GuestController::class;

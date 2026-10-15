@@ -107,6 +107,24 @@ final readonly class TermService
             $this->policy->audit('term.request','trip',$id,'Dauerhafter Terminauftrag · '.$status);return $this->read($id);
         });
     }
+    public function resume(int $id,array $p): array
+    {
+        return $this->policy->writeTrip($id,'term.manage',function() use($id,$p){
+            $this->policy->requireRegistrationMode($id,'easyverein');
+            if(($p['confirmed']??null)!==true||!is_int($p['jobId']??null)||!is_int($p['attempts']??null))throw new ValidationException(['resume'=>'explicit_confirmation_job_and_attempts_required']);
+            $job=$this->store->job($id)??throw new AccessException('term_job_required',409);
+            if($job['id']!==$p['jobId'])throw new AccessException('term_review_changed',409);
+            if($this->store->link($id))return $this->read($id);
+            if(in_array($job['status'],['pending','running','reconciling','resume_pending'],true))return $this->read($id);
+            if($job['attempts']!==$p['attempts']||!in_array($job['status'],['unknown','blocked'],true))throw new AccessException('term_review_changed',409);
+            if(!$this->external instanceof \App\Application\Port\RecoverableExternalEventPort)throw new AccessException('term_resume_unsupported',409);
+            if($this->external->blockedReason()!==null)throw new AccessException($this->external->blockedReason(),409);
+            $review=$this->review($id);if($review['issues']!==[])throw new ValidationException(['draft'=>implode('; ',$review['issues'])]);
+            $this->store->query("UPDATE sync_jobs SET status='resume_pending',actor_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE id=?",[$this->policy->actorId(),$job['id']]);
+            $this->policy->audit('term.resume_request','trip',$id,'Explizite Fortsetzung nach Prüfung vorhandener Ergebnisse · Auftrag '.$job['id'].' · Versuch '.$job['attempts']);
+            return $this->read($id);
+        });
+    }
     public function link(int $id,array $p): array
     {
         $this->policy->trip($id,'term.manage',true);
@@ -118,7 +136,7 @@ final readonly class TermService
         if($verified===null||($verified['externalId']??null)!==$externalId){throw new ValidationException(['externalId'=>'verified_reference_required']);}
         return $this->policy->writeTrip($id,'term.manage',function() use($id,$externalId,$verified,$reason){
             $job=$this->store->job($id);
-            if($job&&in_array($job['status'],['pending','running','reconciling'],true)){throw new AccessException('term_job_in_progress',409);}
+            if($job&&in_array($job['status'],['pending','running','reconciling','resume_pending'],true)){throw new AccessException('term_job_in_progress',409);}
             $this->bindVerified($id,$verified);
             if($job){$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE trip_id=?",[$externalId,$id]);}
             $this->policy->audit('term.link','trip',$id,$reason.' · externalId='.$externalId);return $this->read($id);

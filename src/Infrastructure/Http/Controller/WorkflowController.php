@@ -25,5 +25,6 @@ final readonly class WorkflowController
     public function draft(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->save((int)$id,(array)$request->getParsedBody()));}
     public function review(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->review((int)$id));}
     public function request(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->request((int)$id,(array)$request->getParsedBody()),202);}
+    public function resume(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->resume((int)$id,(array)$request->getParsedBody()),202);}
     public function link(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->link((int)$id,(array)$request->getParsedBody()));}
 }

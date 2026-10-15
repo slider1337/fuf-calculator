@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.9.0
+  version: 1.10.0
 security:
   - calculatorSession: []
 servers:
@@ -2076,6 +2076,38 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TermRequest'
+  /api/trips/{id}/term/resume:
+    post:
+      summary: Explicitly continue a stuck term job after checking prior provider results
+      responses:
+        '202':
+          description: Accepted local operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Session required
+        '403':
+          description: Capability required
+        '404':
+          description: Trip unavailable
+        '409':
+          description: Closed, stale, idempotency, reference or operation conflict /
+            provider contract blocked
+        '422':
+          description: Invalid fields / incomplete assignments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001_2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermResumeRequest'
   /api/trips/{id}/term/link:
     post:
       summary: Verify stable external ID before unique local link; production adapter
@@ -5451,6 +5483,7 @@ components:
           type: string
           enum:
           - pending
+          - resume_pending
           - blocked
           - running
           - reconciling
@@ -5467,6 +5500,23 @@ components:
           type: integer
           nullable: true
         createdAt: *id002_2
+    TermResumeRequest:
+      type: object
+      required:
+      - jobId
+      - attempts
+      - confirmed
+      properties:
+        jobId:
+          type: integer
+          minimum: 1
+        attempts:
+          type: integer
+          minimum: 0
+        confirmed:
+          type: boolean
+          enum:
+          - true
     TermState:
       type: object
       required:

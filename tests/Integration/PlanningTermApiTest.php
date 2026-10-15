@@ -6,13 +6,15 @@ use App\Application\Port\ExternalEventPort;
 use App\Application\{TermWorker,AccessPolicy};
 use PDO;
 
-final class MemoryEventAdapter implements ExternalEventPort
+final class MemoryEventAdapter implements \App\Application\Port\RecoverableExternalEventPort
 {
     public int $posts=0;
     public ?\Closure $onCreate=null;
     public bool $timeout=false;
     public array $events=[];
     public array $operations=[];
+    public function createGuarded(array $draft,string $reference,callable $beforeWrite): array {$beforeWrite();return $this->create($draft,$reference);}
+    public function resume(array $draft,string $reference,callable $beforeWrite): array { $beforeWrite();return $this->operations[$reference]??$this->create($draft,$reference); }
     public function blockedReason(): ?string {return null;}
     public function get(string $id): ?array {return $this->events[$id]??null;}
     public function create(array $draft,string $reference): array
@@ -127,6 +129,30 @@ final class PlanningTermApiTest extends ApiTestCase
         foreach(['pending','running','reconciling'] as $status){$db->exec("UPDATE sync_jobs SET status='$status'");$this->json('POST',"/api/trips/$t/term/link",['externalId'=>'900','reason'=>'Parallelversuch'],409);}
         self::assertSame(0,(int)$db->query('SELECT COUNT(*) FROM external_event_links')->fetchColumn());
         $state=$this->json('GET',"/api/trips/$t/participation-sync");self::assertSame('confirmed_term_required',$state['blockedReason']);
+    }
+    public function testExplicitResumeOfMissingLegacyEventFinishesAndIsIdempotent(): void
+    {
+        $f=$this->fake();$t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $state=$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'resume_absent_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);$db=$this->app->getContainer()->get(PDO::class);$db->exec("UPDATE sync_jobs SET status='unknown',lease_until=0");
+        $worker=$this->app->getContainer()->get(TermWorker::class);$worker->runOne();self::assertSame(0,$f->posts);$state=$this->json('GET',"/api/trips/$t/term");
+        $p=['jobId'=>$state['job']['id'],'attempts'=>$state['job']['attempts'],'confirmed'=>true];$state=$this->json('POST',"/api/trips/$t/term/resume",$p,202);self::assertSame('resume_pending',$state['job']['status']);$this->json('POST',"/api/trips/$t/term/resume",$p,202);
+        $f->events['900']=['externalId'=>'900'];$this->json('POST',"/api/trips/$t/term/link",['externalId'=>'900','reason'=>'Parallel'],409);
+        $f->onCreate=static function()use($worker){self::assertFalse($worker->runOne());};self::assertTrue($worker->runOne());self::assertSame(1,$f->posts);
+        $state=$this->json('GET',"/api/trips/$t/term");self::assertSame('succeeded',$state['job']['status']);self::assertSame('101',$state['link']['externalId']);$this->json('POST',"/api/trips/$t/term/resume",$p,202);self::assertSame(1,$f->posts);
+    }
+    public function testResumeRequiresConfirmationCurrentAttemptAndSpecificTripPermission(): void
+    {
+        $f=$this->fake();$t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $state=$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'resume_rights_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);$db=$this->app->getContainer()->get(PDO::class);$db->exec("UPDATE sync_jobs SET status='unknown',lease_until=0");$p=['jobId'=>$state['job']['id'],'attempts'=>0,'confirmed'=>true];
+        $this->json('POST',"/api/trips/$t/term/resume",array_replace($p,['confirmed'=>false]),422);$this->json('POST',"/api/trips/$t/term/resume",array_replace($p,['attempts'=>9]),409);$this->json('POST',"/api/trips/$t/term/resume",array_replace($p,['jobId'=>999]),409);
+        $db->exec("INSERT INTO users (id,email,role,created_at) VALUES (2,'resume@example.invalid','admin','2026-10-15')");$_SESSION['user_id']=2;$this->json('POST',"/api/trips/$t/term/resume",$p,404);$_SESSION['user_id']=1;
+        $this->json('POST',"/api/trips/$t/close",['reason'=>'Abgeschlossen']);$this->json('POST',"/api/trips/$t/term/resume",$p,409);self::assertSame(0,$f->posts);
+    }
+    public function testExpiredResumeLeaseOnlyReconcilesAndDoesNotCreateWithoutAnotherClick(): void
+    {
+        $f=$this->fake();$t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $state=$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'resume_crash_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);$db=$this->app->getContainer()->get(PDO::class);$db->exec("UPDATE sync_jobs SET status='unknown',lease_until=0");
+        $this->json('POST',"/api/trips/$t/term/resume",['jobId'=>$state['job']['id'],'attempts'=>0,'confirmed'=>true],202);$db->exec("UPDATE sync_jobs SET status='running',lease_token='expired',lease_until=0");self::assertTrue($this->app->getContainer()->get(TermWorker::class)->runOne());self::assertSame(0,$f->posts);self::assertSame('unknown',$this->json('GET',"/api/trips/$t/term")['job']['status']);
     }
     public function testExpiredRunningLeaseOnlyReconcilesNoPost(): void
     {

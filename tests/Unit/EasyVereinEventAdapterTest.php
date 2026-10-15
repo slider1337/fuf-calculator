@@ -32,6 +32,16 @@ final class EasyVereinEventAdapterTest extends TestCase {
   $c=new EventProviderFixture();return [$c,new EasyVereinEventAdapter($c,new EasyVereinParticipationAdapter($c),new SqliteWorkflowRepository($pdo))];
  }
  private function draft(bool $groups=true): array {return ['calendarReference'=>'42','title'=>'Fiktiver Termin','startDate'=>'2027-01-01','endDate'=>null,'location'=>'Fiktiv','description'=>'Fiktiv','capacity'=>40,'visibility'=>'members','registrationDeadline'=>null,'priceGroups'=>$groups?[['label'=>'Gastpreis','price'=>'12','category'=>'GUEST']]:[]];}
+ public function testOverlappingRegistrationDeadlineStopsBeforeAnyProviderRequest(): void {
+  foreach(['2027-01-01','2027-01-02'] as $day){$d=$this->draft();$d['registrationDeadline']=$day;[$c,$a]=$this->setupAdapter($d);
+   try{$a->create($d,'calculator-term-1-term_operation_01');self::fail('Expected local deadline rejection');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_registration_overlap',$e->reason);}
+   self::assertSame([],$c->reads);self::assertSame([],$c->writes);
+  }
+ }
+ public function testPreviousDayDeadlineRetainsBerlinEndOfDayAcrossDstBoundary(): void {
+  $d=$this->draft(false);$d['startDate']='2027-03-29';$d['registrationDeadline']='2027-03-28';[$c,$a]=$this->setupAdapter($d);$a->create($d,'calculator-term-1-term_operation_01');
+  self::assertSame('2027-03-28T23:59:59+02:00',$c->writes[0][2]['end_participation']);self::assertSame('2027-03-29T00:00:00+02:00',$c->writes[0][2]['start']);
+ }
  public function testEmptyOptionalTextsAreOmittedFromCreate(): void {
   $d=$this->draft(false);$d['location']='';$d['description']='  ';[$c,$a]=$this->setupAdapter($d);$a->create($d,'calculator-term-1-term_operation_01');
   self::assertArrayNotHasKey('location_name',$c->writes[0][2]);self::assertArrayNotHasKey('prologue',$c->writes[0][2]);self::assertSame(40,$c->writes[0][2]['max_participators']);

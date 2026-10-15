@@ -80,6 +80,7 @@ final readonly class TermService
         return $this->policy->transaction(function() use($id){
             $this->policy->trip($id,'term.manage');$draft=$this->store->draft($id)??throw new ValidationException(['draft'=>'save_first']);$d=$this->validate($id,$draft['data']);
             $trip=$this->trips->getById($id);$issues=[];
+            if($d['mode']==='create'&&$d['registrationDeadline']!==null&&$d['registrationDeadline']>=$d['startDate']){$issues[]='Der Anmeldeschluss muss vor dem Terminbeginn liegen. Bei ganztägigen Terminen spätestens am Vortag (23:59 Uhr).';}
             if($trip->name()!==$d['title']||$trip->startDate()->format('Y-m-d')!==$d['startDate']||$trip->endDate()?->format('Y-m-d')!==$d['endDate']){$issues[]='Eckdaten weichen von der gespeicherten Reise ab.';}
             if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Bitte einen easyVerein-Kalender auswählen.';}
             foreach($d['priceGroups'] as $g){if($g['price']===null){$issues[]='Preis fehlt: '.$g['label'];}}

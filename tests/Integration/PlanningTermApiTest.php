@@ -68,6 +68,16 @@ final class PlanningTermApiTest extends ApiTestCase
         $s=$db->prepare("INSERT INTO registration_participants (registration_id,name,birth_date,participation_status) VALUES (?,?,?,?)");
         $s->execute([$id,'Erwachsen','1986-01-01','confirmed']);$s->execute([$id,'Kind','2018-01-01','confirmed']);$s->execute([$id,'Offen','1980-01-01','pending']);return $id;
     }
+    public function testReviewAndRequestBlockAnOverlappingDateOnlyDeadline(): void
+    {
+        $f=$this->fake();$t=$this->trip();$d=$this->draft($t);$d['registrationDeadline']=$d['startDate'];
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$d]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        self::assertStringContainsString('vor dem Terminbeginn',implode(' ',$review['issues']));
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'overlap_term_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],422);
+        self::assertSame(0,$f->posts);self::assertSame(0,(int)$this->app->getContainer()->get(PDO::class)->query('SELECT COUNT(*) FROM sync_jobs')->fetchColumn());
+        $d['registrationDeadline']=(new \DateTimeImmutable($d['startDate']))->modify('-1 day')->format('Y-m-d');
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>1,'draft'=>$d]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);self::assertSame([],$review['issues']);
+    }
     public function testRejectedTermValidationIsPersistedAndClearedOnExplicitRetry(): void
     {
         $f=$this->fake();$errors=[['field'=>'prologue','reason'=>'blank']];

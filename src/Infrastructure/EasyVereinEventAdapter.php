@@ -23,6 +23,7 @@ final readonly class EasyVereinEventAdapter implements \App\Application\Port\Rec
   $this->client->write('PATCH','event/'.$id.'/',$body);
  }
  public function create(array $d,string $reference,?callable $beforeWrite=null): array {
+  if(($d['registrationDeadline']??null)!==null&&$d['registrationDeadline']>=$d['startDate'])throw new TermCreationNotStarted('term_registration_overlap',[['field'=>'end_participation','reason'=>'overlap']]);
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
   try{
    $calendar=EasyVereinData::id($d['calendarReference']??null,'calendar');$check=$this->client->get('calendar/'.$calendar.'/', ['query'=>'{id}']);

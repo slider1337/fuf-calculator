@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.11.0
+  version: 1.12.0
 security:
   - calculatorSession: []
 servers:
@@ -5412,6 +5412,7 @@ components:
           maximum: 1000000
         registrationDeadline:
           type: string
+          description: Date-only end of registration at 23:59:59 Europe/Berlin. For creation, must be before startDate (at latest the previous day).
           format: date
           nullable: true
         priceGroups:
@@ -5504,7 +5505,7 @@ components:
                 type: string
               reason:
                 type: string
-                enum: [required, blank, 'null', reference, permission, range, invalid]
+                enum: [required, blank, 'null', reference, permission, range, invalid, overlap]
         errorCode:
           type: string
           nullable: true

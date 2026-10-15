@@ -36,17 +36,17 @@ final class Session
 
     public static function userId(): ?int
     {
-        return isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        return is_int($_SESSION['user_id'] ?? null) ? $_SESSION['user_id'] : null;
     }
 
     public static function userEmail(): ?string
     {
-        return isset($_SESSION['user_email']) ? (string) $_SESSION['user_email'] : null;
+        return is_string($_SESSION['user_email'] ?? null) ? $_SESSION['user_email'] : null;
     }
 
     public static function userRole(): ?string
     {
-        return isset($_SESSION['user_role']) ? (string) $_SESSION['user_role'] : null;
+        return is_string($_SESSION['user_role'] ?? null) ? $_SESSION['user_role'] : null;
     }
 
     public static function login(int $userId, string $email, string $role, ?string $passwordHash = null): void
@@ -62,10 +62,11 @@ final class Session
     public static function logout(): void
     {
         $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
+        $name = session_name();
+        if (ini_get('session.use_cookies') && $name !== false) {
             $params = session_get_cookie_params();
             setcookie(
-                session_name(),
+                $name,
                 '',
                 [
                     'expires' => time() - 42000,
@@ -73,7 +74,7 @@ final class Session
                     'domain' => $params['domain'],
                     'secure' => $params['secure'],
                     'httponly' => $params['httponly'],
-                    'samesite' => $params['samesite'] ?? 'Lax',
+                    'samesite' => $params['samesite'],
                 ]
             );
         }
@@ -82,13 +83,17 @@ final class Session
 
     public static function flash(string $key, ?string $value = null): ?string
     {
+        $flash = $_SESSION['_flash'] ?? [];
+        $flash = is_array($flash) ? $flash : [];
         if ($value !== null) {
-            $_SESSION['_flash'][$key] = $value;
+            $flash[$key] = $value;
+            $_SESSION['_flash'] = $flash;
             return null;
         }
 
-        $stored = $_SESSION['_flash'][$key] ?? null;
-        unset($_SESSION['_flash'][$key]);
-        return $stored !== null ? (string) $stored : null;
+        $stored = $flash[$key] ?? null;
+        unset($flash[$key]);
+        $_SESSION['_flash'] = $flash;
+        return is_string($stored) ? $stored : null;
     }
 }

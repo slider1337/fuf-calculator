@@ -8,6 +8,7 @@ use Slim\Psr7\Factory\{ServerRequestFactory,StreamFactory};
 
 final class FakeParticipationProvider implements ParticipationPort {
  public ?int $bookingUntil=null;
+ public ?\Closure $onSnapshot=null;
  public int $writes=0;
  public array $rows=[];
  public array $outcomes=[];
@@ -20,7 +21,7 @@ final class FakeParticipationProvider implements ParticipationPort {
  public bool $guestsAllowed=false;
  public array $termFields=[];
  public function blockedReason(): ?string {return null;}
- public function snapshot(string $eventId): array {return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>$this->bookingUntil??time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
+ public function snapshot(string $eventId): array {if($this->onSnapshot!==null){($this->onSnapshot)();}return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>$this->bookingUntil??time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
  public function execute(string $kind,array $person,string $operationReference): array {
   $this->writes++;if($this->onExecute!==null){($this->onExecute)();}
   if(($this->outcomes[$person['memberReference']]??null)==='reject'){throw new ParticipationRejected('provider_rejected');}
@@ -51,6 +52,8 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private const KEY='test-secret-32-characters-minimum-only-fixture';
  protected function setUp(): void {
   parent::setUp();$c=$this->app->getContainer();$this->provider=new FakeParticipationProvider();$this->directory=new FakeMemberDirectory();$c->set(ParticipationPort::class,$this->provider);$c->set(MemberDirectoryPort::class,$this->directory);$this->db=$c->get(PDO::class);
+  // Enforce the real production network/transaction guard for every fake provider read.
+  $this->provider->onSnapshot=fn()=>$c->get(\App\Infrastructure\ProviderRequestBudget::class)->reserve('member-fixture');
   putenv('FUF_INTEGRATION_AUDIENCE=calculator-test');putenv('FUF_INTEGRATION_SERVICES='.json_encode(['website'=>['issuer'=>'https://website.test','keys'=>['current'=>self::KEY,'previous'=>self::KEY],'scopes'=>['member.read','member.write']]]));
   $r=$this->dispatch('POST','/api/trips',$this->validTripPayload());self::assertSame(201,$r->getStatusCode());$this->trip=json_decode((string)$r->getBody(),true)['id'];
   $s=$this->db->prepare('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)');$s->execute([$this->trip,'77',json_encode($this->provider->snapshot('77')),gmdate(DATE_ATOM)]);
@@ -162,6 +165,39 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
+ public function testReleasedTermStatusReadsProviderOutsideTransactionAndUsesLiveDeadline(): void {
+  $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
+  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
+  $this->provider->bookingUntil=1;$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
+ }
+ public function testFailedReleasePreflightLeavesSettingsUnchangedAndDisablingStillWorks(): void {
+  $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');
+  $this->provider->onSnapshot=static fn()=>throw new \App\Application\AccessException('provider_read_failed',503);
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true]);self::assertSame(503,$r->getStatusCode(),(string)$r->getBody());self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
+  $this->db->exec('UPDATE member_trip_settings SET enabled=1');$r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>false]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
+ }
+ public function testIdempotentTermActionsReadReleasedStatusOnlyAfterCommit(): void {
+  $_SESSION['user_id']=1;$body=['operationKey'=>'linked_retry_001','reviewHash'=>'fixture-review','confirmed'=>true];
+  $q=$this->db->prepare("INSERT INTO sync_jobs(trip_id,operation_key,request_hash,payload_json,actor_id,status,external_id,created_at) VALUES (?,?,?,'{}',1,'succeeded','77',?)");
+  $q->execute([$this->trip,$body['operationKey'],\App\Application\PlanningTransferService::hash($body),gmdate(DATE_ATOM)]);$job=(int)$this->db->lastInsertId();
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/term/request",$body);self::assertSame(202,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/term/resume",['confirmed'=>true,'jobId'=>$job,'attempts'=>0]);self::assertSame(202,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
+ }
+ public function testReleaseRechecksLinkAfterProviderPreflightWithoutPartialSettingsWrite(): void {
+  $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');$guard=$this->provider->onSnapshot;
+  $this->provider->onSnapshot=function()use($guard){$guard();$this->db->exec("UPDATE external_event_links SET external_id='88'");};
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true]);self::assertSame(409,$r->getStatusCode(),(string)$r->getBody());self::assertStringContainsString('term_review_changed',(string)$r->getBody());self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
+ }
+ public function testReleaseRechecksPermissionsAfterProviderPreflight(): void {
+  $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');$guard=$this->provider->onSnapshot;
+  $this->provider->onSnapshot=function()use($guard){$guard();$this->db->exec("DELETE FROM trip_access WHERE user_id=1 AND capability='trip.manage'");};
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true]);self::assertSame(403,$r->getStatusCode(),(string)$r->getBody());self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
+ }
+ public function testTermStatusRechecksReleaseAfterProviderRead(): void {
+  $_SESSION['user_id']=1;$guard=$this->provider->onSnapshot;
+  $this->provider->onSnapshot=function()use($guard){$guard();$this->db->exec('UPDATE member_trip_settings SET enabled=0');};
+  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('member_release_disabled',$data['registrationReason']);
+ }
  public function testReleaseInheritsLiveTermDeadlineAndIgnoresOldCutoff(): void {
   $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
   $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true,'bookingUntil'=>1]);

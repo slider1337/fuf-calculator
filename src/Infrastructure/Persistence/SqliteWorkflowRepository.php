@@ -39,6 +39,6 @@ final readonly class SqliteWorkflowRepository
     {
         $r=$this->query('SELECT * FROM sync_jobs WHERE trip_id=?',[$tripId])->fetch(PDO::FETCH_ASSOC);
         if(!$r){return null;}
-        return ['id'=>(int)$r['id'],'tripId'=>$tripId,'operationKey'=>$r['operation_key'],'requestHash'=>$r['request_hash'],'payload'=>json_decode($r['payload_json'],true,512,JSON_THROW_ON_ERROR),'actorId'=>(int)$r['actor_id'],'status'=>$r['status'],'attempts'=>(int)$r['attempts'],'externalId'=>$r['external_id'],'errorCode'=>$r['error_code'],'leaseToken'=>$r['lease_token'],'leaseUntil'=>$r['lease_until']===null?null:(int)$r['lease_until'],'createdAt'=>$r['created_at']];
+        return ['id'=>(int)$r['id'],'tripId'=>$tripId,'operationKey'=>$r['operation_key'],'requestHash'=>$r['request_hash'],'payload'=>json_decode($r['payload_json'],true,512,JSON_THROW_ON_ERROR),'actorId'=>(int)$r['actor_id'],'status'=>$r['status'],'attempts'=>(int)$r['attempts'],'externalId'=>$r['external_id'],'errorCode'=>$r['error_code'],'validationErrors'=>json_decode($r['validation_errors_json']??'[]',true)??[],'leaseToken'=>$r['lease_token'],'leaseUntil'=>$r['lease_until']===null?null:(int)$r['lease_until'],'createdAt'=>$r['created_at']];
     }
 }

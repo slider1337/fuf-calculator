@@ -17,6 +17,9 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  };return calls;
 }
 (async()=>{
+ assert.equal(scope.termValidationText([{field:'prologue',reason:'blank'},{field:'creator',reason:'required'}]),'Beschreibung: darf nicht leer sein. Terminersteller: Pflichtangabe fehlt.');
+ assert.equal(scope.termValidationText([{field:'TOKEN',reason:'secret'},{field:'__proto__',reason:'invalid'}]),'');
+ assert.match(scope.termProgressText({job:{status:'blocked',errorCode:'term_create_invalid',validationErrors:[{field:'calendar',reason:'reference'}]}}),/Kalender: Zuordnung wurde nicht gefunden/);count++;
  let calls=fake(),context=existing();await scope.saveTermSetup(context,draft,false);
  assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft']);assert.equal(context.revision,3);count++;
  calls=fake();context=existing();await scope.saveTermSetup(context,draft,true);

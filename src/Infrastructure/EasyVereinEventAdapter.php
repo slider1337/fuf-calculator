@@ -30,8 +30,10 @@ final readonly class EasyVereinEventAdapter implements \App\Application\Port\Rec
   }catch(\Throwable){throw new TermCreationNotStarted('term_preflight_failed');}
   $marker=$this->marker($reference);$tz=new \DateTimeZone('Europe/Berlin');$start=(new \DateTimeImmutable($d['startDate'].' 00:00:00',$tz))->format(DATE_ATOM);$end=(new \DateTimeImmutable(($d['endDate']??$d['startDate']).' 23:59:59',$tz))->format(DATE_ATOM);
   $body=['name'=>$d['title'],'start'=>$start,'end'=>$end,'all_day'=>true,'calendar'=>(int)$calendar,'location_name'=>$d['location'],'prologue'=>$d['description'],'max_participators'=>$d['capacity'],'show_memberarea'=>$d['visibility']==='members','is_public'=>false,'note'=>$marker,'access'=>0,'allow_multiple_price_groups_per_participation'=>false];
+  // Optional empty text must use provider defaults rather than failing blank-field validation.
+  foreach(['location_name','prologue'] as $field){if(trim($body[$field])==='')unset($body[$field]);}
   if($d['registrationDeadline']!==null){$body['end_participation']=(new \DateTimeImmutable($d['registrationDeadline'].' 23:59:59',$tz))->format(DATE_ATOM);}
-  try{$result=$this->guardedWrite('POST','event/',$body,$beforeWrite);}catch(ParticipationRejected $e){throw new TermCreationNotStarted(match($e->getCode()){401=>'term_create_unauthorized',403=>'term_create_forbidden',400,422=>'term_create_invalid',default=>'term_create_rejected'});}
+  try{$result=$this->guardedWrite('POST','event/',$body,$beforeWrite);}catch(ParticipationRejected $e){throw new TermCreationNotStarted(match($e->getCode()){401=>'term_create_unauthorized',403=>'term_create_forbidden',400,422=>'term_create_invalid',default=>'term_create_rejected'},$e->validationErrors);}
   $id=EasyVereinData::id($result['id']??null,'event');$this->remember($reference,$id);
   foreach($d['priceGroups'] as $i=>$g){$this->guardedWrite('POST','price-group/',['event'=>(int)$id,'name'=>$g['label'],'selling_price'=>(float)$g['price'],'pieces'=>-1,'maximum_pieces_per_participation'=>1,'description'=>$marker.' group '.$i],$beforeWrite);}
   $this->guardedWrite('PATCH','event/'.$id.'/', ['access'=>$d['priceGroups']?(in_array('GUEST',array_column($d['priceGroups'],'category'),true)?2:1):3],$beforeWrite);return $this->get($id);

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.10.0
+  version: 1.11.0
 security:
   - calculatorSession: []
 servers:
@@ -5493,6 +5493,18 @@ components:
         externalId:
           type: string
           nullable: true
+        validationErrors:
+          type: array
+          description: Safe local field/reason codes; never raw provider response text.
+          items:
+            type: object
+            required: [field, reason]
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
+                enum: [required, blank, 'null', reference, permission, range, invalid]
         errorCode:
           type: string
           nullable: true

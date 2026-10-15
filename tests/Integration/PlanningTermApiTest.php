@@ -68,6 +68,18 @@ final class PlanningTermApiTest extends ApiTestCase
         $s=$db->prepare("INSERT INTO registration_participants (registration_id,name,birth_date,participation_status) VALUES (?,?,?,?)");
         $s->execute([$id,'Erwachsen','1986-01-01','confirmed']);$s->execute([$id,'Kind','2018-01-01','confirmed']);$s->execute([$id,'Offen','1980-01-01','pending']);return $id;
     }
+    public function testRejectedTermValidationIsPersistedAndClearedOnExplicitRetry(): void
+    {
+        $f=$this->fake();$errors=[['field'=>'prologue','reason'=>'blank']];
+        $f->onCreate=static fn()=>throw new \App\Application\TermCreationNotStarted('term_create_invalid',$errors);$t=$this->trip();
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);
+        $review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'validation_term_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);
+        $worker=$this->app->getContainer()->get(TermWorker::class);self::assertTrue($worker->runOne());
+        $data=$this->json('GET',"/api/trips/$t/term");self::assertSame('blocked',$data['job']['status']);self::assertSame('term_create_invalid',$data['job']['errorCode']);self::assertSame($errors,$data['job']['validationErrors']);self::assertSame(0,$f->posts);
+        $f->onCreate=null;$data=$this->json('POST',"/api/trips/$t/term/resume",['jobId'=>$data['job']['id'],'attempts'=>$data['job']['attempts'],'confirmed'=>true],202);
+        self::assertSame([],$data['job']['validationErrors']);self::assertTrue($worker->runOne());self::assertSame(1,$f->posts);self::assertSame('succeeded',$this->json('GET',"/api/trips/$t/term")['job']['status']);
+    }
     public function testPreviewNoWritesApplySnapshotStaleAndIdempotency(): void
     {
         $t=$this->trip();$r=$this->seedRegistration($t,'Zimmer A');$before=$this->json('GET',"/api/trips/$t");

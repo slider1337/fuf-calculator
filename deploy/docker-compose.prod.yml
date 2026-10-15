@@ -3,7 +3,7 @@ services:
   # vor app, damit ein Release mit neuer Migration nicht auf eine alte Tabelle
   # trifft. Schlaegt die Migration fehl, startet app gar nicht erst.
   migrate:
-    image: ghcr.io/slider1337/fuf-calculator:latest
+    image: ghcr.io/slider1337/fuf-calculator:${FUF_IMAGE_TAG:-latest}
     command: ["php", "vendor/bin/phinx", "migrate"]
     restart: "no"
     volumes:
@@ -12,7 +12,7 @@ services:
       - DB_PATH=/app/database/fuf.sqlite
 
   app:
-    image: ghcr.io/slider1337/fuf-calculator:latest
+    image: ghcr.io/slider1337/fuf-calculator:${FUF_IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       migrate:
@@ -47,7 +47,7 @@ services:
       - FUF_RECONCILE_INTERVAL=${FUF_RECONCILE_INTERVAL:-300}
 
   worker:
-    image: ghcr.io/slider1337/fuf-calculator:latest
+    image: ghcr.io/slider1337/fuf-calculator:${FUF_IMAGE_TAG:-latest}
     command: ["php", "scripts/workers.php"]
     restart: unless-stopped
     depends_on:

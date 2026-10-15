@@ -1,0 +1,7 @@
+# Eindeutige, nacheinander laufende Deployments
+
+Am 15.10. wurde live noch die alte management.js mit „Team & Termin“ ausgeliefert, obwohl PR #21 gemergt und dessen Deployment grün war. Die Deployments der PRs #19, #20 und #21 liefen überlappend. Die Builds von #21 und #20 endeten um 21:37:26 bzw. 21:37:28 UTC. Alle Deployments zogen das veränderliche `latest`-Tag. Der zuletzt erfolgte Build konnte damit einen älteren Stand bereitstellen. Der Live-Dateihash entspricht den Ständen vor #21.
+
+Der bestehende Build von #21 einschließlich nachgelagertem Deployment wurde erneut gestartet. Diese Korrektur verhindert künftige Überschneidungen durch eine gemeinsame Concurrency-Gruppe für den ganzen Deployment-Workflow. Laufende Deployments werden nicht mitten in Sicherung/Migration abgebrochen. Zusätzlich veröffentlicht jeder Build einen Tag mit der vollständigen Commit-SHA. Der Deploy-Schritt zieht exakt diesen Tag und setzt `FUF_IMAGE_TAG` für App, Worker und Migration. Manuelle Compose-Aufrufe ohne Variable verwenden weiterhin `latest`.
+
+Prüfung: Workflow und Compose als YAML geparst; alle drei Dienste verwenden denselben Image-Selektor; volle SHA als Build-Tag vorhanden, Tag im Deploy vor allen Compose-Aufrufen exportiert; Concurrency ohne laufende Abbrüche; `git diff --check`. Keine Browser-/Lighthouse-Prüfung und keine Mitglieder-/Provider-Schreibtests. Der Pull Request allein verändert den Server nicht.

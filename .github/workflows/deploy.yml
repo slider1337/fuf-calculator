@@ -5,6 +5,11 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# Serialize complete releases; never cancel a deployment during migration.
+concurrency:
+  group: calculator-production-release
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -38,6 +43,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix=
+            type=raw,value=${{ github.sha }}
             type=raw,value=latest
 
       - name: Build and push Docker image
@@ -99,8 +105,9 @@ jobs:
             umask 077
             python3 write-env.py
 
-            # Pull latest image
-            docker pull ghcr.io/${{ github.repository }}:latest
+            # Pin app, worker and migration to this exact release.
+            export FUF_IMAGE_TAG=${{ github.sha }}
+            docker pull ghcr.io/${{ github.repository }}:$FUF_IMAGE_TAG
 
             # Stop all writers and create a consistent backup before migration.
             docker compose -f docker-compose.prod.yml stop app worker

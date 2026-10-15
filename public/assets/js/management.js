@@ -35,6 +35,8 @@ async function performManagement(operation) { try { setStatusNote('management-st
 function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
   byId('management-modal').classList.remove('is-term-wizard');
   byId('wizard-footer-navigation')?.remove();
+  byId('wizard-save-draft')?.remove();
+  byId('management-submit').hidden=false;
   management.modal ||= new bootstrap.Modal(byId('management-modal'));
   byId('management-title').textContent = title; byId('management-fields').innerHTML = fields;
   byId('management-modal-error').textContent = ''; byId('management-submit').textContent = submitLabel; management.submit = submit;

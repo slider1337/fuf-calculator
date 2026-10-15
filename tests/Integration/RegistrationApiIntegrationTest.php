@@ -49,7 +49,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
             ->withUploadedFiles(['csv_file' => $uploadedFile])
             ->withHeader('Content-Type', 'multipart/form-data');
 
-        return $this->app->handle($request);
+        return $this->app->handle($request->withHeader('X-CSRF-Token', \App\Infrastructure\Http\Auth\Session::csrfToken()));
     }
 
     /**
@@ -202,7 +202,7 @@ final class RegistrationApiIntegrationTest extends ApiTestCase
             ->createServerRequest('POST', "/api/trips/{$tripId}/registrations/import")
             ->withHeader('Content-Type', 'multipart/form-data');
 
-        $response = $this->app->handle($request);
+        $response = $this->app->handle($request->withHeader('X-CSRF-Token', \App\Infrastructure\Http\Auth\Session::csrfToken()));
         self::assertSame(422, $response->getStatusCode());
     }
 

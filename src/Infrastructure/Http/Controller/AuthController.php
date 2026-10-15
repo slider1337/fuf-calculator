@@ -50,7 +50,7 @@ final readonly class AuthController
             ]);
         }
 
-        Session::login((int) $user->id(), $user->email(), $user->role());
+        Session::login((int) $user->id(), $user->email(), $user->role(), $user->passwordHash());
         return $response->withStatus(302)->withHeader('Location', '/');
     }
 
@@ -137,7 +137,7 @@ final readonly class AuthController
             ]);
         }
 
-        Session::login((int) $user->id(), $user->email(), $user->role());
+        Session::login((int) $user->id(), $user->email(), $user->role(), $user->passwordHash());
         return $response->withStatus(302)->withHeader('Location', '/');
     }
 

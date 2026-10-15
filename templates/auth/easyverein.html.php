@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mein Konto — FUF Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
@@ -23,6 +24,7 @@
                 <h3 class="h6">Verknüpfung entfernen</h3>
                 <p class="small">Bestätige dein Kalkulator-Passwort. Danach bleibt die Anmeldung mit E-Mail und Passwort verfügbar. Deine Reisen und Rechte bleiben erhalten.</p>
                 <form method="post" action="/account/easyverein/unlink">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
                     <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
                     <label class="form-label" for="unlink-password">Kalkulator-Passwort</label>
                     <input class="form-control mb-3" id="unlink-password" type="password" name="password" autocomplete="current-password" required>
@@ -36,6 +38,7 @@
         <p><span class="badge text-bg-secondary">Nicht verknüpft</span></p>
         <p>Bestätige dein bisheriges Kalkulator-Passwort. Anschließend meldest du dich bei easyVerein an. Deine Reisen und Rechte bleiben erhalten.</p>
         <form method="post" action="/account/easyverein/link">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
             <label class="form-label" for="password">Bisheriges Kalkulator-Passwort</label>
             <input class="form-control mb-3" id="password" type="password" name="password" autocomplete="current-password" required>

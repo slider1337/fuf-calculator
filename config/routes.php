@@ -167,5 +167,7 @@ return static function (App $app): void {
         return $response->withHeader('Content-Type', 'application/yaml');
     });
 
+    $app->add(\App\Infrastructure\Http\Auth\AuthRateLimitMiddleware::class);
     $app->add(AuthMiddleware::class);
+    $app->add(\App\Infrastructure\Http\Auth\CsrfMiddleware::class);
 };

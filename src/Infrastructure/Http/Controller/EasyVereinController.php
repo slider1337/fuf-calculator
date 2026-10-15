@@ -141,7 +141,7 @@ final readonly class EasyVereinController
                 Session::flash('info', 'Bitte melde dich zuerst mit E-Mail und Passwort an und verknüpfe dein Konto unter „Mein Konto“.');
                 return $this->redirect($response, '/login');
             }
-            Session::login((int) $user->id(), $user->email(), $user->role());
+            Session::login((int) $user->id(), $user->email(), $user->role(), $user->passwordHash());
             return $this->redirect($response, '/');
         } catch (Throwable) {
             Session::flash('info', 'easyVerein-Anmeldung oder Verknüpfung fehlgeschlagen. Bitte erneut starten. Die bisherige Anmeldung bleibt verfügbar.');

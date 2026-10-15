@@ -7,7 +7,7 @@ use App\Domain\Form\{AnswerValidator,FormSchema};
 
 final readonly class MemberBookingService {
  public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private SqliteWorkflowRepository $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync) {}
- private function allowed(int $trip,string $mode): array {
+ private function allowed(int $trip,string $mode,?array $preflight=null): array {
   if(($this->access->metadata($trip)['registration_mode']??'clubdesk_csv')!=='easyverein'){throw new NotFoundException('Member trip');}
   if($this->directory->blockedReason()!==null){throw new AccessException($this->directory->blockedReason(),503);}
   if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),503);}
@@ -15,7 +15,12 @@ final readonly class MemberBookingService {
   if(!$s||!(bool)$s['enabled']||!$this->store->link($trip)){throw new NotFoundException('Member trip');}
   if($mode!=='read'&&($this->access->metadata($trip)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
   if(($this->access->metadata($trip)['closed_at']??null)!==null&&$mode!=='read'){throw new AccessException('trip_closed',409);}
-  if($mode!=='read'&&$this->external->snapshot($this->store->link($trip)['externalId'])['bookingUntil']<time()){throw new AccessException('member_deadline_passed',409);}
+  if($mode!=='read'){
+   $event=$this->store->link($trip)['externalId'];
+   if($preflight!==null&&($preflight['eventId']??null)!==$event)throw new AccessException('term_review_changed',409);
+   $deadline=$preflight===null?$this->external->snapshot($event)['bookingUntil']:$preflight['bookingUntil'];
+   if($deadline<time())throw new AccessException('member_deadline_passed',409);
+  }
   return $s;
  }
  private function profile(MemberIdentity $identity): array {
@@ -92,7 +97,7 @@ final readonly class MemberBookingService {
   if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
   $ctx=$this->context($trip,$identity);$data=$this->payload($trip,$identity,$p,$ctx);
   return $this->access->transaction(function()use($trip,$identity,$p,$hash,$memberKey,$data,$ctx){
-   $this->allowed($trip,'create');$op=$this->bookings->operation($trip,$memberKey);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($this->owned($trip,(int)$op['registration_id'],$identity));}
+   $this->allowed($trip,'create',$ctx);$op=$this->bookings->operation($trip,$memberKey);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($this->owned($trip,(int)$op['registration_id'],$identity));}
    // Include accepted price/version in the common engine's idempotency hash.
    $b=$this->engine($trip,$identity)->create($trip,$data);$this->store->query('UPDATE registrations SET owner_member_reference=? WHERE id=?',[$identity->memberReference,$b['id']]);
    $byClient=array_column($data['persons'],null,'id');foreach($b['persons'] as $person){$choice=$byClient[$person['clientReference']];
@@ -108,16 +113,16 @@ final readonly class MemberBookingService {
   });
  }
  public function correct(int $trip,int $booking,MemberIdentity $identity,array $p): array {
-  $this->allowed($trip,'correct');if($this->context($trip,$identity)['correctionUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$this->owned($trip,$booking,$identity);
+  $this->allowed($trip,'correct');$ctx=$this->context($trip,$identity);if($ctx['correctionUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$this->owned($trip,$booking,$identity);
   if(array_key_exists('persons',$p)){throw new ValidationException(['persons'=>'profile_changes_require_provider_review']);}
   if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
   $key=PlanningTransferService::operationKey($p);$p['operationKey']='mc_'.hash('sha256',$identity->memberReference.':'.$key);
-  return $this->access->transaction(function()use($trip,$booking,$identity,$p){$this->allowed($trip,'correct');$this->owned($trip,$booking,$identity);return $this->output($this->engine($trip,$identity)->correct($trip,$booking,$p));});
+  return $this->access->transaction(function()use($trip,$booking,$identity,$p,$ctx){$this->allowed($trip,'correct',$ctx);$this->owned($trip,$booking,$identity);return $this->output($this->engine($trip,$identity)->correct($trip,$booking,$p));});
  }
  public function cancel(int $trip,int $booking,MemberIdentity $identity,array $p): array {
-  $this->allowed($trip,'cancel');if($this->context($trip,$identity)['cancelUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$hash=PlanningTransferService::hash($p);$key='member_cancel_'.hash('sha256',$identity->memberReference.':'.PlanningTransferService::operationKey($p));
-  return $this->access->transaction(function()use($trip,$booking,$identity,$p,$hash,$key){
-   $this->allowed($trip,'cancel');$b=$this->owned($trip,$booking,$identity);$op=$this->bookings->operation($trip,$key);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($b);}
+  $this->allowed($trip,'cancel');$ctx=$this->context($trip,$identity);if($ctx['cancelUntil']<time()){throw new AccessException('member_deadline_passed',409);}$this->profile($identity);$hash=PlanningTransferService::hash($p);$key='member_cancel_'.hash('sha256',$identity->memberReference.':'.PlanningTransferService::operationKey($p));
+  return $this->access->transaction(function()use($trip,$booking,$identity,$p,$hash,$key,$ctx){
+   $this->allowed($trip,'cancel',$ctx);$b=$this->owned($trip,$booking,$identity);$op=$this->bookings->operation($trip,$key);if($op){if($op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}return $this->output($b);}
    if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}
    if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $reason=$p['reason']??null;if(!is_string($reason)||trim($reason)===''||mb_strlen($reason)>500){throw new ValidationException(['reason'=>'required_max_500']);}

@@ -20,8 +20,13 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  assert.equal(scope.termValidationText([{field:'prologue',reason:'blank'},{field:'creator',reason:'required'}]),'Beschreibung: darf nicht leer sein. Terminersteller: Pflichtangabe fehlt.');
  assert.equal(scope.termValidationText([{field:'TOKEN',reason:'secret'},{field:'__proto__',reason:'invalid'}]),'');
  assert.match(scope.termProgressText({job:{status:'blocked',errorCode:'term_create_invalid',validationErrors:[{field:'calendar',reason:'reference'}]}}),/Kalender: Zuordnung wurde nicht gefunden/);count++;
+ assert.equal(scope.termDeadlineMax('2026-10-16'),'2026-10-15');assert.equal(scope.termDeadlineMax('2027-03-01'),'2027-02-28');assert.equal(scope.termDeadlineMax('2028-03-01'),'2028-02-29');
+ assert.equal(scope.termDeadlineIssue({...draft,registrationDeadline:'2027-03-01'}),scope.termProblemText('term_registration_overlap'));
+ assert.equal(scope.termDeadlineIssue({...draft,registrationDeadline:'2027-02-28'}),'');
+ assert.equal(scope.termValidationText([{field:'end_participation',reason:'overlap'}]),'Anmeldeschluss: muss vor dem Terminbeginn liegen.');count++;
  let calls=fake(),context=existing();await scope.saveTermSetup(context,draft,false);
  assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft']);assert.equal(context.revision,3);count++;
+ calls=fake();context=existing();await assert.rejects(scope.saveTermSetup(context,{...draft,registrationDeadline:'2027-03-01'},true),/vor dem Terminbeginn/);assert.equal(calls.length,0);count++;
  calls=fake();context=existing();await scope.saveTermSetup(context,draft,true);
  assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft','/api/trips/2/term/review','/api/trips/2/term/request']);assert.deepEqual(calls[2].body,{operationKey:'external-key',reviewHash:'fresh-hash',confirmed:true});count++;
  calls=fake();context=existing();await scope.saveTermSetup(context,{...draft,mode:'link',externalId:'77'},true);
@@ -47,6 +52,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
   let html;scope.showManagementModal=(title,fields)=>{html=fields;throw new Error('capture')};
   await assert.rejects(scope.openTermWizard(trip),/capture/);
   assert.deepEqual([...html.matchAll(/data-wizard-panel="(\d)"/g)].map(m=>m[1]),['0','1','2']);
+  assert(html.includes('wizard-deadline-help'));assert(html.includes('spätestens am Vortag'));
   assert(!html.includes('wizard-save-review'));assert(!html.includes('wizard-term-action'));
   let depth=0;for(const m of html.matchAll(/<\/?section\b[^>]*>/g)){if(m[0].startsWith('</'))depth--;else{assert.equal(depth,0);depth++}}assert.equal(depth,0);
   assert(html.includes('wizard-event-query'));assert(html.includes('wizard-calendar-query'));count++;

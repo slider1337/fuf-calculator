@@ -5,6 +5,11 @@ use App\Infrastructure\EasyVereinValidation;
 use PHPUnit\Framework\TestCase;
 final class EasyVereinValidationTest extends TestCase
 {
+    public function testActualProviderRootListOverlapResponseIsRecognized(): void
+    {
+        self::assertSame([['field'=>'end_participation','reason'=>'overlap']],EasyVereinValidation::fromBody('["Der Anmeldezeitraum darf sich nicht mit dem Termin \u00fcberschneiden."]'));
+        self::assertSame([['field'=>'event','reason'=>'invalid']],EasyVereinValidation::fromBody('["Unrecognized private message secret@example.org"]'));
+    }
     public function testReducesFieldErrorsWithoutReflectingValuesOrRemoteMessages(): void
     {
         $body=json_encode(['prologue'=>['This field may not be blank.'],'creator'=>['Invalid pk "123" - object does not exist.'],'errors'=>[['field'=>'end_participation','message'=>'Date rejected secret@example.org Bearer TOKEN']],'unknownSecret'=>['TOKEN'],'detail'=>'sensitive remote text'],JSON_THROW_ON_ERROR);

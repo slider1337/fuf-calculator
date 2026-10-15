@@ -38,7 +38,7 @@ final readonly class TermWorker
             }else{$result=$this->external->reconcile($reference);}
             if($result===null){$error='external_result_unproven';}
         }
-        catch(TermCreationNotStarted $e){$validationErrors=$e->validationErrors;$error=in_array($e->reason,['term_preflight_failed','term_create_rejected','term_create_unauthorized','term_create_forbidden','term_create_invalid'],true)?$e->reason:'term_preflight_failed';if($claimed['mode']!=='reconcile'){$status='blocked';}}
+        catch(TermCreationNotStarted $e){$validationErrors=$e->validationErrors;$error=in_array($e->reason,['term_preflight_failed','term_create_rejected','term_create_unauthorized','term_create_forbidden','term_create_invalid','term_registration_overlap'],true)?$e->reason:'term_preflight_failed';if($claimed['mode']!=='reconcile'){$status='blocked';}}
         catch(AccessException $e){$error=in_array($e->error,['term_resume_conflict','term_resume_unsupported','term_resume_claim_lost','provider_event_invalid','provider_read_failed','provider_read_invalid','provider_calendar_invalid','provider_reference_invalid','provider_price_invalid','provider_date_invalid','provider_pagination_invalid','provider_collection_invalid','provider_collection_limit','provider_rate_limited'],true)?$e->error:'external_outcome_unknown';if($error==='term_resume_conflict')$status='blocked';}
         catch(\Throwable){$error='external_outcome_unknown';} // Do not persist provider responses containing secrets.
         $this->access->transaction(function() use($claimed,$job,$result,$error,$status,$validationErrors){

@@ -26,8 +26,10 @@ final class EasyVereinValidation
                     if(in_array($key,['non_field_errors','detail'],true)&&$next===null) $next='event';
                     $walk($child,$next,$depth+1);
                 }
-            } elseif (is_string($value)&&$field!==null) {
+            } elseif (is_string($value)) {
                 $text=mb_strtolower($value);
+                if(str_contains($text,'anmeldezeitraum')&&str_contains($text,'überschneid')){$found['end_participation:overlap']=['field'=>'end_participation','reason'=>'overlap'];return;}
+                $field??='event';
                 $reason=match(true) {
                     (bool)preg_match('/required|pflicht|erforderlich/',$text)=>'required',
                     (bool)preg_match('/blank|empty|leer/',$text)=>'blank',

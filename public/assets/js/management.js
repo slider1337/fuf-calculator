@@ -28,8 +28,11 @@ function eventSettingsDirty() {
   const e = management.event;
   return e && (byId('event-setting-name').value !== e.name || byId('event-setting-description').value !== e.description || byId('event-setting-archived').checked !== e.archived);
 }
+function managementMessage(error){
+  try{const code=JSON.parse(error.message).error;return ({provider_read_failed:'Der ausgewählte Termin konnte nicht aus easyVerein gelesen werden. Bitte API-Zugang und Leserechte prüfen und erneut versuchen.',provider_read_invalid:'Die Antwort von easyVerein zum ausgewählten Termin konnte nicht gelesen werden. Bitte erneut versuchen.',confirmed_term_required:'Bitte zuerst den easyVerein-Termin verbinden. Bei unklarer Anlage den vorhandenen Termin über die Suche zuordnen.',term_job_in_progress:'Der Terminauftrag wird gerade verarbeitet. Bitte kurz warten und den Status aktualisieren.',event_already_linked:'Dieser Termin ist bereits einer anderen Reise zugeordnet. Bitte den passenden Termin auswählen.',trip_already_linked:'Diese Reise ist bereits mit einem anderen Termin verbunden. Bitte den aktuellen Terminstatus prüfen.'})[code]||error.message;}catch{return error.message;}
+}
 function managementError(error) {
-  setStatusNote('management-status', `Fehler: ${error.message}`, 'error'); byId('management-status').focus();
+  setStatusNote('management-status', `Fehler: ${managementMessage(error)}`, 'error'); byId('management-status').focus();
 }
 async function performManagement(operation) { try { setStatusNote('management-status','',null); await operation(); } catch (error) { managementError(error); } }
 function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
@@ -37,6 +40,7 @@ function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
   byId('wizard-footer-navigation')?.remove();
   byId('wizard-save-draft')?.remove();
   byId('management-submit').hidden=false;
+  byId('management-submit').disabled=false;
   management.modal ||= new bootstrap.Modal(byId('management-modal'));
   byId('management-title').textContent = title; byId('management-fields').innerHTML = fields;
   byId('management-modal-error').textContent = ''; byId('management-submit').textContent = submitLabel; management.submit = submit;
@@ -49,7 +53,7 @@ function textField(id, label, value = '', type = 'text') {
 function reasonField() { return '<label class="f" for="action-reason">Grund<div class="in"><textarea id="action-reason" required maxlength="500" rows="2"></textarea></div></label>'; }
 byId('management-form').addEventListener('submit', async event => {
   event.preventDefault(); const button = event.currentTarget.querySelector('[type=submit]'); button.disabled = true;
-  try { await management.submit(); management.modal.hide(); } catch (error) { byId('management-modal-error').textContent = `Fehler: ${error.message}`; byId('management-modal-error').focus(); }
+  try { await management.submit(); management.modal.hide(); } catch (error) { byId('management-modal-error').textContent = `Fehler: ${managementMessage(error)}`; byId('management-modal-error').focus(); }
   finally { button.disabled = false; }
 });
 async function showEvents() {

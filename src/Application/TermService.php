@@ -118,7 +118,7 @@ final readonly class TermService
         if($verified===null||($verified['externalId']??null)!==$externalId){throw new ValidationException(['externalId'=>'verified_reference_required']);}
         return $this->policy->writeTrip($id,'term.manage',function() use($id,$externalId,$verified,$reason){
             $job=$this->store->job($id);
-            if($job&&in_array($job['status'],['pending','running'],true)){throw new AccessException('term_job_in_progress',409);}
+            if($job&&in_array($job['status'],['pending','running','reconciling'],true)){throw new AccessException('term_job_in_progress',409);}
             $this->bindVerified($id,$verified);
             if($job){$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE trip_id=?",[$externalId,$id]);}
             $this->policy->audit('term.link','trip',$id,$reason.' · externalId='.$externalId);return $this->read($id);

@@ -109,6 +109,25 @@ final class PlanningTermApiTest extends ApiTestCase
         $t2=$this->trip();$this->json('POST',"/api/trips/$t2/term/link",['externalId'=>'101','reason'=>'Doppelte Bindung'],409);
         $this->json('POST',"/api/trips/$t/term/request",array_replace($p,['operationKey'=>'new_key_001']),409);
     }
+    public function testProvenFailureStopsButUnknownCanBeLinkedWithoutAnotherCreate(): void
+    {
+        $f=$this->fake();$f->onCreate=static fn()=>throw new \App\Application\TermCreationNotStarted('term_create_rejected');$t=$this->trip();
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'rejected_term_01','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);
+        $worker=$this->app->getContainer()->get(TermWorker::class);self::assertTrue($worker->runOne());$data=$this->json('GET',"/api/trips/$t/term");
+        self::assertSame('blocked',$data['job']['status']);self::assertSame('term_create_rejected',$data['job']['errorCode']);self::assertFalse($worker->runOne());self::assertSame(0,$f->posts);
+        $db=$this->app->getContainer()->get(PDO::class);$db->exec("UPDATE sync_jobs SET status='unknown',lease_until=0");$f->events['900']=['externalId'=>'900','title'=>'Vorhandener Termin'];
+        $data=$this->json('POST',"/api/trips/$t/term/link",['externalId'=>'900','reason'=>'Vorhandenen Termin bewusst zugeordnet']);self::assertSame('900',$data['link']['externalId']);self::assertSame('succeeded',$data['job']['status']);self::assertSame(0,$f->posts);self::assertFalse($worker->runOne());
+    }
+    public function testReconciliationAndRunningJobBlockManualLink(): void
+    {
+        $f=$this->fake();$t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'reconcile_link_01','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);$f->events['900']=['externalId'=>'900'];
+        $db=$this->app->getContainer()->get(PDO::class);
+        foreach(['pending','running','reconciling'] as $status){$db->exec("UPDATE sync_jobs SET status='$status'");$this->json('POST',"/api/trips/$t/term/link",['externalId'=>'900','reason'=>'Parallelversuch'],409);}
+        self::assertSame(0,(int)$db->query('SELECT COUNT(*) FROM external_event_links')->fetchColumn());
+        $state=$this->json('GET',"/api/trips/$t/participation-sync");self::assertSame('confirmed_term_required',$state['blockedReason']);
+    }
     public function testExpiredRunningLeaseOnlyReconcilesNoPost(): void
     {
         $f=$this->fake();$t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'crashed_job_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);

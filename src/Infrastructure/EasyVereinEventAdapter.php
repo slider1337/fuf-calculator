@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace App\Infrastructure;
-use App\Application\{AccessException,Port\ExternalEventPort,Port\EasyVereinWriteClient};
+use App\Application\{AccessException,Port\ExternalEventPort,Port\EasyVereinWriteClient,ParticipationRejected,TermCreationNotStarted};
 use App\Infrastructure\Persistence\SqliteWorkflowRepository;
 final readonly class EasyVereinEventAdapter implements ExternalEventPort, \App\Application\Port\ExternalTermUpdatePort {
  public function __construct(private EasyVereinWriteClient $client,private EasyVereinParticipationAdapter $participations,private SqliteWorkflowRepository $store) {}
@@ -24,12 +24,15 @@ final readonly class EasyVereinEventAdapter implements ExternalEventPort, \App\A
  }
  public function create(array $d,string $reference): array {
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
-  $calendar=EasyVereinData::id($d['calendarReference']??null,'calendar');$check=$this->client->get('calendar/'.$calendar.'/', ['query'=>'{id}']);
-  if(EasyVereinData::id($check['id']??null,'calendar')!==$calendar){throw new AccessException('provider_calendar_invalid',503);}
+  try{
+   $calendar=EasyVereinData::id($d['calendarReference']??null,'calendar');$check=$this->client->get('calendar/'.$calendar.'/', ['query'=>'{id}']);
+   if(EasyVereinData::id($check['id']??null,'calendar')!==$calendar){throw new AccessException('provider_calendar_invalid',503);}
+  }catch(\Throwable){throw new TermCreationNotStarted('term_preflight_failed');}
   $marker=$this->marker($reference);$tz=new \DateTimeZone('Europe/Berlin');$start=(new \DateTimeImmutable($d['startDate'].' 00:00:00',$tz))->format(DATE_ATOM);$end=(new \DateTimeImmutable(($d['endDate']??$d['startDate']).' 23:59:59',$tz))->format(DATE_ATOM);
   $body=['name'=>$d['title'],'start'=>$start,'end'=>$end,'all_day'=>true,'calendar'=>(int)$calendar,'location_name'=>$d['location'],'prologue'=>$d['description'],'max_participators'=>$d['capacity'],'show_memberarea'=>$d['visibility']==='members','is_public'=>false,'note'=>$marker,'access'=>0,'allow_multiple_price_groups_per_participation'=>false];
   if($d['registrationDeadline']!==null){$body['end_participation']=(new \DateTimeImmutable($d['registrationDeadline'].' 23:59:59',$tz))->format(DATE_ATOM);}
-  $result=$this->client->write('POST','event/',$body);$id=EasyVereinData::id($result['id']??null,'event');
+  try{$result=$this->client->write('POST','event/',$body);}catch(ParticipationRejected $e){throw new TermCreationNotStarted(match($e->getCode()){401=>'term_create_unauthorized',403=>'term_create_forbidden',400,422=>'term_create_invalid',default=>'term_create_rejected'});}
+  $id=EasyVereinData::id($result['id']??null,'event');
   foreach($d['priceGroups'] as $i=>$g){$this->client->write('POST','price-group/',['event'=>(int)$id,'name'=>$g['label'],'selling_price'=>(float)$g['price'],'pieces'=>-1,'maximum_pieces_per_participation'=>1,'description'=>$marker.' group '.$i]);}
   $this->client->write('PATCH','event/'.$id.'/', ['access'=>$d['priceGroups']?(in_array('GUEST',array_column($d['priceGroups'],'category'),true)?2:1):3]);return $this->get($id);
  }

@@ -59,5 +59,20 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  assert.equal(nodes.get('term-wizard').hidden,true);assert.equal(timers,1);assert(nodes.get('term-details').innerHTML.includes('term-refresh'));assert(!nodes.get('term-details').innerHTML.includes('member-release-open'));count++;
  scope.api=async()=>({draft:{},link:{externalId:'77'},job:{status:'succeeded'},registrationEnabled:false,registrationReason:'member_release_disabled'});await scope.loadWorkflowStatus(trip);
  assert(nodes.get('term-details').innerHTML.includes('member-release-open'));assert.match(nodes.get('term-status').textContent,/Termin verbunden/);assert.equal(nodes.get('term-wizard').hidden,true);count++;
+ // No participation request/UI before a confirmed term; recovery never creates a term.
+ scope.api=async()=>({draft:{},link:null,job:{status:'unknown',errorCode:'external_outcome_unknown'},blockedReason:null});
+ let participationReads=0;scope.loadParticipationStatus=async()=>participationReads++;
+ await scope.loadWorkflowStatus(trip);assert.equal(participationReads,0);assert(nodes.get('term-details').innerHTML.includes('term-recover'));assert.match(nodes.get('participation-details').textContent,/sobald der Termin verbunden/);count++;
+ const recoveryNodes=new Map();function node(id){if(!recoveryNodes.has(id))recoveryNodes.set(id,{value:'',children:[],textContent:'',isConnected:true,replaceChildren(){this.children=[]},append(child){this.children.push(child)}});return recoveryNodes.get(id)}
+ scope.byId=node;scope.URLSearchParams=URLSearchParams;scope.document={createElement:()=>({})};
+ let submit;scope.showManagementModal=(title,html,callback)=>{recoveryNodes.clear();submit=callback;node('term-recovery-query').value='Test & Reise';};
+ const recoveryCalls=[];scope.api=async(url,options={})=>{recoveryCalls.push({url,options});return {items:[{id:'77',name:'Gefundener Termin',start:'2027-01-01T09:00:00Z',end:'2027-01-01T12:00:00Z',canceled:false}],nextOffset:null}};
+ scope.loadWorkflowStatus=async()=>{};
+ await scope.openTermRecovery(trip);assert.equal(recoveryCalls.length,1);assert(recoveryCalls[0].url.includes('/term/catalog/events?'));assert(recoveryCalls[0].url.includes('q=Test+%26+Reise'));assert.equal(node('management-submit').disabled,true);
+ await assert.rejects(submit(),/Suchtreffern auswählen/);node('term-recovery-results').children[0].onclick();assert.equal(node('management-submit').disabled,false);await submit();
+ assert.equal(recoveryCalls.length,2);assert.equal(recoveryCalls[1].url,'/api/trips/2/term/link');assert.equal(JSON.parse(recoveryCalls[1].options.body).externalId,'77');assert(recoveryCalls.every(c=>!c.url.endsWith('/request')));count++;
+ let resolveSearch;scope.api=()=>new Promise(resolve=>{resolveSearch=resolve});const pending=scope.openTermRecovery(trip);await Promise.resolve();node('term-recovery-query').oninput();resolveSearch({items:[{id:'99',name:'Stale'}],nextOffset:null});await pending;assert.equal(node('term-recovery-results').children.length,0);assert.equal(node('management-submit').disabled,true);count++;
+ const managementSource=fs.readFileSync('public/assets/js/management.js','utf8');vm.runInContext(managementSource.slice(managementSource.indexOf('function managementMessage'),managementSource.indexOf('async function performManagement')),scope);
+ assert.match(scope.managementMessage(new Error(JSON.stringify({error:'confirmed_term_required'}))),/Terminsuche|Suche zuordnen/);assert.match(scope.managementMessage(new Error(JSON.stringify({error:'term_job_in_progress'}))),/kurz warten/);count++;
  console.log(`${count} term setup scenarios passed.`);
 })().catch(error=>{console.error(error);process.exit(1)});

@@ -23,18 +23,20 @@ final readonly class TermWorker
             return ['job'=>$job,'mode'=>$mode,'token'=>$token];
         });
         if($claimed===null){return false;}if(isset($claimed['skip'])){return true;}
-        $job=$claimed['job'];$reference='calculator-term-'.$job['id'].'-'.$job['operationKey'];$result=null;$error=null;
+        $job=$claimed['job'];$reference='calculator-term-'.$job['id'].'-'.$job['operationKey'];$result=null;$error=null;$status='unknown';
         try{$result=$claimed['mode']==='create'?$this->external->create($job['payload'],$reference):$this->external->reconcile($reference);if($result===null){$error='external_result_unproven';}}
+        catch(TermCreationNotStarted $e){$error=in_array($e->reason,['term_preflight_failed','term_create_rejected','term_create_unauthorized','term_create_forbidden','term_create_invalid'],true)?$e->reason:'term_preflight_failed';if($claimed['mode']==='create'){$status='blocked';}}
+        catch(AccessException $e){$error=in_array($e->error,['provider_read_failed','provider_read_invalid','provider_calendar_invalid','provider_reference_invalid','provider_price_invalid','provider_date_invalid','provider_pagination_invalid','provider_collection_invalid','provider_collection_limit','provider_rate_limited'],true)?$e->error:'external_outcome_unknown';}
         catch(\Throwable){$error='external_outcome_unknown';} // Do not persist provider responses containing secrets.
-        $this->access->transaction(function() use($claimed,$job,$result,$error){
+        $this->access->transaction(function() use($claimed,$job,$result,$error,$status){
             $current=$this->store->job($job['tripId']);if($current['leaseToken']!==$claimed['token']){return;}
             if(!$this->allowed($job)){$error='permission_revoked_or_trip_closed';}
             if($error===null){
                 try{$this->terms->bindVerified($job['tripId'],$result);$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL WHERE id=?",[$result['externalId'],$job['id']]);$this->access->audit($job['actorId'],'term.confirm','trip',$job['tripId'],'Terminreferenz bestätigt');return;}
                 catch(\Throwable){$error='verified_reference_conflict';}
             }
-            // Backoff reconciliation; never transition to pending again.
-            $this->store->query("UPDATE sync_jobs SET status='unknown',lease_token=NULL,lease_until=?,error_code=? WHERE id=?",[time()+60,$error,$job['id']]);
+            // Known rejection/preflight failure stops here. Uncertain outcomes only reconcile, never create again.
+            $this->store->query("UPDATE sync_jobs SET status=?,lease_token=NULL,lease_until=?,error_code=? WHERE id=?",[$status,$status==='unknown'?time()+60:null,$error,$job['id']]);
         });return true;
     }
     private function allowed(array $job): bool

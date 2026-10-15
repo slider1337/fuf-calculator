@@ -1,0 +1,16 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 10
+    phpVersion: 80400
+    paths:
+        - src
+        - config
+        - public/index.php
+        - public/router.php
+        - scripts
+        - migrations
+        - phinx.php
+    tmpDir: phpstan-tmp
+    reportUnmatchedIgnoredErrors: true

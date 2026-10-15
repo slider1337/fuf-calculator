@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Passwort vergessen &mdash; FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
@@ -22,6 +23,7 @@
         <div class="card-body">
             <p class="text-muted small">Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, um ein neues Passwort zu vergeben.</p>
             <form method="post" action="/forgot-password">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
                 <div class="mb-3">
                     <label class="form-label" for="email">E-Mail</label>
                     <input id="email" class="form-control" type="email" name="email" required autofocus>

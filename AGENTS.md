@@ -32,3 +32,8 @@ Der Nutzer hat ausdrücklich klargestellt: „das ist alles noch im Test also ja
 # Vereinfachter easyVerein-Ablauf vom 15.10.2026
 
 Der Nutzer möchte keine manuelle Personenzuordnung und keine zusätzliche individuelle Gastfreigabe. Direkte easyVerein-Teilnahmen werden über ihre stabilen Provider-Referenzen automatisch übernommen. Wenn der easyVerein-Termin Gäste erlaubt, dürfen diese im Mitgliederweg direkt angemeldet werden; das anmeldende Mitglied bleibt Kontakt. Frühere Konzepte mit zusätzlicher Orga-Zulassung sind insoweit überholt. Namen sind weiterhin kein Identitätsnachweis; Formularantworten und nicht belegte Buchungs-/Familienzugehörigkeit dürfen nicht erfunden werden.
+# Statische Analyse
+
+- `composer analyse` prüft auf PHPStan Level 10 und muss vor einem PR erfolgreich sein.
+- `phpstan-baseline.neon` erfasst ausschließlich den bei der Einführung vorhandenen Typisierungsrückstand. Neue Befunde beheben; die Baseline nicht automatisch vergrößern oder Prüfpfade ausschließen. Bei behobenen Altbefunden die entsprechenden Einträge reduzieren.
+- Nach Typ-/Vertragsänderungen die betroffenen Tests und vor Abschluss die PHPUnit-Suite ausführen.

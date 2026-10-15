@@ -248,6 +248,15 @@ final class InMemoryAuthTokenRepository implements AuthTokenRepositoryInterface
         // Token mutation is reflected in the in-memory instance directly
     }
 
+    public function transaction(callable $operation): mixed { return $operation(); }
+
+    public function revokeForEmail(string $email): void
+    {
+        foreach ($this->tokens as $token) {
+            if ($token->email() === $email) { $token->markUsed(new DateTimeImmutable()); }
+        }
+    }
+
     public function deleteExpired(): void
     {
         $this->tokens = [];

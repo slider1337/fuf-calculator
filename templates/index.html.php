@@ -5,6 +5,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FUF Gruppenreise Kalkulator</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/css/bootstrap.min.css">
@@ -75,6 +76,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                         <span class="app-user-role d-none" id="current-user-role-badge">Admin</span>
                     </div>
                     <form method="post" action="/logout" class="m-0">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\App\Infrastructure\Http\Auth\Session::csrfToken(), ENT_QUOTES) ?>">
                         <button class="app-icon-link" type="submit" aria-label="Abmelden" title="Abmelden">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                         </button>

@@ -13,6 +13,8 @@ return static function (?ContainerInterface $container = null): App {
     }
 
     $app = Bridge::create($container);
+    $routes = require __DIR__ . '/routes.php';
+    $routes($app);
     $app->addBodyParsingMiddleware();
     $app->addRoutingMiddleware();
 
@@ -38,9 +40,6 @@ return static function (?ContainerInterface $container = null): App {
 
         return $response->withHeader('Content-Type', 'application/json');
     });
-
-    $routes = require __DIR__ . '/routes.php';
-    $routes($app);
 
     return $app;
 };

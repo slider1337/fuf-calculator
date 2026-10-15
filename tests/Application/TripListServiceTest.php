@@ -173,6 +173,12 @@ final class FailingRegistrationRepository implements RegistrationRepositoryInter
         throw new RuntimeException('registration storage unavailable');
     }
 
+    public function findById(int $id): ?Registration { throw new RuntimeException('not supported'); }
+
+    public function deleteCsvByTripId(int $tripId): void { throw new RuntimeException('not supported'); }
+
+    public function deleteById(int $id): void { throw new RuntimeException('not supported'); }
+
     public function deleteByTripId(int $tripId): void
     {
         throw new RuntimeException('not supported');

@@ -15,6 +15,12 @@ interface RegistrationRepositoryInterface
     /** @return Registration[] */
     public function findByTripId(int $tripId): array;
 
+    public function findById(int $id): ?Registration;
+
     public function deleteByTripId(int $tripId): void;
+
+    public function deleteCsvByTripId(int $tripId): void;
+
+    public function deleteById(int $id): void;
 }
 

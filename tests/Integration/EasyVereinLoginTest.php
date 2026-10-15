@@ -60,6 +60,7 @@ final class EasyVereinLoginTest extends ApiTestCase
         $this->userId = (int) $user->id();
         $_SESSION['user_id'] = $this->userId;
         $_SESSION['user_email'] = $user->email();
+        $_SESSION['credential_fingerprint'] = hash('sha256', $user->passwordHash() ?? '');
     }
 
     private function link(): void

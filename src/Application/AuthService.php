@@ -32,6 +32,8 @@ final class AuthService
         $user = $this->users->findByEmail($email);
 
         if ($user === null || !$user->hasPassword()) {
+            // Match the password work for unknown accounts to reduce timing disclosure.
+            password_verify($password, '$2y$12$d2C4Ac6z7ucusmKpLTSydOhqVSeYwok2e.C5nlArQ2Oumapqf3Ts6');
             throw AuthException::invalidCredentials();
         }
 
@@ -125,21 +127,19 @@ final class AuthService
             throw AuthException::passwordsDoNotMatch();
         }
 
-        $token = $this->lookupToken($rawToken);
-        $user = $this->users->findByEmail($token->email());
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-
-        if ($user === null) {
-            $user = new User(null, $token->email(), $hash, User::ROLE_USER, new DateTimeImmutable());
-        } else {
-            $user->setPasswordHash($hash);
-        }
-
-        $user = $this->users->save($user);
-        $token->markUsed(new DateTimeImmutable());
-        $this->tokens->markUsed($token);
-
-        return $user;
+        return $this->tokens->transaction(function () use ($rawToken, $password): User {
+            $token = $this->lookupToken($rawToken);
+            $user = $this->users->findByEmail($token->email());
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            if ($user === null) {
+                $user = new User(null, $token->email(), $hash, User::ROLE_USER, new DateTimeImmutable());
+            } else {
+                $user->setPasswordHash($hash);
+            }
+            $user = $this->users->save($user);
+            $this->tokens->revokeForEmail($token->email());
+            return $user;
+        });
     }
 
     public function setPasswordDirect(string $email, string $password): User
@@ -158,7 +158,11 @@ final class AuthService
             $user->setPasswordHash($hash);
         }
 
-        return $this->users->save($user);
+        return $this->tokens->transaction(function () use ($user, $email): User {
+            $saved = $this->users->save($user);
+            $this->tokens->revokeForEmail($email);
+            return $saved;
+        });
     }
 
     private function createToken(string $email, string $purpose, string $lifetime): string

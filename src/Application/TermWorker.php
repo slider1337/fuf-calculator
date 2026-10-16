@@ -12,13 +12,13 @@ use App\Application\Port\TermRepositoryInterface;
 final readonly class TermWorker
 {
     public function __construct(private TermRepositoryInterface $store,private AccessRepositoryInterface $access,private ExternalEventPort $external,private TermService $terms) {}
-    public function runOne(): bool
+    public function runOne(?int $tripId = null): bool
     {
         if($this->external->blockedReason()!==null){return false;}
-        $claimed=$this->access->transaction(function(){
+        $claimed=$this->access->transaction(function() use($tripId){
             $now=time();
             $this->store->expireCreationLeases($now);
-            $r=$this->store->nextCreationTrip($now);
+            $r=$this->store->nextCreationTrip($now,$tripId);
             if($r===null){return null;}$job=$this->store->job($r);
             if($job===null){throw new NotFoundException('Term creation job');}
             if(!$this->allowed($job)){$this->store->blockCreation($job['id'],'permission_revoked_or_trip_closed');return ['skip'=>true];}

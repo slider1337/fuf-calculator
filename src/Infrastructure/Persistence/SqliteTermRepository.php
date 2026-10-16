@@ -132,9 +132,9 @@ final readonly class SqliteTermRepository implements TermRepositoryInterface
         $this->query("UPDATE sync_jobs SET status='unknown',lease_token=NULL,lease_until=NULL,error_code='worker_lease_expired' WHERE status IN ('running','reconciling') AND lease_until<=?", [$now]);
     }
 
-    public function nextCreationTrip(int $now): ?int
+    public function nextCreationTrip(int $now, ?int $tripId = null): ?int
     {
-        $value = $this->query("SELECT trip_id FROM sync_jobs WHERE status IN ('pending','unknown','resume_pending') AND (lease_until IS NULL OR lease_until<=?) ORDER BY id LIMIT 1", [$now])->fetch();
+        $value = $this->query("SELECT trip_id FROM sync_jobs WHERE status IN ('pending','unknown','resume_pending') AND (lease_until IS NULL OR lease_until<=?) AND (? IS NULL OR trip_id=?) ORDER BY id LIMIT 1", [$now, $tripId, $tripId])->fetch();
         return $value === false ? null : StoredRow::from($value)->integer('trip_id');
     }
 

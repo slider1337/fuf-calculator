@@ -42,7 +42,7 @@ interface TermRepositoryInterface
     public function resumeCreation(int $job, int $actor): void;
     public function confirmCreationForTrip(int $trip, string $externalId): void;
     public function expireCreationLeases(int $now): void;
-    public function nextCreationTrip(int $now): ?int;
+    public function nextCreationTrip(int $now, ?int $tripId = null): ?int;
     public function blockCreation(int $job, string $reason): void;
     public function claimCreation(int $job, bool $reconcile, string $token, int $until): void;
     public function renewCreationLease(int $job, int $until): void;

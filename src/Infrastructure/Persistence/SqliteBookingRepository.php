@@ -6,30 +6,93 @@ use App\Application\Port\BookingRepositoryInterface;
 use App\Application\AccessException;
 use PDO;
 
+/**
+ * @phpstan-import-type BookingPerson from BookingRepositoryInterface
+ * @phpstan-import-type AnswerRevision from BookingRepositoryInterface
+ * @phpstan-import-type Booking from BookingRepositoryInterface
+ * @phpstan-import-type BookingOperation from BookingRepositoryInterface
+ */
 final readonly class SqliteBookingRepository implements BookingRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
     private function query(string $sql,array $p=[]): \PDOStatement { $s=$this->pdo->prepare($sql);$s->execute($p);return $s; }
+    /** @template T
+     * @param callable():T $read
+     * @return T */
     public function snapshot(callable $read): mixed
     {
         if($this->pdo->inTransaction()){return $read();}
         $this->pdo->beginTransaction();
         try{$result=$read();$this->pdo->commit();return $result;}catch(\Throwable $e){$this->pdo->rollBack();throw $e;}
     }
+    /** @return list<Booking> */
     public function list(int $tripId): array
     {
-        return array_map(fn($id)=>$this->get($tripId,(int)$id),$this->query('SELECT id FROM registrations WHERE trip_id=? ORDER BY id DESC',[$tripId])->fetchAll(PDO::FETCH_COLUMN));
+        $bookings=[];
+        foreach($this->query('SELECT id FROM registrations WHERE trip_id=? ORDER BY id DESC',[$tripId])->fetchAll(PDO::FETCH_COLUMN) as $value){
+            $id=StoredRow::from(['id'=>$value])->integer('id');
+            $booking=$this->get($tripId,$id);
+            if($booking!==null)$bookings[]=$booking;
+        }
+        return $bookings;
     }
+    /** @return Booking|null */
     public function get(int $tripId,int $id): ?array
     {
-        $r=$this->query('SELECT * FROM registrations WHERE trip_id=? AND id=?',[$tripId,$id])->fetch(PDO::FETCH_ASSOC);
-        if (!$r) { return null; }
-        $persons=array_map(static fn($p)=>['id'=>(int)$p['id'],'clientReference'=>$p['client_reference'],'name'=>$p['name'],'birthDate'=>$p['birth_date'],'status'=>$p['participation_status'],'syncStatus'=>$p['sync_status'],'memberReference'=>$p['member_reference'],'externalReference'=>$p['external_reference'],'priceGroupId'=>$p['price_group_reference'],'expectedPrice'=>$p['expected_price'],'guestId'=>$p['guest_approval_id']===null?null:(int)$p['guest_approval_id'],'externalPriceGroupId'=>$p['external_price_group'],'externalPrice'=>$p['external_price']],$this->query('SELECT * FROM registration_participants WHERE registration_id=? ORDER BY id',[$id])->fetchAll(PDO::FETCH_ASSOC));
-        $revisions=array_map(static fn($a)=>['id'=>(int)$a['id'],'participantId'=>$a['participant_id']===null?null:(int)$a['participant_id'],'versionId'=>(int)$a['version_id'],'fieldId'=>$a['field_id'],'state'=>$a['state'],'value'=>$a['value_json']===null?null:json_decode($a['value_json'],true,512,JSON_THROW_ON_ERROR),'actorId'=>(int)$a['actor_id'],'createdAt'=>$a['created_at'],'reason'=>$a['reason'],'bookingRevision'=>(int)$a['booking_revision']],$this->query('SELECT * FROM answer_revisions WHERE registration_id=? ORDER BY id',[$id])->fetchAll(PDO::FETCH_ASSOC));
-        $current=[];foreach($revisions as $a){$current[($a['participantId']??'booking').':'.$a['fieldId']]=$a;}
-        return ['id'=>$id,'tripId'=>$tripId,'reference'=>$r['reference']??'ALT-'.$id,'source'=>$r['source'],'contactIdentity'=>$r['contact_identity'],'versionId'=>$r['form_version_id']===null?null:(int)$r['form_version_id'],'status'=>$r['booking_status'],'syncStatus'=>$r['sync_status'],'roomCategory'=>$r['room_category']===''?null:$r['room_category'],'roomAssignment'=>$r['room_assignment'],'comment'=>$r['comment'],'receivedAt'=>$r['received_at'],'revision'=>(int)$r['revision'],'managed'=>(bool)$r['managed_booking'],'persons'=>$persons,'personRevisions'=>$this->query('SELECT pr.* FROM participant_revisions pr JOIN registration_participants p ON p.id=pr.participant_id WHERE p.registration_id=? ORDER BY pr.id',[$id])->fetchAll(PDO::FETCH_ASSOC),'answers'=>array_values($current),'revisions'=>$revisions,'supplementPending'=>(int)$this->query("SELECT COUNT(*) FROM form_supplement_requests WHERE registration_id=? AND status='pending'",[$id])->fetchColumn()>0];
+        $value=$this->query('SELECT * FROM registrations WHERE trip_id=? AND id=?',[$tripId,$id])->fetch(PDO::FETCH_ASSOC);
+        if($value===false)return null;
+        $r=StoredRow::from($value);
+        $persons=[];
+        foreach($this->query('SELECT * FROM registration_participants WHERE registration_id=? ORDER BY id',[$id])->fetchAll(PDO::FETCH_ASSOC) as $value){
+            $persons[]=$this->person(StoredRow::from($value));
+        }
+        $revisions=[];$current=[];
+        foreach($this->query('SELECT * FROM answer_revisions WHERE registration_id=? ORDER BY id',[$id])->fetchAll(PDO::FETCH_ASSOC) as $value){
+            $a=$this->answer(StoredRow::from($value));$revisions[]=$a;
+            $current[($a['participantId']??'booking').':'.$a['fieldId']]=$a;
+        }
+        $personRevisions=[];
+        foreach($this->query('SELECT pr.* FROM participant_revisions pr JOIN registration_participants p ON p.id=pr.participant_id WHERE p.registration_id=? ORDER BY pr.id',[$id])->fetchAll(PDO::FETCH_ASSOC) as $value){
+            $personRevisions[]=StoredRow::from($value)->values();
+        }
+        $pending=StoredRow::from(['count'=>$this->query("SELECT COUNT(*) FROM form_supplement_requests WHERE registration_id=? AND status='pending'",[$id])->fetchColumn()])->integer('count');
+        return ['id'=>$id,'tripId'=>$tripId,'reference'=>$r->nullableText('reference')??'ALT-'.$id,
+            'source'=>$r->text('source'),'contactIdentity'=>$r->nullableText('contact_identity'),
+            'versionId'=>$r->nullableInteger('form_version_id'),'status'=>$r->text('booking_status'),
+            'syncStatus'=>$r->text('sync_status'),'roomCategory'=>$r->text('room_category')===''?null:$r->text('room_category'),
+            'roomAssignment'=>$r->nullableText('room_assignment'),'comment'=>$r->text('comment'),
+            'receivedAt'=>$r->text('received_at'),'revision'=>$r->integer('revision'),'managed'=>$r->integer('managed_booking')!==0,
+            'persons'=>$persons,'personRevisions'=>$personRevisions,'answers'=>array_values($current),
+            'revisions'=>$revisions,'supplementPending'=>$pending>0];
     }
-    public function operation(int $tripId,string $key): ?array { return $this->query('SELECT request_hash,registration_id FROM booking_operations WHERE trip_id=? AND operation_key=?',[$tripId,$key])->fetch(PDO::FETCH_ASSOC)?:null; }
+    /** @return BookingPerson */
+    private function person(StoredRow $p): array
+    {
+        return ['id'=>$p->integer('id'),'clientReference'=>$p->nullableText('client_reference'),
+            'name'=>$p->text('name'),'birthDate'=>$p->text('birth_date'),'status'=>$p->text('participation_status'),
+            'syncStatus'=>$p->text('sync_status'),'memberReference'=>$p->nullableText('member_reference'),
+            'externalReference'=>$p->nullableText('external_reference'),'priceGroupId'=>$p->nullableText('price_group_reference'),
+            'expectedPrice'=>$p->nullableText('expected_price'),'guestId'=>$p->nullableInteger('guest_approval_id'),
+            'externalPriceGroupId'=>$p->nullableText('external_price_group'),'externalPrice'=>$p->nullableText('external_price')];
+    }
+    /** @return AnswerRevision */
+    private function answer(StoredRow $a): array
+    {
+        $json=$a->nullableText('value_json');
+        return ['id'=>$a->integer('id'),'participantId'=>$a->nullableInteger('participant_id'),
+            'versionId'=>$a->integer('version_id'),'fieldId'=>$a->text('field_id'),'state'=>$a->text('state'),
+            'value'=>$json===null?null:json_decode($json,true,512,JSON_THROW_ON_ERROR),
+            'actorId'=>$a->integer('actor_id'),'createdAt'=>$a->text('created_at'),'reason'=>$a->text('reason'),
+            'bookingRevision'=>$a->integer('booking_revision')];
+    }
+    /** @return BookingOperation|null */
+    public function operation(int $tripId,string $key): ?array
+    {
+        $value=$this->query('SELECT request_hash,registration_id FROM booking_operations WHERE trip_id=? AND operation_key=?',[$tripId,$key])->fetch(PDO::FETCH_ASSOC);
+        if($value===false)return null;
+        $row=StoredRow::from($value);
+        return ['request_hash'=>$row->text('request_hash'),'registration_id'=>$row->integer('registration_id')];
+    }
     public function recordOperation(int $tripId,string $key,string $hash,int $id): void { $this->query('INSERT INTO booking_operations (trip_id,operation_key,request_hash,registration_id) VALUES (?,?,?,?)',[$tripId,$key,$hash,$id]); }
     public function create(int $tripId,array $d): int
     {

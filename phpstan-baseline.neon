@@ -417,31 +417,7 @@ parameters:
 		-
 			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
 			identifier: foreach.nonIterable
-			count: 6
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Binary operation "\." between mixed and '' '' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Binary operation "\." between mixed and ''\:'' results in an error\.$#'
-			identifier: binaryOp.invalid
 			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''actorId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
 			path: src/Application/AnalyticsService.php
 
 		-
@@ -451,109 +427,13 @@ parameters:
 			path: src/Application/AnalyticsService.php
 
 		-
-			message: '#^Cannot access offset ''analytics'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''answers'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''birthDate'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''booking'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''contactIdentity'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''createdAt'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''fieldId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''fields'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 8
+			count: 2
 			path: src/Application/AnalyticsService.php
 
 		-
 			message: '#^Cannot access offset ''label'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''participantId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''persons'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''reason'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''revisions'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''scope'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''source'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/AnalyticsService.php
@@ -561,29 +441,11 @@ parameters:
 		-
 			message: '#^Cannot access offset ''state'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 7
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 6
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''syncStatus'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 3
 			path: src/Application/AnalyticsService.php
 
 		-
 			message: '#^Cannot access offset ''type'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''unit'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/AnalyticsService.php
@@ -591,25 +453,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''value'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 7
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset ''versionId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset \(int\|string\) on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Cannot access offset string on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
+			count: 3
 			path: src/Application/AnalyticsService.php
 
 		-
@@ -627,7 +471,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 4
+			count: 1
 			path: src/Application/AnalyticsService.php
 
 		-
@@ -691,12 +535,6 @@ parameters:
 			path: src/Application/AnalyticsService.php
 
 		-
-			message: '#^Method App\\Application\\AnalyticsService\:\:read\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
 			message: '#^Method App\\Application\\AnalyticsService\:\:snapshot\(\) has parameter \$q with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -715,18 +553,6 @@ parameters:
 			path: src/Application/AnalyticsService.php
 
 		-
-			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_filter expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_slice expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -734,30 +560,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\FormRepositoryInterface\:\:list\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$f of method App\\Application\\AnalyticsService\:\:metric\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$f of static method App\\Domain\\Form\\FormSchema\:\:answerField\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$f of static method App\\Domain\\Form\\FormSchema\:\:signature\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$fields of method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/AnalyticsService.php
@@ -772,12 +574,6 @@ parameters:
 			message: '#^Parameter \#1 \$id of method App\\Application\\AccessPolicy\:\:trip\(\) expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 3
-			path: src/Application/AnalyticsService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\Port\\FormRepositoryInterface\:\:get\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/AnalyticsService.php
 
 		-
@@ -841,12 +637,6 @@ parameters:
 			path: src/Application/AnalyticsService.php
 
 		-
-			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(mixed\)\: bool\)\|null, Closure\(mixed\)\: mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AnalyticsService.php
-
-		-
 			message: '#^Parameter \#2 \$fields of function fputcsv expects array\<int\|string, bool\|float\|int\|string\|null\>, list given\.$#'
 			identifier: argument.type
 			count: 1
@@ -855,23 +645,17 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 14
+			count: 7
 			path: src/Application/AnalyticsService.php
 
 		-
 			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
 			identifier: foreach.nonIterable
-			count: 7
+			count: 4
 			path: src/Application/BookingService.php
 
 		-
 			message: '#^Binary operation "\+" between array\{booking\: mixed\} and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Binary operation "\+" between mixed and 1 results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1
 			path: src/Application/BookingService.php
@@ -903,7 +687,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''birthDate'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: src/Application/BookingService.php
 
 		-
@@ -913,33 +697,21 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Cannot access offset ''externalReference'' on mixed\.$#'
+			message: '#^Cannot access offset ''fieldId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Cannot access offset ''fieldId'' on mixed\.$#'
+			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 4
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 7
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Cannot access offset ''participantId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: src/Application/BookingService.php
 
 		-
@@ -951,25 +723,19 @@ parameters:
 		-
 			message: '#^Cannot access offset ''state'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 5
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Cannot access offset ''status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
+			count: 3
 			path: src/Application/BookingService.php
 
 		-
 			message: '#^Cannot access offset ''value'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 5
+			count: 2
 			path: src/Application/BookingService.php
 
 		-
 			message: '#^Cannot access offset ''versionId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: src/Application/BookingService.php
 
 		-
@@ -981,13 +747,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to string\.$#'
 			identifier: cast.string
-			count: 3
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Cannot use \+\+ on mixed\.$#'
-			identifier: postInc.type
-			count: 1
+			count: 2
 			path: src/Application/BookingService.php
 
 		-
@@ -1057,12 +817,6 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Method App\\Application\\BookingService\:\:load\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Method App\\Application\\BookingService\:\:persistAnswers\(\) has parameter \$answers with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1111,25 +865,7 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Method App\\Application\\BookingService\:\:validate\(\) has parameter \$v with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Method App\\Application\\BookingService\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Method App\\Application\\BookingService\:\:validate\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Method App\\Application\\BookingService\:\:version\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/BookingService.php
@@ -1147,37 +883,7 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 4
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_diff expects an array of values castable to string, list given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_filter expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_flip expects array\<int\|string\>, list given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#1 \$errors of class App\\Application\\ValidationException constructor expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#1 \$fields of method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/BookingService.php
@@ -1207,27 +913,9 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Parameter \#2 \$arrays of function array_diff expects an array of values castable to string, list given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#2 \$b of method App\\Application\\BookingService\:\:visible\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Parameter \#2 \$key of method App\\Application\\Port\\BookingRepositoryInterface\:\:recordOperation\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 4
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#2 \$person of method App\\Application\\Port\\BookingRepositoryInterface\:\:correctPerson\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/BookingService.php
 
 		-
@@ -1243,33 +931,15 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Parameter \#2 \$revision of method App\\Application\\Port\\BookingRepositoryInterface\:\:revise\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Parameter \#3 \$hash of method App\\Application\\Port\\BookingRepositoryInterface\:\:recordOperation\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 4
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Parameter \#3 \$versionId of method App\\Application\\BookingService\:\:persistAnswers\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Parameter \#3 \$versionId of method App\\Application\\Port\\BookingRepositoryInterface\:\:append\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Parameter \#4 \$fieldId of method App\\Application\\Port\\BookingRepositoryInterface\:\:append\(\) expects string, mixed given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: src/Application/BookingService.php
 
 		-
@@ -1287,7 +957,7 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 4
+			count: 2
 			path: src/Application/BookingService.php
 
 		-
@@ -1465,63 +1135,21 @@ parameters:
 			path: src/Application/EventService.php
 
 		-
-			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Binary operation "\." between ''Entwurf id\='' and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Binary operation "\." between ''version\='' and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 2
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Binary operation "\." between ''versionId\='' and mixed results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1
 			path: src/Application/FormService.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Cannot access offset ''fields'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Cannot access offset ''options'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
+			count: 2
 			path: src/Application/FormService.php
 
 		-
 			message: '#^Cannot access offset ''revision'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 4
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Cannot access offset ''status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
 			path: src/Application/FormService.php
 
 		-
@@ -1707,7 +1335,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$f of static method App\\Domain\\Form\\FormSchema\:\:signature\(\) expects array, mixed given\.$#'
 			identifier: argument.type
-			count: 3
+			count: 2
 			path: src/Application/FormService.php
 
 		-
@@ -1719,7 +1347,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$id of method App\\Application\\Port\\FormRepositoryInterface\:\:get\(\) expects int, mixed given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: src/Application/FormService.php
 
 		-
@@ -1731,7 +1359,7 @@ parameters:
 		-
 			message: '#^Parameter \#2 \$revision of method App\\Application\\FormService\:\:revision\(\) expects int, mixed given\.$#'
 			identifier: argument.type
-			count: 4
+			count: 3
 			path: src/Application/FormService.php
 
 		-
@@ -1773,12 +1401,6 @@ parameters:
 		-
 			message: '#^Parameter \#4 \$fields of method App\\Application\\Port\\FormRepositoryInterface\:\:create\(\) expects array, mixed given\.$#'
 			identifier: argument.type
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
 			count: 1
 			path: src/Application/FormService.php
 
@@ -1857,7 +1479,7 @@ parameters:
 		-
 			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
 			identifier: foreach.nonIterable
-			count: 5
+			count: 4
 			path: src/Application/MemberBookingService.php
 
 		-
@@ -1870,12 +1492,6 @@ parameters:
 			message: '#^Cannot access offset ''birthDate'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 3
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Cannot access offset ''booking'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
 			path: src/Application/MemberBookingService.php
 
 		-
@@ -1951,12 +1567,6 @@ parameters:
 			path: src/Application/MemberBookingService.php
 
 		-
-			message: '#^Cannot access offset ''persons'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
 			message: '#^Cannot access offset ''price'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
@@ -1995,7 +1605,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 3
+			count: 1
 			path: src/Application/MemberBookingService.php
 
 		-
@@ -2167,24 +1777,6 @@ parameters:
 			path: src/Application/MemberBookingService.php
 
 		-
-			message: '#^Parameter \#1 \$errors of class App\\Application\\ValidationException constructor expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Parameter \#1 \$fields of method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\Port\\FormRepositoryInterface\:\:get\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
 			message: '#^Parameter \#2 \$array of function array_key_exists expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2210,12 +1802,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#2 \$booking of method App\\Application\\ParticipationService\:\:enqueue\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Parameter \#3 \$answers of method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/MemberBookingService.php
@@ -2253,7 +1839,7 @@ parameters:
 		-
 			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
 			identifier: foreach.nonIterable
-			count: 4
+			count: 3
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2264,12 +1850,6 @@ parameters:
 
 		-
 			message: '#^Binary operation "\." between ''term\:'' and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1
 			path: src/Application/ParticipationService.php
@@ -2299,33 +1879,15 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''externalReference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''field'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 3
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''fieldId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''guestId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 9
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2337,19 +1899,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''memberReference'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 5
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''participantId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
+			count: 3
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2371,31 +1921,13 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''state'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''status'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
+			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
 			message: '#^Cannot access offset ''termFields'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''value'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''versionId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationService.php
@@ -2521,18 +2053,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Offset ''answers'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_diff expects an array of values castable to string, list given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2546,18 +2066,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$array of function array_unique expects an array of values castable to string, list\<mixed\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$booking of method App\\Application\\ParticipationService\:\:applyResult\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\ParticipationService\:\:acceptPrice\(\) expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/ParticipationService.php
@@ -2587,12 +2095,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Parameter \#2 \$person of method App\\Application\\ParticipationService\:\:applyResult\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#2 \$row of method App\\Application\\ParticipationService\:\:acceptPrice\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 2
@@ -2602,18 +2104,6 @@ parameters:
 			message: '#^Parameter \#3 \$r of method App\\Application\\ParticipationService\:\:applyResult\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#3 \$versionId of method App\\Application\\Port\\BookingRepositoryInterface\:\:append\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#4 \$fieldId of method App\\Application\\Port\\BookingRepositoryInterface\:\:append\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2787,7 +2277,7 @@ parameters:
 		-
 			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
 			identifier: foreach.nonIterable
-			count: 6
+			count: 4
 			path: src/Application/PlanningTransferService.php
 
 		-
@@ -2845,21 +2335,9 @@ parameters:
 			path: src/Application/PlanningTransferService.php
 
 		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/PlanningTransferService.php
-
-		-
 			message: '#^Cannot access offset ''label'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
-			path: src/Application/PlanningTransferService.php
-
-		-
-			message: '#^Cannot access offset ''mapping'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
 			path: src/Application/PlanningTransferService.php
 
 		-
@@ -3055,12 +2533,6 @@ parameters:
 			path: src/Application/PlanningTransferService.php
 
 		-
-			message: '#^Method App\\Application\\PlanningTransferService\:\:preview\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/PlanningTransferService.php
-
-		-
 			message: '#^Method App\\Application\\PlanningTransferService\:\:source\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3070,18 +2542,6 @@ parameters:
 			message: '#^Method App\\Application\\PlanningTransferService\:\:status\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
-			path: src/Application/PlanningTransferService.php
-
-		-
-			message: '#^Method App\\Application\\PlanningTransferService\:\:status\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/PlanningTransferService.php
-
-		-
-			message: '#^Offset ''fields'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 3
 			path: src/Application/PlanningTransferService.php
 
 		-
@@ -3099,7 +2559,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$array of function array_filter expects array, mixed given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: src/Application/PlanningTransferService.php
 
 		-
@@ -3163,12 +2623,6 @@ parameters:
 			path: src/Application/PlanningTransferService.php
 
 		-
-			message: '#^Possibly invalid array key type mixed\.$#'
-			identifier: offsetAccess.invalidOffset
-			count: 2
-			path: src/Application/PlanningTransferService.php
-
-		-
 			message: '#^Method App\\Application\\Port\\AccessRepositoryInterface\:\:capabilities\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3218,24 +2672,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Application\\Port\\BookingRepositoryInterface\:\:create\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/BookingRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\BookingRepositoryInterface\:\:get\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/BookingRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\BookingRepositoryInterface\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/BookingRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\BookingRepositoryInterface\:\:operation\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/Port/BookingRepositoryInterface.php
@@ -3301,67 +2737,13 @@ parameters:
 			path: src/Application/Port/ExternalEventPort.php
 
 		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:archive\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:binding\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
 			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:create\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/Port/FormRepositoryInterface.php
 
 		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:create\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:get\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:publish\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:registrationVersions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
 			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:save\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:save\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/FormRepositoryInterface.php
-
-		-
-			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:switchVersion\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/Port/FormRepositoryInterface.php
@@ -3763,55 +3145,7 @@ parameters:
 			path: src/Application/ValidationException.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''kind'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''required'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
 			message: '#^Cannot access offset ''scope'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''state'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''value'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset ''visibility'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Cannot access offset mixed on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Domain/Form/AnswerValidator.php
@@ -3819,60 +3153,6 @@ parameters:
 		-
 			message: '#^Match expression does not handle remaining value\: mixed$#'
 			identifier: match.unhandled
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:selected\(\) has parameter \$booking with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:selected\(\) has parameter \$person with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:selected\(\) has parameter \$v with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) has parameter \$answers with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) has parameter \$context with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:value\(\) has parameter \$f with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Method App\\Domain\\Form\\AnswerValidator\:\:value\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: src/Domain/Form/AnswerValidator.php
 
@@ -3901,25 +3181,7 @@ parameters:
 			path: src/Domain/Form/AnswerValidator.php
 
 		-
-			message: '#^Parameter \#1 \$datetime of class DateTimeImmutable constructor expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Parameter \#1 \$f of method App\\Domain\\Form\\AnswerValidator\:\:value\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
 			message: '#^Parameter \#1 \$f of static method App\\Domain\\Form\\FormSchema\:\:answerField\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Domain/Form/AnswerValidator.php
-
-		-
-			message: '#^Parameter \#1 \$v of method App\\Domain\\Form\\AnswerValidator\:\:selected\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Domain/Form/AnswerValidator.php
@@ -3939,7 +3201,7 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 4
+			count: 2
 			path: src/Domain/Form/AnswerValidator.php
 
 		-
@@ -5419,79 +4681,7 @@ parameters:
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''actor_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
 			message: '#^Cannot access offset ''birthDate'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''birth_date'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''booking_revision'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''client_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''created_at'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''expected_price'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''external_price'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''external_price_group'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''external_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''field_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''guest_approval_id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
@@ -5499,73 +4689,13 @@ parameters:
 		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''member_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
 
 		-
 			message: '#^Cannot access offset ''name'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''participant_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''participation_status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''price_group_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''reason'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''state'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''sync_status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''value_json'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot access offset ''version_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 10
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
 
 		-
@@ -5587,24 +4717,6 @@ parameters:
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
 
 		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteBookingRepository\:\:get\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteBookingRepository\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteBookingRepository\:\:operation\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
 			message: '#^Method App\\Infrastructure\\Persistence\\SqliteBookingRepository\:\:query\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -5613,12 +4725,6 @@ parameters:
 		-
 			message: '#^Method App\\Infrastructure\\Persistence\\SqliteBookingRepository\:\:revise\(\) has parameter \$values with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
-
-		-
-			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteBookingRepository.php
 
@@ -5665,92 +4771,8 @@ parameters:
 			path: src/Infrastructure/Persistence/SqliteEventRepository.php
 
 		-
-			message: '#^Cannot access offset ''actor_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''created_at'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''form_version_id'' on array\<string, mixed\>\|false\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''form_version_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''from_version_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''n'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''reason'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''request_supplement'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''revision'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot access offset ''to_version_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 17
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:archive\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:archive\(\) should return array but returns array\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:binding\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteFormRepository.php
 
@@ -5761,56 +4783,8 @@ parameters:
 			path: src/Infrastructure/Persistence/SqliteFormRepository.php
 
 		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:create\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:create\(\) should return array but returns array\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
 			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:fields\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:get\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:header\(\) has parameter \$r with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:header\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:list\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:publish\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:publish\(\) should return array but returns array\|null\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteFormRepository.php
 
@@ -5821,44 +4795,8 @@ parameters:
 			path: src/Infrastructure/Persistence/SqliteFormRepository.php
 
 		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:registrationVersions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
 			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:save\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:save\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:save\(\) should return array but returns array\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteFormRepository\:\:switchVersion\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Offset ''eventId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteFormRepository.php
-
-		-
-			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteFormRepository.php
 

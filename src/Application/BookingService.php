@@ -5,7 +5,10 @@ namespace App\Application;
 use App\Application\Port\{BookingRepositoryInterface,FormRepositoryInterface,TripRepositoryInterface};
 use App\Domain\Form\{AnswerValidator,FormSchema};
 
-/** Local booking workflow. No external confirmation or network writes. */
+/** Local booking workflow. No external confirmation or network writes.
+ * @phpstan-import-type Booking from BookingRepositoryInterface
+ * @phpstan-import-type FormVersion from FormRepositoryInterface
+ */
 final readonly class BookingService
 {
     public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private \App\Application\Port\BookingPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations) {}
@@ -25,6 +28,7 @@ final readonly class BookingService
         $this->policy->trip($tripId,'registration.view');
         return $this->visible($tripId,$this->load($tripId,$id));
     }
+    /** @return Booking */
     private function load(int $tripId,int $id): array { return $this->bookings->get($tripId,$id)??throw new NotFoundException('Booking not found'); }
     private function key(array $p): string
     {
@@ -43,6 +47,7 @@ final readonly class BookingService
         if($op!==null&&$op['request_hash']!==$hash){throw new AccessException('idempotency_conflict',409);}
         return [$key,$hash,$op];
     }
+    /** @return FormVersion|null */
     private function version(int $tripId,mixed $id,bool $active): ?array
     {
         if($id!==null&&!is_int($id)){throw new ValidationException(['versionId'=>'integer_or_null']);}
@@ -52,6 +57,7 @@ final readonly class BookingService
         if(!$v||$v['status']==='draft'||$v['eventId']!==($this->policy->metadata($tripId)['event_id']??null)){throw new ValidationException(['versionId'=>'released_version_of_trip_event_required']);}
         return $v;
     }
+    /** @param FormVersion|null $v */
     private function validate(int $tripId,?array $v,array $people,mixed $answers): array
     {
         if(!is_array($answers)){throw new ValidationException(['answers'=>'maps_required']);}

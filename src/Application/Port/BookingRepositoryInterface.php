@@ -2,11 +2,23 @@
 
 declare(strict_types=1);
 namespace App\Application\Port;
+/**
+ * @phpstan-type BookingPerson array{id:int,clientReference:?string,name:string,birthDate:string,status:string,syncStatus:string,memberReference:?string,externalReference:?string,priceGroupId:?string,expectedPrice:?string,guestId:?int,externalPriceGroupId:?string,externalPrice:?string}
+ * @phpstan-type AnswerRevision array{id:int,participantId:?int,versionId:int,fieldId:string,state:string,value:mixed,actorId:int,createdAt:string,reason:string,bookingRevision:int}
+ * @phpstan-type Booking array{id:int,tripId:int,reference:string,source:string,contactIdentity:?string,versionId:?int,status:string,syncStatus:string,roomCategory:?string,roomAssignment:?string,comment:string,receivedAt:string,revision:int,managed:bool,persons:list<BookingPerson>,personRevisions:list<array<array-key,mixed>>,answers:list<AnswerRevision>,revisions:list<AnswerRevision>,supplementPending:bool,formVersion?:array<array-key,mixed>|null}
+ * @phpstan-type BookingOperation array{request_hash:string,registration_id:int}
+ */
 interface BookingRepositoryInterface
 {
+    /** @template T
+     * @param callable():T $read
+     * @return T */
     public function snapshot(callable $read): mixed;
+    /** @return list<Booking> */
     public function list(int $tripId): array;
+    /** @return Booking|null */
     public function get(int $tripId, int $id): ?array;
+    /** @return BookingOperation|null */
     public function operation(int $tripId, string $key): ?array;
     public function recordOperation(int $tripId, string $key, string $hash, int $id): void;
     public function create(int $tripId, array $data): int;

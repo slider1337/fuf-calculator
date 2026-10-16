@@ -94,7 +94,9 @@ final readonly class MemberBookingService {
  }
  public function preview(int $trip,MemberIdentity $identity,array $p): array {
   $this->allowed($trip,'create');$ctx=$this->context($trip,$identity);$data=$this->payload($trip,$identity,$p,$ctx);$t=$this->trips->getById($trip);
-  $validation=$this->validator->validate($ctx['form']['fields']??[],['startDate'=>$t->startDate()->format('Y-m-d'),'adultAgeThreshold'=>$t->pricingPolicy()->adultAgeThreshold(),'persons'=>array_map(fn($person)=>['id'=>$person['id'],'birthDate'=>$person['birthDate']],$data['persons'])],$data['answers']);
+  if(!is_array($data['answers']??null))throw new ValidationException(['answers'=>'maps_required']);
+  $fields=$ctx['form']['fields']??[];if(!is_array($fields))throw new ValidationException(['fields'=>'invalid_definition']);
+  $validation=$this->validator->validate($fields,['startDate'=>$t->startDate()->format('Y-m-d'),'adultAgeThreshold'=>$t->pricingPolicy()->adultAgeThreshold(),'persons'=>array_map(fn($person)=>['id'=>$person['id'],'birthDate'=>$person['birthDate']],$data['persons'])],$data['answers']);
   if(!$validation['valid']){throw new ValidationException($validation['errors']);}
   $validation['answers']['booking']=(object)$validation['answers']['booking'];
   foreach($validation['answers']['persons'] as &$entries){$entries=(object)$entries;}unset($entries);$validation['answers']['persons']=(object)$validation['answers']['persons'];

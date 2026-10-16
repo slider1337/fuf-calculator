@@ -1,8 +1,8 @@
 # Veranstaltungsverwaltung – Umsetzung des Designs
 
-Stand: 14.10.2026 · **Calculator-Schritte 01–10 technisch implementiert und mit lokalen/Fake-Tests geprüft. Feldweise Terminänderungen, Mitgliederfreigabe in der Oberfläche und Serverbetrieb ergänzt. Manuelle Design-/Providerabnahme und tatsächliche Bereitstellung offen; Website-Schritt 11 folgt danach.**
+Stand: 16.10.2026 · **Calculator-Schritte 01–10 und Website-Schritt 11 technisch implementiert. Aktuelle Website-Nachweise und Einführungsgrenzen: [Schritt 11](PRUEFUNG-11-WEBSITE.md). Tatsächliche Bereitstellung/Serverkonfiguration und reale Providerabnahme bleiben getrennt.**
 
-Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator, erst zum Schluss die Website anpassen.** Calculator, easyVerein und WordPress behalten ihre Aufgaben aus [Konzept 09](../../concepts/09-veranstaltungsverwaltung-formulare.md). Diese Reihenfolge ersetzt für diese Erweiterung die frühere Reihenfolge in Konzept 09, Abschnitt 13. Vor Schritt 11 gibt es keine Änderung im Website-Repository und keinen Wechsel des produktiven Anmeldewegs.
+Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator, erst zum Schluss die Website anpassen.** Calculator, easyVerein und WordPress behalten ihre Aufgaben aus [Konzept 09](../../concepts/09-veranstaltungsverwaltung-formulare.md). Diese Reihenfolge ersetzt für diese Erweiterung die frühere Reihenfolge in Konzept 09, Abschnitt 13. Schritt 11 ist nun technisch umgesetzt; ein Wechsel des produktiven Anmeldewegs erfolgt erst nach kompatibler Bereitstellung und Serverkonfiguration.
 
 ## Einstieg und Quellen
 
@@ -15,7 +15,7 @@ Verbindliche Reihenfolge: **zuerst alle Grundlagen und Funktionen im Calculator,
 
 ## Schritte
 
-Aktueller technischer Stand: Schritte 01–10 implementiert. Die historischen Prüfprotokolle dokumentieren den jeweiligen Zwischenstand, die [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) den aktuellen Stand. Reale Adapter sind implementiert; Tests verwenden Fakes. Die manuelle Design-/Providerabnahme bleibt offen. [Betrieb, Konfiguration und Einführung](BETRIEB.md) sind vorbereitet. Website-Schritt 11 ist bis zur Abnahme/Bereitstellung gesperrt.
+Aktueller technischer Stand: Schritte 01–10 implementiert. Die historischen Prüfprotokolle dokumentieren den jeweiligen Zwischenstand, die [Abschlussprüfung](PRUEFUNG-ABSCHLUSS.md) den aktuellen Stand. Reale Adapter sind implementiert; Tests verwenden Fakes. Die manuelle Design-/Providerabnahme bleibt offen. [Betrieb, Konfiguration und Einführung](BETRIEB.md) sind vorbereitet. Website-Schritt 11 ist auf ausdrücklichen Nutzerauftrag umgesetzt; vor tatsächlicher Freischaltung kompatible Server bereitstellen und konfigurieren.
 
 | Schritt | Ergebnis | Aufgabe |
 | --- | --- | --- |

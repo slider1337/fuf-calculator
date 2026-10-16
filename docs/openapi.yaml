@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.13.0
+  version: 1.14.0
 security:
   - calculatorSession: []
 servers:
@@ -2468,6 +2468,53 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberSettingsRequest'
+  /integration/v1/events/{eventId}/route:
+    get:
+      summary: Select exactly one member registration writer for an event
+      security:
+      - memberDelegation: []
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[1-9][0-9]*$'
+      responses:
+        '200':
+          description: Explicit legacy route or Calculator route, even when release is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberRoute'
+        '401':
+          description: Invalid or expired delegation
+        '503':
+          description: Integration unavailable; never permits legacy fallback
+  /integration/v1/bookings:
+    get:
+      summary: All own bookings, including archived trips and disabled releases
+      security:
+      - memberDelegation: []
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: string
+          pattern: '^[0-9]{1,18}$'
+      responses:
+        '200':
+          description: At most 25 own bookings with historical form fields, event ID and title
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberBookingList'
+        '401':
+          description: Invalid or expired delegation
+        '422':
+          description: Invalid cursor
+        '503':
+          description: Verified member profile unavailable
   /integration/v1/events/{eventId}/trip:
     get:
       summary: Reise ausschließlich anhand bestätigter easyVerein-Termin-ID finden
@@ -5878,9 +5925,26 @@ components:
         birthDate:
           type: string
         editable: *id001
+    MemberRoute:
+      type: object
+      required: [contractVersion, route]
+      properties:
+        contractVersion:
+          type: string
+          enum: ['1.7.0']
+        route:
+          type: string
+          enum: [legacy, calculator]
+        tripId:
+          type: integer
+        released:
+          type: boolean
     MemberContext:
       type: object
       required:
+      - startDate
+      - adultAgeThreshold
+      - readOnly
       - contractVersion
       - tripId
       - eventId
@@ -5897,6 +5961,13 @@ components:
       - guests
       - guestsAllowed
       properties:
+        startDate:
+          type: string
+          format: date
+        adultAgeThreshold:
+          type: integer
+        readOnly:
+          type: boolean
         contractVersion:
           type: string
         tripId:
@@ -6088,6 +6159,24 @@ components:
     MemberBooking:
       type: object
       properties:
+        form:
+          type: object
+          nullable: true
+          required: [id, fields]
+          properties:
+            id:
+              type: integer
+            fields:
+              type: array
+              items:
+                $ref: '#/components/schemas/FormField'
+        eventId:
+          type: string
+          nullable: true
+          description: Included in the cross-trip index
+        tripTitle:
+          type: string
+          description: Included in the cross-trip index
         id:
           type: integer
         tripId:
@@ -6137,6 +6226,7 @@ components:
         supplementPending:
           type: boolean
       required:
+      - form
       - id
       - tripId
       - reference

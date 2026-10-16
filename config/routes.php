@@ -93,6 +93,8 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/guests/{guestId:[0-9]+}/revoke', [$guest,'revoke']);
 
     $member = \App\Infrastructure\Http\Controller\MemberController::class;
+    $app->get('/integration/v1/bookings', [$member, 'all']);
+    $app->get('/integration/v1/events/{eventId:[0-9]+}/route', [$member, 'route']);
     $app->get('/integration/v1/events/{eventId:[0-9]+}/trip', [$member, 'resolve']);
     $app->get('/integration/v1/trips/{id:[0-9]+}/context', [$member, 'context']);
     $app->get('/integration/v1/trips/{id:[0-9]+}/bookings', [$member, 'list']);

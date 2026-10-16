@@ -1,6 +1,6 @@
-# Mitgliedervertrag 1.6.0 – Calculator vor Website
+# Mitgliedervertrag 1.7.0 – Website-Anbindung
 
-Stand: 14.10.2026. Mitgliedervertrag 1.6.0 bleibt unverändert; OpenAPI 1.7.0 ergänzt die Orga-Terminbearbeitung. Die Schnittstelle ist implementiert und mit Fakes geprüft. **Kein produktiver Mitgliederweg freigegeben.** Echte Termin-/Teilnahme-/Directoryadapter sind implementiert. Standardmäßig sind externe Schreibaktionen mit `EASYVEREIN_WRITE_MODE=off` deaktiviert; `production` darf erst nach Abnahme/Bereitstellung gesetzt werden. Kein Payload/Session-Benutzer kann das umgehen. Normale produktive Providerbenachrichtigungen sind nach Nutzerpräzisierung ausdrücklich vorgesehen; echte Tests dürfen nur an me@benna.me mailen, externe Schreibtests bleiben Fakes. Serverseitiger API-Token erforderlich.
+Stand: 16.10.2026. Ergänzungen für die Website: [Schritt-11-Prüfung](../implementation/veranstaltungsverwaltung/PRUEFUNG-11-WEBSITE.md). OpenAPI 1.14.0 ergänzt sichere Terminweg-Auskunft und eine globale eigene Buchungsübersicht. Bestehende Schreibverträge bleiben kompatibel. Die Schnittstelle ist implementiert und mit Fakes geprüft. **Kein produktiver Mitgliederweg freigegeben.** Echte Termin-/Teilnahme-/Directoryadapter sind implementiert. Standardmäßig sind externe Schreibaktionen mit `EASYVEREIN_WRITE_MODE=off` deaktiviert; `production` darf erst nach Abnahme/Bereitstellung gesetzt werden. Kein Payload/Session-Benutzer kann das umgehen. Normale produktive Providerbenachrichtigungen sind nach Nutzerpräzisierung ausdrücklich vorgesehen; echte Tests dürfen nur an me@benna.me mailen, externe Schreibtests bleiben Fakes. Serverseitiger API-Token erforderlich.
 
 
 ## Identitätsnachweis und Vertrauen
@@ -41,10 +41,12 @@ Referenz-Signierer/Testclient: [scripts/member-test-client.php](../../scripts/me
 
 ## Endpunkte und Ablauf
 
-OpenAPI ist maßgeblich: [openapi.yaml](../openapi.yaml), Version 1.6.0.
+OpenAPI ist maßgeblich: [openapi.yaml](../openapi.yaml), Version 1.14.0.
 
 | Operation | Route | Ergebnis |
 | --- | --- | --- |
+| Anmeldeweg | GET `/integration/v1/events/{eventId}/route` | Explizit legacy oder calculator; zurückgenommene Freigabe erlaubt keinen alten Writer |
+| Alle eigenen Buchungen | GET `/integration/v1/bookings?after=…` | Maximal 25, nextCursor, eigene frühere Buchungen auch ohne aktuelle Freigabe |
 | Terminzuordnung | GET `/integration/v1/events/{eventId}/trip` | Ausschließlich bestätigte stabile easyVerein-ID, keine Titel-/URL-Heuristik |
 | Formular/Personen/Preise | GET `/integration/v1/trips/{id}/context` | Gebundene Version, geprüfte Familie, aktuelle Preisgruppen/Revision und Fristen |
 | Vorschau | POST `/integration/v1/trips/{id}/preview` | Pflicht-/Sichtbarkeits-/Altersprüfung; keine Speicherung oder Provideraktion |
@@ -66,11 +68,11 @@ Bei Antworten nach Versionswechsel nur kompatible Feld-IDs weiterverwenden; neue
 
 Es gibt keinen konfigurierbaren Aufbewahrungs-Ablauf und keine automatische Löschung. Die Reise lässt sich mit `PUT /api/trips/{id}/archive` archivieren und zurückholen (`archived`, bisheriges `archivedAt`, Grund). Das Archiv blendet sie aus der aktiven Liste aus; `GET /api/trips?archived=true` zeigt das Archiv. Direkter berechtigter Orga-Lesezugriff, eigene Mitgliederbuchungen, Antworten, Historie und Finanzstände bleiben erhalten. Änderungen/Neuanmeldungen und externe Aufträge sind gesperrt. Wiederherstellung hebt einen bestehenden Abrechnungsabschluss nicht auf. Archivierung ersetzt keine zusätzliche Löschaufgabe; eine solche ist nach Nutzerentscheidung nicht Bestandteil dieses Auftrags.
 
-Gastfreigaben: Orga-Endpunkte `/api/trips/{id}/guests` (GET/POST) und `…/guests/{guestId}/revoke`. Freigabe benötigt `operationKey`, aktuelle Preisgruppe/Preis, Namen/Geburt, ownerMemberReference und identische parentMemberReference sowie Grund. Mitgliederkontext enthält nur eigene noch unverbrauchte Freigaben als `guests`; neuer Personen-Choice `{guestId,priceGroupId,expectedPrice}` statt frei erfundener Person. Als Antwort-ID zunächst `guest_<ID>`, anschließend stabile lokale Person-ID. Beim ersten Übernehmen atomar an die Buchung gebunden; Kontakt/Elternteilnahme ist das anmeldende Mitglied. Provider-Begleitpersonenfreigabe und bestätigte Elternteilnahme notwendig. Parent-Storno verlangt vorheriges Gaststorno; Gruppenstorno setzt Gäste zuerst in die Outbox.
+Gäste seit Nutzerentscheidung 15.10.: Wenn der echte easyVerein-Termin Gäste erlaubt, akzeptiert der Mitgliederweg `{guest:{key,name,birthDate},priceGroupId,expectedPrice}` direkt. Das Mitglied bleibt Kontakt; der Antwortschlüssel lautet zunächst `guest_` plus SHA-256 des stabilen Gast-Keys, danach stabile lokale Personen-ID. Keine zusätzliche individuelle Orga-Zulassung. Ältere freigegebene `guestId`-Referenzen bleiben kompatibel. Parent-/Gast-Abhängigkeiten werden beim Provider-Schreiben und Storno weiterhin geprüft.
 
-## Website-Gate und Übergang
+## Website-Einführung und Übergang
 
-Schritt 11 bleibt nach [ABNAHME](../implementation/veranstaltungsverwaltung/ABNAHME.md) gesperrt: manuelle Design-/Providerabnahme und kompatible Calculator-Bereitstellung offen. Adapter/Gastfreigaben/gezielte Personenklärung sind implementiert; Produktivflags noch aus. Im Website-Repo gibt es keine Änderung dieses Auftrags. Bestehender Mitgliederlogin/Registrierungsweg bleibt in Betrieb.
+Schritt 11 wurde am 16.10. vollständig beauftragt und technisch implementiert. Die Serververbindung ist ausschließlich serverseitig zu konfigurieren; tatsächliche Freischaltung/Bereitstellung und reale Providerabnahme werden nicht durch lokale Tests ersetzt. Details und Nachweise: [Website-Prüfung](../implementation/veranstaltungsverwaltung/PRUEFUNG-11-WEBSITE.md).
 
 Nach erfülltem Gate: erst Calculator migrationsfähig bereitstellen, dann pro bestätigter Reise genau einen Website-Schreibweg aktivieren. Formulardefinition zentral abrufen, keine zweite Verwaltung. Keine automatische Migration alter WP-Buchungen oder Namensmatches. Bei Rücknahme der UI bleiben Calculator-Buchungen erhalten. Die Referenzen W01/W02/W03 und die Website-Dateien sind als read-only Übergabe geprüft; keine automatische Browser-/Lighthouse-Abnahme.
 

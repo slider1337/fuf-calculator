@@ -9,6 +9,17 @@ final readonly class SqliteMemberBookingRepository implements MemberBookingRepos
     public function __construct(private PDO $pdo) {}
     /** @param list<mixed> $params */
     private function execute(string $sql,array $params): \PDOStatement { foreach($params as $value) { if($value!==null&&!is_scalar($value))throw new \UnexpectedValueException("Invalid database parameter"); } $s=$this->pdo->prepare($sql); $s->execute($params); return $s; }
+    /** @return list<array{id:int,tripId:int}> */
+    public function ownedBookingIndex(string $owner, int $after): array
+    {
+        $statement=$this->execute('SELECT id,trip_id FROM registrations WHERE owner_member_reference=? AND id>? ORDER BY id LIMIT 26',[$owner,$after]);
+        $result=[];
+        foreach($statement->fetchAll(\PDO::FETCH_ASSOC) as $row){
+            $stored=StoredRow::from($row);
+            $result[]=['id'=>$stored->integer('id'),'tripId'=>$stored->integer('trip_id')];
+        }
+        return $result;
+    }
     public function activePersonJob(mixed $person): int|string|false|null
     {
         $s=$this->execute("SELECT 1 FROM participation_jobs WHERE participant_id=? AND status IN ('pending','running','unknown','reconciling')", [$person]);

@@ -9,15 +9,18 @@ use PDO;
 /**
  * @phpstan-import-type FormVersion from FormRepositoryInterface
  * @phpstan-import-type FormHeader from FormRepositoryInterface
- * @phpstan-import-type BindingHistory from FormRepositoryInterface
  * @phpstan-import-type FormBinding from FormRepositoryInterface
+ * @phpstan-import-type Field from \App\Domain\Form\FormSchema
  */
 final readonly class SqliteFormRepository implements FormRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
+    /** @param array<array-key,mixed> $parameters */
     private function query(string $sql, array $parameters = []): \PDOStatement { $s = $this->pdo->prepare($sql); $s->execute($parameters); return $s; }
-    /** @param array<array-key,mixed> $value
-     * @return FormHeader */
+    /**
+     * @param array<array-key,mixed> $value
+     * @return FormHeader
+     */
     private function header(array $value): array
     {
         $r=StoredRow::from($value);
@@ -36,8 +39,10 @@ final readonly class SqliteFormRepository implements FormRepositoryInterface
         }
         return $result;
     }
-    /** @phpstan-impure
-     * @return FormVersion|null */
+    /**
+     * @phpstan-impure
+     * @return FormVersion|null
+     */
     public function get(int $id): ?array
     {
         $r = $this->query('SELECT * FROM form_versions WHERE id=?', [$id])->fetch(PDO::FETCH_ASSOC);
@@ -45,30 +50,29 @@ final readonly class SqliteFormRepository implements FormRepositoryInterface
         $fields = $this->query('SELECT definition FROM form_fields WHERE version_id=? ORDER BY position', [$id])->fetchAll(PDO::FETCH_COLUMN);
         $definitions=[];
         foreach($fields as $value){
-            $field=StoredRow::from(['json'=>$value])->jsonArray('json');
-            foreach(['id','scope','label','type','unit'] as $key){if(!is_string($field[$key]??null))throw new \UnexpectedValueException('Invalid stored form field text');}
-            if(!array_key_exists('mapping',$field)||($field['mapping']!==null&&!is_string($field['mapping'])))throw new \UnexpectedValueException('Invalid stored form mapping');
-            $field['id']=StoredRow::from($field)->text('id');
-            $field['scope']=StoredRow::from($field)->text('scope');
-            $field['label']=StoredRow::from($field)->text('label');
-            $field['type']=StoredRow::from($field)->text('type');
-            $field['unit']=StoredRow::from($field)->text('unit');
-            $definitions[]=$field;
+            $definitions[]=\App\Domain\Form\FormSchema::definition(StoredRow::from(['json'=>$value])->jsonArray('json'));
         }
         return $this->header($r)+['fields'=>$definitions];
     }
-    /** @return FormVersion */
+    /**
+     * @return FormVersion
+     * @param list<Field> $fields
+     */
     public function create(int $eventId, ?int $basedOnId, int $actor, array $fields): array
     {
         $this->query('INSERT INTO form_versions (event_id,based_on_id,created_by,created_at) VALUES (?,?,?,?)', [$eventId,$basedOnId,$actor,gmdate(DATE_ATOM)]);
         $id = (int) $this->pdo->lastInsertId(); $this->fields($id, $fields); return $this->get($id)??throw new \App\Application\NotFoundException('Form version');
     }
+    /** @param list<Field> $fields */
     private function fields(int $id, array $fields): void
     {
         $this->query('DELETE FROM form_fields WHERE version_id=?', [$id]);
         foreach ($fields as $i => $f) { $this->query('INSERT INTO form_fields (version_id,field_id,position,definition) VALUES (?,?,?,?)', [$id,$f['id'],$i,json_encode($f, JSON_THROW_ON_ERROR)]); }
     }
-    /** @return FormVersion */
+    /**
+     * @return FormVersion
+     * @param list<Field> $fields
+     */
     public function save(int $id, int $revision, array $fields): array
     {
         $s = $this->query("UPDATE form_versions SET revision=revision+1 WHERE id=? AND revision=? AND status='draft'", [$id,$revision]);

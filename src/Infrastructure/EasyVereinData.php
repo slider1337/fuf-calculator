@@ -14,6 +14,10 @@ final class EasyVereinData {
   if(is_int($v)){$v=(string)$v;}elseif(is_float($v)&&is_finite($v)){$v=(string)$v;}
   $n=is_string($v)?Decimal::normalize($v):null;if($n===null||Decimal::compare($n,'0')<0){throw new AccessException('provider_price_invalid',503);}return $n;
  }
+ /**
+  * @param array<string,scalar> $query
+  * @return list<array<array-key,mixed>>
+  */
  public static function collection(EasyVereinReadClient $client,string $path,array $query): array {
   $out=[];$seen=[];$query+=['limit'=>100];
   for($page=0;$page<100;$page++){
@@ -23,7 +27,7 @@ final class EasyVereinData {
    $next=$r['next']??null;if($next===null||$next===''){return $out;}
    if(!is_string($next)){throw new AccessException('provider_pagination_invalid',503);}$u=parse_url($next);
    if(!$u||($u['scheme']??null)!=='https'||($u['host']??null)!=='easyverein.com'||isset($u['user'],$u['pass'])||isset($u['port'])||($u['path']??null)!=='/api/v3.0/'.$path){throw new AccessException('provider_pagination_invalid',503);}
-   parse_str($u['query']??'',$nextQuery);foreach($nextQuery as $value){if(!is_scalar($value)){throw new AccessException('provider_pagination_invalid',503);}}
+   parse_str($u['query']??'',$nextQuery);foreach($nextQuery as $key=>$value){if(!is_string($key)||!is_scalar($value)){throw new AccessException('provider_pagination_invalid',503);}}
    // Every following page must retain the original filters, so a provider cursor cannot widen authority.
    foreach($query as $k=>$v){if(!in_array($k,['offset','page','cursor'],true)&&(!isset($nextQuery[$k])||(string)$nextQuery[$k]!== (string)$v)){throw new AccessException('provider_pagination_invalid',503);}}
    $query=$nextQuery;

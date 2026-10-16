@@ -21,6 +21,7 @@ final readonly class SettingsService
         return $this->repository->get();
     }
 
+    /** @param array<array-key,mixed> $payload */
     public function updateFromArray(array $payload): Settings
     {
         $errors = [];
@@ -36,12 +37,12 @@ final readonly class SettingsService
 
         try {
             $settings = new Settings(
-                new Percentage((float) $payload['defaultMarkupPercent']),
-                new Percentage((float) $payload['defaultClubFeePercent']),
-                DistributionMethod::from((string) $payload['defaultDistributionMethod']),
-                (float) $payload['defaultSpaTaxPerPerson'],
-                (int) $payload['defaultSpaTaxAgeThreshold'],
-                (int) $payload['defaultAdultAgeThreshold']
+                new Percentage((float) Input::scalar($payload['defaultMarkupPercent'])),
+                new Percentage((float) Input::scalar($payload['defaultClubFeePercent'])),
+                DistributionMethod::from((string) Input::scalar($payload['defaultDistributionMethod'])),
+                (float) Input::scalar($payload['defaultSpaTaxPerPerson']),
+                (int) Input::scalar($payload['defaultSpaTaxAgeThreshold']),
+                (int) Input::scalar($payload['defaultAdultAgeThreshold'])
             );
         } catch (Throwable $exception) {
             throw new ValidationException(['payload' => $exception->getMessage()]);

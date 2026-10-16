@@ -19,7 +19,7 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     {
         $statement = $this->pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
         $statement->execute([':email' => strtolower($email)]);
-        $row = $statement->fetch();
+        $row = StoredRow::fetch($statement);
 
         return $row === false ? null : $this->hydrate($row);
     }
@@ -28,14 +28,14 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
     {
         $statement = $this->pdo->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
         $statement->execute([':id' => $id]);
-        $row = $statement->fetch();
+        $row = StoredRow::fetch($statement);
 
         return $row === false ? null : $this->hydrate($row);
     }
 
     public function findAll(): array
     {
-        $rows = $this->pdo->query('SELECT * FROM users ORDER BY email')->fetchAll();
+        $rows = StoredRow::fetchAll($this->pdo->query('SELECT * FROM users ORDER BY email'));
         return array_map(fn (array $row): User => $this->hydrate($row), $rows);
     }
 
@@ -82,6 +82,7 @@ final readonly class SqliteUserRepository implements UserRepositoryInterface
         return (int) $statement->fetchColumn();
     }
 
+    /** @param array<string,scalar|null> $row */
     private function hydrate(array $row): User
     {
         return new User(

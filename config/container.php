@@ -47,10 +47,10 @@ return static function (): ContainerInterface {
         App\Application\Port\MemberBookingRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteMemberBookingRepository::class),
         App\Application\Port\ParticipationRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteParticipationRepository::class),
         App\Application\Port\TermRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteTermRepository::class),
-        App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => $c->get(App\Application\AccessPolicy::class)),
+        App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => \App\Infrastructure\ContainerServices::get($c,App\Application\AccessPolicy::class)),
         App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),
-        App\Application\Port\EasyVereinReadClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN') ?: '',$c->get(App\Infrastructure\ProviderRequestBudget::class))),
-        App\Application\Port\EasyVereinWriteClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinWriteHttpClient($c->get(App\Application\Port\EasyVereinReadClient::class),getenv('EASYVEREIN_API_TOKEN') ?: '',getenv('EASYVEREIN_WRITE_MODE') ?: 'off',$c->get(App\Infrastructure\ProviderRequestBudget::class))),
+        App\Application\Port\EasyVereinReadClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN') ?: '',\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\ProviderRequestBudget::class))),
+        App\Application\Port\EasyVereinWriteClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinWriteHttpClient(\App\Infrastructure\ContainerServices::get($c,App\Application\Port\EasyVereinReadClient::class),getenv('EASYVEREIN_API_TOKEN') ?: '',getenv('EASYVEREIN_WRITE_MODE') ?: 'off',\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\ProviderRequestBudget::class))),
         App\Application\Port\ParticipationPort::class => autowire(App\Infrastructure\EasyVereinParticipationAdapter::class),
         App\Application\Port\AccessRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteAccessRepository::class),
         App\Application\Port\ActorInterface::class => autowire(App\Infrastructure\Http\Auth\SessionActor::class),
@@ -85,9 +85,9 @@ return static function (): ContainerInterface {
         AuthService::class => factory(static function (ContainerInterface $c): AuthService {
             $appUrl = getenv('APP_URL') ?: 'http://localhost:8080';
             return new AuthService(
-                $c->get(UserRepositoryInterface::class),
-                $c->get(AuthTokenRepositoryInterface::class),
-                $c->get(MailerInterface::class),
+                \App\Infrastructure\ContainerServices::get($c,UserRepositoryInterface::class),
+                \App\Infrastructure\ContainerServices::get($c,AuthTokenRepositoryInterface::class),
+                \App\Infrastructure\ContainerServices::get($c,MailerInterface::class),
                 $appUrl,
             );
         }),

@@ -6,9 +6,16 @@ use App\Application\Port\AccessRepositoryInterface;
 use PDO;
 use Throwable;
 
+/**
+ * @phpstan-import-type TripMetadata from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type MetadataUpdate from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type TeamMember from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type LegacyCandidate from \App\Application\Port\AccessRepositoryInterface
+ */
 final readonly class SqliteAccessRepository implements AccessRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
+    /** @return array{string,string} */
     private function table(string $type): array
     {
         return match ($type) {
@@ -27,19 +34,29 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
     public function role(int $userId): ?string
     {
         $s = $this->pdo->prepare('SELECT role FROM users WHERE id = ?'); $s->execute([$userId]);
-        return ($v = $s->fetchColumn()) === false ? null : (string) $v;
+        return ($v = $s->fetchColumn()) === false ? null : StoredRow::from(['role'=>$v])->text('role');
     }
+    /** @return list<string> */
     public function capabilities(string $type, int $id, int $userId): array
     {
         [$table, $key] = $this->table($type);
         $s = $this->pdo->prepare("SELECT capability FROM $table WHERE $key = ? AND user_id = ? ORDER BY capability");
-        $s->execute([$id, $userId]); return $s->fetchAll(PDO::FETCH_COLUMN);
+        $s->execute([$id, $userId]); return array_values(array_map(static fn (mixed $v): string => StoredRow::from(['capability'=>$v])->text('capability'), $s->fetchAll(PDO::FETCH_COLUMN)));
     }
+    /** @return TripMetadata */
     public function metadata(int $tripId): array
     {
         $s = $this->pdo->prepare('SELECT registration_mode, registration_mode_revision, archived_at, form_version_id, form_revision, event_id, closed_at, closed_by, settlement_snapshot, calculation_snapshot FROM trips WHERE id = ?');
-        $s->execute([$tripId]); return $s->fetch(PDO::FETCH_ASSOC) ?: [];
+        $s->execute([$tripId]);
+        $value = $s->fetch(PDO::FETCH_ASSOC);
+        if ($value === false) { throw new \App\Application\NotFoundException('Trip not found'); }
+        $r = StoredRow::from($value);
+        return ['registration_mode'=>$r->text('registration_mode'),'registration_mode_revision'=>$r->integer('registration_mode_revision'),
+            'archived_at'=>$r->nullableText('archived_at'),'form_version_id'=>$r->nullableInteger('form_version_id'),'form_revision'=>$r->integer('form_revision'),
+            'event_id'=>$r->nullableInteger('event_id'),'closed_at'=>$r->nullableText('closed_at'),'closed_by'=>$r->nullableInteger('closed_by'),
+            'settlement_snapshot'=>$r->nullableText('settlement_snapshot'),'calculation_snapshot'=>$r->nullableText('calculation_snapshot')];
     }
+    /** @param MetadataUpdate $values */
     public function setMetadata(int $tripId, array $values): void
     {
         $allowed = ['registration_mode', 'archived_at', 'event_id', 'closed_at', 'closed_by', 'settlement_snapshot', 'calculation_snapshot'];
@@ -47,6 +64,7 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
         $set = implode(', ', array_map(static fn ($k) => "$k = ?", array_keys($values)));
         $this->pdo->prepare("UPDATE trips SET $set WHERE id = ?")->execute([...array_values($values), $tripId]);
     }
+    /** @return list<TeamMember> */
     public function team(string $type, int $id): array
     {
         [$table, $key] = $this->table($type);
@@ -60,6 +78,7 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
         }
         return array_values($members);
     }
+    /** @param list<string> $capabilities */
     public function replaceMember(string $type, int $id, int $userId, array $capabilities): void
     {
         [$table, $key] = $this->table($type);
@@ -82,8 +101,13 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
             $result = $operation(); $this->pdo->commit(); return $result;
         } catch (Throwable $e) { $this->pdo->rollBack(); throw $e; }
     }
+    /** @return list<LegacyCandidate> */
     public function legacyCandidates(): array
     {
-        return $this->pdo->query('SELECT c.trip_id AS tripId, t.name AS tripName, c.user_id AS userId, u.email FROM legacy_access_candidates c JOIN trips t ON t.id = c.trip_id JOIN users u ON u.id = c.user_id ORDER BY c.trip_id, c.user_id')->fetchAll(PDO::FETCH_ASSOC);
+        $rows = StoredRow::fetchAll($this->pdo->query('SELECT c.trip_id AS tripId, t.name AS tripName, c.user_id AS userId, u.email FROM legacy_access_candidates c JOIN trips t ON t.id = c.trip_id JOIN users u ON u.id = c.user_id ORDER BY c.trip_id, c.user_id'));
+        return array_map(static function (mixed $value): array {
+            $r = StoredRow::from($value);
+            return ['tripId'=>$r->integer('tripId'),'tripName'=>$r->text('tripName'),'userId'=>$r->integer('userId'),'email'=>$r->text('email')];
+        }, $rows);
     }
 }

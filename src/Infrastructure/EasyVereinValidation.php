@@ -2,12 +2,14 @@
 declare(strict_types=1);
 namespace App\Infrastructure;
 
-/** Reduce untrusted validation responses to field names and fixed local reason codes.
+/**
+ * Reduce untrusted validation responses to field names and fixed local reason codes.
  * Never retain response text, submitted values, URLs, tokens or contact data.
  */
 final class EasyVereinValidation
 {
     public const FIELDS = ['name','start','end','all_day','calendar','location_name','location_object','description','prologue','min_participators','max_participators','start_participation','end_participation','access','note','creator','show_memberarea','is_public','is_reservation','reservation_parent_event','allow_multiple_price_groups_per_participation','confirmation_to_addresses','send_mail_check'];
+    /** @return list<array{field:string,reason:string}> */
     public static function fromBody(string $body): array
     {
         if (strlen($body)>65536) return [];

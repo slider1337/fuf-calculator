@@ -11,6 +11,7 @@ try {
     $pdo->exec('PRAGMA busy_timeout=10000');
     $pdo->exec('VACUUM INTO '.$pdo->quote($backup));
     $check=new PDO('sqlite:'.$backup,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
-    if($check->query('PRAGMA integrity_check')->fetchColumn()!=='ok'){throw new RuntimeException('Backup verification failed');}
+    $verification=$check->query('PRAGMA integrity_check');
+    if($verification===false||$verification->fetchColumn()!=='ok'){throw new RuntimeException('Backup verification failed');}
     echo 'SQLite backup verified: '.basename($backup).PHP_EOL;
 } finally {umask($previous);}

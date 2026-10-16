@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 namespace App\Application;
+/** @phpstan-type TripView array{id:?int,name:string,startDate:string,endDate:?string,markupPercent:float,clubFeePercent:float,distributionMethod:string,spaTaxPerPerson:float,spaTaxAgeThreshold:int,adultAgeThreshold:int,averageAdultPrice:bool,spaTaxCount:int,bookings:array<array{categoryType:string,count:int,basePricePerPerson:float,salesPricePerPerson:?float}>,groupExpenses:array<array{label:string,amount:float}>,roomReservations:array<array{roomType:string,count:int}>} */
 final class TripData
 {
+    /** @return TripView */
     public static function fromTrip(\App\Domain\Trip\Trip $trip): array
     {
         return [

@@ -4,8 +4,8 @@
  * Befuellt eine Wegwerf-Datenbank mit Demodaten fuer UI-Screenshots.
  *
  * Aufruf:
- *   DB_PATH=/tmp/fuf-ui.sqlite php vendor/bin/phinx migrate
- *   DB_PATH=/tmp/fuf-ui.sqlite php scripts/ui-fixture.php
+ * DB_PATH=/tmp/fuf-ui.sqlite php vendor/bin/phinx migrate
+ * DB_PATH=/tmp/fuf-ui.sqlite php scripts/ui-fixture.php
  *
  * Schutz: Der Pfad darf nicht auf database/fuf.sqlite zeigen. Diese Datei ist
  * ein Entwicklungswerkzeug und nicht Teil der Anwendung.
@@ -33,11 +33,10 @@ if (str_contains($real, 'database/fuf.sqlite')) {
 $demoEmail = getenv('UI_EMAIL') ?: 'demo@fuf-erding.de';
 $demoPassword = getenv('UI_PASSWORD') ?: 'demo12345';
 
-$containerFactory = require __DIR__ . '/../config/container.php';
-$container = $containerFactory();
+$container = \App\Infrastructure\ContainerServices::create();
 
 /** @var PDO $pdo */
-$pdo = $container->get(PDO::class);
+$pdo = \App\Infrastructure\ContainerServices::get($container,PDO::class);
 
 // --- Benutzer -----------------------------------------------------------
 $pdo->prepare('DELETE FROM users WHERE email = :email')->execute([':email' => $demoEmail]);
@@ -52,9 +51,9 @@ $pdo->prepare(
 
 // --- Reisen -------------------------------------------------------------
 /** @var TripService $trips */
-$trips = $container->get(TripService::class);
+$trips = \App\Infrastructure\ContainerServices::get($container,TripService::class);
 /** @var RegistrationService $registrations */
-$registrations = $container->get(RegistrationService::class);
+$registrations = \App\Infrastructure\ContainerServices::get($container,RegistrationService::class);
 
 $winter = $trips->createFromArray([
     'name' => 'Winterfreizeit Lungau 2027',
@@ -146,7 +145,7 @@ $demoRegistrations = [
 ];
 
 foreach ($demoRegistrations as [$roomCategory, $comment, $participants]) {
-    $registrations->addManualRegistration($winter->id(), [
+    $registrations->addManualRegistration($winter->id() ?? throw new LogicException('Saved trip ID missing'), [
         'roomCategory' => $roomCategory,
         'comment' => $comment,
         'participants' => $participants,

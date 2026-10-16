@@ -38,7 +38,10 @@ class EasyVereinProvider
         throw new RuntimeException('No authorization redirect');
     }
 
-    /** Returns only the signed, verified stable OIDC subject. */
+    /**
+     * Returns only the signed, verified stable OIDC subject.
+     * @param array<array-key,mixed> $query
+     */
     public function complete(array $query): string
     {
         $previous = $_REQUEST;

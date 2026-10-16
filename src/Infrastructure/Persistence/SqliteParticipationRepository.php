@@ -4,7 +4,10 @@ namespace App\Infrastructure\Persistence;
 use App\Application\Port\ParticipationRepositoryInterface;
 use PDO;
 
-/** @phpstan-import-type LocalPerson from ParticipationRepositoryInterface */
+/**
+ * @phpstan-import-type LocalPerson from ParticipationRepositoryInterface
+ * @phpstan-import-type ParticipationJob from \App\Application\Port\ParticipationRepositoryInterface
+ */
 final readonly class SqliteParticipationRepository implements ParticipationRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
@@ -14,11 +17,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute("UPDATE registration_participants SET external_reference=?,participation_status=?,external_price_group=?,external_price=?,sync_status='synced' WHERE registration_id=? AND id=?", [$external, $status, $priceGroup, $price, $booking, $person]);
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function bookingRevision(mixed $booking): array|false
     {
         $s=$this->execute('SELECT trip_id,revision FROM registrations WHERE id=?', [$booking]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function advanceBookingRevision(mixed $booking): void
     {
@@ -45,17 +48,17 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute('UPDATE external_observations SET revision=revision+1,conflicts_json=? WHERE trip_id=?', [$conflicts, $trip]);
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function personInTrip(mixed $person, mixed $trip): array|false
     {
         $s=$this->execute('SELECT p.*,r.trip_id FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.id=? AND r.trip_id=?', [$person, $trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function observation(mixed $trip): array|false
     {
         $s=$this->execute('SELECT * FROM external_observations WHERE trip_id=?', [$trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function assignClarification(mixed $caseId): void
     {
@@ -79,11 +82,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
         $s=$this->execute('SELECT 1 FROM registration_participants WHERE external_reference=? AND id<>?', [$external, $person]);
         return $s->fetchColumn();
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function unassignedClarification(mixed $trip, mixed $external): array|false
     {
         $s=$this->execute("SELECT * FROM external_clarifications WHERE trip_id=? AND external_id=? AND status='unassigned'", [$trip, $external]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function saveLinkData(mixed $data, mixed $trip): void
     {
@@ -110,11 +113,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute("UPDATE external_clarifications SET status='imported',data_json=?,observed_at=? WHERE trip_id=? AND external_id=?", [$data, $observedAt, $trip, $external]);
     }
-    /** @return list<array<array-key,mixed>> */
+    /** @return list<array<string,scalar|null>> */
     public function peopleByExternal(mixed $external, mixed $trip): array
     {
         $s=$this->execute('SELECT p.*,r.trip_id,r.source FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.external_reference=? AND r.trip_id=?', [$external, $trip]);
-        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::from($row)->values(); } return $rows;
+        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function observationRevision(mixed $trip): int|string|false|null
     {
@@ -134,11 +137,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
         $s=$this->execute('SELECT participation_status FROM registration_participants WHERE id=?', [$person]);
         return $s->fetchColumn();
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return ParticipationJob|false */
     public function job(mixed $job, mixed $trip): array|false
     {
         $s=$this->execute('SELECT * FROM participation_jobs WHERE id=? AND trip_id=?', [$job, $trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return self::jobRow($row);
     }
     public function setBookingState(mixed $status, mixed $sync, mixed $booking): void
     {
@@ -168,17 +171,17 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute('SELECT request_hash FROM participation_jobs WHERE trip_id=? AND operation_key=?', [$trip, $key]); return array_values($s->fetchAll(PDO::FETCH_COLUMN));
     }
-    /** @return list<array<array-key,mixed>> */
+    /** @return list<array<string,scalar|null>> */
     public function clarifications(mixed $trip): array
     {
         $s=$this->execute("SELECT external_id AS externalId,status,observed_at AS observedAt FROM external_clarifications WHERE trip_id=? AND status<>'imported' ORDER BY id DESC LIMIT 100", [$trip]);
-        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::from($row)->values(); } return $rows;
+        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
-    /** @return list<array<array-key,mixed>> */
+    /** @return list<array<string,scalar|null>> */
     public function recentJobs(mixed $trip): array
     {
         $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
-        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::from($row)->values(); } return $rows;
+        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function markUnknown(mixed $person): void
     {
@@ -193,11 +196,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
         $s=$this->execute('SELECT owner_member_reference FROM registrations WHERE id=? AND trip_id=?', [$booking, $trip]);
         return $s->fetchColumn();
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function memberSettings(mixed $trip): array|false
     {
         $s=$this->execute('SELECT * FROM member_trip_settings WHERE trip_id=?', [$trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function setPersonSync(mixed $sync, mixed $person): void
     {
@@ -221,21 +224,21 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
         $s=$this->execute('SELECT lease_token FROM participation_jobs WHERE id=?', [$job]);
         return $s->fetchColumn();
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function guestForJob(mixed $guest, mixed $trip): array|false
     {
         $s=$this->execute("SELECT participant_id,status,parent_member FROM guest_approvals WHERE id=? AND trip_id=?", [$guest, $trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function claimJob(mixed $status, mixed $token, mixed $until, mixed $job): void
     {
         $s=$this->execute('UPDATE participation_jobs SET status=?,lease_token=?,lease_until=?,attempts=attempts+1 WHERE id=?', [$status, $token, $until, $job]);
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return ParticipationJob|false */
     public function nextJob(mixed $now): array|false
     {
         $s=$this->execute("SELECT * FROM participation_jobs WHERE status IN ('pending','unknown') AND (lease_until IS NULL OR lease_until<=?) ORDER BY id LIMIT 1", [$now]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return self::jobRow($row);
     }
     public function expireLeases(mixed $now): void
     {
@@ -249,11 +252,11 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute("UPDATE registration_participants SET participation_status=?,external_price_group=?,external_price=?,sync_status='synced' WHERE id=?", [$status, $priceGroup, $price, $person]);
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function importedProfile(mixed $person): array|false
     {
         $s=$this->execute('SELECT name,birth_date,participation_status,external_price_group,external_price FROM registration_participants WHERE id=?', [$person]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function setImportedIdentity(mixed $member, mixed $external, mixed $priceGroup, mixed $price, mixed $guest, mixed $person): void
     {
@@ -298,8 +301,10 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     public function localPeopleById(int $person,int $trip): array { return $this->localPeople('p.id=? AND r.trip_id=?',[$person,$trip]); }
     /** @return list<LocalPerson> */
     public function unboundLocalMembers(int $trip,string $member): array { return $this->localPeople('r.trip_id=? AND p.member_reference=? AND p.external_reference IS NULL AND p.guest_approval_id IS NULL AND r.managed_booking=1',[$trip,$member]); }
-    /** @param list<int|string|null> $params
-     * @return list<LocalPerson> */
+    /**
+     * @param list<int|string|null> $params
+     * @return list<LocalPerson>
+     */
     private function localPeople(string $where,array $params): array
     {
         $result=[];
@@ -317,5 +322,18 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         if(!array_key_exists($key,$row)||($row[$key]!==null&&!is_string($row[$key])))throw new \LogicException('Invalid local reference');
         return $row[$key];
+    }
+
+    /**
+     * @param array<string,scalar|null> $value
+     * @return ParticipationJob
+     */
+    private static function jobRow(array $value): array
+    {
+        $r=StoredRow::from($value);
+        return ['id'=>$r->integer('id'),'trip_id'=>$r->integer('trip_id'),'registration_id'=>$r->integer('registration_id'),
+            'participant_id'=>$r->integer('participant_id'),'actor_id'=>$r->integer('actor_id'),'kind'=>$r->text('kind'),
+            'status'=>$r->text('status'),'attempts'=>$r->integer('attempts'),'member_actor'=>$r->nullableText('member_actor'),
+            'payload_json'=>$r->text('payload_json')]+$value;
     }
 }

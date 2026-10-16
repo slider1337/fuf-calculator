@@ -5,8 +5,10 @@ namespace App\Application;
 use App\Application\Port\{ExternalEventPort,AccessRepositoryInterface};
 use App\Application\Port\TermRepositoryInterface;
 
-/** Automatic recovery only reconciles. Further writes require an explicit resume request. */
-/** @phpstan-import-type CreationJob from TermRepositoryInterface */
+/**
+ * Automatic recovery only reconciles. Further writes require an explicit resume request.
+ * @phpstan-import-type CreationJob from TermRepositoryInterface
+ */
 final readonly class TermWorker
 {
     public function __construct(private TermRepositoryInterface $store,private AccessRepositoryInterface $access,private ExternalEventPort $external,private TermService $terms) {}
@@ -57,6 +59,6 @@ final readonly class TermWorker
     /** @param CreationJob $job */
     private function allowed(array $job): bool
     {
-        return ($this->access->metadata($job['tripId'])['registration_mode']??'clubdesk_csv')==='easyverein'&&($this->access->metadata($job['tripId'])['archived_at']??null)===null&&($this->access->metadata($job['tripId'])['closed_at']??null)===null&&in_array('term.manage',$this->access->capabilities('trip',$job['tripId'],$job['actorId']),true);
+        return ($this->access->metadata($job['tripId'])['registration_mode'])==='easyverein'&&($this->access->metadata($job['tripId'])['archived_at']??null)===null&&($this->access->metadata($job['tripId'])['closed_at']??null)===null&&in_array('term.manage',$this->access->capabilities('trip',$job['tripId'],$job['actorId']),true);
     }
 }

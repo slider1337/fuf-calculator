@@ -9,14 +9,15 @@ use PDO;
 final readonly class SqliteEventRepository implements EventRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
+    /** @return list<\App\Domain\Event\Event> */
     public function all(): array
     {
-        return array_map($this->hydrate(...), $this->pdo->query('SELECT * FROM events ORDER BY name, id')->fetchAll(PDO::FETCH_ASSOC));
+        return array_map($this->hydrate(...), StoredRow::fetchAll($this->pdo->query('SELECT * FROM events ORDER BY name, id')));
     }
     public function get(int $id): ?Event
     {
         $s = $this->pdo->prepare('SELECT * FROM events WHERE id = ?'); $s->execute([$id]);
-        $row = $s->fetch(PDO::FETCH_ASSOC); return $row === false ? null : $this->hydrate($row);
+        $row = StoredRow::fetch($s); return $row === false ? null : $this->hydrate($row);
     }
     public function save(Event $event): Event
     {
@@ -29,8 +30,9 @@ final readonly class SqliteEventRepository implements EventRepositoryInterface
         if ($s->rowCount() !== 1) { throw new AccessException('revision_conflict', 409); }
         return new Event($event->id, $event->name, $event->description, $event->archived, $event->revision + 1);
     }
+    /** @param array<string,scalar|null> $row */
     private function hydrate(array $row): Event
     {
-        return new Event((int) $row['id'], $row['name'], $row['description'], (bool) $row['archived'], (int) $row['revision']);
+        return new Event((int) $row['id'], (string) $row['name'], (string) $row['description'], (bool) $row['archived'], (int) $row['revision']);
     }
 }

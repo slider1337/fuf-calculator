@@ -11,9 +11,10 @@ final class EasyVereinClient extends OpenIDConnectClient
 {
     protected function verifyJWTClaims($claims, ?string $accessToken = null): bool
     {
+        $header=$this->getIdTokenHeader();
         // OIDC requires these claims; the upstream client accepts their absence.
         if (!isset($claims->nonce, $claims->exp, $claims->iat, $claims->iss, $claims->aud, $claims->sub)
-            || !is_string($claims->nonce) || !is_string($this->getNonce())
+            || !is_string($claims->nonce)
             || !hash_equals($this->getNonce(), $claims->nonce)
             || !is_int($claims->exp) || $claims->exp < time()
             || !is_int($claims->iat) || $claims->iat > time() + 60
@@ -22,7 +23,7 @@ final class EasyVereinClient extends OpenIDConnectClient
             || (is_string($claims->aud) && $claims->aud !== $this->getClientID())
             || (is_array($claims->aud) && !in_array($this->getClientID(), $claims->aud, true))
             || !is_string($claims->sub) || $claims->sub === ''
-            || $this->getIdTokenHeader()->alg !== 'RS256'
+            || (!is_object($header) || ($header->alg ?? null) !== 'RS256')
             || (isset($claims->azp) && $claims->azp !== $this->getClientID())
             || (is_array($claims->aud) && count($claims->aud) > 1 && !isset($claims->azp))) {
             return false;
@@ -30,7 +31,7 @@ final class EasyVereinClient extends OpenIDConnectClient
         return parent::verifyJWTClaims($claims, $accessToken);
     }
 
-    public function redirect(string $url)
+    public function redirect(string $url): never
     {
         throw new EasyVereinRedirect($url);
     }

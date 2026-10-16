@@ -55,7 +55,7 @@ final readonly class SqliteActualExpenseRepository implements ActualExpenseRepos
     {
         $stmt = $this->pdo->prepare('SELECT * FROM actual_expenses WHERE trip_id = :tripId ORDER BY id ASC');
         $stmt->execute([':tripId' => $tripId]);
-        $rows = $stmt->fetchAll();
+        $rows = StoredRow::fetchAll($stmt);
 
         $expenses = [];
         foreach ($rows as $row) {
@@ -74,7 +74,7 @@ final readonly class SqliteActualExpenseRepository implements ActualExpenseRepos
     {
         $stmt = $this->pdo->prepare('SELECT * FROM actual_expenses WHERE id = :id');
         $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
+        $row = StoredRow::fetch($stmt);
 
         if ($row === false) {
             return null;

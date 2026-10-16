@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 $argv = $_SERVER['argv'] ?? [];
+if (!is_array($argv)) { throw new RuntimeException('Invalid command arguments'); }
 $command = $argv[1] ?? null;
 $email = $argv[2] ?? null;
 
@@ -18,6 +19,7 @@ if ($command !== 'list' && $email === null) {
     exit(1);
 }
 
+if ($email !== null && !is_string($email)) { throw new RuntimeException('Invalid email argument'); }
 if ($email !== null) {
     $email = trim($email);
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -26,8 +28,7 @@ if ($email !== null) {
     }
 }
 
-$containerFactory = require __DIR__ . '/../config/container.php';
-$container = $containerFactory();
+$container = \App\Infrastructure\ContainerServices::create();
 
 if ($command === 'set-password') {
     $password = readPassword('Neues Passwort (mind. 10 Zeichen): ');
@@ -37,7 +38,7 @@ if ($command === 'set-password') {
         exit(1);
     }
 
-    $service = $container->get(\App\Application\AuthService::class);
+    $service = \App\Infrastructure\ContainerServices::get($container,\App\Application\AuthService::class);
     try {
         $user = $service->setPasswordDirect($email, $password);
     } catch (\App\Application\AuthException $exception) {
@@ -49,7 +50,7 @@ if ($command === 'set-password') {
 }
 
 if ($command === 'list') {
-    $users = $container->get(\App\Application\UserService::class)->listUsers();
+    $users = \App\Infrastructure\ContainerServices::get($container,\App\Application\UserService::class)->listUsers();
     if ($users === []) {
         echo "Keine Benutzer vorhanden.\n";
         exit(0);
@@ -63,7 +64,7 @@ if ($command === 'list') {
 
 // make-admin / make-user
 $role = $command === 'make-admin' ? \App\Domain\User\User::ROLE_ADMIN : \App\Domain\User\User::ROLE_USER;
-$service = $container->get(\App\Application\UserService::class);
+$service = \App\Infrastructure\ContainerServices::get($container,\App\Application\UserService::class);
 try {
     $user = $service->setRole($email, $role);
 } catch (\App\Application\NotFoundException | \App\Application\UserManagementException $exception) {

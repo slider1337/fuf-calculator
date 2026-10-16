@@ -123,14 +123,12 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
         return $trip;
     }
 
-    /**
-     * @throws DateMalformedStringException
-     */
+    /** @throws DateMalformedStringException */
     public function getById(int $id): ?Trip
     {
         $tripRow = $this->pdo->prepare('SELECT * FROM trips WHERE id = :id');
         $tripRow->execute([':id' => $id]);
-        $trip = $tripRow->fetch();
+        $trip = StoredRow::fetch($tripRow);
 
         if ($trip === false) {
             return null;
@@ -138,7 +136,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $bookingsStmt = $this->pdo->prepare('SELECT * FROM trip_bookings WHERE trip_id = :tripId ORDER BY id ASC');
         $bookingsStmt->execute([':tripId' => $id]);
-        $bookingsRows = $bookingsStmt->fetchAll();
+        $bookingsRows = StoredRow::fetchAll($bookingsStmt);
 
         $bookings = [];
         foreach ($bookingsRows as $row) {
@@ -146,7 +144,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
                 RoomCategoryType::from((string) $row['category_type']),
                 (int) $row['participant_count'],
                 (float) $row['base_price_per_person'],
-                isset($row['sales_price_per_person']) && $row['sales_price_per_person'] !== null
+                isset($row['sales_price_per_person'])
                     ? (float) $row['sales_price_per_person']
                     : null
             );
@@ -154,7 +152,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
 
         $expensesStmt = $this->pdo->prepare('SELECT * FROM trip_group_expenses WHERE trip_id = :tripId ORDER BY id ASC');
         $expensesStmt->execute([':tripId' => $id]);
-        $expensesRows = $expensesStmt->fetchAll();
+        $expensesRows = StoredRow::fetchAll($expensesStmt);
 
         $expenses = [];
         foreach ($expensesRows as $row) {
@@ -168,7 +166,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
         $reservationsStmt->execute([':tripId' => $id]);
 
         $reservations = [];
-        foreach ($reservationsStmt->fetchAll() as $row) {
+        foreach (StoredRow::fetchAll($reservationsStmt) as $row) {
             $reservations[] = new RoomReservation(
                 (string) $row['room_type'],
                 (int) $row['room_count']
@@ -193,28 +191,27 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
             plannedTotalCosts: (float) $trip['planned_total_costs'],
             plannedTotalRevenue: (float) $trip['planned_total_revenue'],
             spaTaxCount: (int) ($trip['spa_tax_count'] ?? 0),
-            endDate: isset($trip['end_date']) && $trip['end_date'] !== null
+            endDate: isset($trip['end_date'])
                 ? new DateTimeImmutable((string) $trip['end_date'])
                 : null,
             roomReservations: $reservations,
             eventId: isset($trip['event_id']) ? (int) $trip['event_id'] : null,
-            closedAt: $trip['closed_at'] ?? null,
+            closedAt: isset($trip['closed_at']) ? (string) $trip['closed_at'] : null,
             closedBy: isset($trip['closed_by']) ? (int) $trip['closed_by'] : null,
         );
     }
 
     public function findAll(): array
     {
-        $rows = $this->pdo
-            ->query('SELECT id, name, start_date, end_date FROM trips ORDER BY start_date DESC, id DESC')
-            ->fetchAll();
+        $rows = StoredRow::fetchAll($this->pdo
+            ->query('SELECT id, name, start_date, end_date FROM trips ORDER BY start_date DESC, id DESC'));
         $result = [];
         foreach ($rows as $row) {
             $result[] = [
                 'id' => (int) $row['id'],
                 'name' => (string) $row['name'],
                 'startDate' => (string) $row['start_date'],
-                'endDate' => isset($row['end_date']) && $row['end_date'] !== null
+                'endDate' => isset($row['end_date'])
                     ? (string) $row['end_date']
                     : null,
             ];

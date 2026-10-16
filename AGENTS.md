@@ -36,5 +36,5 @@ Der Nutzer möchte keine manuelle Personenzuordnung und keine zusätzliche indiv
 # Statische Analyse
 
 - `composer analyse` prüft auf PHPStan Level 10 und muss vor einem PR erfolgreich sein.
-- `phpstan-baseline.neon` erfasst ausschließlich den bei der Einführung vorhandenen Typisierungsrückstand. Neue Befunde beheben; die Baseline nicht automatisch vergrößern oder Prüfpfade ausschließen. Bei behobenen Altbefunden die entsprechenden Einträge reduzieren.
+- Der Typisierungsrückstand ist vollständig behoben. PHPStan läuft ohne Baseline. Keine neuen Baselines, Fehlerunterdrückungen oder ausgeschlossenen Prüfpfade hinzufügen; neue Befunde an der Ursache beheben.
 - Nach Typ-/Vertragsänderungen die betroffenen Tests und vor Abschluss die PHPUnit-Suite ausführen.

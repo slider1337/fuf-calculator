@@ -3,12 +3,16 @@ declare(strict_types=1);
 namespace App\Application;
 use App\Application\Port\{BookingPolicy,AccessRepositoryInterface};
 use App\Application\Port\MemberBookingRepositoryInterface;
-/** Private per-call capability, never installed as the management policy. Caller has checked ownership. */
+/**
+ * Private per-call capability, never installed as the management policy. Caller has checked ownership.
+ * @phpstan-import-type TripMetadata from \App\Application\Port\AccessRepositoryInterface
+ */
 final readonly class MemberBookingPolicy implements BookingPolicy {
  public function __construct(private int $tripId,private MemberIdentity $identity,private AccessRepositoryInterface $access,private MemberBookingRepositoryInterface $store) {}
  public function actorId(): int {return 0;} // No Calculator user; detailed principal in member_audit.
  public function can(string $type,int $id,string $capability): bool {return $type==='trip'&&$id===$this->tripId&&in_array($capability,['registration.view','registration.manage','answers.view','answers.correct'],true);}
  public function trip(int $id,string $capability,bool $write=false): void {if(!$this->can('trip',$id,$capability)){throw new AccessException('forbidden');}if($write&&($this->metadata($id)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}if($write&&($this->metadata($id)['closed_at']??null)!==null){throw new AccessException('trip_closed',409);}}
+ /** @return TripMetadata */
  public function metadata(int $id): array {return $this->access->metadata($id);}
  public function transaction(callable $f): mixed {return $this->access->transaction($f);}
  public function writeTrip(int $id,string $capability,callable $f): mixed {return $this->transaction(function()use($id,$capability,$f){$this->trip($id,$capability,true);return $f();});}

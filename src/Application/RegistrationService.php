@@ -24,9 +24,11 @@ final readonly class RegistrationService
 
     /**
      * Import registrations from CSV content. Replaces only CSV-sourced registrations; manual ones are preserved.
-     *
      * @return Registration[]
      * @throws DateMalformedStringException
+     * @throws ValidationException
+     * @throws NotFoundException
+     * @throws AccessException
      */
     public function importCsv(int $tripId, string $csvContent): array
     {
@@ -59,8 +61,7 @@ final readonly class RegistrationService
 
     /**
      * Add a manual registration.
-     *
-     * @param array{roomCategory: string, comment?: string, participants: array<int, array{name: string, birthDate: string}>} $data
+     * @param array<array-key,mixed> $data
      * @return Registration[]
      */
     public function addManualRegistration(int $tripId, array $data): array
@@ -68,7 +69,10 @@ final readonly class RegistrationService
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->addManualRegistrationInternal($tripId, $data));
     }
 
-    /** @return Registration[] */
+    /**
+     * @return Registration[]
+     * @param array<array-key,mixed> $data
+     */
     private function addManualRegistrationInternal(int $tripId, array $data): array
     {
         $trip = $this->tripRepository->getById($tripId);
@@ -76,9 +80,9 @@ final readonly class RegistrationService
             throw new NotFoundException('Trip not found.');
         }
 
-        if (($this->policy->metadata($tripId)['registration_mode']??'clubdesk_csv')==='easyverein') { throw new AccessException('versioned_booking_endpoint_required',409); }
+        if (($this->policy->metadata($tripId)['registration_mode'])==='easyverein') { throw new AccessException('versioned_booking_endpoint_required',409); }
         $errors = [];
-        $roomCategory = trim($data['roomCategory'] ?? '');
+        $roomCategory = trim(Input::text($data['roomCategory'] ?? ''));
 
 
         $participantsData = $data['participants'] ?? [];
@@ -91,9 +95,9 @@ final readonly class RegistrationService
         }
 
         $participants = [];
-        foreach ($participantsData as $i => $pData) {
-            $name = trim($pData['name'] ?? '');
-            $birthDateStr = trim($pData['birthDate'] ?? '');
+        foreach (Input::objects($participantsData) as $i => $pData) {
+            $name = trim(Input::text($pData['name'] ?? ''));
+            $birthDateStr = trim(Input::text($pData['birthDate'] ?? ''));
 
             if ($name === '' || $birthDateStr === '') {
                 continue;
@@ -117,7 +121,7 @@ final readonly class RegistrationService
             tripId: $tripId,
             roomCategory: $roomCategory === '' ? null : $roomCategory,
             receivedAt: date('d.m.Y H:i:s'),
-            comment: trim($data['comment'] ?? ''),
+            comment: trim(Input::text($data['comment'] ?? '')),
             participants: $participants,
             source: Registration::SOURCE_MANUAL
         );
@@ -129,7 +133,6 @@ final readonly class RegistrationService
 
     /**
      * Delete a single registration by id.
-     *
      * @return Registration[]
      */
     public function deleteRegistration(int $tripId, int $registrationId): array
@@ -155,9 +158,7 @@ final readonly class RegistrationService
         return $this->recalculateBillings($tripId);
     }
 
-    /**
-     * @return Registration[]
-     */
+    /** @return Registration[] */
     public function getRegistrations(int $tripId): array
     {
         $this->policy->trip($tripId, 'registration.view');
@@ -169,9 +170,7 @@ final readonly class RegistrationService
         return $this->registrationRepository->findByTripId($tripId);
     }
 
-    /**
-     * @return Registration[]
-     */
+    /** @return Registration[] */
     public function recalculateBillings(int $tripId): array
     {
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->recalculateBillingsInternal($tripId));
@@ -260,9 +259,7 @@ final readonly class RegistrationService
         return $registrations;
     }
 
-    /**
-     * Detect CSV delimiter by analyzing the first line.
-     */
+    /** Detect CSV delimiter by analyzing the first line. */
     private function detectDelimiter(string $csvContent): string
     {
         // Extract first line (before any newline) for delimiter detection
@@ -282,13 +279,12 @@ final readonly class RegistrationService
 
     /**
      * Build a column map from header names using pattern matching.
-     *
-     * @param string[] $header
+     * @param list<string|null> $header
      * @return array{roomCategory: int, receivedAt: ?int, comment: ?int, participants: array<int, array{name: int, birthDate: int}>}|null
      */
     private function buildColumnMap(array $header): ?array
     {
-        $normalized = array_map(static fn(string $h) => mb_strtolower(trim($h)), $header);
+        $normalized = array_map(static fn(?string $h) => mb_strtolower(trim($h ?? '')), $header);
 
         // Find room category column
         $roomCategoryIdx = $this->findColumnIndex($normalized, ['zimmerkategorie', 'room category', 'zimmer']);
@@ -336,7 +332,6 @@ final readonly class RegistrationService
 
     /**
      * Find a column index by matching against multiple possible header names.
-     *
      * @param string[] $normalizedHeaders
      * @param string[] $patterns
      */
@@ -365,6 +360,7 @@ final readonly class RegistrationService
     /**
      * @param array{roomCategory: int, receivedAt: ?int, comment: ?int, participants: array<int, array{name: int, birthDate: int}>} $columnMap
      * @throws DateMalformedStringException
+     * @param list<string|null> $fields
      */
     private function parseRegistrationRow(int $tripId, array $fields, array $columnMap): ?Registration
     {
@@ -401,16 +397,14 @@ final readonly class RegistrationService
         return new Registration(
             id: null,
             tripId: $tripId,
-            roomCategory: $roomCategory === '' ? null : $roomCategory,
+            roomCategory: $roomCategory,
             receivedAt: $receivedAt,
             comment: $comment,
             participants: $participants
         );
     }
 
-    /**
-     * @throws DateMalformedStringException
-     */
+    /** @throws DateMalformedStringException */
     private function parseGermanDate(string $dateStr): ?DateTimeImmutable
     {
         $dateStr = trim($dateStr);

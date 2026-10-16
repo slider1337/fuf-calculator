@@ -4,6 +4,7 @@ namespace App\Infrastructure\Persistence;
 use App\Application\Port\MemberBookingRepositoryInterface;
 use PDO;
 
+/** @phpstan-import-type AvailableGuest from \App\Application\Port\MemberBookingRepositoryInterface */
 final readonly class SqliteMemberBookingRepository implements MemberBookingRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
@@ -47,38 +48,38 @@ final readonly class SqliteMemberBookingRepository implements MemberBookingRepos
         $s=$this->execute('INSERT INTO guest_approvals(trip_id,owner_member,parent_member,name,birth_date,price_group,price,actor_id,created_at,reason,operation_key,request_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [$trip, $owner, $parent, $name, $birthDate, $priceGroup, $price, $actor, $createdAt, $reason, $operationKey, $requestHash]);
         return StoredRow::from(["id"=>$this->pdo->lastInsertId()])->integer("id");
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return AvailableGuest|false */
     public function availableGuest(mixed $guest, mixed $trip, mixed $owner): array|false
     {
         $s=$this->execute("SELECT * FROM guest_approvals WHERE id=? AND trip_id=? AND owner_member=? AND status='approved' AND participant_id IS NULL", [$guest, $trip, $owner]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false;  $r=StoredRow::from($row);return ['id'=>$r->integer('id'),'name'=>$r->text('name'),'birth_date'=>$r->text('birth_date'),'parent_member'=>$r->text('parent_member'),'price_group'=>$r->text('price_group'),'price'=>$r->text('price')]+$row;
     }
-    /** @return list<mixed> */
+    /** @return list<int> */
     public function ownedBookingIds(mixed $trip, mixed $owner, mixed $after): array
     {
-        $s=$this->execute('SELECT id FROM registrations WHERE trip_id=? AND owner_member_reference=? AND id>? ORDER BY id LIMIT 26', [$trip, $owner, $after]); return array_values($s->fetchAll(PDO::FETCH_COLUMN));
+        $s=$this->execute('SELECT id FROM registrations WHERE trip_id=? AND owner_member_reference=? AND id>? ORDER BY id LIMIT 26', [$trip, $owner, $after]); return array_values(array_map(static fn(mixed $id): int => StoredRow::from(['id'=>$id])->integer('id'),$s->fetchAll(PDO::FETCH_COLUMN)));
     }
     public function bookingOwner(mixed $trip, mixed $booking): int|string|false|null
     {
         $s=$this->execute('SELECT owner_member_reference FROM registrations WHERE trip_id=? AND id=?', [$trip, $booking]);
         return $s->fetchColumn();
     }
-    /** @return list<array<array-key,mixed>> */
+    /** @return list<array<string,scalar|null>> */
     public function availableGuests(mixed $trip, mixed $owner): array
     {
         $s=$this->execute("SELECT id,name,birth_date AS birthDate,parent_member AS parentMemberReference,price_group AS priceGroupId,price AS expectedPrice FROM guest_approvals WHERE trip_id=? AND owner_member=? AND status='approved' AND participant_id IS NULL", [$trip, $owner]);
-        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::from($row)->values(); } return $rows;
+        $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function tripForEvent(mixed $event): int|string|false|null
     {
         $s=$this->execute('SELECT trip_id FROM external_event_links WHERE external_id=?', [$event]);
         return $s->fetchColumn();
     }
-    /** @return array<array-key,mixed>|false */
+    /** @return array<string,scalar|null>|false */
     public function settings(mixed $trip): array|false
     {
         $s=$this->execute('SELECT * FROM member_trip_settings WHERE trip_id=?', [$trip]);
-        $row=$s->fetch(PDO::FETCH_ASSOC); if($row===false)return false; return $row;
+        $row=StoredRow::fetch($s); if($row===false)return false; return $row;
     }
     public function auditMember(mixed $member, mixed $service, mixed $action, mixed $trip, mixed $createdAt): void
     {

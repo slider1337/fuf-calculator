@@ -5,6 +5,12 @@ namespace App\Application;
 use App\Application\Port\AccessRepositoryInterface;
 use App\Application\Port\ActorInterface;
 
+/**
+ * @phpstan-import-type TripMetadata from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type MetadataUpdate from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type TeamMember from \App\Application\Port\AccessRepositoryInterface
+ * @phpstan-import-type LegacyCandidate from \App\Application\Port\AccessRepositoryInterface
+ */
 final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
 {
     public const TRIP_CAPABILITIES = ['trip.view', 'trip.manage', 'registration.view', 'registration.manage', 'answers.view', 'answers.correct', 'answers.export', 'analytics.view', 'calculation.manage', 'settlement.view', 'settlement.close', 'settlement.reopen', 'expense.view', 'expense.manage', 'term.manage', 'access.manage'];
@@ -39,7 +45,8 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
         if ($write && ($this->access->metadata($id)['closed_at'] ?? null) !== null) { throw new AccessException('trip_closed', 409); }
         if($write&&$capability==='term.manage'){$this->requireRegistrationMode($id,'easyverein');}
     }
-    /** @template T
+    /**
+     * @template T
      * @param callable(): T $operation
      * @return T
      */
@@ -49,23 +56,29 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
             $this->trip($id, $capability, true); return $operation();
         });
     }
-    /** @template T
+    /**
+     * @template T
      * @param callable(): T $operation
      * @return T
      */
     public function transaction(callable $operation): mixed { return $this->access->transaction($operation); }
     public function requireRegistrationMode(int $id,string $mode): void
     {
-        if(($this->metadata($id)['registration_mode']??'clubdesk_csv')!==$mode){throw new AccessException('registration_mode_'.$mode.'_required',409);}
+        if(($this->metadata($id)['registration_mode'])!==$mode){throw new AccessException('registration_mode_'.$mode.'_required',409);}
     }
+    /** @return TripMetadata */
     public function metadata(int $id): array { return $this->access->metadata($id); }
+    /** @param MetadataUpdate $values */
     public function setMetadata(int $id, array $values): void { $this->access->setMetadata($id, $values); }
+    /** @return list<string> */
     public function capabilities(string $type, int $id): array { return $this->access->capabilities($type, $id, $this->actorId()); }
+    /** @return list<TeamMember> */
     public function team(string $type, int $id): array
     {
         $this->manageAccess($type === 'default' ? 'event' : $type, $id);
         return $this->access->team($type, $id);
     }
+    /** @return list<LegacyCandidate> */
     public function candidates(): array { $this->admin(); return $this->access->legacyCandidates(); }
     private function manageAccess(string $type, int $id): void
     {
@@ -78,6 +91,7 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
         if ($reason === '' || mb_strlen($reason) > 500) { throw new ValidationException(['reason' => 'required_max_500']); }
         return $reason;
     }
+    /** @param list<string> $capabilities */
     public function grant(string $type, int $id, int $userId, array $capabilities, string $reason): void
     {
         $this->transaction(function () use ($type, $id, $userId, $capabilities, $reason) {

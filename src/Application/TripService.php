@@ -28,6 +28,7 @@ final readonly class TripService
     ) {
     }
 
+    /** @param array<array-key,mixed> $payload */
     public function createFromArray(array $payload): Trip
     {
         $this->policy->actorId();
@@ -50,11 +51,13 @@ final readonly class TripService
         });
     }
 
+    /** @param array<array-key,mixed> $payload */
     public function updateFromArray(int $id, array $payload): Trip
     {
         return $this->policy->writeTrip($id, 'calculation.manage', fn () => $this->updateInternal($id, $payload));
     }
 
+    /** @param array<array-key,mixed> $payload */
     private function updateInternal(int $id, array $payload): Trip
     {
         if(array_key_exists('registrationMode',$payload)&&RegistrationModeService::validate($payload['registrationMode'])!==$this->policy->metadata($id)['registration_mode']){throw new AccessException('use_registration_mode_endpoint',409);}
@@ -67,6 +70,7 @@ final readonly class TripService
         return $this->repository->getById($id)??throw new NotFoundException('Trip');
     }
 
+    /** @param array<array-key,mixed> $payload */
     private function mapPayloadToTrip(array $payload, ?int $id): Trip
     {
         $required = [
@@ -98,7 +102,7 @@ final readonly class TripService
         }
 
         try {
-            $startDate = new DateTimeImmutable((string) $payload['startDate']);
+            $startDate = new DateTimeImmutable((string) Input::scalar($payload['startDate']));
         } catch (Exception) {
             $errors['startDate'] = 'invalid_date';
             throw new ValidationException($errors);
@@ -107,7 +111,7 @@ final readonly class TripService
         $endDate = null;
         if (array_key_exists('endDate', $payload) && $payload['endDate'] !== '' && $payload['endDate'] !== null) {
             try {
-                $endDate = new DateTimeImmutable((string) $payload['endDate']);
+                $endDate = new DateTimeImmutable((string) Input::scalar($payload['endDate']));
             } catch (Exception) {
                 throw new ValidationException(['endDate' => 'invalid_date']);
             }
@@ -120,24 +124,24 @@ final readonly class TripService
 
         $bookings = [];
         try {
-            foreach ($payload['bookings'] as $bookingPayload) {
+            foreach (Input::objects($payload['bookings']) as $bookingPayload) {
                 $salesPriceRaw = $bookingPayload['salesPricePerPerson'] ?? null;
                 $salesPrice = ($salesPriceRaw === null || $salesPriceRaw === '')
                     ? null
-                    : (float) $salesPriceRaw;
+                    : (float) Input::scalar($salesPriceRaw);
                 $bookings[] = new RoomBooking(
-                    RoomCategoryType::from((string) $bookingPayload['categoryType']),
-                    (int) $bookingPayload['count'],
-                    (float) $bookingPayload['basePricePerPerson'],
+                    RoomCategoryType::from((string) Input::scalar($bookingPayload['categoryType'])),
+                    (int) Input::scalar($bookingPayload['count']),
+                    (float) Input::scalar($bookingPayload['basePricePerPerson']),
                     $salesPrice
                 );
             }
 
             $expenses = [];
-            foreach ((array) $payload['groupExpenses'] as $expensePayload) {
+            foreach (Input::objects($payload['groupExpenses']) as $expensePayload) {
                 $expenses[] = new GroupExpense(
-                    (string) $expensePayload['label'],
-                    (float) $expensePayload['amount']
+                    (string) Input::scalar($expensePayload['label']),
+                    (float) Input::scalar($expensePayload['amount'])
                 );
             }
 
@@ -148,23 +152,23 @@ final readonly class TripService
 
             $trip = new Trip(
                 id: null,
-                name: (string) $payload['name'],
+                name: (string) Input::scalar($payload['name']),
                 startDate: $startDate,
                 pricingPolicy: new TripPricingPolicy(
-                    new Percentage((float) $payload['markupPercent']),
-                    new Percentage((float) $payload['clubFeePercent']),
-                    DistributionMethod::from((string) $payload['distributionMethod']),
-                    (float) $payload['spaTaxPerPerson'],
-                    (int) $payload['spaTaxAgeThreshold'],
-                    (int) $payload['adultAgeThreshold'],
+                    new Percentage((float) Input::scalar($payload['markupPercent'])),
+                    new Percentage((float) Input::scalar($payload['clubFeePercent'])),
+                    DistributionMethod::from((string) Input::scalar($payload['distributionMethod'])),
+                    (float) Input::scalar($payload['spaTaxPerPerson']),
+                    (int) Input::scalar($payload['spaTaxAgeThreshold']),
+                    (int) Input::scalar($payload['adultAgeThreshold']),
                     // Optional, damit bestehende Clients unveraendert weiterlaufen.
                     (bool) ($payload['averageAdultPrice'] ?? false)
                 ),
                 bookings: $bookings,
                 groupExpenses: $expenses,
-                plannedTotalCosts: (float) ($payload['plannedTotalCosts'] ?? 0),
-                plannedTotalRevenue: (float) ($payload['plannedTotalRevenue'] ?? 0),
-                spaTaxCount: (int) ($payload['spaTaxCount'] ?? 0),
+                plannedTotalCosts: (float) Input::scalar(($payload['plannedTotalCosts'] ?? 0)),
+                plannedTotalRevenue: (float) Input::scalar(($payload['plannedTotalRevenue'] ?? 0)),
+                spaTaxCount: (int) Input::scalar(($payload['spaTaxCount'] ?? 0)),
                 endDate: $endDate,
                 roomReservations: $reservations,
             );
@@ -179,17 +183,17 @@ final readonly class TripService
      * Optional, damit bestehende Clients unveraendert weiterlaufen. Eine ganz leere
      * Zeile (kein Typ, Anzahl 0) ist ein nicht ausgefuelltes Formularfeld und faellt
      * weg; ohne Typ, aber mit Anzahl, ist sie ein Eingabefehler.
-     *
      * @return array<int, array{roomType: string, count: int}>
+     * @param array<array-key,mixed> $payload
      */
     private function roomReservationPayloads(array $payload): array
     {
         $result = [];
         $seen = [];
 
-        foreach ((array) ($payload['roomReservations'] ?? []) as $reservationPayload) {
-            $roomType = trim((string) ($reservationPayload['roomType'] ?? ''));
-            $count = (int) ($reservationPayload['count'] ?? 0);
+        foreach (Input::objects($payload['roomReservations'] ?? []) as $reservationPayload) {
+            $roomType = trim((string) Input::scalar(($reservationPayload['roomType'] ?? '')));
+            $count = (int) Input::scalar(($reservationPayload['count'] ?? 0));
 
             if ($roomType === '') {
                 if ($count === 0) {
@@ -221,6 +225,7 @@ final readonly class TripService
         return $trip;
     }
 
+    /** @return array<array-key,mixed> */
     public function calculate(int $tripId): array
     {
         $this->policy->trip($tripId, 'calculation.manage', true);

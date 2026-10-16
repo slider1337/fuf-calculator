@@ -95,7 +95,7 @@ docker compose down
 
 ## GitHub Actions (CI)
 
-Die CI führt Syntax-Checks, den Composer-Sicherheitsaudit, PHPStan auf Level 10 und PHPUnit mit Coverage auf PHP 8.4 aus. Auch der Deployment-Build wartet auf diese Prüfungen. Die [PHPStan-Einführung](docs/fixes/2026-10-15-phpstan-level-10.md) dokumentiert den bestehenden Typisierungsrückstand in einer Baseline.
+Die CI führt Syntax-Checks, den Composer-Sicherheitsaudit, PHPStan auf Level 10 und PHPUnit mit Coverage auf PHP 8.4 aus. Auch der Deployment-Build wartet auf diese Prüfungen. PHPStan prüft alle konfigurierten Pfade ohne Baseline oder Fehlerausnahmen; der [Abschluss des Typisierungsrückstands](docs/fixes/2026-10-16-phpstan-backlog.md) dokumentiert die Änderungen.
 
 Die [typisierte Termin- und Anmeldeverwaltung](docs/fixes/2026-10-16-typed-term-registration-repositories.md) trennt Fachlogik von SQLite und reduziert die Baseline von 1963 auf 1651 Befunde.
 

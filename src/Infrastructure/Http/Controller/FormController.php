@@ -16,18 +16,19 @@ final readonly class FormController
     public function preview(Request $request, Response $response, string $eventId, string $versionId): Response
     {
         $result = $this->forms->preview((int) $eventId,(int) $versionId,(array) $request->getParsedBody());
-        $result['errors'] = (object) $result['errors'];
-        $result['answers']['booking'] = (object) $result['answers']['booking'];
-        $result['answers']['persons'] = (object) array_map(static fn ($values) => (object) $values, $result['answers']['persons']);
-        return JsonResponder::write($response,$result);
+        $output=$result;
+        $output['errors'] = (object) $result['errors'];
+        $output['answers']=['booking'=>(object)$result['answers']['booking'],'persons'=>(object)array_map(static fn(array $values): object=>(object)$values,$result['answers']['persons'])];
+
+        return JsonResponder::write($response,$output);
     }
     public function publish(Request $request, Response $response, string $eventId, string $versionId): Response { return JsonResponder::write($response,$this->forms->publish((int) $eventId,(int) $versionId,(array) $request->getParsedBody())); }
     public function archive(Request $request, Response $response, string $eventId, string $versionId): Response { return JsonResponder::write($response,$this->forms->archive((int) $eventId,(int) $versionId,(array) $request->getParsedBody())); }
     public function compare(Request $request, Response $response, string $eventId): Response
     {
         $q = $request->getQueryParams();
-        foreach (['from','to'] as $key) { if (!isset($q[$key]) || !ctype_digit((string) $q[$key])) { throw new \App\Application\ValidationException([$key=>'version_id_required']); } }
-        return JsonResponder::write($response,$this->forms->compare((int) $eventId,(int) $q['from'],(int) $q['to']));
+        foreach (['from','to'] as $key) { if (!isset($q[$key]) || !ctype_digit((string) \App\Application\Input::scalar($q[$key]))) { throw new \App\Application\ValidationException([$key=>'version_id_required']); } }
+        return JsonResponder::write($response,$this->forms->compare((int) $eventId,(int) \App\Application\Input::scalar($q['from']),(int) \App\Application\Input::scalar($q['to'])));
     }
     public function binding(Request $request, Response $response, string $id): Response { return JsonResponder::write($response,$this->forms->binding((int) $id)); }
     public function switchPreview(Request $request, Response $response, string $id): Response { return JsonResponder::write($response,$this->forms->switchPreview((int) $id,(array) $request->getParsedBody())); }

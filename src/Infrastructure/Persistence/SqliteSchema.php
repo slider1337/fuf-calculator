@@ -19,6 +19,7 @@ final class SqliteSchema
 
         try {
             $configArray = require $configPath;
+            if (!is_array($configArray)) { throw new \LogicException('Invalid migration configuration'); }
             $config = new Config($configArray, $configPath);
             $manager = new Manager($config, new StringInput(' '), new NullOutput());
             $manager->migrate('default');

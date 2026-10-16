@@ -5,6 +5,7 @@ namespace App\Application\Port;
 use App\Domain\Event\Event;
 interface EventRepositoryInterface
 {
+    /** @return list<\App\Domain\Event\Event> */
     public function all(): array;
     public function get(int $id): ?Event;
     public function save(Event $event): Event;

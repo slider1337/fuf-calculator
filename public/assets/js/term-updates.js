@@ -18,9 +18,12 @@ async function openTermUpdate(trip){
     if(command&&command.input!==JSON.stringify(values))throw new Error('Eine Übertragung ist noch ungeklärt. Bitte mit unveränderten Werten erneut speichern, um ihren Status zu prüfen.');
     command||={input:JSON.stringify(values),body:{operationKey:crypto.randomUUID(),observedHash:data.observedHash,changes:values}};
     byId('term-save-progress').textContent='Wird in easyVerein gespeichert …';
-    let result;
-    try{result=await api(url+'/save',{method:'POST',body:JSON.stringify(command.body)});}catch(error){const message=termSaveMessage(error);byId('term-save-progress').textContent=message;throw new Error(message);}
-    result=await waitForTermUpdate(url,result);
+    let result,accepted=false;
+    try{result=await api(url+'/save',{method:'POST',body:JSON.stringify(command.body)});accepted=true;result=await waitForTermUpdate(url,result);}
+    catch(error){
+      if(!accepted){try{if(['validation_error','term_registration_overlap','term_review_changed','term_changed','term_update_in_progress','provider_read_failed','provider_read_invalid','provider_rate_limited','provider_term_fields_unproven','easyverein_production_writes_disabled','trip_archived','trip_closed','forbidden','unauthorized'].includes(JSON.parse(error.message).error))command=null;}catch{}}
+      const message=termSaveMessage(error);byId('term-save-progress').textContent=message;throw new Error(message);
+    }
     byId('term-save-progress').textContent=termUpdateOutcome(result);
     if(result.status!=='succeeded'){
       if(['blocked','conflict','failed'].includes(result.status))command=null;
@@ -52,6 +55,8 @@ function termSaveMessage(error){
       const labels={'changes.registrationDeadline':'Anmeldeschluss: Bitte ein gültiges Datum und eine gültige Uhrzeit eingeben.','changes.capacity':'Maximale Teilnehmerzahl: Bitte eine positive ganze Zahl eingeben.','changes.title':'Bitte einen Titel eingeben.','changes.end':'Das Reiseende muss nach dem Reisebeginn liegen.'};
       return Object.keys(data.details||{}).map(field=>labels[field]||'Bitte die eingegebenen Termindaten prüfen.').join(' ')||'Bitte die eingegebenen Termindaten prüfen.';
     }
+    const messages={term_changed:'Die Terminzuordnung wurde geändert. Bitte den Dialog neu öffnen.',term_review_changed:'Reise oder Termin wurden inzwischen geändert. Bitte den Dialog neu öffnen.',trip_archived:'Die Reise ist archiviert und kann nicht geändert werden.',trip_closed:'Die Reise ist abgerechnet und kann nicht geändert werden.',forbidden:'Du hast keine Berechtigung zum Ändern dieses Termins.',unauthorized:'Deine Anmeldung ist abgelaufen. Bitte erneut anmelden.',easyverein_production_writes_disabled:'Die easyVerein-Schreibfunktion ist nicht freigegeben.'};
+    if(messages[data.error])return messages[data.error];
     if(['provider_rate_limited','provider_read_failed','provider_read_invalid','provider_term_fields_unproven'].includes(data.error))return termUpdateError(data.error);
     return managementMessage(error);
   }catch{if(error.name==='SyntaxError')return 'Der Server hat keine lesbare Antwort geliefert. Bitte unverändert erneut speichern, um den Übertragungsstatus zu prüfen.';return error.message==='Failed to fetch'?'Die Verbindung wurde unterbrochen. Bitte unverändert erneut speichern, um den Übertragungsstatus zu prüfen.':managementMessage(error);}

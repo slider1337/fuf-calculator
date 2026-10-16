@@ -31,6 +31,10 @@ const data={fields,tripFields:{start:'2026-10-22T22:00:00Z',end:'2026-10-25T22:5
  await scope.openTermUpdate(trip);const transport=scope.api;let failed=true;
  scope.api=async(url,options)=>{if(url.endsWith('/save')&&failed){calls.push({url,options});throw new Error('Failed to fetch')}return transport(url,options)};
  await assert.rejects(submit(),/Verbindung wurde unterbrochen/);const original=calls.at(-1).options.body;failed=false;await submit();assert.equal(calls.at(-1).options.body,original);
+ // A rejected preflight must allow correcting the input immediately.
+ scope.api=transport;await scope.openTermUpdate(trip);let reject=true;
+ scope.api=async(url,options)=>{if(url.endsWith('/save')&&reject)throw new Error(JSON.stringify({error:'term_registration_overlap'}));return transport(url,options)};
+ await assert.rejects(submit(),/term_registration_overlap/);inputs[0].value='Nach Fristkorrektur';reject=false;await submit();
  scope.api=async()=>({...data,jobs:[{id:1,status:'unknown'}]});await scope.openTermUpdate(trip);
  assert.equal(scope.byId('management-submit').disabled,true);assert(markup.includes('term-resolve'));
  await scope.openTermUpdateResolution(trip,1);assert(!markup.includes('action-reason'));

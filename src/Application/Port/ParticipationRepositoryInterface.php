@@ -57,6 +57,7 @@ interface ParticipationRepositoryInterface
     public function recentJobs(mixed $trip): array;
     public function markUnknown(mixed $person): void;
     public function blockJob(mixed $job): void;
+    public function isImportedPerson(int $trip,int $booking,int $person): bool;
     public function registrationOwner(mixed $booking, mixed $trip): int|string|false|null;
     /** @return array<string,scalar|null>|false */
     public function memberSettings(mixed $trip): array|false;

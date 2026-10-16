@@ -191,6 +191,10 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute("UPDATE participation_jobs SET status='unknown',lease_token=NULL,lease_until=strftime('%s','now')+300,error_code='permission_revoked_or_trip_closed' WHERE id=?", [$job]);
     }
+    public function isImportedPerson(int $trip,int $booking,int $person): bool
+    {
+        return $this->execute("SELECT 1 FROM registrations r JOIN registration_participants p ON p.registration_id=r.id WHERE r.trip_id=? AND r.id=? AND p.id=? AND r.source='easyverein' AND p.member_reference IS NOT NULL AND p.external_reference IS NOT NULL",[$trip,$booking,$person])->fetchColumn()!==false;
+    }
     public function registrationOwner(mixed $booking, mixed $trip): int|string|false|null
     {
         $s=$this->execute('SELECT owner_member_reference FROM registrations WHERE id=? AND trip_id=?', [$booking, $trip]);

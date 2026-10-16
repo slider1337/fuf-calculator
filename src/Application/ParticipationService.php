@@ -80,6 +80,7 @@ final readonly class ParticipationService {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$jobId){
    $j=$this->store->job($jobId, $trip)?:throw new NotFoundException('Job');
+   if(($j['error_code']??null)==='term_deleted')throw new AccessException('term_deleted',409);
    if($j['status']!=='failed'){throw new AccessException('only_proven_rejection_retryable',409);}
    if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
    $person=$this->store->personStatus($j['participant_id']);

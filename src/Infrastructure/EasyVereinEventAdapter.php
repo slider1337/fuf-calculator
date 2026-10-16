@@ -4,8 +4,15 @@ namespace App\Infrastructure;
 use App\Application\{AccessException,Port\ExternalEventPort,Port\EasyVereinWriteClient,ParticipationRejected,TermCreationNotStarted};
 use App\Infrastructure\Persistence\SqliteWorkflowRepository;
 /** @phpstan-import-type DraftData from \App\Application\Data\TermDraftData */
-final readonly class EasyVereinEventAdapter implements \App\Application\Port\RecoverableExternalEventPort, \App\Application\Port\ExternalTermUpdatePort {
+final readonly class EasyVereinEventAdapter implements \App\Application\Port\RecoverableExternalEventPort, \App\Application\Port\ExternalTermUpdatePort, \App\Application\Port\ExternalTermPresencePort {
  public function __construct(private EasyVereinWriteClient $client,private EasyVereinParticipationAdapter $participations,private SqliteWorkflowRepository $store) {}
+ public function exists(string $eventId): bool {
+  $id=EasyVereinData::id($eventId,'event');
+  try{$row=$this->client->get('event/'.$id.'/', ['query'=>'{id}']);}
+  catch(AccessException $e){if($e->error==='provider_event_not_found')return false;throw $e;}
+  if(EasyVereinData::id($row['id']??null,'event')!==$id)throw new AccessException('provider_event_invalid',503);
+  return true;
+ }
  public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
  /** @return array<array-key,mixed> */
  public function get(string $id): array {

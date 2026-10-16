@@ -10,13 +10,15 @@ final class MemoryEventAdapter implements \App\Application\Port\RecoverableExter
 {
     public int $posts=0;
     public ?\Closure $onCreate=null;
+    public ?\Closure $onGet=null;
+    public ?\App\Application\AccessException $readError=null;
     public bool $timeout=false;
     public array $events=[];
     public array $operations=[];
     public function createGuarded(array $draft,string $reference,callable $beforeWrite): array {$beforeWrite();return $this->create($draft,$reference);}
     public function resume(array $draft,string $reference,callable $beforeWrite): array { $beforeWrite();return $this->operations[$reference]??$this->create($draft,$reference); }
     public function blockedReason(): ?string {return null;}
-    public function get(string $id): ?array {return $this->events[$id]??null;}
+    public function get(string $id): ?array {if($this->onGet)($this->onGet)();if($this->readError)throw $this->readError;return $this->events[$id]??null;}
     public function create(array $draft,string $reference): array
     {
         if($this->onCreate!==null){($this->onCreate)();}
@@ -24,6 +26,17 @@ final class MemoryEventAdapter implements \App\Application\Port\RecoverableExter
         if($this->timeout){throw new \RuntimeException('Fake timeout after successful create');}return $event;
     }
     public function reconcile(string $reference): ?array {return $this->operations[$reference]??null;}
+}
+final class DeletedEventParticipationFixture implements \App\Application\Port\ParticipationPort
+{
+    public bool $deleted=false;
+    public function blockedReason(): ?string {return null;}
+    public function snapshot(string $eventId): array {
+        if($this->deleted)throw new \App\Application\AccessException('provider_event_not_found',404);
+        return ['eventId'=>$eventId,'revision'=>'r1','canceled'=>false,'bookingUntil'=>time()+3600,'capacityRemaining'=>60,'groups'=>[],'participants'=>[]];
+    }
+    public function execute(string $kind,array $person,string $operationReference): array {throw new \LogicException('No writes expected');}
+    public function reconcile(string $kind,array $person,string $operationReference): ?array {return null;}
 }
 final class PlanningTermApiTest extends ApiTestCase
 {
@@ -67,6 +80,70 @@ final class PlanningTermApiTest extends ApiTestCase
         $s=$db->prepare("INSERT INTO registrations (trip_id,room_category,received_at,comment,source,reference,room_assignment) VALUES (?,'Mehrbett','2026-10-13','','manual',?,?)");$s->execute([$t,'TEST-'.bin2hex(random_bytes(6)),$room]);$id=(int)$db->lastInsertId();
         $s=$db->prepare("INSERT INTO registration_participants (registration_id,name,birth_date,participation_status) VALUES (?,?,?,?)");
         $s->execute([$id,'Erwachsen','1986-01-01','confirmed']);$s->execute([$id,'Kind','2018-01-01','confirmed']);$s->execute([$id,'Offen','1980-01-01','pending']);return $id;
+    }
+    private function createdTermForDeletion(): array
+    {
+        $f=$this->fake();$provider=new DeletedEventParticipationFixture();$this->app->getContainer()->set(\App\Application\Port\ParticipationPort::class,$provider);
+        $t=$this->trip();$this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);
+        $review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'deleted_original_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);
+        self::assertTrue($this->app->getContainer()->get(TermWorker::class)->runOne());
+        return [$t,$f,$provider];
+    }
+    public function testConfirmedDeletedTermPreservesHistoryAndAllowsANewCreation(): void
+    {
+        [$t,$f,$provider]=$this->createdTermForDeletion();$db=$this->app->getContainer()->get(PDO::class);$booking=$this->seedRegistration($t);
+        $person=(int)$db->query('SELECT id FROM registration_participants WHERE registration_id='.$booking.' LIMIT 1')->fetchColumn();
+        $db->prepare("INSERT INTO participation_jobs(trip_id,registration_id,participant_id,kind,operation_key,request_hash,payload_json,actor_id,status,created_at) VALUES (?,?,?,'register','old_person_001','hash','{}',1,'unknown',?)")->execute([$t,$booking,$person,gmdate(DATE_ATOM)]);
+        $db->prepare("INSERT INTO term_update_jobs(trip_id,external_id,actor_id,operation_key,request_hash,payload_json,reason,status,created_at) VALUES (?,'101',1,'old_update_001','hash','{}','Historisch','unknown',?)")->execute([$t,gmdate(DATE_ATOM)]);
+        $db->prepare('INSERT INTO member_trip_settings(trip_id,enabled,booking_until,correction_until,cancel_until) VALUES (?,1,0,0,0)')->execute([$t]);
+        $db->exec("UPDATE trips SET name='Aktueller Reisename' WHERE id=".$t);
+        $provider->deleted=true;unset($f->events['101']);
+        $state=$this->json('GET',"/api/trips/$t/term");self::assertTrue($state['deleted']);self::assertFalse($state['registrationEnabled']);
+        $next=$this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true]);
+        self::assertNull($next['link']);self::assertNull($next['job']);self::assertNotNull($next['draft']);
+        self::assertSame(1,(int)$db->query('SELECT COUNT(*) FROM deleted_term_history')->fetchColumn());
+        self::assertSame(3,(int)$db->query('SELECT COUNT(*) FROM registration_participants')->fetchColumn());
+        self::assertSame('cancelled',$db->query('SELECT booking_status FROM registrations WHERE id='.$booking)->fetchColumn());
+        self::assertSame(3,(int)$db->query('SELECT COUNT(*) FROM person_observation_history')->fetchColumn());
+        self::assertSame('failed',$db->query('SELECT status FROM participation_jobs')->fetchColumn());
+        self::assertSame('term_deleted',$db->query('SELECT error_code FROM participation_jobs')->fetchColumn());
+        self::assertSame('blocked',$db->query('SELECT status FROM term_update_jobs')->fetchColumn());
+        self::assertSame(0,(int)$db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
+        self::assertSame('Aktueller Reisename',$next['draft']['data']['title']);self::assertSame('create',$next['draft']['data']['mode']);
+
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>$next['draft']['revision'],'draft'=>$this->draft($t)]);
+        $review=$this->json('POST',"/api/trips/$t/term/review",[]);$provider->deleted=false;
+        $this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'deleted_replacement_002','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);
+        self::assertTrue($this->app->getContainer()->get(TermWorker::class)->runOne());
+        self::assertSame('102',$this->json('GET',"/api/trips/$t/term")['link']['externalId']);self::assertSame(2,$f->posts);
+    }
+    public function testDeletionConfirmationRejectsExistingEventAndProviderErrors(): void
+    {
+        [$t,$f]=$this->createdTermForDeletion();
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true],409);
+        $f->readError=new \App\Application\AccessException('provider_read_failed',503);
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true],503);
+        $f->readError=null;self::assertSame('101',$this->json('GET',"/api/trips/$t/term")['link']['externalId']);
+        self::assertSame(0,(int)$this->app->getContainer()->get(PDO::class)->query('SELECT COUNT(*) FROM deleted_term_history')->fetchColumn());
+    }
+    public function testDeletionConfirmationChecksCurrentIdConfirmationLifecycleAndWorkerLease(): void
+    {
+        [$t,$f]=$this->createdTermForDeletion();unset($f->events['101']);$db=$this->app->getContainer()->get(PDO::class);
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101'],422);
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'999','confirmed'=>true],409);
+        $db->exec("UPDATE sync_jobs SET status='running',lease_until=".(time()+300));
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true],409);
+        $db->exec("UPDATE sync_jobs SET status='succeeded',lease_until=NULL");$db->exec("UPDATE trips SET archived_at='2026-10-16'");
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true],409);
+        self::assertSame(0,(int)$db->query('SELECT COUNT(*) FROM deleted_term_history')->fetchColumn());
+    }
+    public function testDeletionConfirmationRechecksLinkAfterProviderRead(): void
+    {
+        [$t,$f]=$this->createdTermForDeletion();unset($f->events['101']);$db=$this->app->getContainer()->get(PDO::class);
+        $f->onGet=static function()use($db){$db->exec("UPDATE external_event_links SET external_id='999'");};
+        $this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true],409);
+        self::assertSame(0,(int)$db->query('SELECT COUNT(*) FROM deleted_term_history')->fetchColumn());
     }
     public function testReviewAndRequestBlockAnOverlappingDateOnlyDeadline(): void
     {

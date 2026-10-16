@@ -8,8 +8,11 @@ namespace App\Application\Port;
  */
 interface MemberBookingRepositoryInterface
 {
-    /** @return list<array{id:int,tripId:int}> */
-    public function ownedBookingIndex(string $owner, int $after): array;
+    /** @param list<string> $members
+     * @return list<array{id:int,tripId:int}> */
+    public function ownedBookingIndex(string $owner, int $after, array $members = []): array;
+    /** @return list<int> */
+    public function releasedTripIds(): array;
     public function activePersonJob(mixed $person): int|string|false|null;
     public function duplicateMember(mixed $trip, mixed $member, mixed $booking): int|string|false|null;
     public function setPersonGuest(mixed $guest, mixed $person): void;
@@ -18,8 +21,9 @@ interface MemberBookingRepositoryInterface
     public function createGuest(mixed $trip, mixed $owner, mixed $parent, mixed $name, mixed $birthDate, mixed $priceGroup, mixed $price, mixed $actor, mixed $createdAt, mixed $reason, mixed $operationKey, mixed $requestHash): int;
     /** @return AvailableGuest|false */
     public function availableGuest(mixed $guest, mixed $trip, mixed $owner): array|false;
-    /** @return list<int> */
-    public function ownedBookingIds(mixed $trip, mixed $owner, mixed $after): array;
+    /** @param list<string> $members
+     * @return list<int> */
+    public function ownedBookingIds(mixed $trip, mixed $owner, mixed $after, array $members = []): array;
     public function bookingOwner(mixed $trip, mixed $booking): int|string|false|null;
     /** @return list<array<string,scalar|null>> */
     public function availableGuests(mixed $trip, mixed $owner): array;

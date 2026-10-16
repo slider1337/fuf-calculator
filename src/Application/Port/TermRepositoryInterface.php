@@ -30,6 +30,7 @@ interface TermRepositoryInterface
     public function bindLink(int $trip, string $externalId, array $data): void;
     /** @param array<array-key, mixed> $data */
     public function updateLinkData(int $trip, array $data): void;
+    public function releaseDeletedTerm(int $trip,string $externalId,int $actor): void;
     public function memberRegistrationEnabled(int $trip): bool;
     /** @return array{requestHash: string, tripId: int}|null */
     public function wizardOperation(int $actor, string $key): ?array;

@@ -5,12 +5,14 @@ use App\Application\Port\EasyVereinWriteClient;
 use App\Infrastructure\{EasyVereinEventAdapter,EasyVereinParticipationAdapter,Persistence\SqliteWorkflowRepository};
 use PHPUnit\Framework\TestCase;
 final class EventProviderFixture implements EasyVereinWriteClient {
+ public ?\App\Application\AccessException $readError=null;
  public array $events=[];public array $reads=[];public bool $failScan=false;public array $groups=[];public array $writes=[];public string $lose='';public string $reject='';public int $rejectStatus=0;public bool $badCalendar=false;public array $validationErrors=[];
  public function configured(): bool {return true;}
  public function writeEnabled(): bool {return true;}
  public function get(string $path,array $query=[]): array {
   $this->reads[]=[$path,$query];if($path==='event/'&&$this->failScan)throw new \RuntimeException('scan failed');
   if($path==='calendar/42/'){if($this->badCalendar)throw new \RuntimeException('sensitive remote error');return ['id'=>42];}
+  if($path==='event/77/'&&$this->readError)throw $this->readError;
   if($path==='event/77/'){return $this->events[77];}
   if($path==='event/'){return ['results'=>array_values($this->events),'next'=>null];}
   if($path==='price-group/'){return ['results'=>array_values($this->groups),'next'=>null];}
@@ -32,6 +34,12 @@ final class EasyVereinEventAdapterTest extends TestCase {
   $c=new EventProviderFixture();return [$c,new EasyVereinEventAdapter($c,new EasyVereinParticipationAdapter($c),new SqliteWorkflowRepository($pdo))];
  }
  private function draft(bool $groups=true): array {return ['calendarReference'=>'42','title'=>'Fiktiver Termin','startDate'=>'2027-01-01','endDate'=>null,'location'=>'Fiktiv','description'=>'Fiktiv','capacity'=>40,'visibility'=>'members','registrationDeadline'=>null,'priceGroups'=>$groups?[['label'=>'Gastpreis','price'=>'12','category'=>'GUEST']]:[]];}
+ public function testPresenceRequiresExactIdOrDefinitiveNotFound(): void {
+  [$c,$a]=$this->setupAdapter($this->draft());$c->events[77]=['id'=>77];self::assertTrue($a->exists('77'));
+  $c->readError=new \App\Application\AccessException('provider_event_not_found',404);self::assertFalse($a->exists('77'));
+  foreach(['provider_read_failed','easyverein_credentials_missing'] as $code){$c->readError=new \App\Application\AccessException($code,503);try{$a->exists('77');self::fail('Unknown result treated as deleted');}catch(\App\Application\AccessException $e){self::assertSame($code,$e->error);}}
+  self::assertSame([],$c->writes);
+ }
  public function testOverlappingRegistrationDeadlineStopsBeforeAnyProviderRequest(): void {
   foreach(['2027-01-01','2027-01-02'] as $day){$d=$this->draft();$d['registrationDeadline']=$day;[$c,$a]=$this->setupAdapter($d);
    try{$a->create($d,'calculator-term-1-term_operation_01');self::fail('Expected local deadline rejection');}catch(\App\Application\TermCreationNotStarted $e){self::assertSame('term_registration_overlap',$e->reason);}

@@ -10,7 +10,7 @@ use App\Application\Data\TermDraftData;
  * @phpstan-import-type DraftData from TermDraftData
  * @phpstan-import-type Draft from TermRepositoryInterface
  * @phpstan-import-type Link from TermRepositoryInterface
- * @phpstan-type TermState array{draft: Draft|null, link: Link|null, job: array<string, mixed>|null, blockedReason: string|null, referenceConfirmed: bool, registrationEnabled: bool, registrationReason: string}
+ * @phpstan-type TermState array{draft: Draft|null, link: Link|null, job: array<string, mixed>|null, blockedReason: string|null, referenceConfirmed: bool, registrationEnabled: bool, registrationReason: string, deleted: bool}
  * @phpstan-type TermReview array{revision: int, reviewHash: string, data: DraftData, issues: list<string>, blockedReason: string|null, externalAction: string}
  */
 final readonly class TermService
@@ -42,8 +42,17 @@ final readonly class TermService
     public function read(int $id): array
     {
         $data=$this->readLocal($id);
-        if(!$data['registrationEnabled']||$data['link']===null)return $data;
-        $deadline=$this->participations->snapshot($data['link']['externalId'])['bookingUntil'];
+        if($data['link']===null)return $data;
+        try{$deadline=$this->participations->snapshot($data['link']['externalId'])['bookingUntil'];}
+        catch(AccessException $e){
+            $current=$this->readLocal($id);
+            if(($current['link']['externalId']??null)!==$data['link']['externalId'])throw new AccessException('term_review_changed',409);
+            $current['registrationEnabled']=false;
+            $current['deleted']=$e->error==='provider_event_not_found';
+            $current['registrationReason']=$current['deleted']?'term_deleted':$e->error;
+            if(!$current['deleted'])$current['blockedReason']=$e->error;
+            return $current;
+        }
         // Recheck permissions, release and lifecycle after network I/O.
         $current=$this->readLocal($id);
         if(($current['link']['externalId']??null)!==$data['link']['externalId'])throw new AccessException('term_review_changed',409);
@@ -65,9 +74,34 @@ final readonly class TermService
             if($reason===null&&!$settings){$reason='member_release_disabled';}
             if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
             if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null)){$reason='trip_closed_or_booking_deadline_passed';}
-            return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
+            return ['deleted'=>false,'draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
         });
     }
+    /** Confirm an externally deleted event. No provider write and no new event is created here.
+     * @param array<array-key,mixed> $payload
+     * @return TermState */
+    public function confirmDeleted(int $id,array $payload): array
+    {
+        $this->policy->trip($id,'term.manage',true);
+        if(($payload['confirmed']??null)!==true||!is_string($payload['externalId']??null))throw new ValidationException(['confirmed'=>'explicit_deleted_term_confirmation_required']);
+        $link=$this->store->link($id)??throw new AccessException('confirmed_term_required',409);
+        if($link['externalId']!==$payload['externalId'])throw new AccessException('term_review_changed',409);
+        $exists=$this->external instanceof \App\Application\Port\ExternalTermPresencePort
+            ?$this->external->exists($link['externalId']):$this->external->get($link['externalId'])!==null;
+        if($exists)throw new AccessException('term_still_exists',409);
+        $this->policy->writeTrip($id,'term.manage',function()use($id,$link){
+            $this->store->releaseDeletedTerm($id,$link['externalId'],$this->policy->actorId());
+            $draft=$this->store->draft($id);
+            if($draft!==null){
+                $trip=$this->trips->getById($id)??throw new NotFoundException('Trip');
+                $data=array_replace($draft['data'],['mode'=>'create','externalId'=>'','title'=>$trip->name(),'startDate'=>$trip->startDate()->format('Y-m-d'),'endDate'=>$trip->endDate()?->format('Y-m-d'),'formVersionId'=>$this->forms->binding($id)['versionId'],'teamUserIds'=>array_column($this->access->team('trip',$id),'userId')]);
+                $this->store->saveDraft($id,$draft['revision']+1,$data);
+            }
+            $this->policy->audit('term.deleted_confirmed','trip',$id,'Gelöschter easyVerein-Termin '.$link['externalId'].' bestätigt; Verknüpfung gelöst');
+        });
+        return $this->read($id);
+    }
+
     /**
      * @param array<array-key, mixed> $input
      * @return DraftData

@@ -58,7 +58,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
   assert(html.includes('wizard-event-query'));assert(html.includes('wizard-calendar-query'));count++;
  }
  // Status UI shows only the next useful action; background reads never create a term.
- const nodes=new Map();scope.byId=id=>{if(!nodes.has(id))nodes.set(id,{addEventListener(){}});return nodes.get(id)};
+ const nodes=new Map();scope.byId=id=>{if(!nodes.has(id))nodes.set(id,{listeners:{},addEventListener(name,fn){this.listeners[name]=fn}});return nodes.get(id)};
  scope.state={currentTripId:2,currentTrip:{id:2,registrationMode:'easyverein'}};scope.tripUsesEasyVerein=()=>true;scope.clearTimeout=()=>{};let timers=0;scope.setTimeout=()=>++timers;scope.loadParticipationStatus=async()=>{};
  vm.runInContext('const workflowUI={};'+source.slice(source.indexOf('async function loadWorkflowStatus'),source.indexOf("byId('planning-transfer-btn').addEventListener")),scope);
  const trip={id:2,registrationMode:'easyverein',capabilities:['term.manage','trip.manage']};
@@ -72,6 +72,12 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  scope.api=async()=>({draft:{},link:null,job:{status:'unknown',errorCode:'external_outcome_unknown'},blockedReason:null});
  let participationReads=0;scope.loadParticipationStatus=async()=>participationReads++;
  await scope.loadWorkflowStatus(trip);assert.equal(participationReads,0);assert(nodes.get('term-details').innerHTML.includes('term-recover'));assert.match(nodes.get('participation-details').textContent,/sobald der Termin verbunden/);count++;
+ // A deleted provider event offers explicit confirmation, never a misleading create button.
+ let deletedSubmit,deletedHtml;scope.showManagementModal=(title,html,callback)=>{deletedHtml=html;deletedSubmit=callback};
+ const deletedCalls=[];scope.api=async(url,options)=>{deletedCalls.push({url,options});return options?{link:null,job:null,draft:{}}:{deleted:true,link:{externalId:'77'},job:{status:'succeeded'}}};
+ await scope.loadWorkflowStatus(trip);assert(nodes.get('term-details').innerHTML.includes('term-confirm-deleted'));assert.equal(nodes.get('term-wizard').hidden,true);assert.equal(participationReads,0);
+ nodes.get('term-confirm-deleted').listeners.click();assert(!deletedHtml.includes('action-reason'));await deletedSubmit();
+ assert.equal(deletedCalls[1].url,'/api/trips/2/term/confirm-deleted');assert.deepEqual(JSON.parse(deletedCalls[1].options.body),{externalId:'77',confirmed:true});count++;
  const recoveryNodes=new Map();function node(id){if(!recoveryNodes.has(id))recoveryNodes.set(id,{value:'',children:[],textContent:'',isConnected:true,replaceChildren(){this.children=[]},append(child){this.children.push(child)}});return recoveryNodes.get(id)}
  scope.byId=node;scope.URLSearchParams=URLSearchParams;scope.document={createElement:()=>({})};
  let submit;scope.showManagementModal=(title,html,callback)=>{recoveryNodes.clear();submit=callback;node('term-recovery-query').value='Test & Reise';};

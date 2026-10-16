@@ -2108,6 +2108,52 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TermResumeRequest'
+  /api/trips/{id}/term/confirm-deleted:
+    post:
+      summary: Definitiv gelöschten easyVerein-Termin bestätigen und Neuanlage freigeben
+      description: Benötigt term.manage und eine offene Reise. Prüft die aktuelle stabile Termin-ID und
+        ausschließlich einen nachgewiesenen Provider-404. Authentifizierungsfehler und Ausfälle erlauben
+        keinen Reset. Alter Link und Anlageauftrag werden historisiert. Bestehende Anmeldungen und
+        Antworten bleiben erhalten; die gelöschten Teilnahmen werden lokal beendet und alte Jobs gestoppt.
+        Es erfolgt kein externer Schreibaufruf. Danach kann ein neuer Termin eingerichtet werden.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [externalId, confirmed]
+              properties:
+                externalId:
+                  type: string
+                confirmed:
+                  type: boolean
+                  enum: [true]
+      responses:
+        '200':
+          description: Verknüpfung gelöst, neue Einrichtung möglich
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermState'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Terminrechte fehlen
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: Termin noch vorhanden, Zuordnung geändert, Reise gesperrt oder laufender Worker
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Provider nicht sicher erreichbar, keine Löschbestätigung möglich
   /api/trips/{id}/term/link:
     post:
       summary: Verify stable external ID before unique local link; production adapter
@@ -5676,6 +5722,7 @@ components:
     TermState:
       type: object
       required:
+      - deleted
       - draft
       - link
       - job
@@ -5684,6 +5731,8 @@ components:
       - registrationEnabled
       - registrationReason
       properties:
+        deleted:
+          type: boolean
         draft:
           $ref: '#/components/schemas/TermDraftState'
           nullable: true
@@ -5699,8 +5748,6 @@ components:
         referenceConfirmed: *id004_2
         registrationEnabled:
           type: boolean
-          enum:
-          - false
         registrationReason: *id002_2
     TermReview:
       type: object

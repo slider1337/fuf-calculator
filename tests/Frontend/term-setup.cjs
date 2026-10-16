@@ -28,7 +28,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft']);assert.equal(context.revision,3);count++;
  calls=fake();context=existing();await assert.rejects(scope.saveTermSetup(context,{...draft,registrationDeadline:'2027-03-01'},true),/vor dem Terminbeginn/);assert.equal(calls.length,0);count++;
  calls=fake();context=existing();await scope.saveTermSetup(context,draft,true);
- assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft','/api/trips/2/term/review','/api/trips/2/term/request']);assert.deepEqual(calls[2].body,{operationKey:'external-key',reviewHash:'fresh-hash',confirmed:true});count++;
+ assert.deepEqual(calls.map(c=>c.url),['/api/trips/2/term/draft','/api/trips/2/term/review','/api/trips/2/term/request']);assert.deepEqual(calls[2].body,{operationKey:'external-key',reviewHash:'fresh-hash',confirmed:true,executeImmediately:true});count++;
  calls=fake();context=existing();await scope.saveTermSetup(context,{...draft,mode:'link',externalId:'77'},true);
  assert.equal(calls[2].url,'/api/trips/2/term/link');assert.equal(calls[2].body.externalId,'77');assert(calls[2].body.reason);count++;
  calls=fake({issues:['Bitte einen Kalender auswählen.']});context=existing();await assert.rejects(scope.saveTermSetup(context,draft,true),/Kalender/);assert.equal(calls.length,2);assert(!context.command);count++;
@@ -37,11 +37,13 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  calls=fake();await scope.saveTermSetup(context,draft,true);assert.deepEqual(calls,[original]);
  await assert.rejects(scope.saveTermSetup(context,{...draft,title:'Geändert'},true),/bereits gesendet/);
  await assert.rejects(scope.saveTermSetup(context,draft,false),/bereits gesendet/);assert.equal(calls.length,1);count++;
+ context.result={link:null,job:{id:9,attempts:1,status:'blocked'}};calls=fake();await scope.saveTermSetup(context,draft,true);assert.equal(calls[0].url,'/api/trips/2/term/resume');assert.equal(calls[0].body.executeImmediately,true);count++;
  calls=fake();context={...existing(),id:null};await scope.saveTermSetup(context,draft,true);
  assert.deepEqual(calls.map(c=>c.url),['/api/trip-wizard','/api/trips/8/term','/api/trips/8/term/review','/api/trips/8/term/request']);assert.equal(context.id,8);assert.equal(calls[0].body.operationKey,'local-key');count++;
  calls=fake();context={...existing(),id:null};await scope.saveTermSetup(context,draft,false);assert.equal(calls.length,2);assert.equal(calls[0].url,'/api/trip-wizard');count++;
  assert.match(scope.termProgressText({draft:{}}),/Nächster Schritt/);
- for(const status of ['pending','running','resume_pending'])assert.match(scope.termProgressText({job:{status}}),/automatisch/);
+ assert.match(scope.termProgressText({job:{status:'pending'}}),/direkt starten/);
+ for(const status of ['running','resume_pending'])assert.match(scope.termProgressText({job:{status}}),/automatisch/);
  assert.match(scope.termProgressText({job:{status:'unknown'}}),/prüfen und anlegen/);
  assert(!scope.termProgressText({link:{},registrationEnabled:true}).includes('gesperrt'));count++;
  // Generate real wizard markup before DOM wiring; inspect three sibling panels.
@@ -65,7 +67,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  scope.api=async()=>({draft:{},link:null,job:null,blockedReason:null});await scope.loadWorkflowStatus(trip);
  assert.equal(nodes.get('term-wizard').textContent,'Termin fertigstellen');assert.equal(nodes.get('term-wizard').hidden,false);assert(!nodes.get('term-details').innerHTML.includes('member-release-open'));count++;
  scope.api=async()=>({draft:{},link:null,job:{status:'pending'},blockedReason:null});await scope.loadWorkflowStatus(trip);
- assert.equal(nodes.get('term-wizard').hidden,true);assert.equal(timers,1);assert(nodes.get('term-details').innerHTML.includes('term-refresh'));assert(!nodes.get('term-details').innerHTML.includes('member-release-open'));count++;
+ assert.equal(nodes.get('term-wizard').hidden,true);assert.equal(timers,1);assert(nodes.get('term-details').innerHTML.includes('term-resume'));assert(nodes.get('term-details').innerHTML.includes('term-refresh'));assert(!nodes.get('term-details').innerHTML.includes('member-release-open'));count++;
  scope.api=async()=>({draft:{},link:{externalId:'77'},job:{status:'succeeded'},registrationEnabled:false,registrationReason:'member_release_disabled'});await scope.loadWorkflowStatus(trip);
  assert(nodes.get('term-details').innerHTML.includes('member-release-open'));assert.match(nodes.get('term-status').textContent,/Termin verbunden/);assert.equal(nodes.get('term-wizard').hidden,true);count++;
  // No participation request/UI before a confirmed term; recovery never creates a term.
@@ -90,7 +92,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  const managementSource=fs.readFileSync('public/assets/js/management.js','utf8');vm.runInContext(managementSource.slice(managementSource.indexOf('function managementMessage'),managementSource.indexOf('async function performManagement')),scope);
  assert.match(scope.managementMessage(new Error(JSON.stringify({error:'confirmed_term_required'}))),/Terminsuche|Suche zuordnen/);assert.match(scope.managementMessage(new Error(JSON.stringify({error:'term_job_in_progress'}))),/kurz warten/);count++;
  const resumeCalls=[];scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {job:{id:7,attempts:3,status:'unknown'},link:null}};scope.state={currentTripId:2,currentTrip:trip};scope.loadWorkflowStatus=async()=>{};
- await scope.resumeTermSetup(trip);assert.deepEqual(resumeCalls.map(c=>c.url),['/api/trips/2/term','/api/trips/2/term/resume']);assert.deepEqual(JSON.parse(resumeCalls[1].options.body),{jobId:7,attempts:3,confirmed:true});count++;
+ await scope.resumeTermSetup(trip);assert.deepEqual(resumeCalls.map(c=>c.url),['/api/trips/2/term','/api/trips/2/term/resume']);assert.deepEqual(JSON.parse(resumeCalls[1].options.body),{jobId:7,attempts:3,confirmed:true,executeImmediately:true});count++;
  resumeCalls.length=0;scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {link:{externalId:'77'},job:{id:7,attempts:4,status:'succeeded'}}};await scope.resumeTermSetup(trip);assert.equal(resumeCalls.length,1);count++;
  // Provider people render directly, with escaped names and no mapping/guest approval modal.
  scope.escapeHtml=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');

@@ -4536,3 +4536,19 @@ body[data-trip-tab]:not([data-trip-tab="planung"]) #trip-save-btn-head { display
 #term-resume, #term-recover { white-space:normal; max-width:100%; margin-top:8px; }
 #term-recovery-more[hidden] { display:none!important; }
 #term-recovery-selected { overflow-wrap:anywhere; }
+
+/* Each wizard action owns enough space on narrow phones. */
+#management-modal.is-term-wizard .modal-footer {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px;
+}
+#management-modal.is-term-wizard .modal-footer > * { margin:0; min-width:0; }
+#management-modal.is-term-wizard .wizard-footer-navigation {
+  grid-column:1 / -1; width:auto; margin:0;
+}
+#management-modal.is-term-wizard .modal-footer > #management-submit {
+  grid-column:1 / -1; width:100%; order:0; padding:12px 16px;
+}
+#management-modal.is-term-wizard .modal-footer > [data-bs-dismiss] { order:1; }
+#management-modal.is-term-wizard .modal-footer > #wizard-save-draft { order:2; }

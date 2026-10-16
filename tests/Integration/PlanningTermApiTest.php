@@ -155,6 +155,46 @@ final class PlanningTermApiTest extends ApiTestCase
         $d['registrationDeadline']=(new \DateTimeImmutable($d['startDate']))->modify('-1 day')->format('Y-m-d');
         $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>1,'draft'=>$d]);$review=$this->json('POST',"/api/trips/$t/term/review",[]);self::assertSame([],$review['issues']);
     }
+    public function testImmediateCreationRunsOnlyItsOwnTripAndReturnsVerifiedResult(): void
+    {
+        $f=$this->fake();$payloads=[];$trips=[];
+        for($i=0;$i<2;$i++){
+            $t=$this->trip();$trips[]=$t;
+            $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);
+            $review=$this->json('POST',"/api/trips/$t/term/review",[]);
+            $payloads[]=['operationKey'=>'immediate_creation_00'.$i,'reviewHash'=>$review['reviewHash'],'confirmed'=>true];
+        }
+        $this->json('POST',"/api/trips/{$trips[0]}/term/request",$payloads[0],202);
+        $p=$payloads[1]+['executeImmediately'=>true];
+        $result=$this->json('POST',"/api/trips/{$trips[1]}/term/request",$p,202);
+        self::assertSame('succeeded',$result['job']['status']);self::assertSame('101',$result['link']['externalId']);
+        self::assertSame('pending',$this->json('GET',"/api/trips/{$trips[0]}/term")['job']['status']);
+        $this->json('POST',"/api/trips/{$trips[1]}/term/request",$p,202);self::assertSame(1,$f->posts);
+    }
+    public function testImmediateResumeExecutesAnAlreadyQueuedCreationAndRespectsLiveLease(): void
+    {
+        $f=$this->fake();$t=$this->trip();
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);
+        $review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $state=$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'pending_creation_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true],202);
+        $db=$this->app->getContainer()->get(PDO::class);
+        $p=['jobId'=>$state['job']['id'],'attempts'=>0,'confirmed'=>true,'executeImmediately'=>true];
+        $db->exec("UPDATE sync_jobs SET status='running',lease_token='other-process',lease_until=".(time()+300));
+        $result=$this->json('POST',"/api/trips/$t/term/resume",$p,202);
+        self::assertSame('running',$result['job']['status']);self::assertSame(0,$f->posts);
+        $db->exec("UPDATE sync_jobs SET status='pending',lease_token=NULL,lease_until=NULL");
+        $result=$this->json('POST',"/api/trips/$t/term/resume",$p,202);
+        self::assertSame('succeeded',$result['job']['status']);self::assertSame('101',$result['link']['externalId']);self::assertSame(1,$f->posts);
+    }
+    public function testImmediateCreationReturnsProviderValidationWithoutWaitingForWorker(): void
+    {
+        $f=$this->fake();$t=$this->trip();$errors=[['field'=>'calendar','reason'=>'permission']];
+        $f->onCreate=static fn()=>throw new \App\Application\TermCreationNotStarted('term_create_forbidden',$errors);
+        $this->json('PUT',"/api/trips/$t/term/draft",['revision'=>0,'draft'=>$this->draft($t)]);
+        $review=$this->json('POST',"/api/trips/$t/term/review",[]);
+        $state=$this->json('POST',"/api/trips/$t/term/request",['operationKey'=>'rejected_creation_001','reviewHash'=>$review['reviewHash'],'confirmed'=>true,'executeImmediately'=>true],202);
+        self::assertNull($state['link']);self::assertSame('blocked',$state['job']['status']);self::assertSame('term_create_forbidden',$state['job']['errorCode']);self::assertSame($errors,$state['job']['validationErrors']);self::assertSame(0,$f->posts);
+    }
     public function testRejectedTermValidationIsPersistedAndClearedOnExplicitRetry(): void
     {
         $f=$this->fake();$errors=[['field'=>'prologue','reason'=>'blank']];

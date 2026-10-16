@@ -5719,6 +5719,11 @@ components:
           type: boolean
           enum:
           - true
+        executeImmediately:
+          type: boolean
+          default: false
+          description: Führt den eigenen dauerhaften Auftrag direkt aus und liefert Ergebnis oder konkrete Fehlerdetails. Eine aktive Worker-Lease bleibt geschützt.
+
     TermState:
       type: object
       required:
@@ -5785,6 +5790,11 @@ components:
           type: boolean
           enum:
           - true
+        executeImmediately:
+          type: boolean
+          default: false
+          description: Führt den eigenen dauerhaften Auftrag direkt aus und liefert Ergebnis oder konkrete Fehlerdetails. Eine aktive Worker-Lease bleibt geschützt.
+
     TermLinkRequest:
       type: object
       required:

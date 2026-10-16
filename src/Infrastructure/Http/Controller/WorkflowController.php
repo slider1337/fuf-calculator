@@ -8,7 +8,7 @@ use Psr\Http\Message\{ServerRequestInterface as Request,ResponseInterface as Res
 
 final readonly class WorkflowController
 {
-    public function __construct(private PlanningTransferService $planning,private TermService $terms,private \App\Application\TermUpdateService $updates,private \App\Application\RegistrationModeService $modes,private \App\Application\TermCatalogService $catalog) {}
+    public function __construct(private PlanningTransferService $planning,private TermService $terms,private \App\Application\TermUpdateService $updates,private \App\Application\RegistrationModeService $modes,private \App\Application\TermCatalogService $catalog,private \App\Application\TermWorker $worker) {}
     /** @param array<array-key,mixed> $d */
     private function json(Response $response,array $d,int $status=200): Response {return JsonResponder::write($response,$d,$status)->withHeader('Cache-Control','no-store');}
     public function planningStatus(Request $request,Response $response,string $id): Response {return $this->json($response,$this->planning->status((int)$id));}
@@ -28,7 +28,17 @@ final readonly class WorkflowController
     public function confirmDeletedTerm(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->confirmDeleted((int)$id,(array)$request->getParsedBody()));}
     public function draft(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->save((int)$id,(array)$request->getParsedBody()));}
     public function review(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->review((int)$id));}
-    public function request(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->request((int)$id,(array)$request->getParsedBody()),202);}
-    public function resume(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->resume((int)$id,(array)$request->getParsedBody()),202);}
+    public function request(Request $request,Response $response,string $id): Response {
+        $payload=(array)$request->getParsedBody();
+        $result=$this->terms->request((int)$id,$payload);
+        if(($payload['executeImmediately']??false)===true&&$result['link']===null){$this->worker->runOne((int)$id);$result=$this->terms->read((int)$id);}
+        return $this->json($response,$result,202);
+    }
+    public function resume(Request $request,Response $response,string $id): Response {
+        $payload=(array)$request->getParsedBody();
+        $result=$this->terms->resume((int)$id,$payload);
+        if(($payload['executeImmediately']??false)===true&&$result['link']===null){$this->worker->runOne((int)$id);$result=$this->terms->read((int)$id);}
+        return $this->json($response,$result,202);
+    }
     public function link(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->link((int)$id,(array)$request->getParsedBody()));}
 }

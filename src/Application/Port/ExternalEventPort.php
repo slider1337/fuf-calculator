@@ -9,7 +9,7 @@ interface ExternalEventPort
     /** null only when productive provider writes (including normal notifications) are explicitly enabled. Development/tests never send external provider writes. */
     public function blockedReason(): ?string;
     /**
-     * A verified lookup by stable provider ID; no title matching.
+     * A verified lookup by stable provider ID; no title matching. Null only for a definitively missing event; network/authentication failures must throw.
      * @return array<array-key,mixed>
      */
     public function get(string $id): ?array;

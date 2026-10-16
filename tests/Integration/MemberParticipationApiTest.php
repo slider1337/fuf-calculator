@@ -353,6 +353,45 @@ final class MemberParticipationApiTest extends ApiTestCase {
   self::assertSame('Extern neuer Titel',$baseline['termFields']['title']);self::assertSame('Extern neuer Ort',$baseline['termFields']['location']);self::assertSame(0,$this->provider->writes);
  }
 
+ private function bindRequiredFormAfterExistingParticipation(): array {
+  $_SESSION['user_id']=1;
+  $org=function($method,$path,$p=[],$status=200){$r=$this->dispatch($method,$path,$p);self::assertSame($status,$r->getStatusCode(),(string)$r->getBody());return json_decode((string)$r->getBody(),true);};
+  $event=$org('POST','/api/events',['name'=>'Späteres Formular'],201)['id'];$org('PUT',"/api/trips/{$this->trip}/event",['eventId'=>$event,'reason'=>'Formular ergänzen']);
+  $v=$org('POST',"/api/events/$event/forms",[],201);$v=$org('PUT',"/api/events/$event/forms/{$v['id']}",['revision'=>$v['revision'],'fields'=>[['type'=>'number','label'=>'Zusatzfrage','required'=>true]]]);
+  $v=$org('POST',"/api/events/$event/forms/{$v['id']}/publish",['revision'=>$v['revision'],'changeDescription'=>'Formular nach Anmeldung']);
+  $org('PUT',"/api/trips/{$this->trip}/form",['revision'=>0,'versionId'=>$v['id'],'targetRevision'=>$v['revision'],'reason'=>'Formular ergänzen','requestSupplement'=>false]);$_SESSION=[];return $v;
+ }
+ private function oldProviderPerson(string $member='11',string $id='700'): array {
+  return ['eventId'=>'77','externalId'=>$id,'memberReference'=>$member,'contactReference'=>'51','name'=>'Bereits angemeldet','birthDate'=>'1980-01-01','status'=>'confirmed','priceGroupId'=>'21','price'=>'12','isCompanion'=>false];
+ }
+ public function testParticipationPredatingFormIsVisibleCancelableAndCanRegisterAgain(): void {
+  $this->provider->rows['700']=$this->oldProviderPerson();$form=$this->bindRequiredFormAfterExistingParticipation();
+  $index=$this->call('GET','/integration/v1/bookings?after=0');self::assertCount(1,$index['items']);$b=$index['items'][0];
+  self::assertNull($b['versionId']);self::assertSame([],$b['answers']);self::assertTrue($b['supplementPending']);self::assertSame('700',$b['persons'][0]['externalReference']);
+  self::assertCount(1,$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0")['items']);
+  $cancel=['operationKey'=>'cancel_before_form_001','revision'=>$b['revision'],'confirmed'=>true,'reason'=>'Abmeldung'];
+  $pending=$this->call('POST',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/cancel",$cancel,202);
+  $listed=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0")['items'][0];self::assertSame('pending',$listed['syncStatus']);
+  $this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('cancelled',$b['status']);
+  $p=$this->payload(1);$p['versionId']=$form['id'];$p['answers']=['booking'=>[$form['fields'][0]['id']=>'1']];$new=$this->create($p);$this->worker();
+  self::assertNotSame($b['id'],$new['id']);self::assertSame(2,$this->provider->writes);
+ }
+ public function testImportedParticipationAllowsAddingFormAnswersWithoutRegisteringAgain(): void {
+  $this->provider->rows['700']=$this->oldProviderPerson();$form=$this->bindRequiredFormAfterExistingParticipation();
+  $b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0")['items'][0];
+  $p=['operationKey'=>'answers_for_import_001','revision'=>$b['revision'],'versionId'=>$form['id'],'confirmed'=>true,'reason'=>'Angaben ergänzt','answers'=>['booking'=>[$form['fields'][0]['id']=>'2']]];
+  $updated=$this->call('PUT',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/answers",$p);
+  self::assertSame($form['id'],$updated['versionId']);self::assertSame('confirmed',$updated['status']);self::assertFalse($updated['supplementPending']);self::assertSame(0,$this->provider->writes);
+ }
+ public function testImportedFamilyAccessUsesVerifiedReferencesAndNeverNames(): void {
+  $this->provider->rows=['700'=>$this->oldProviderPerson('12'),'701'=>$this->oldProviderPerson('99','701')];
+  $own=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0");self::assertCount(1,$own['items']);$b=$own['items'][0];self::assertSame('12',$b['persons'][0]['memberReference']);
+  self::assertCount(1,$this->call('GET','/integration/v1/bookings?after=0',null,200,'12')['items']);
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}",null,404,'99');
+  $this->directory->bad=true;$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0",null,503);
+  self::assertSame(0,$this->provider->writes);
+ }
+
  public function testClubdeskModeCannotUseMemberApiOrProviderWorker(): void {
   $_SESSION['user_id']=1;$r=$this->dispatch('PUT',"/api/trips/{$this->trip}/registration-mode",['registrationMode'=>'clubdesk_csv','revision'=>0,'confirmed'=>true,'reason'=>'CSV wählen']);self::assertSame(200,$r->getStatusCode());$_SESSION=[];
   $this->call('GET',"/integration/v1/trips/{$this->trip}/context",null,404);self::assertSame(0,$this->provider->writes);self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());

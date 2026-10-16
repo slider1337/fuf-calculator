@@ -21,6 +21,7 @@ final readonly class ExternalParticipationImporter
         $row=$this->providerPerson($row);$id=$row['externalId'];
         $known=$this->store->localPeopleByExternal($trip,$id);
         if($known){
+            if(count($known)===1&&$this->store->activePersonJob($known[0]['id'])!==false)return;
             if(count($known)===1&&$known[0]['source']==='easyverein')$this->update((int)$known[0]['registration_id'],(int)$known[0]['id'],$row,$actor);
             return;
         }

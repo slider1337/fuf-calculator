@@ -10,16 +10,27 @@ final readonly class SqliteMemberBookingRepository implements MemberBookingRepos
     public function __construct(private PDO $pdo) {}
     /** @param list<mixed> $params */
     private function execute(string $sql,array $params): \PDOStatement { foreach($params as $value) { if($value!==null&&!is_scalar($value))throw new \UnexpectedValueException("Invalid database parameter"); } $s=$this->pdo->prepare($sql); $s->execute($params); return $s; }
-    /** @return list<array{id:int,tripId:int}> */
-    public function ownedBookingIndex(string $owner, int $after): array
+    public function ownedBookingIndex(string $owner, int $after, array $members = []): array
     {
-        $statement=$this->execute('SELECT id,trip_id FROM registrations WHERE owner_member_reference=? AND id>? ORDER BY id LIMIT 26',[$owner,$after]);
+        [$scope,$params]=$this->bookingScope($owner,$members);
+        $statement=$this->execute('SELECT r.id,r.trip_id FROM registrations r WHERE '.$scope.' AND r.id>? ORDER BY r.id LIMIT 26', [...$params,$after]);
         $result=[];
-        foreach($statement->fetchAll(\PDO::FETCH_ASSOC) as $row){
-            $stored=StoredRow::from($row);
-            $result[]=['id'=>$stored->integer('id'),'tripId'=>$stored->integer('trip_id')];
-        }
+        foreach($statement->fetchAll(PDO::FETCH_ASSOC) as $row){$stored=StoredRow::from($row);$result[]=['id'=>$stored->integer('id'),'tripId'=>$stored->integer('trip_id')];}
         return $result;
+    }
+    public function releasedTripIds(): array
+    {
+        return array_values(array_map(static fn(mixed $id): int=>StoredRow::from(['id'=>$id])->integer('id'),$this->execute("SELECT t.id FROM trips t JOIN external_event_links e ON e.trip_id=t.id JOIN member_trip_settings s ON s.trip_id=t.id WHERE t.registration_mode='easyverein' AND s.enabled=1 AND t.archived_at IS NULL AND t.closed_at IS NULL ORDER BY t.id DESC LIMIT 100",[])->fetchAll(PDO::FETCH_COLUMN)));
+    }
+    /** Imported bookings contain only persons with verified member references in this profile.
+     * @param list<string> $members
+     * @return array{string,list<string>}
+     */
+    private function bookingScope(string $owner,array $members): array
+    {
+        if(!$members)return ['r.owner_member_reference=?',[$owner]];
+        $in=implode(',',array_fill(0,count($members),'?'));
+        return ["(r.owner_member_reference=? OR (r.source='easyverein' AND EXISTS(SELECT 1 FROM registration_participants p WHERE p.registration_id=r.id AND p.member_reference IN ($in)) AND NOT EXISTS(SELECT 1 FROM registration_participants p WHERE p.registration_id=r.id AND (p.member_reference IS NULL OR p.member_reference NOT IN ($in)))))",[$owner,...$members,...$members]];
     }
     public function activePersonJob(mixed $person): int|string|false|null
     {
@@ -54,10 +65,12 @@ final readonly class SqliteMemberBookingRepository implements MemberBookingRepos
         $s=$this->execute("SELECT * FROM guest_approvals WHERE id=? AND trip_id=? AND owner_member=? AND status='approved' AND participant_id IS NULL", [$guest, $trip, $owner]);
         $row=StoredRow::fetch($s); if($row===false)return false;  $r=StoredRow::from($row);return ['id'=>$r->integer('id'),'name'=>$r->text('name'),'birth_date'=>$r->text('birth_date'),'parent_member'=>$r->text('parent_member'),'price_group'=>$r->text('price_group'),'price'=>$r->text('price')]+$row;
     }
-    /** @return list<int> */
-    public function ownedBookingIds(mixed $trip, mixed $owner, mixed $after): array
+    public function ownedBookingIds(mixed $trip, mixed $owner, mixed $after, array $members = []): array
     {
-        $s=$this->execute('SELECT id FROM registrations WHERE trip_id=? AND owner_member_reference=? AND id>? ORDER BY id LIMIT 26', [$trip, $owner, $after]); return array_values(array_map(static fn(mixed $id): int => StoredRow::from(['id'=>$id])->integer('id'),$s->fetchAll(PDO::FETCH_COLUMN)));
+        if(!is_string($owner))throw new \InvalidArgumentException('Owner reference required');
+        [$scope,$params]=$this->bookingScope($owner,$members);
+        $s=$this->execute('SELECT r.id FROM registrations r WHERE r.trip_id=? AND '.$scope.' AND r.id>? ORDER BY r.id LIMIT 26',[$trip,...$params,$after]);
+        return array_values(array_map(static fn(mixed $id): int=>StoredRow::from(['id'=>$id])->integer('id'),$s->fetchAll(PDO::FETCH_COLUMN)));
     }
     public function bookingOwner(mixed $trip, mixed $booking): int|string|false|null
     {

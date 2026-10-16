@@ -70,7 +70,7 @@ final readonly class ParticipationWorker {
   if($j['member_actor']!==null){
    $s=$this->store->memberSettings($j['trip_id']);
    $owner=$this->store->registrationOwner($j['registration_id'], $j['trip_id']);
-   return $s&&(bool)$s['enabled']&&$owner===$j['member_actor'];
+   return $s&&(bool)$s['enabled']&&($owner===$j['member_actor']||$this->store->isImportedPerson($j['trip_id'],$j['registration_id'],$j['participant_id']));
   }
   return in_array('registration.manage',$this->access->capabilities('trip',(int)$j['trip_id'],(int)$j['actor_id']),true);
  }

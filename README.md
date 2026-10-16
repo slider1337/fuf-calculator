@@ -25,7 +25,7 @@ Webanwendung zur Kalkulation von Einzelpreisen fuer Gruppenreisen (Kompaktmodus)
 - `src/Infrastructure` - SQLite und HTTP Controller
 - `migrations/` - Phinx-Datenbankmigrationen (aktueller Schema-Vertrag)
 - `templates/index.html.php` - Bootstrap UI
-- `public/assets/js/app.js` - AJAX-Frontend
+- `public/assets/js/app.js` - Anwendungsstart; Fachfunktionen in getrennten Dateien unter `public/assets/js/`
 - `docs/openapi.yaml` - OpenAPI-Spec
 - `phpunit.xml` - PHPUnit-Konfiguration inkl. Coverage
 - `tests/Unit` - Unit-Tests
@@ -75,6 +75,7 @@ Neue Reisen verwenden standardmäßig den bisherigen Clubdesk-/CSV-Ablauf. Unter
 composer test
 composer test:coverage
 composer analyse
+node --test tests/Frontend/*.cjs
 composer audit --locked
 ```
 

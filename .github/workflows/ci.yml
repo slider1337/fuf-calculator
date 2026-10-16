@@ -40,6 +40,11 @@ jobs:
       - name: PHPStan level 10
         run: composer analyse -- --no-progress --error-format=github
 
+      - name: Check frontend syntax and logic
+        run: |
+          for file in public/assets/js/*.js; do node --check "$file"; done
+          node --test tests/Frontend/*.cjs
+
       - name: Run PHPUnit with coverage
         run: composer test:coverage
 

@@ -38,3 +38,7 @@ Der Nutzer möchte keine manuelle Personenzuordnung und keine zusätzliche indiv
 - `composer analyse` prüft auf PHPStan Level 10 und muss vor einem PR erfolgreich sein.
 - Der Typisierungsrückstand ist vollständig behoben. PHPStan läuft ohne Baseline. Keine neuen Baselines, Fehlerunterdrückungen oder ausgeschlossenen Prüfpfade hinzufügen; neue Befunde an der Ursache beheben.
 - Nach Typ-/Vertragsänderungen die betroffenen Tests und vor Abschluss die PHPUnit-Suite ausführen.
+
+# Einfache Terminbearbeitung vom 16.10.2026
+
+Der Nutzer möchte Terminänderungen unmittelbar speichern und das Ergebnis bzw. den konkreten Fehler direkt sehen. Keine manuelle Vorschau, keine Feld-Übertragen-Checkboxen und keine Eingabe eines Grundes im Terminbereich, auch nicht beim Abgleich oder Auflösen alter Aufträge. Audittexte werden intern erzeugt. Beginn und Ende kommen aus der gespeicherten Reise und werden nicht separat im Termin eingetippt. Normale externe Termindaten werden automatisch abgeglichen; Buchungspreise dürfen dabei nicht automatisch geändert werden. Der Nutzer hat die Live-Bereitstellung dieser Vereinfachung beauftragt.

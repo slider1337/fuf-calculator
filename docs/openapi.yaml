@@ -3146,10 +3146,58 @@ paths:
               properties:
                 changes:
                   $ref: '#/components/schemas/TermChanges'
+  /api/trips/{id}/term/updates/save:
+    post:
+      summary: Termin direkt in easyVerein speichern und das Übertragungsergebnis zurückgeben
+      description: Benötigt term.manage. Kein Grund und keine manuelle Vorschau nötig. Beginn und Ende werden
+        serverseitig aus der gespeicherten Reise in Europe/Berlin übernommen. observedHash bindet den angezeigten
+        externen Stand und die Reisedaten. Der konkrete Auftrag wird dauerhaft gespeichert und sofort ausgeführt.
+        Wiederholung mit gleichem operationKey liefert denselben Auftrag, auch bei unklarem Ausgang kein zweiter PATCH.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes, observedHash, operationKey]
+              properties:
+                changes:
+                  type: object
+                  description: Nur geänderte Felder. Anmeldeschluss auch als datetime-local in Europe/Berlin.
+                  additionalProperties: true
+                observedHash:
+                  type: string
+                operationKey:
+                  type: string
+      responses:
+        '200':
+          description: Direkter Status einschließlich sicherer Fehlerdetails; succeeded bestätigt den Provider-Readback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermSaveResult'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: Terminrechte fehlen
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: Reise gesperrt, Stand geändert, Anmeldefrist überlappt oder vorherige Übertragung noch offen
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: easyVerein nicht erreichbar oder Termindaten unvollständig
   /api/trips/{id}/term/updates/resolve:
     post:
       summary: Unklaren Änderungsauftrag nach Prüfung des aktuellen easyVerein-Stands lokal abschließen
-      description: Benötigt term.manage, offene und nicht archivierte easyVerein-Reise, Bestätigung und Grund.
+      description: Benötigt term.manage, offene und nicht archivierte easyVerein-Reise, Bestätigung.
         Liest den Provider frisch und prüft observedHash. Nur unknown ohne Worker-Lease ist abschließbar.
         Kein erneuter PATCH. Der ursprüngliche Ausgang wird nicht nachträglich als sicher fehlgeschlagen bezeichnet.
       parameters:
@@ -3164,7 +3212,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [jobId, observedHash, confirmed, reason]
+              required: [jobId, observedHash, confirmed]
               properties:
                 jobId:
                   type: integer
@@ -3173,8 +3221,6 @@ paths:
                 confirmed:
                   type: boolean
                   enum: [true]
-                reason:
-                  type: string
       responses:
         '200':
           description: Aktueller Stand akzeptiert und Auftrag lokal abgeschlossen
@@ -3196,7 +3242,7 @@ paths:
           description: Providerstand nicht nachweisbar
   /api/trips/{id}/term/updates/request:
     post:
-      summary: Begründeten Terminänderungsauftrag dauerhaft annehmen
+      summary: Terminänderungsauftrag dauerhaft annehmen
       description: Benötigt term.manage. Schreibaktionen sind bei Archiv/Abschluss gesperrt. Frischer Stand und reviewHash;
         nur ausgewählte Felder. Worker prüft vor einem PATCH erneut. Nach Timeout/Leaseablauf ausschließlich GET-Abgleich;
         kein erneuter PATCH. Normale Provider-Benachrichtigungen nur im expliziten Produktivmodus. Ungeklärter Auftrag
@@ -6611,15 +6657,47 @@ components:
           completedAt:
             type: string
             nullable: true
+    TermSaveResult:
+      type: object
+      required: [jobId, status, errorCode, validationErrors]
+      properties:
+        jobId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [pending, running, reconciling, unknown, succeeded, blocked, conflict]
+        errorCode:
+          type: string
+          nullable: true
+        validationErrors:
+          type: array
+          items:
+            type: object
+            required: [field, reason]
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
     TermUpdateState:
       type: object
       required:
+      - tripFields
       - observedHash
       - externalId
       - fields
       - blockedReason
       - jobs
       properties:
+        tripFields:
+          type: object
+          required: [start, end]
+          properties:
+            start:
+              type: string
+            end:
+              type: string
         observedHash:
           type: string
         externalId:
@@ -6694,7 +6772,6 @@ components:
       - changes
       - reviewHash
       - confirmed
-      - reason
       properties:
         operationKey:
           type: string
@@ -6708,10 +6785,6 @@ components:
           type: boolean
           enum:
           - true
-        reason:
-          type: string
-          minLength: 1
-          maxLength: 500
     RegistrationModeState:
       type: object
       required:

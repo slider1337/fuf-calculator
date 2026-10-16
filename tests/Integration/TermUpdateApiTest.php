@@ -146,9 +146,8 @@ final class TermUpdateApiTest extends ApiTestCase
     {
         $this->call('POST','/request',$this->request(),202);$this->provider->apply=false;$this->provider->timeout=true;$this->worker()->runOne();
         $state=$this->call('GET','');$id=$state['jobs'][0]['id'];
-        $p=['jobId'=>$id,'observedHash'=>$state['observedHash'],'confirmed'=>true,'reason'=>'easyVerein-Stand geprüft'];
+        $p=['jobId'=>$id,'observedHash'=>$state['observedHash'],'confirmed'=>true];
         $this->call('POST','/resolve',array_replace($p,['confirmed'=>false]),409);
-        $this->call('POST','/resolve',array_replace($p,['reason'=>'']),422);
         $this->provider->data['location']='Inzwischen geändert';
         $this->call('POST','/resolve',$p,409);
         $p['observedHash']=$this->call('GET','')['observedHash'];
@@ -169,6 +168,64 @@ final class TermUpdateApiTest extends ApiTestCase
         $this->db->exec("UPDATE trips SET archived_at='2026-10-16'");$this->call('POST','/resolve',$p,409);$this->db->exec('UPDATE trips SET archived_at=NULL');
         $this->provider->onRead=function(){$this->db->exec("UPDATE external_event_links SET external_id='88'");};
         $this->call('POST','/resolve',$p,409);self::assertSame(1,$this->provider->patches);
+    }
+    private function directPayload(array $changes=[],string $key='live_term_save_001'): array
+    {
+        return ['changes'=>$changes,'observedHash'=>$this->call('GET','')['observedHash'],'operationKey'=>$key];
+    }
+    public function testDirectSaveUsesStoredTripDatesAndReturnsVerifiedResultWithoutReasonOrPreview(): void
+    {
+        $p=$this->directPayload(['title'=>'Direkt gespeichert','start'=>'2040-01-01T00:00:00Z','end'=>'2040-01-02T00:00:00Z']);
+        $result=$this->call('POST','/save',$p);
+        self::assertSame('succeeded',$result['status']);self::assertSame(1,$this->provider->patches);
+        self::assertSame('2026-12-19T23:00:00+00:00',$this->provider->data['start']);
+        self::assertSame('2026-12-21T22:59:59+00:00',$this->provider->data['end']);
+        self::assertSame($result,$this->call('POST','/save',$p));self::assertSame(1,$this->provider->patches);
+        $this->call('POST','/save',array_replace($p,['changes'=>['title'=>'Anders']]),409);
+    }
+    public function testDirectSaveReturnsProviderFieldErrorsImmediatelyAndAllowsCorrectedSave(): void
+    {
+        $this->provider->rejection=new \App\Application\ParticipationRejected('provider_rejected',422,[['field'=>'prologue','reason'=>'blank']]);
+        $result=$this->call('POST','/save',$this->directPayload(['description'=>'']));
+        self::assertSame('blocked',$result['status']);self::assertSame('term_update_rejected',$result['errorCode']);
+        self::assertSame([['field'=>'prologue','reason'=>'blank']],$result['validationErrors']);
+        $this->provider->rejection=null;
+        self::assertSame('succeeded',$this->call('POST','/save',$this->directPayload(['description'=>'Korrigiert'],'live_term_correct_002'))['status']);
+    }
+    public function testDirectSaveParsesBerlinDeadlineAndRejectsInvalidOrOverlappingValues(): void
+    {
+        $result=$this->call('POST','/save',$this->directPayload(['registrationDeadline'=>'2026-12-19T23:59']));
+        self::assertSame('succeeded',$result['status']);self::assertSame('2026-12-19T22:59:00+00:00',$this->provider->data['registrationDeadline']);
+        $this->call('POST','/save',$this->directPayload(['registrationDeadline'=>'2026-12-20T00:00'],'overlap_save_002'),409);
+        $this->call('POST','/save',$this->directPayload(['registrationDeadline'=>'2026-03-29T02:30'],'invalid_dst_save_003'),422);
+        self::assertSame(1,$this->provider->patches);
+    }
+    public function testDirectSaveDoesNotRepeatAmbiguousPatchAndReturnsReconciledStatus(): void
+    {
+        $p=$this->directPayload(['title'=>'Übernommen trotz Timeout']);$this->provider->timeout=true;
+        self::assertSame('unknown',$this->call('POST','/save',$p)['status']);
+        self::assertSame('unknown',$this->call('POST','/save',$p)['status']);self::assertSame(1,$this->provider->patches);
+        $this->db->exec('UPDATE term_update_jobs SET lease_until=0');
+        self::assertSame('succeeded',$this->call('POST','/save',$p)['status']);self::assertSame(1,$this->provider->patches);
+    }
+    public function testDirectSaveExecutesOnlyItsOwnJobNotAnOlderJobForAnotherTrip(): void
+    {
+        $other=json_decode((string)$this->dispatch('POST','/api/trips',$this->validTripPayload())->getBody(),true)['id'];
+        $original=$this->trip;
+        $this->trip=$other;$this->db->prepare('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)')->execute([$other,'88','{}',gmdate(DATE_ATOM)]);
+        $this->call('POST','/request',$this->request(['location'=>'Anderer Termin']),202);
+        $this->trip=$original;
+        self::assertSame('succeeded',$this->call('POST','/save',$this->directPayload(['title'=>'Nur eigener Auftrag']))['status']);
+        self::assertSame('Testort',$this->provider->data['location']);self::assertSame(1,$this->provider->patches);
+        self::assertSame('pending',$this->db->query('SELECT status FROM term_update_jobs WHERE trip_id='.$other)->fetchColumn());
+    }
+    public function testDirectSaveRejectsStaleTripDatesAndArchivedTripBeforeWriting(): void
+    {
+        $p=$this->directPayload(['title'=>'Stale']);
+        $this->db->exec("UPDATE trips SET start_date='2026-12-19' WHERE id=".$this->trip);
+        $this->call('POST','/save',$p,409);self::assertSame(0,$this->provider->patches);
+        $p=$this->directPayload(['title'=>'Archiv']);$this->db->exec("UPDATE trips SET archived_at='2026-10-16' WHERE id=".$this->trip);
+        $this->call('POST','/save',$p,409);self::assertSame(0,$this->provider->patches);
     }
     public function testValidationOffModeAndForeignTrip(): void
     {

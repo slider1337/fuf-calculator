@@ -25,9 +25,14 @@ final readonly class SqliteTermUpdateRepository implements TermUpdateRepositoryI
     public function summaries(int $trip): array
     {
         $results = [];
-        foreach ($this->query('SELECT id,status,error_code,created_at,completed_at FROM term_update_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 20', [$trip])->fetchAll() as $value) {
+        foreach ($this->query('SELECT id,status,error_code,created_at,completed_at,validation_json FROM term_update_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 20', [$trip])->fetchAll() as $value) {
             $row = StoredRow::from($value);
-            $results[] = ['id' => $row->integer('id'), 'status' => $row->text('status'), 'errorCode' => $row->nullableText('error_code'), 'createdAt' => $row->text('created_at'), 'completedAt' => $row->nullableText('completed_at')];
+            $errors = [];
+            foreach ($row->jsonArray('validation_json') as $error) {
+                if (!is_array($error) || !is_string($error['field'] ?? null) || !is_string($error['reason'] ?? null)) { throw new UnexpectedValueException('Invalid validation details'); }
+               $errors[] = ['field'=>$error['field'], 'reason'=>$error['reason']];
+            }
+            $results[] = ['validationErrors'=>$errors, 'id' => $row->integer('id'), 'status' => $row->text('status'), 'errorCode' => $row->nullableText('error_code'), 'createdAt' => $row->text('created_at'), 'completedAt' => $row->nullableText('completed_at')];
         }
         return $results;
     }
@@ -62,9 +67,9 @@ final readonly class SqliteTermUpdateRepository implements TermUpdateRepositoryI
         $this->query("UPDATE term_update_jobs SET status='unknown',lease_token=NULL,lease_until=NULL,error_code='lease_expired' WHERE status IN ('running','reconciling') AND lease_until<=?", [$now]);
     }
 
-    public function nextReady(int $now): ?TermUpdateJob
+    public function nextReady(int $now, ?int $job = null): ?TermUpdateJob
     {
-        $value = $this->query("SELECT * FROM term_update_jobs WHERE status IN ('pending','unknown') AND (lease_until IS NULL OR lease_until<=?) ORDER BY id LIMIT 1", [$now])->fetch();
+        $value = $this->query("SELECT * FROM term_update_jobs WHERE status IN ('pending','unknown') AND (lease_until IS NULL OR lease_until<=?) AND (? IS NULL OR id=?) ORDER BY id LIMIT 1", [$now, $job, $job])->fetch();
         if ($value === false) { return null; }
         $row = StoredRow::from($value);
         $payload = $row->jsonArray('payload_json');
@@ -98,8 +103,8 @@ final readonly class SqliteTermUpdateRepository implements TermUpdateRepositoryI
         return $this->query('SELECT 1 FROM term_update_jobs WHERE id=? AND lease_token=? AND lease_until>?', [$job, $token, $now])->fetchColumn() !== false;
     }
 
-    public function finish(int $job, TermUpdateStatus $status, ?string $error, ?int $retryAt, ?string $completedAt): void
+    public function finish(int $job, TermUpdateStatus $status, ?string $error, ?int $retryAt, ?string $completedAt, array $validationErrors = []): void
     {
-        $this->query('UPDATE term_update_jobs SET status=?,error_code=?,lease_token=NULL,lease_until=?,completed_at=? WHERE id=?', [$status->value, $error, $retryAt, $completedAt, $job]);
+        $this->query('UPDATE term_update_jobs SET status=?,error_code=?,lease_token=NULL,lease_until=?,completed_at=?,validation_json=? WHERE id=?', [$status->value, $error, $retryAt, $completedAt, json_encode($validationErrors, JSON_THROW_ON_ERROR), $job]);
     }
 }

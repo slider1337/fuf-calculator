@@ -11,13 +11,13 @@ final readonly class TermUpdateWorker
 {
     public function __construct(private TermUpdateRepositoryInterface $store, private AccessRepositoryInterface $access, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms) {}
 
-    public function runOne(): bool
+    public function runOne(?int $jobId = null): bool
     {
         if ($this->external->blockedReason() !== null) { return false; }
-        $claimed = $this->access->transaction(function () {
+        $claimed = $this->access->transaction(function () use ($jobId) {
             $now = time();
             $this->store->expireLeases($now);
-            $job = $this->store->nextReady($now);
+            $job = $this->store->nextReady($now, $jobId);
             if ($job === null) { return null; }
             if (!$this->allowed($job)) { $this->store->block($job->id, 'permission_revoked_or_trip_closed'); return false; }
             $token = bin2hex(random_bytes(16));
@@ -28,7 +28,7 @@ final readonly class TermUpdateWorker
         if ($claimed === false) { return true; }
         $job = $claimed['job']; $token = $claimed['token'];
         $patch = $job->status === TermUpdateStatus::Pending;
-        $status = TermUpdateStatus::Unknown; $error = 'external_result_unproven'; $patchStarted = false;
+        $status = TermUpdateStatus::Unknown; $error = 'external_result_unproven'; $patchStarted = false; $validationErrors = [];
         try {
             $current = TermFields::observed($this->external->fields($job->externalId));
             $selected = array_intersect_key($current, $job->changes);
@@ -48,31 +48,38 @@ final readonly class TermUpdateWorker
                 }
             }
         } catch (ParticipationRejected $e) {
+            $validationErrors = $e->validationErrors;
             // A definite HTTP rejection is not an ambiguous timeout.
             $status = TermUpdateStatus::Blocked;
             $error = match ($e->getCode()) {
                 401 => 'term_update_unauthorized',
                 403 => 'term_update_forbidden',
                 404 => 'term_update_not_found',
+                429 => 'provider_rate_limited',
                 default => in_array(['field' => 'end_participation', 'reason' => 'overlap'], $e->validationErrors, true)
                     ? 'term_registration_overlap' : 'term_update_rejected',
             };
         } catch (AccessException $e) {
-            $error = $e->error === 'term_registration_overlap' ? $e->error : ($patchStarted ? 'external_outcome_unknown' : 'provider_preflight_failed');
+            $error = in_array($e->error, ['term_registration_overlap','provider_rate_limited','provider_read_failed','provider_read_invalid','provider_term_fields_unproven'], true) ? $e->error : ($patchStarted ? 'external_outcome_unknown' : 'provider_preflight_failed');
             if ($patch && !$patchStarted) { $status = TermUpdateStatus::Conflict; }
         } catch (\Throwable) {
             $error = $patchStarted ? 'external_outcome_unknown' : 'provider_preflight_failed';
             if ($patch && !$patchStarted) { $status = TermUpdateStatus::Conflict; }
         }
-        $this->access->transaction(function () use ($job, $token, $status, $error) {
+        $this->access->transaction(function () use ($job, $token, $status, $error, $validationErrors) {
             if (!$this->store->leaseMatches($job->id, $token)) { return; }
-            $this->store->finish($job->id, $status, $error, $status === TermUpdateStatus::Unknown ? time() + 60 : null, $status === TermUpdateStatus::Succeeded ? gmdate(DATE_ATOM) : null);
+            $this->store->finish($job->id, $status, $error, $status === TermUpdateStatus::Unknown ? time() + 60 : null, $status === TermUpdateStatus::Succeeded ? gmdate(DATE_ATOM) : null, $validationErrors);
             if ($status === TermUpdateStatus::Succeeded && $this->allowed($job)) {
                 $link = $this->terms->link($job->tripId) ?? throw new NotFoundException('Term link');
                 $data = $link['data'];
                 $fields = $data['termFields'] ?? [];
                 if (!is_array($fields)) { throw new \UnexpectedValueException('Invalid stored term fields'); }
                 $data['termFields'] = array_replace($fields, $job->changes);
+                if (array_key_exists('registrationDeadline', $job->changes)) {
+                    $deadline = $job->changes['registrationDeadline'];
+                    $data['bookingUntil'] = is_string($deadline) ? (new \DateTimeImmutable($deadline))->getTimestamp() : PHP_INT_MAX;
+                }
+                if (isset($job->changes['capacity'])) { $data['capacity'] = $job->changes['capacity']; }
                 $this->terms->updateLinkData($job->tripId, $data);
             }
             $this->access->audit($job->actorId, 'term.update_' . $status->value, 'trip', $job->tripId, $job->reason . ' · ' . implode(',', array_keys($job->changes)));

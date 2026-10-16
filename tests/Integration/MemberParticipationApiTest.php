@@ -343,10 +343,14 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $poll=$this->app->getContainer()->get(\App\Application\ScheduledReconciliation::class);$this->db->exec("UPDATE trips SET archived_at='2026-10-14' WHERE id=".$this->trip);self::assertFalse($poll->runOne(1));
   $this->db->exec("UPDATE trips SET archived_at=NULL,closed_at='2026-10-14' WHERE id=".$this->trip);self::assertTrue($poll->runOne(1));self::assertSame('confirmed',$this->db->query('SELECT participation_status FROM registration_participants WHERE id='.$b['persons'][0]['id'])->fetchColumn());self::assertStringContainsString('person:',$this->db->query('SELECT conflicts_json FROM external_observations')->fetchColumn());
  }
- public function testTermFieldConflictCanBeAcknowledgedIndividually(): void {
+ public function testTermMetadataIsAutomaticallyUpdatedWithoutPerFieldConfirmation(): void {
   $_SESSION['user_id']=1;$this->provider->termFields=['title'=>'Extern neuer Titel','location'=>'Extern neuer Ort'];
-  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);self::assertContains('term:title',array_column($d['observation']['conflicts'],'field'));
-  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['term:title'],'confirmed'=>true,'reason'=>'Titel bewusst geprüft']);self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);self::assertNotContains('term:title',array_column($d['observation']['conflicts'],'field'));self::assertContains('term:location',array_column($d['observation']['conflicts'],'field'));self::assertSame(0,$this->provider->writes);
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);
+  self::assertNotContains('term:title',array_column($d['observation']['conflicts'],'field'));
+  self::assertNotContains('term:location',array_column($d['observation']['conflicts'],'field'));
+  self::assertNotContains('revision',array_column($d['observation']['conflicts'],'field'));
+  $baseline=json_decode($this->db->query('SELECT external_json FROM external_event_links WHERE trip_id='.$this->trip)->fetchColumn(),true);
+  self::assertSame('Extern neuer Titel',$baseline['termFields']['title']);self::assertSame('Extern neuer Ort',$baseline['termFields']['location']);self::assertSame(0,$this->provider->writes);
  }
 
  public function testClubdeskModeCannotUseMemberApiOrProviderWorker(): void {

@@ -52,10 +52,11 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
         [$table, $key] = $this->table($type);
         $s = $this->pdo->prepare("SELECT a.user_id, a.capability, u.email FROM $table a JOIN users u ON u.id = a.user_id WHERE a.$key = ? ORDER BY u.email, a.capability");
         $s->execute([$id]); $members = [];
-        foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $uid = (int) $row['user_id'];
-            $members[$uid] ??= ['userId' => $uid, 'email' => $row['email'], 'capabilities' => []];
-            $members[$uid]['capabilities'][] = $row['capability'];
+        foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $value) {
+            $row = StoredRow::from($value);
+            $uid = $row->integer('user_id');
+            $members[$uid] ??= ['userId' => $uid, 'email' => $row->text('email'), 'capabilities' => []];
+            $members[$uid]['capabilities'][] = $row->text('capability');
         }
         return array_values($members);
     }

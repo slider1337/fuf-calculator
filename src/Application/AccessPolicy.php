@@ -39,12 +39,20 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
         if ($write && ($this->access->metadata($id)['closed_at'] ?? null) !== null) { throw new AccessException('trip_closed', 409); }
         if($write&&$capability==='term.manage'){$this->requireRegistrationMode($id,'easyverein');}
     }
+    /** @template T
+     * @param callable(): T $operation
+     * @return T
+     */
     public function writeTrip(int $id, string $capability, callable $operation): mixed
     {
         return $this->access->transaction(function () use ($id, $capability, $operation) {
             $this->trip($id, $capability, true); return $operation();
         });
     }
+    /** @template T
+     * @param callable(): T $operation
+     * @return T
+     */
     public function transaction(callable $operation): mixed { return $this->access->transaction($operation); }
     public function requireRegistrationMode(int $id,string $mode): void
     {

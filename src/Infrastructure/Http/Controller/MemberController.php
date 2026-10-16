@@ -21,7 +21,7 @@ final readonly class MemberController {
  public function settings(Request $request,Response $response,string $id): Response {
   $trip=(int)$id;$this->policy->trip($trip,'term.manage');$link=$this->store->link($trip);
   $blocked=$this->directory->blockedReason()??$this->external->blockedReason()??($link===null?'confirmed_term_required':null);$deadline=null;
-  if($blocked===null){try{$deadline=$this->external->snapshot($link['externalId'])['bookingUntil'];}catch(\Throwable){$blocked='provider_preflight_failed';}}
+  if($blocked===null&&$link!==null){try{$deadline=$this->external->snapshot($link['externalId'])['bookingUntil'];}catch(\Throwable){$blocked='provider_preflight_failed';}}
   return $this->reply($response,['settings'=>$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC)?:null,'blockedReason'=>$blocked,'bookingUntil'=>$deadline===PHP_INT_MAX?null:$deadline]);
  }
  public function configure(Request $request,Response $response,string $id): Response {
@@ -40,7 +40,7 @@ final readonly class MemberController {
    if($p['enabled']){
     $this->policy->requireRegistrationMode($trip,'easyverein');
     if($this->directory->blockedReason()!==null||$this->external->blockedReason()!==null)throw new AccessException('member_release_blocked',409);
-    if(($this->store->link($trip)['externalId']??null)!==$link['externalId'])throw new AccessException('term_review_changed',409);
+    if($link===null||($this->store->link($trip)['externalId']??null)!==$link['externalId'])throw new AccessException('term_review_changed',409);
    }
    // Compatibility columns retain a snapshot; only the live term deadline is authoritative.
    $this->store->query('INSERT INTO member_trip_settings (trip_id,enabled,booking_until,correction_until,cancel_until) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET enabled=excluded.enabled,booking_until=excluded.booking_until,correction_until=excluded.correction_until,cancel_until=excluded.cancel_until',[$trip,(int)$p['enabled'],$deadline,$deadline,$deadline]);$this->policy->audit('member.configure','trip',$trip,'Mitgliederfreigabe '.($p['enabled']?'aktiviert':'gesperrt'));

@@ -3,34 +3,45 @@
 declare(strict_types=1);
 namespace App\Application;
 use App\Application\Port\{ExternalEventPort,TripRepositoryInterface,FormRepositoryInterface};
-use App\Infrastructure\Persistence\SqliteWorkflowRepository;
-use App\Domain\Form\{FormSchema,Decimal};
+use App\Application\Port\TermRepositoryInterface;
+use App\Application\Data\TermDraftData;
 
+/** @phpstan-import-type DraftData from TermDraftData
+ * @phpstan-import-type Draft from TermRepositoryInterface
+ * @phpstan-import-type Link from TermRepositoryInterface
+ * @phpstan-import-type CreationJob from TermRepositoryInterface
+ * @phpstan-type TermState array{draft: Draft|null, link: Link|null, job: array<string, mixed>|null, blockedReason: string|null, referenceConfirmed: bool, registrationEnabled: bool, registrationReason: string}
+ * @phpstan-type TermReview array{revision: int, reviewHash: string, data: DraftData, issues: list<string>, blockedReason: string|null, externalAction: string}
+ */
 final readonly class TermService
 {
-    public function __construct(private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members) {}
+    public function __construct(private AccessPolicy $policy,private TermRepositoryInterface $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members) {}
+    /** @param array<array-key, mixed> $p
+     * @return array{tripId: int}
+     */
     public function createTrip(array $p): array
     {
         return $this->policy->transaction(function() use($p){
             $actor=$this->policy->actorId();$key=PlanningTransferService::operationKey($p);$hash=PlanningTransferService::hash($p);
-            $old=$this->store->query('SELECT * FROM trip_wizard_operations WHERE actor_id=? AND operation_key=?',[$actor,$key])->fetch(\PDO::FETCH_ASSOC);
-            if($old){if(!hash_equals($old['request_hash'],$hash)){throw new AccessException('idempotency_conflict',409);}$this->policy->trip((int)$old['trip_id'],'trip.view');return ['tripId'=>(int)$old['trip_id']];}
+            $old=$this->store->wizardOperation($actor,$key);
+            if($old){if(!hash_equals($old['requestHash'],$hash)){throw new AccessException('idempotency_conflict',409);}$this->policy->trip((int)$old['tripId'],'trip.view');return ['tripId'=>(int)$old['tripId']];}
             if(!is_array($p['planning']??null)||!is_array($p['draft']??null)){throw new ValidationException(['wizard'=>'planning_and_draft_required']);}
-            $planning=$p['planning'];$planning['registrationMode']=$planning['registrationMode']??'easyverein';if($planning['registrationMode']!=='easyverein'){throw new ValidationException(['registrationMode'=>'wizard_requires_easyverein']);}$trip=$this->tripService->createFromArray($planning);$id=$trip->id();$draft=$this->validate($id,$p['draft']);
+            $planning=$p['planning'];$planning['registrationMode']=$planning['registrationMode']??'easyverein';if($planning['registrationMode']!=='easyverein'){throw new ValidationException(['registrationMode'=>'wizard_requires_easyverein']);}$trip=$this->tripService->createFromArray($planning);$id=$trip->id()??throw new \LogicException('Saved trip has no ID');$draft=$this->validate($id,$p['draft']);
             $selected=$draft['teamUserIds'];
             foreach($this->access->team('trip',$id) as $member){if($member['userId']!==$actor&&!in_array($member['userId'],$selected,true)){$this->policy->grant('trip',$id,$member['userId'],[],'Wizard: Teamvorschlag nicht übernommen');}}
             $actual=array_column($this->access->team('trip',$id),'userId');
             if(array_diff($selected,$actual)!==[]){throw new ValidationException(['teamUserIds'=>'only_current_default_team_allowed']);}
-            if($draft['formVersionId']!==null){$v=$this->forms->get($draft['formVersionId']);$this->formService->switchVersion($id,['revision'=>0,'versionId'=>$v['id'],'targetRevision'=>$v['revision'],'requestSupplement'=>false,'reason'=>'Wizard: Formularversion gewählt']);}
+            if($draft['formVersionId']!==null){$v=$this->forms->get($draft['formVersionId']);if($v===null||!is_int($v['id']??null)||!is_int($v['revision']??null))throw new ValidationException(['formVersionId'=>'published_version_of_event_required']);$this->formService->switchVersion($id,['revision'=>0,'versionId'=>$v['id'],'targetRevision'=>$v['revision'],'requestSupplement'=>false,'reason'=>'Wizard: Formularversion gewählt']);}
             $this->save($id,['revision'=>0,'draft'=>$draft]);
-            $this->store->query('INSERT INTO trip_wizard_operations (actor_id,operation_key,request_hash,trip_id) VALUES (?,?,?,?)',[$actor,$key,$hash,$id]);
+            $this->store->saveWizardOperation($actor,$key,$hash,$id);
             return ['tripId'=>$id];
         });
     }
+    /** @return TermState */
     public function read(int $id): array
     {
         $data=$this->readLocal($id);
-        if(!$data['registrationEnabled'])return $data;
+        if(!$data['registrationEnabled']||$data['link']===null)return $data;
         $deadline=$this->participations->snapshot($data['link']['externalId'])['bookingUntil'];
         // Recheck permissions, release and lifecycle after network I/O.
         $current=$this->readLocal($id);
@@ -40,61 +51,57 @@ final readonly class TermService
         }
         return $current;
     }
+    /** @return TermState */
     private function readLocal(int $id): array
     {
         $this->policy->trip($id,'term.manage');
         return $this->policy->transaction(function() use($id){
             $draft=$this->store->draft($id);$link=$this->store->link($id);$job=$this->store->job($id);
-            if($link&&is_array($link['data'])&&!$this->policy->can('trip',$id,'registration.view'))$link['data']['participants']=[];
+            if($link&&!$this->policy->can('trip',$id,'registration.view'))$link['data']['participants']=[];
             if($job){unset($job['leaseToken'],$job['requestHash'],$job['payload']);}
-            $settings=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$id])->fetch(\PDO::FETCH_ASSOC);
+            $settings=$this->store->memberRegistrationEnabled($id);
             $reason=($this->policy->metadata($id)['registration_mode']??'clubdesk_csv')!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));
-            if($reason===null&&(!$settings||!(bool)$settings['enabled'])){$reason='member_release_disabled';}
+            if($reason===null&&!$settings){$reason='member_release_disabled';}
             if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
             if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null)){$reason='trip_closed_or_booking_deadline_passed';}
             return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
         });
     }
-    private function validate(int $id,array $d): array
+    /** @param array<array-key, mixed> $input
+     * @return DraftData
+     */
+    private function validate(int $id, array $input): array
     {
-        foreach(['endDate','registrationDeadline','formVersionId','teamUserIds'] as $required){if(!array_key_exists($required,$d)){throw new ValidationException([$required=>'required_nullable']);}}
-        if(array_diff(array_keys($d),['title','startDate','endDate','location','description','calendarReference','visibility','capacity','registrationDeadline','priceGroups','formVersionId','mode','externalId','teamUserIds'])!==[]){throw new ValidationException(['draft'=>'unknown_field']);}
-        foreach(['title'=>200,'location'=>500,'description'=>10000,'calendarReference'=>200] as $key=>$max){if(!is_string($d[$key]??null)||mb_strlen($d[$key])>$max||($key==='title'&&trim($d[$key])==='')){throw new ValidationException([$key=>'invalid_text']);}}
-        foreach(['startDate','endDate','registrationDeadline'] as $key){if(($d[$key]??null)!==null&&!FormSchema::date($d[$key])){throw new ValidationException([$key=>'date_required']);}}
-        if(!isset($d['startDate'])||(($d['endDate']??null)!==null&&$d['endDate']<$d['startDate'])){throw new ValidationException(['startDate'=>'valid_period_required']);}
-        if(!in_array($d['mode']??null,['create','link'],true)||!in_array($d['visibility']??null,['members','private'],true)||!is_int($d['capacity']??null)||$d['capacity']<0||$d['capacity']>1000000){throw new ValidationException(['draft'=>'invalid_mode_visibility_capacity']);}
-        if(!is_string($d['externalId']??null)||!preg_match('/^(?:[1-9][0-9]{0,18})?$/D',$d['externalId'])){throw new ValidationException(['externalId'=>'provider_id_or_empty']);}
-        $groups=$d['priceGroups']??null;
-        if(!is_array($groups)||!array_is_list($groups)||count($groups)>50){throw new ValidationException(['priceGroups'=>'list_max_50']);}
-        $names=[];
-        foreach($groups as &$g){
-            if(!is_array($g)||array_diff(array_keys($g),['label','price','category'])!==[]||!is_string($g['label']??null)||trim($g['label'])===''||mb_strlen($g['label'])>200||isset($names[mb_strtolower(trim($g['label']))])||!in_array($g['category']??null,['ADULT_DOUBLE','ADULT_MULTI','CHILD','GUEST'],true)){throw new ValidationException(['priceGroups'=>'unique_label_and_category_required']);}
-            $names[mb_strtolower(trim($g['label']))]=true;
-            if(($g['price']??null)!==null){$n=Decimal::normalize($g['price']);if($n===null||Decimal::compare($n,'0')<0||Decimal::compare($n,'1000000')>0){throw new ValidationException(['priceGroups'=>'valid_nonnegative_price']);}$g['price']=$n;}
-        }unset($g);$d['priceGroups']=$groups;
-        $v=$d['formVersionId']??null;
-        if($v!==null){if(!is_int($v)||($form=$this->forms->get($v))===null||$form['status']!=='published'||$form['eventId']!==($this->policy->metadata($id)['event_id']??null)){throw new ValidationException(['formVersionId'=>'published_version_of_event_required']);}}
-        $team=$d['teamUserIds']??[];
-        if(!is_array($team)||!array_is_list($team)||count($team)>100||array_filter($team,static fn($u)=>!is_int($u)||$u<1)!==[]){throw new ValidationException(['teamUserIds'=>'user_id_list']);}
-        // Team selection is a proposal; grants stay in the explicit audited team editor.
-        $d['teamUserIds']=array_values(array_unique($team));return $d;
+        $data = TermDraftData::fromArray($input)->toArray();
+        $version = $data['formVersionId'];
+        if ($version !== null) {
+            $form = $this->forms->get($version);
+            if ($form === null || ($form['status'] ?? null) !== 'published' || ($form['eventId'] ?? null) !== ($this->policy->metadata($id)['event_id'] ?? null)) {
+                throw new ValidationException(['formVersionId' => 'published_version_of_event_required']);
+            }
+        }
+        return $data;
     }
+    /** @param array<array-key, mixed> $p
+     * @return TermState
+     */
     public function save(int $id,array $p): array
     {
         $this->policy->writeTrip($id,'term.manage',function() use($id,$p){
             if($this->store->link($id)||$this->store->job($id)){throw new AccessException('term_operation_already_exists',409);}
             $old=$this->store->draft($id);if(($p['revision']??null)!==($old['revision']??0)){throw new AccessException('revision_conflict',409);}
             if(!is_array($p['draft']??null)){throw new ValidationException(['draft'=>'object_required']);}$d=$this->validate($id,$p['draft']);
-            $this->store->query('INSERT INTO term_drafts (trip_id,revision,draft_json) VALUES (?,?,?) ON CONFLICT(trip_id) DO UPDATE SET revision=excluded.revision,draft_json=excluded.draft_json',[$id,($old['revision']??0)+1,json_encode($d,JSON_THROW_ON_ERROR)]);
+            $this->store->saveDraft($id,($old['revision']??0)+1,$d);
             $this->policy->audit('term.draft','trip',$id,'Lokaler Entwurf gespeichert');
         });
         return $this->read($id);
     }
+    /** @return TermReview */
     public function review(int $id): array
     {
         return $this->policy->transaction(function() use($id){
             $this->policy->trip($id,'term.manage');$draft=$this->store->draft($id)??throw new ValidationException(['draft'=>'save_first']);$d=$this->validate($id,$draft['data']);
-            $trip=$this->trips->getById($id);$issues=[];
+            $trip=$this->trips->getById($id)??throw new NotFoundException('Trip');$issues=[];
             if($d['mode']==='create'&&$d['registrationDeadline']!==null&&$d['registrationDeadline']>=$d['startDate']){$issues[]='Der Anmeldeschluss muss vor dem Terminbeginn liegen. Bei ganztägigen Terminen spätestens am Vortag (23:59 Uhr).';}
             if($trip->name()!==$d['title']||$trip->startDate()->format('Y-m-d')!==$d['startDate']||$trip->endDate()?->format('Y-m-d')!==$d['endDate']){$issues[]='Eckdaten weichen von der gespeicherten Reise ab.';}
             if(!preg_match('/^[1-9][0-9]{0,18}$/D',$d['calendarReference'])){$issues[]='Bitte einen easyVerein-Kalender auswählen.';}
@@ -108,6 +115,9 @@ final readonly class TermService
             return ['revision'=>$draft['revision'],'reviewHash'=>PlanningTransferService::hash($payload),'data'=>$d,'issues'=>$issues,'blockedReason'=>$this->external->blockedReason(),'externalAction'=>$d['mode']==='create'?'Ein Termin; keine Teilnahmen':'Ausgewählten Termin prüfen; kein externer Schreibauftrag'];
         });
     }
+    /** @param array<array-key, mixed> $p
+     * @return TermState
+     */
     public function request(int $id,array $p): array
     {
         $this->policy->writeTrip($id,'term.manage',function() use($id,$p){
@@ -119,11 +129,14 @@ final readonly class TermService
             if($review['issues']!==[]){throw new ValidationException(['draft'=>implode('; ',$review['issues'])]);}
             if($review['data']['mode']!=='create'){throw new ValidationException(['mode'=>'use_verified_link']);}
             $status=$this->external->blockedReason()===null?'pending':'blocked';
-            $this->store->query('INSERT INTO sync_jobs (trip_id,operation_key,request_hash,payload_json,actor_id,status,error_code,created_at) VALUES (?,?,?,?,?,?,?,?)',[$id,$key,$hash,json_encode($review['data'],JSON_THROW_ON_ERROR),$this->policy->actorId(),$status,$this->external->blockedReason(),gmdate(DATE_ATOM)]);
+            $this->store->requestCreation($id,$key,$hash,$review['data'],$this->policy->actorId(),$this->external->blockedReason());
             $this->policy->audit('term.request','trip',$id,'Dauerhafter Terminauftrag · '.$status);
         });
         return $this->read($id);
     }
+    /** @param array<array-key, mixed> $p
+     * @return TermState
+     */
     public function resume(int $id,array $p): array
     {
         $this->policy->writeTrip($id,'term.manage',function() use($id,$p){
@@ -137,11 +150,14 @@ final readonly class TermService
             if(!$this->external instanceof \App\Application\Port\RecoverableExternalEventPort)throw new AccessException('term_resume_unsupported',409);
             if($this->external->blockedReason()!==null)throw new AccessException($this->external->blockedReason(),409);
             $review=$this->review($id);if($review['issues']!==[])throw new ValidationException(['draft'=>implode('; ',$review['issues'])]);
-            $this->store->query("UPDATE sync_jobs SET status='resume_pending',actor_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL,validation_errors_json=NULL WHERE id=?",[$this->policy->actorId(),$job['id']]);
+            $this->store->resumeCreation($job['id'],$this->policy->actorId());
             $this->policy->audit('term.resume_request','trip',$id,'Explizite Fortsetzung nach Prüfung vorhandener Ergebnisse · Auftrag '.$job['id'].' · Versuch '.$job['attempts']);
         });
         return $this->read($id);
     }
+    /** @param array<array-key, mixed> $p
+     * @return TermState
+     */
     public function link(int $id,array $p): array
     {
         $this->policy->trip($id,'term.manage',true);
@@ -155,17 +171,18 @@ final readonly class TermService
             $job=$this->store->job($id);
             if($job&&in_array($job['status'],['pending','running','reconciling','resume_pending'],true)){throw new AccessException('term_job_in_progress',409);}
             $this->bindVerified($id,$verified);
-            if($job){$this->store->query("UPDATE sync_jobs SET status='succeeded',external_id=?,lease_token=NULL,lease_until=NULL,error_code=NULL,validation_errors_json=NULL WHERE trip_id=?",[$externalId,$id]);}
+            if($job){$this->store->confirmCreationForTrip($id,$externalId);}
             $this->policy->audit('term.link','trip',$id,$reason.' · externalId='.$externalId);
         });
         return $this->read($id);
     }
+    /** @param array<array-key, mixed> $verified */
     public function bindVerified(int $id,array $verified): void
     {
         $externalId=$verified['externalId']??null;
         if(!is_string($externalId)||!preg_match('/^[1-9][0-9]{0,18}$/D',$externalId)){throw new \RuntimeException('Invalid verified reference');}
         $old=$this->store->link($id);if($old){if($old['externalId']===$externalId){return;}throw new AccessException('trip_already_linked',409);}
-        if($this->store->query('SELECT trip_id FROM external_event_links WHERE external_id=?',[$externalId])->fetchColumn()!==false){throw new AccessException('event_already_linked',409);}
-        $this->store->query('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)',[$id,$externalId,json_encode($verified,JSON_THROW_ON_ERROR),gmdate(DATE_ATOM)]);
+        if($this->store->externalIdIsLinked($externalId)){throw new AccessException('event_already_linked',409);}
+        $this->store->bindLink($id,$externalId,$verified);
     }
 }

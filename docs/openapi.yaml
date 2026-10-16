@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FUF Gruppenreise Kalkulator API
-  version: 1.12.0
+  version: 1.13.0
 security:
   - calculatorSession: []
 servers:
@@ -3858,6 +3858,8 @@ components:
           type: string
         birthDate:
           type: string
+          nullable: true
+          description: Null only in read responses for a provider entry without a known birthday; manual intake still requires a valid date.
           format: date
 
     BillingLineItem:
@@ -3891,7 +3893,7 @@ components:
           type: string
         source:
           type: string
-          enum: [csv, manual]
+          enum: [csv, manual, easyverein]
         participants:
           type: array
           items:
@@ -5738,6 +5740,14 @@ components:
               items:
                 $ref: '#/components/schemas/ExternalFieldConflict'
           nullable: true
+        participants:
+          type: array
+          description: Provider participants; direct entries are imported automatically for editable trips. Names never establish ownership or identity.
+          items:
+            type: object
+        guestsAllowed:
+          type: boolean
+          description: The easyVerein event's guest setting is authoritative; no individual organizer approval is required.
         clarifications:
           type: array
           items:
@@ -5976,6 +5986,7 @@ components:
             oneOf:
             - $ref: '#/components/schemas/MemberPersonChoice'
             - $ref: '#/components/schemas/GuestChoice'
+            - $ref: '#/components/schemas/InlineGuestChoice'
         answers:
           $ref: '#/components/schemas/BookingAnswers'
     MemberPreview:
@@ -6273,6 +6284,34 @@ components:
           type: string
         expectedPrice:
           type: string
+    InlineGuestChoice:
+      type: object
+      additionalProperties: false
+      required: [guest, priceGroupId, expectedPrice]
+      description: Register a guest directly when the provider event permits guests; the authenticated member remains the booking contact.
+      properties:
+        guest:
+          type: object
+          additionalProperties: false
+          required: [key, name, birthDate]
+          properties:
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9_-]{8,100}$'
+              description: Stable client-generated guest identifier; do not use the name for deduplication.
+            name:
+              type: string
+              minLength: 1
+              maxLength: 200
+            birthDate:
+              type: string
+              format: date
+        priceGroupId:
+          type: string
+          nullable: true
+        expectedPrice:
+          type: string
+          nullable: true
     GuestAvailability:
       type: object
       required:

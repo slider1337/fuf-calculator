@@ -399,6 +399,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                         <div id="registrations-controls" class="reg-controls d-none">
                             <div class="reg-filters" role="group" aria-label="Anmeldungen filtern">
                                 <button type="button" class="chip chip-btn is-active" id="reg-filter-all" data-reg-filter="all">Alle</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-easyverein" data-reg-filter="easyverein">easyVerein</button>
                                 <button type="button" class="chip chip-btn" id="reg-filter-csv" data-reg-filter="csv">CSV</button>
                                 <button type="button" class="chip chip-btn" id="reg-filter-manual" data-reg-filter="manual">Manuell</button>
                             </div>

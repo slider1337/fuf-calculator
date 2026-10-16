@@ -26,9 +26,11 @@ Datenbankschema und öffentliche API-Routen bleiben unverändert.
 
 ## Prüfung
 
-- PHPUnit: 427 Tests, 6524 Assertions erfolgreich; 12 bereits vorhandene Deprecations.
+Geprüft einschließlich der automatischen Teilnahmeübernahme aus PR #31.
+
+- PHPUnit: 434 Tests, 6950 Assertions erfolgreich; 12 bereits vorhandene Deprecations.
 - `composer analyse -- --no-progress`: PHPStan Level 10 erfolgreich mit Baseline.
-- Ohne Baseline: 1978 auf 1666 Befunde reduziert (312 weniger, rund 16 %).
+- Ohne Baseline: 1963 auf 1651 Befunde reduziert (312 weniger, rund 16 %).
 - Die fünf oben genannten Application-Klassen und neuen Klassen benötigen keine
   Baseline-Ausnahmen. Beim Vergleich der Baselines wurden keine neuen Ausnahmen
   oder erhöhten Befundzahlen aufgenommen.
@@ -38,7 +40,7 @@ Datenbankschema und öffentliche API-Routen bleiben unverändert.
 
 ## Verbleibende Arbeit
 
-1666 Altbefunde bleiben in der Baseline. Andere Abläufe, insbesondere Mitgliedsbuchungen
+1651 Altbefunde bleiben in der Baseline. Andere Abläufe, insbesondere Mitgliedsbuchungen
 und Teilnahmeverwaltung, verwenden weiterhin Teile des generischen Workflow-Repositorys.
 Diese können schrittweise auf fachliche Ports umgestellt werden. Die Baseline darf dabei
 nur schrumpfen; neue Befunde müssen behoben werden.

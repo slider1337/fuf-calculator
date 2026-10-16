@@ -96,7 +96,7 @@ docker compose down
 
 Die CI führt Syntax-Checks, den Composer-Sicherheitsaudit, PHPStan auf Level 10 und PHPUnit mit Coverage auf PHP 8.4 aus. Auch der Deployment-Build wartet auf diese Prüfungen. Die [PHPStan-Einführung](docs/fixes/2026-10-15-phpstan-level-10.md) dokumentiert den bestehenden Typisierungsrückstand in einer Baseline.
 
-Die [typisierte Termin- und Anmeldeverwaltung](docs/fixes/2026-10-16-typed-term-registration-repositories.md) trennt Fachlogik von SQLite und reduziert die Baseline von 1978 auf 1666 Befunde.
+Die [typisierte Termin- und Anmeldeverwaltung](docs/fixes/2026-10-16-typed-term-registration-repositories.md) trennt Fachlogik von SQLite und reduziert die Baseline von 1963 auf 1651 Befunde.
 
 
 

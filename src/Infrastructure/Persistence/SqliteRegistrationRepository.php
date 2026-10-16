@@ -50,7 +50,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
             $participantStmt->execute([
                 ':registrationId' => $registrationId,
                 ':name' => $participant->name(),
-                ':birthDate' => $participant->birthDate()->format('Y-m-d'),
+                ':birthDate' => $participant->birthDate()?->format('Y-m-d')??'',
             ]);
         }
 
@@ -236,7 +236,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         foreach ($stmt->fetchAll() as $row) {
             $participants[] = new Participant(
                 (string) $row['name'],
-                new DateTimeImmutable((string) $row['birth_date']),
+                ($row['birth_date']??'')===''?null:new DateTimeImmutable((string) $row['birth_date']),
                 (int) $row['id'],
                 (string) $row['participation_status']
             );

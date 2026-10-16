@@ -143,7 +143,7 @@ final readonly class RegistrationController
                     'id' => $p->id(),
                     'status' => $p->status(),
                     'name' => $p->name(),
-                    'birthDate' => $p->birthDate()->format('Y-m-d'),
+                    'birthDate' => $p->birthDate()?->format('Y-m-d'),
                 ], $reg->participants()),
                 'billingCalculatedAt' => $reg->billingCalculatedAt()?->format('Y-m-d H:i:s'),
                 'billingTotal' => $reg->billingTotal(),

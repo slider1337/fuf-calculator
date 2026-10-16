@@ -29,6 +29,10 @@ Der Nutzer hat ausdrücklich klargestellt: „das ist alles noch im Test also ja
 - Der Nutzer hat das Auslesen des fehlgeschlagenen Produktionsauftrags einschließlich ausgewählter Termindaten in GitHub-Aktionsprotokollen freigegeben.
 - Zugangsdaten bleiben geheim. Unbeteiligte Termine, Mitgliederdaten und Teilnahmen sind nicht von der Löschfreigabe erfasst. Lokale automatisierte Tests verwenden weiterhin Fakes.
 
+# Vereinfachter easyVerein-Ablauf vom 15.10.2026
+
+Der Nutzer möchte keine manuelle Personenzuordnung und keine zusätzliche individuelle Gastfreigabe. Direkte easyVerein-Teilnahmen werden über ihre stabilen Provider-Referenzen automatisch übernommen. Wenn der easyVerein-Termin Gäste erlaubt, dürfen diese im Mitgliederweg direkt angemeldet werden; das anmeldende Mitglied bleibt Kontakt. Frühere Konzepte mit zusätzlicher Orga-Zulassung sind insoweit überholt. Namen sind weiterhin kein Identitätsnachweis; Formularantworten und nicht belegte Buchungs-/Familienzugehörigkeit dürfen nicht erfunden werden.
+
 # Statische Analyse
 
 - `composer analyse` prüft auf PHPStan Level 10 und muss vor einem PR erfolgreich sein.

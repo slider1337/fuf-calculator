@@ -18,6 +18,9 @@ final readonly class StoredRow
         return new self($value);
     }
 
+    /** @return array<array-key,mixed> */
+    public function values(): array { return $this->values; }
+
     public function text(string $key): string
     {
         $value = $this->values[$key] ?? null;

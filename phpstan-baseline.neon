@@ -2287,12 +2287,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''expected_price'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''external'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -2331,7 +2325,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 12
+			count: 9
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2347,12 +2341,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''member_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''name'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -2362,12 +2350,6 @@ parameters:
 			message: '#^Cannot access offset ''participantId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''participation_status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2389,24 +2371,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''price_group_reference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''registration_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''revision'' on array\<string, mixed\>\|false\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''state'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -2420,12 +2384,6 @@ parameters:
 
 		-
 			message: '#^Cannot access offset ''termFields'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''trip_id'' on array\<string, mixed\>\|false\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationService.php
@@ -2584,12 +2542,6 @@ parameters:
 			message: '#^Parameter \#1 \$array of function array_filter expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_unique expects an array of values castable to string, array given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/ParticipationService.php
 
 		-

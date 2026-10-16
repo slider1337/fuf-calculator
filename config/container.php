@@ -44,6 +44,8 @@ return static function (): ContainerInterface {
     $builder->addDefinitions([
         App\Application\Port\TermUpdateRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteTermUpdateRepository::class),
         App\Application\Port\RegistrationModeRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteRegistrationModeRepository::class),
+        App\Application\Port\MemberBookingRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteMemberBookingRepository::class),
+        App\Application\Port\ParticipationRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteParticipationRepository::class),
         App\Application\Port\TermRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteTermRepository::class),
         App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => $c->get(App\Application\AccessPolicy::class)),
         App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),

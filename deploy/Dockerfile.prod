@@ -1,19 +1,21 @@
 # Stage 1: Install Composer dependencies
-FROM composer:2 AS vendor
+FROM composer:2.10.3@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
+COPY scripts/patch-openid-nullability.php ./scripts/patch-openid-nullability.php
 COPY scripts/copy-bootstrap.php ./scripts/copy-bootstrap.php
 COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
 RUN composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
 
 # Stage 2: Production FrankenPHP image
-FROM dunglas/frankenphp
+FROM dunglas/frankenphp:1.13.0-php8.4-bookworm@sha256:23515af65cd77f1de15275ea7fccc311dcec8435060926df3e3a200aa964fa30
 
 ENV SERVER_NAME=fuf-calc.benna.me
 
 WORKDIR /app
 
-RUN install-php-extensions pdo_sqlite opcache curl
+RUN install-php-extensions pdo_sqlite opcache curl mbstring \
+    && php -r 'if (extension_loaded("xdebug")) { fwrite(STDERR, "Xdebug must not be installed in production\n"); exit(1); }'
 
 # Production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

@@ -61,12 +61,12 @@ final readonly class PlanningTransferService
         }}
         // Only compatible, explicitly mapped quantities; never derive prices from arbitrary answers.
         $quantities=[];$fieldIds=[];
-        foreach($source['bookings'] as $b){if($b['versionId']===null){continue;}$version=$this->forms->get($b['versionId']);foreach($version['fields'] as $field){if($field['mapping']==='vegetarianMeals'){$fieldIds[$field['id']]=true;}}}
+        foreach($source['bookings'] as $b){if($b['versionId']===null){continue;}$version=$this->forms->get($b['versionId'])??throw new NotFoundException('Form version');foreach($version['fields'] as $field){if($field['mapping']==='vegetarianMeals'){$fieldIds[$field['id']]=true;}}}
         $bindingVersion=$source['binding']['versionId']??null;
-        if($bindingVersion!==null){foreach($this->forms->get($bindingVersion)['fields'] as $field){if($field['mapping']==='vegetarianMeals'){$fieldIds[$field['id']]=true;}}}
+        if($bindingVersion!==null){foreach(($this->forms->get($bindingVersion)??throw new NotFoundException('Form version'))['fields'] as $field){if($field['mapping']==='vegetarianMeals'){$fieldIds[$field['id']]=true;}}}
         if($fieldIds!==[]){foreach($source['bookings'] as $b){
             if(!array_filter($b['persons'],static fn($person)=>$person['status']==='confirmed')){continue;}
-            $own=$b['versionId']===null?[]:$this->forms->get($b['versionId'])['fields'];
+            $own=$b['versionId']===null?[]:($this->forms->get($b['versionId'])??throw new NotFoundException('Form version'))['fields'];
             if(!array_filter($own,static fn($field)=>$field['mapping']==='vegetarianMeals')){$issues[]='Zuordnungsmenge in älterer Buchung nicht abgefragt: '.$b['reference'];}
         }}
         foreach(array_keys($fieldIds) as $fid){

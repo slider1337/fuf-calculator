@@ -176,7 +176,7 @@ final readonly class ParticipationService {
   if($old!==$r['status']){
    $this->store->advanceBookingRevision($booking);
    $b=$this->store->bookingRevision($booking)?:throw new NotFoundException('Booking');
-   foreach($this->bookings->get((int)$b['trip_id'],$booking)['answers'] as $a){if(($r['status']==='cancelled'||$old==='confirmed')&&$a['participantId']===null&&$a['state']==='answered'){$this->bookings->append($booking,null,$a['versionId'],$a['fieldId'],['state'=>'unchecked','value'=>$a['value']],$actor,(int)$b['revision'],'Externer Personenstatus geändert');}}
+   foreach(($this->bookings->get((int)$b['trip_id'],$booking)??throw new NotFoundException('Booking'))['answers'] as $a){if(($r['status']==='cancelled'||$old==='confirmed')&&$a['participantId']===null&&$a['state']==='answered'){$this->bookings->append($booking,null,$a['versionId'],$a['fieldId'],['state'=>'unchecked','value'=>$a['value']],$actor,(int)$b['revision'],'Externer Personenstatus geändert');}}
   }
   $this->store->applyPersonResult($r['externalId'], $r['status'], $r['priceGroupId'], $r['price'], $booking, $person);$this->refresh($booking);
  }

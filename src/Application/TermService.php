@@ -31,7 +31,7 @@ final readonly class TermService
             foreach($this->access->team('trip',$id) as $member){if($member['userId']!==$actor&&!in_array($member['userId'],$selected,true)){$this->policy->grant('trip',$id,$member['userId'],[],'Wizard: Teamvorschlag nicht übernommen');}}
             $actual=array_column($this->access->team('trip',$id),'userId');
             if(array_diff($selected,$actual)!==[]){throw new ValidationException(['teamUserIds'=>'only_current_default_team_allowed']);}
-            if($draft['formVersionId']!==null){$v=$this->forms->get($draft['formVersionId']);if($v===null||!is_int($v['id']??null)||!is_int($v['revision']??null))throw new ValidationException(['formVersionId'=>'published_version_of_event_required']);$this->formService->switchVersion($id,['revision'=>0,'versionId'=>$v['id'],'targetRevision'=>$v['revision'],'requestSupplement'=>false,'reason'=>'Wizard: Formularversion gewählt']);}
+            if($draft['formVersionId']!==null){$v=$this->forms->get($draft['formVersionId']);if($v===null)throw new ValidationException(['formVersionId'=>'published_version_of_event_required']);$this->formService->switchVersion($id,['revision'=>0,'versionId'=>$v['id'],'targetRevision'=>$v['revision'],'requestSupplement'=>false,'reason'=>'Wizard: Formularversion gewählt']);}
             $this->save($id,['revision'=>0,'draft'=>$draft]);
             $this->store->saveWizardOperation($actor,$key,$hash,$id);
             return ['tripId'=>$id];
@@ -76,7 +76,7 @@ final readonly class TermService
         $version = $data['formVersionId'];
         if ($version !== null) {
             $form = $this->forms->get($version);
-            if ($form === null || ($form['status'] ?? null) !== 'published' || ($form['eventId'] ?? null) !== ($this->policy->metadata($id)['event_id'] ?? null)) {
+            if ($form === null || $form['status'] !== 'published' || $form['eventId'] !== ($this->policy->metadata($id)['event_id'] ?? null)) {
                 throw new ValidationException(['formVersionId' => 'published_version_of_event_required']);
             }
         }

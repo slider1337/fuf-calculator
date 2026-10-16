@@ -25,7 +25,7 @@ final readonly class AnalyticsService
             foreach($eid===null?[]:$this->forms->list($eid) as $v){if($v['status']==='draft'){continue;}foreach($v['fields'] as $f){if(!FormSchema::answerField($f)){continue;}if(isset($catalog[$f['id']])&&FormSchema::signature($catalog[$f['id']])!==FormSchema::signature($f)){throw new AccessException('incompatible_field_series',409);}$catalog[$f['id']]=$f;}}
         }
         if($field!==null&&!isset($catalog[$field])){throw new ValidationException(['fieldId'=>'unknown_field_series']);}
-        if($field!==null){$catalog=[$field=>$catalog[$field]];}else{$catalog=array_filter($catalog,static fn($f)=>$f['analytics']);}
+        if($field!==null){$catalog=[$field=>$catalog[$field]];}else{$catalog=array_filter($catalog,static fn($f)=>($f['analytics']??false)===true);}
         $rows=[];$revisionRows=[];$versionIds=[];
         foreach($tripIds as $t){foreach($this->bookings->list($t) as $b){
             if($version!==null&&($b['versionId']??0)!==(int)$version){continue;}
@@ -46,7 +46,7 @@ final readonly class AnalyticsService
                     $pid=$person['id']??null;$a=$current[($pid??'booking').':'.$fid]??null;
                     $app=$pid===null?($applicability['booking'][$fid]??null):($applicability['persons'][(string)$pid][$fid]??null);
                     $s=!isset($ownFields[$fid])?'not_asked':(($app['state']??null)==='not_applicable'?'not_applicable':($a['state']??'missing')); 
-                    $r=['tripId'=>$t,'bookingId'=>$b['id'],'reference'=>$b['reference'],'participantId'=>$pid,'person'=>$person['name']??$b['contactIdentity'],'status'=>$pid===null?$b['status']:$person['status'],'syncStatus'=>$pid===null?$b['syncStatus']:$person['syncStatus'],'source'=>$b['source'],'versionId'=>$b['versionId'],'fieldId'=>$fid,'label'=>$f['label'],'type'=>$f['type'],'scope'=>$f['scope'],'unit'=>$f['unit'],'state'=>$s,'value'=>in_array($s,['answered','unchecked'],true)?($a['value']??null):null,'answerAt'=>$a['createdAt']??null];
+                    $r=['tripId'=>$t,'bookingId'=>$b['id'],'reference'=>$b['reference'],'participantId'=>$pid,'person'=>$person['name']??$b['contactIdentity'],'status'=>$person===null?$b['status']:$person['status'],'syncStatus'=>$person===null?$b['syncStatus']:$person['syncStatus'],'source'=>$b['source'],'versionId'=>$b['versionId'],'fieldId'=>$fid,'label'=>$f['label'],'type'=>$f['type'],'scope'=>$f['scope'],'unit'=>$f['unit'],'state'=>$s,'value'=>in_array($s,['answered','unchecked'],true)?($a['value']??null):null,'answerAt'=>$a['createdAt']??null];
                     if($state!==null&&$s!==$state){continue;}
                     if($search!==''&&!str_contains(mb_strtolower($r['person'].' '.json_encode($r['value'],JSON_UNESCAPED_UNICODE)),mb_strtolower($search))){continue;}
                     $rows[]=$r;

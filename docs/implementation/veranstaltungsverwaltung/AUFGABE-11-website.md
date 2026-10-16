@@ -1,6 +1,6 @@
 # Schritt 11 – Website an den fertiggestellten Calculator anbinden
 
-Status: **offen** · Voraussetzung: Schritt 10 vollständig abgenommen und kompatibler Calculator bereitgestellt.
+Status: **technisch implementiert** · Nutzerauftrag 16.10.: gesamte Website-Anbindung umsetzen. [Prüfung und Einführung](PRUEFUNG-11-WEBSITE.md). Tatsächliche Freischaltung benötigt kompatible Bereitstellung und Serververbindung.
 
 Vor Umsetzung [README](README.md), [Grundlagen](GRUNDLAGEN.md), [Abnahme](ABNAHME.md), [Design-Zuordnung](DESIGN-MAPPING.md) und die Originalreferenzen lesen. Aktuellen Repository-/PR-Stand und AGENTS.md erneut prüfen.
 

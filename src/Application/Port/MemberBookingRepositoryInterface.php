@@ -5,6 +5,8 @@ namespace App\Application\Port;
 /** Local persistence operations. Callers own authorization and transaction boundaries. */
 interface MemberBookingRepositoryInterface
 {
+    /** @return list<array{id:int,tripId:int}> */
+    public function ownedBookingIndex(string $owner, int $after): array;
     public function activePersonJob(mixed $person): int|string|false|null;
     public function duplicateMember(mixed $trip, mixed $member, mixed $booking): int|string|false|null;
     public function setPersonGuest(mixed $guest, mixed $person): void;

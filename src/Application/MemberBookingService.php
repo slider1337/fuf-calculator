@@ -32,6 +32,26 @@ final readonly class MemberBookingService {
   }
   if(!$own){throw new AccessException('member_identity_unproven',503);}return $p;
  }
+ /** @return array{contractVersion:string,route:string,tripId?:int,released?:bool} */
+ public function route(string $event): array {
+  $id=$this->store->tripForEvent($event);
+  if($id===false||$id===null||($this->access->metadata((int)$id)['registration_mode']??'clubdesk_csv')!=='easyverein')return ['contractVersion'=>'1.7.0','route'=>'legacy'];
+  $settings=$this->store->settings((int)$id);$enabled=$settings!==false&&($settings['enabled']??0)===1;
+  return ['contractVersion'=>'1.7.0','route'=>'calculator','tripId'=>(int)$id,'released'=>(bool)$enabled];
+ }
+ /** @param array<array-key,mixed> $q
+  * @return array{items:list<array<array-key,mixed>>,nextCursor:?string} */
+ public function all(MemberIdentity $identity,array $q): array {
+  $this->profile($identity);$after=$q['after']??'0';
+  if(!is_string($after)||!preg_match('/^[0-9]{1,18}$/D',$after))throw new ValidationException(['after'=>'integer_cursor']);
+  $ids=$this->store->ownedBookingIndex($identity->memberReference,(int)$after);
+  $more=count($ids)>25;$items=[];$last=null;
+  foreach(array_slice($ids,0,25) as $row){
+   $trip=$row['tripId'];$id=$row['id'];$link=$this->store->link($trip);$t=$this->trips->getById($trip);
+   $items[]=$this->output($this->owned($trip,$id,$identity))+['eventId'=>$link['externalId']??null,'tripTitle'=>$t?->name()??'Veranstaltung'];$last=(string)$id;
+  }
+  return ['items'=>$items,'nextCursor'=>$more?$last:null];
+ }
  public function resolve(string $event,MemberIdentity $identity): array {
   $id=$this->store->tripForEvent($event);
   if($id===false){throw new NotFoundException('Member trip');}return $this->context((int)$id,$identity);
@@ -39,13 +59,18 @@ final readonly class MemberBookingService {
  public function context(int $trip,MemberIdentity $identity): array {
   $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->external->snapshot($link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $binding=$this->forms->binding($trip);$v=$binding['versionId']===null?null:$this->forms->get($binding['versionId']);
-  return ['contractVersion'=>'1.6.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'guests'=>$this->store->availableGuests($trip, $identity->memberReference),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'guestsAllowed'=>($snapshot['guestsAllowed']??false),'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>$snapshot['bookingUntil'],'correctionUntil'=>$snapshot['bookingUntil'],'cancelUntil'=>$snapshot['bookingUntil']];
+  $t=$this->trips->getById($trip)??throw new NotFoundException('Trip');
+  return ['startDate'=>$t->startDate()->format('Y-m-d'),'adultAgeThreshold'=>$t->pricingPolicy()->adultAgeThreshold(),'readOnly'=>($this->access->metadata($trip)['closed_at']??null)!==null||($this->access->metadata($trip)['archived_at']??null)!==null,'contractVersion'=>'1.7.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'guests'=>$this->store->availableGuests($trip, $identity->memberReference),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'guestsAllowed'=>($snapshot['guestsAllowed']??false),'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>$snapshot['bookingUntil'],'correctionUntil'=>$snapshot['bookingUntil'],'cancelUntil'=>$snapshot['bookingUntil']];
  }
  private function engine(int $trip,MemberIdentity $identity): BookingService {return new BookingService($this->bookings,$this->forms,$this->trips,new MemberBookingPolicy($trip,$identity,$this->access,$this->store),$this->validator,$this->registrations);}
  private function owned(int $trip,int $booking,MemberIdentity $identity): array {
   $owner=$this->store->bookingOwner($trip, $booking);if($owner!==$identity->memberReference){throw new NotFoundException('Booking');}return $this->bookings->get($trip,$booking)??throw new NotFoundException('Booking');
  }
  private function output(array $b): array {
+  $versionId=$b['versionId']??null;
+  if($versionId!==null&&!is_int($versionId))throw new \LogicException('Invalid booking form version');
+  $version=$versionId===null?null:$this->forms->get($versionId);
+  $b['form']=$version===null?null:['id'=>$version['id'],'fields'=>$version['fields']];
   unset($b['revisions'],$b['personRevisions'],$b['formVersion']);
   foreach($b['answers'] as &$a){unset($a['actorId'],$a['reason']);}unset($a);return $b;
  }

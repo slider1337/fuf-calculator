@@ -89,6 +89,29 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testWebsiteRoutingNeverFallsBackWhenReleaseIsDisabledAndIndexIsOwned(): void {
+  $event=(string)$this->db->query('SELECT external_id FROM external_event_links WHERE trip_id='.$this->trip)->fetchColumn();
+  $route=$this->call('GET',"/integration/v1/events/$event/route");
+  self::assertSame('calculator',$route['route']);self::assertTrue($route['released']);
+  self::assertSame('legacy',$this->call('GET','/integration/v1/events/999999/route')['route']);
+  $context=$this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+  self::assertSame(16,$context['adultAgeThreshold']);self::assertFalse($context['readOnly']);self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/',$context['startDate']);
+  $b=$this->create($this->payload(1));
+  $own=$this->call('GET','/integration/v1/bookings?after=0');self::assertCount(1,$own['items']);self::assertSame($b['id'],$own['items'][0]['id']);self::assertSame($event,$own['items'][0]['eventId']);self::assertArrayHasKey('form',$own['items'][0]);
+  self::assertCount(0,$this->call('GET','/integration/v1/bookings?after=0',null,200,'12')['items']);
+  $this->db->exec('UPDATE member_trip_settings SET enabled=0 WHERE trip_id='.$this->trip);
+  $route=$this->call('GET',"/integration/v1/events/$event/route");self::assertSame('calculator',$route['route']);self::assertFalse($route['released']);
+  self::assertCount(1,$this->call('GET','/integration/v1/bookings?after=0')['items']);
+  $this->call('GET','/integration/v1/bookings?after=bad',null,422);
+ }
+ public function testWebsiteIndexPaginatesWithoutLosingOlderBookings(): void {
+  $this->create($this->payload(1));
+  $stmt=$this->db->prepare("INSERT INTO registrations(trip_id,room_category,received_at,comment,source,reference,contact_identity,booking_status,sync_status,managed_booking,revision,owner_member_reference) VALUES (?,'',?,'','manual',?,'member:11','pending','pending',1,1,'11')");
+  for($i=0;$i<26;$i++)$stmt->execute([$this->trip,gmdate(DATE_ATOM),'PAGE-'.$i]);
+  $first=$this->call('GET','/integration/v1/bookings?after=0');self::assertCount(25,$first['items']);self::assertNotNull($first['nextCursor']);
+  $last=$this->call('GET','/integration/v1/bookings?after='.$first['nextCursor']);self::assertCount(2,$last['items']);self::assertNull($last['nextCursor']);
+  self::assertCount(27,array_unique(array_column(array_merge($first['items'],$last['items']),'id')));
+ }
  public function testFamilyBookingPreviewCorrectCancelAndSupplementWithoutCalculatorAccount(): void {
   $ctx=$this->call('GET',"/integration/v1/trips/{$this->trip}/context");self::assertCount(4,$ctx['people']);$p=$this->payload();self::assertTrue($this->call('POST',"/integration/v1/trips/{$this->trip}/preview",$p)['valid']);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
   $b=$this->create($p);self::assertSame('pending',$b['status']);self::assertSame($b,$this->create($p));$this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$b['status']);self::assertSame('synced',$b['syncStatus']);self::assertSame(4,$this->provider->writes);self::assertCount(4,$b['persons']);

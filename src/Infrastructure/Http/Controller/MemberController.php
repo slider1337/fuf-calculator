@@ -10,6 +10,8 @@ final readonly class MemberController {
  public function __construct(private MemberBookingService $members,private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ParticipationPort $external,private MemberDirectoryPort $directory) {}
  private function identity(Request $request): MemberIdentity {return $request->getAttribute('memberIdentity')??throw new AccessException('invalid_delegation',401);}
  private function reply(Response $request,array $data,int $status=200): Response {return JsonResponder::write($request,$data,$status)->withHeader('Cache-Control','private, no-store');}
+ public function route(Request $request,Response $response,string $eventId): Response {$this->identity($request);return $this->reply($response,$this->members->route($eventId));}
+ public function all(Request $request,Response $response): Response {return $this->reply($response,$this->members->all($this->identity($request),$request->getQueryParams()));}
  public function resolve(Request $request,Response $response,string $eventId): Response {return $this->reply($response,$this->members->resolve($eventId,$this->identity($request)));}
  public function context(Request $request,Response $response,string $id): Response {return $this->reply($response,$this->members->context((int)$id,$this->identity($request)));}
  public function list(Request $request,Response $response,string $id): Response {return $this->reply($response,$this->members->list((int)$id,$this->identity($request),$request->getQueryParams()));}

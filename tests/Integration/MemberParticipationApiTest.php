@@ -132,7 +132,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
  }
  public function testDirectExternalParticipationAndFieldConflictsNeverGuessContact(): void {
   $this->provider->rows['888']=['externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
-  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$d=json_decode((string)$r->getBody(),true);self::assertCount(1,$d['clarifications']);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertContains('groups',array_column($d['observation']['conflicts'],'field'));
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$d=json_decode((string)$r->getBody(),true);self::assertCount(0,$d['clarifications']);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame('easyverein',$this->db->query('SELECT source FROM registrations')->fetchColumn());self::assertContains('groups',array_column($d['observation']['conflicts'],'field'));
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Neuen Terminpreis geprüft']);self::assertSame(200,$r->getStatusCode());
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Veralteter Stand']);self::assertSame(409,$r->getStatusCode());
  }
@@ -256,10 +256,57 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('12',$b['persons'][0]['expectedPrice']);self::assertSame('13',$b['persons'][0]['externalPrice']);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM person_observation_history')->fetchColumn());
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);$s=json_decode((string)$r->getBody(),true);self::assertNotContains('person:'.$person,array_column($s['observation']['conflicts'],'field'));
  }
- public function testDirectParticipationExplicitAssignmentNeverGuessesBookFamily(): void {
-  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings",['operationKey'=>'direct_fixture_001','versionId'=>null,'contactIdentity'=>'Fiktiver Kontakt','persons'=>[['id'=>'p1','name'=>'Manuell zugeordnet','birthDate'=>'1980-01-01']],'answers'=>[]]);$b=json_decode((string)$r->getBody(),true);$person=$b['persons'][0]['id'];
-  $this->provider->rows['777']=['eventId'=>'77','externalId'=>'777','memberReference'=>'11','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
-  $p=['bookingId'=>$b['id'],'personId'=>$person,'revision'=>$b['revision'],'memberReference'=>'11','confirmed'=>true,'reason'=>'Stabile Mitgliedsreferenz bewusst zugeordnet'];$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/clarifications/777/assign",$p);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$r=$this->dispatch('GET',"/api/trips/{$this->trip}/bookings/{$b['id']}");$next=json_decode((string)$r->getBody(),true);self::assertSame('777',$next['persons'][0]['externalReference']);self::assertSame('confirmed',$next['status']);self::assertSame('assigned',$this->db->query('SELECT status FROM external_clarifications')->fetchColumn());
+ public function testDirectParticipationDoesNotGuessAnUnverifiedLocalBookFamily(): void {
+  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings",['operationKey'=>'direct_fixture_001','versionId'=>null,'contactIdentity'=>'Fiktiver Kontakt','persons'=>[['id'=>'p1','name'=>'Gleicher Name','birthDate'=>'1980-01-01']],'answers'=>[]]);$b=json_decode((string)$r->getBody(),true);
+  $this->provider->rows['777']=['eventId'=>'77','externalId'=>'777','memberReference'=>'11','name'=>'Gleicher Name','birthDate'=>'1980-01-01','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];
+  for($i=0;$i<2;$i++){$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());}
+  self::assertSame(2,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame(1,(int)$this->db->query("SELECT COUNT(*) FROM registration_participants WHERE external_reference='777'")->fetchColumn());
+  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/bookings/{$b['id']}");$next=json_decode((string)$r->getBody(),true);self::assertNull($next['persons'][0]['externalReference']);self::assertSame('pending',$next['status']);
+ }
+ public function testDirectMemberAndGuestAreImportedIdempotentlyWithoutApprovalOrInventedBirthday(): void {
+  $_SESSION['user_id']=1;
+  $s=$this->db->prepare('INSERT INTO external_clarifications(trip_id,external_id,data_json,observed_at) VALUES (?,?,?,?)');$s->execute([$this->trip,'700','{}',gmdate(DATE_ATOM)]);
+  $this->provider->rows=[
+   '700'=>['eventId'=>'77','externalId'=>'700','memberReference'=>'11','contactReference'=>'51','name'=>'Mitglied aus easyVerein','birthDate'=>'1980-01-01','status'=>'confirmed','priceGroupId'=>'21','price'=>'12','isCompanion'=>false],
+   '701'=>['eventId'=>'77','externalId'=>'701','memberReference'=>'11','contactReference'=>'51','name'=>'Gast aus easyVerein','companionName'=>'Gast aus easyVerein','parentExternalId'=>'700','status'=>'confirmed','priceGroupId'=>'21','price'=>'12','isCompanion'=>true],
+  ];
+  for($i=0;$i<2;$i++){$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertSame([] ,json_decode((string)$r->getBody(),true)['clarifications']);}
+  self::assertSame(2,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame(0,$this->provider->writes);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM answer_revisions')->fetchColumn());
+  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/registrations");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$regs=json_decode((string)$r->getBody(),true);self::assertNull($regs[1]['participants'][0]['birthDate']);self::assertSame('easyverein',$regs[0]['source']);
+  $this->provider->rows['701']['status']='cancelled';$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame('cancelled',$this->db->query("SELECT participation_status FROM registration_participants WHERE external_reference='701'")->fetchColumn());
+  $this->db->exec("UPDATE trips SET closed_at='2026-10-15'");$this->provider->rows['700']['status']='cancelled';$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame('confirmed',$this->db->query("SELECT participation_status FROM registration_participants WHERE external_reference='700'")->fetchColumn());
+ }
+ public function testDirectParticipationAttachesUniqueStableLocalMemberWithoutDuplicatingOrWritingProvider(): void {
+  $b=$this->create($this->payload(1));$this->provider->rows['702']=['eventId'=>'77','externalId'=>'702','memberReference'=>'11','name'=>'Anderer Anzeigename','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];
+  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());
+  self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame('702',$this->db->query('SELECT external_reference FROM registration_participants')->fetchColumn());
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame(0,$this->provider->writes);$this->worker();self::assertSame(0,$this->provider->writes);
+ }
+ public function testImportedProfileRefreshesWithoutInventingDatesOrChangingOriginalPrice(): void {
+  $_SESSION['user_id']=1;$this->provider->rows['703']=['eventId'=>'77','externalId'=>'703','memberReference'=>'11','name'=>'Vorher','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];
+  $this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);
+  $this->provider->rows['703']['name']='Nachher';$this->provider->rows['703']['birthDate']='1981-02-03';$this->provider->rows['703']['price']='13';
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());
+  $row=$this->db->query('SELECT name,birth_date,expected_price,external_price FROM registration_participants')->fetch(PDO::FETCH_ASSOC);self::assertSame(['name'=>'Nachher','birth_date'=>'1981-02-03','expected_price'=>'12','external_price'=>'13'],$row);
+  unset($this->provider->rows['703']['birthDate']);$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame('1981-02-03',$this->db->query('SELECT birth_date FROM registration_participants')->fetchColumn());
+ }
+ public function testInlineGuestCanBookWhenEventAllowsGuestsWithoutIndividualApproval(): void {
+  $this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_001','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $b=$this->create($p);self::assertSame($b,$this->create($p));self::assertCount(2,$b['persons']);self::assertNotNull($b['persons'][1]['guestId']);
+  self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());self::assertSame('11',$this->db->query('SELECT owner_member FROM guest_approvals')->fetchColumn());
+  $this->worker();$next=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$next['status']);self::assertSame(2,$this->provider->writes);
+ }
+ public function testInlineGuestsCannotBypassProviderGuestFlagOrPrice(): void {
+  $p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_002','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());
+  $this->provider->guestsAllowed=true;$p['persons'][1]['expectedPrice']='0';$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+ }
+
+ public function testInlineGuestWithoutPriceGroupsAndDuplicateKeyProtection(): void {
+  $this->provider->groups=[];$this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;
+  $guest=['guest'=>['key'=>'guest_client_003','name'=>'Ohne Preisgruppe','birthDate'=>'2000-01-01'],'priceGroupId'=>null,'expectedPrice'=>null];$p['persons'][]=$guest;$p['persons'][]=$guest;
+  $this->createError($p,403);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());array_pop($p['persons']);
+  $preview=$this->call('POST',"/integration/v1/trips/{$this->trip}/preview",$p);self::assertTrue($preview['valid']);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());
+  $b=$this->create($p);self::assertCount(2,$b['persons']);self::assertNull($b['persons'][1]['expectedPrice']);
  }
 
  public function testScheduledReconcileUsesConfiguredIdentityIntervalAndRevokedAccess(): void {

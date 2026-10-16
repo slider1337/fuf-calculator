@@ -310,6 +310,7 @@ function applyRegistrationModeLayout(trip){
   byId('tab-anmeldungen').classList.toggle('d-none',!trip.capabilities.includes('registration.view'));
   byId('tab-auswertung').classList.toggle('d-none',!easy||!trip.capabilities.includes('analytics.view'));
   byId('csv-upload-form').classList.toggle('d-none',easy);
+  byId('reg-filter-easyverein').classList.toggle('d-none',!easy);
   byId('booking-contact-field').classList.toggle('d-none',!easy);byId('booking-contact').required=easy;
   byId('booking-intake-note').classList.toggle('d-none',!easy);byId('booking-extra-fields').classList.toggle('d-none',!easy);
 }

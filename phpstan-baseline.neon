@@ -2289,7 +2289,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
 			identifier: argument.type
-			count: 5
+			count: 4
 			path: src/Application/MemberBookingService.php
 
 		-
@@ -2469,7 +2469,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''externalId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 5
+			count: 3
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2517,7 +2517,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''memberReference'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 6
+			count: 5
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2547,19 +2547,19 @@ parameters:
 		-
 			message: '#^Cannot access offset ''price'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
 			message: '#^Cannot access offset ''priceConflict'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
 			message: '#^Cannot access offset ''priceGroupId'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2589,7 +2589,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''status'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2833,12 +2833,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Parameter \#1 \$row of method App\\Application\\ParticipationService\:\:priceHash\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2877,7 +2871,7 @@ parameters:
 		-
 			message: '#^Parameter \#3 \$r of method App\\Application\\ParticipationService\:\:applyResult\(\) expects array, mixed given\.$#'
 			identifier: argument.type
-			count: 3
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
@@ -5671,12 +5665,6 @@ parameters:
 			path: src/Infrastructure/EasyVereinParticipationAdapter.php
 
 		-
-			message: '#^Cannot access offset ''companion_name'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/EasyVereinParticipationAdapter.php
-
-		-
 			message: '#^Cannot access offset ''contactReference'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
@@ -5686,12 +5674,6 @@ parameters:
 			message: '#^Cannot access offset ''contact_details'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
-			path: src/Infrastructure/EasyVereinParticipationAdapter.php
-
-		-
-			message: '#^Cannot access offset ''description'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
 			path: src/Infrastructure/EasyVereinParticipationAdapter.php
 
 		-
@@ -5738,12 +5720,6 @@ parameters:
 
 		-
 			message: '#^Cannot access offset ''operationReference'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/EasyVereinParticipationAdapter.php
-
-		-
-			message: '#^Cannot access offset ''parent'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Infrastructure/EasyVereinParticipationAdapter.php

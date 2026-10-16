@@ -86,5 +86,16 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  const resumeCalls=[];scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {job:{id:7,attempts:3,status:'unknown'},link:null}};scope.state={currentTripId:2,currentTrip:trip};scope.loadWorkflowStatus=async()=>{};
  await scope.resumeTermSetup(trip);assert.deepEqual(resumeCalls.map(c=>c.url),['/api/trips/2/term','/api/trips/2/term/resume']);assert.deepEqual(JSON.parse(resumeCalls[1].options.body),{jobId:7,attempts:3,confirmed:true});count++;
  resumeCalls.length=0;scope.api=async(url,options={})=>{resumeCalls.push({url,options});return {link:{externalId:'77'},job:{id:7,attempts:4,status:'succeeded'}}};await scope.resumeTermSetup(trip);assert.equal(resumeCalls.length,1);count++;
+ // Provider people render directly, with escaped names and no mapping/guest approval modal.
+ scope.escapeHtml=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+ vm.runInContext(source.slice(source.indexOf('const participationStateLabels'),source.indexOf('function participationField')),scope);
+ const roster={jobs:[],participants:[{name:'<script>bad</script>',memberReference:'11',status:'confirmed'},{name:'Gast',memberReference:'11',isCompanion:true,status:'cancelled'}],guestsAllowed:true};
+ const rosterHtml=scope.externalParticipantsHtml(roster);assert(rosterHtml.includes('&lt;script&gt;'));assert(!rosterHtml.includes('<script>'));assert(rosterHtml.includes('easyVerein-Mitglied'));assert(rosterHtml.includes('Gast'));assert(rosterHtml.includes('Abgemeldet'));assert(rosterHtml.includes('Einzelfreigabe ist nicht nötig'));assert(!rosterHtml.includes('zuordnen'));count++;
+ const participationNodes=new Map();scope.byId=id=>{if(!participationNodes.has(id))participationNodes.set(id,{querySelectorAll:()=>[]});return participationNodes.get(id)};
+ scope.state={currentTripId:2};let loaded=0;scope.loadRegistrations=async()=>loaded++;const participationCalls=[];
+ scope.api=async(url,options={})=>{participationCalls.push({url,method:options.method||'GET'});return roster};
+ await scope.loadParticipationStatus({id:2,capabilities:['term.manage','registration.manage']},true);
+ assert.deepEqual(participationCalls,[{url:'/api/trips/2/participation-sync/reconcile',method:'POST'}]);assert.equal(loaded,1);assert(!scope.byId('participation-details').innerHTML.includes('Person ausdrücklich zuordnen'));assert(!scope.byId('participation-details').innerHTML.includes('Gastfreigaben'));count++;
+ participationCalls.length=0;await scope.loadParticipationStatus({id:2,archivedAt:'2026-10-15',capabilities:['term.manage','registration.manage']},true);assert.deepEqual(participationCalls,[{url:'/api/trips/2/participation-sync',method:'GET'}]);assert.equal(loaded,1);count++;
  console.log(`${count} term setup scenarios passed.`);
 })().catch(error=>{console.error(error);process.exit(1)});

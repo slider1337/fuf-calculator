@@ -25,6 +25,11 @@ final class ProviderFixture implements EasyVereinWriteClient {
 }
 final class EasyVereinWriteAdaptersTest extends TestCase {
  private function payload(): array {return ['eventId'=>'77','memberReference'=>'11','externalId'=>null,'priceGroupId'=>'21','price'=>'12'];}
+ public function testParticipationContactProvidesDisplayNameAndDoesNotGiveGuestTheMembersBirthday(): void {
+  $c=new ProviderFixture();$c->rows[100]=['id'=>100,'participation_event'=>77,'participation_address'=>['id'=>51,'name'=>'Provider Mitglied','date_of_birth'=>'1980-01-02'],'state'=>1,'is_companion'=>false,'companion_name'=>null,'parent'=>null,'description'=>'Fixture','participation_price_groups'=>[['id'=>600,'participation'=>100,'price_group'=>21,'pieces'=>1]]];
+  $c->rows[101]=array_replace($c->rows[100],['id'=>101,'is_companion'=>true,'parent'=>100,'companion_name'=>'Provider Gast','participation_price_groups'=>[['id'=>601,'participation'=>101,'price_group'=>21,'pieces'=>1]]]);
+  $r=(new EasyVereinParticipationAdapter($c))->snapshot('77')['participants'];self::assertSame('Provider Mitglied',$r[0]['name']);self::assertSame('1980-01-02',$r[0]['birthDate']);self::assertSame('Provider Gast',$r[1]['name']);self::assertNull($r[1]['birthDate']);
+ }
  public function testExactProviderMappingProofAndCancellation(): void {
   $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);$r=$a->execute('register',$this->payload(),'calculator-person-1');self::assertSame('confirmed',$r['status']);self::assertSame('77',$r['eventId']);self::assertSame('12',$r['price']);
   self::assertSame(['price_group'=>21,'pieces'=>1],$c->writes[0][2]['participation_price_groups'][0]);self::assertSame('participation/create-participation-with-price-groups/',$c->writes[0][1]);

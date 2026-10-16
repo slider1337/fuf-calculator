@@ -62,6 +62,19 @@ final class TermFields
         }
     }
 
+    /** Validate mutations separately: old provider observations must remain readable.
+     * @param array<array-key, mixed> $fields
+     */
+    public static function updatePeriod(array $fields): void
+    {
+        self::period($fields);
+        $deadline = $fields['registrationDeadline'] ?? null;
+        $start = $fields['start'] ?? null;
+        if (is_string($deadline) && is_string($start) && new \DateTimeImmutable($deadline) >= new \DateTimeImmutable($start)) {
+            throw new AccessException('term_registration_overlap', 409);
+        }
+    }
+
     /** @phpstan-assert-if-true string $value */
     public static function dateTime(mixed $value): bool
     {

@@ -36,7 +36,7 @@ final readonly class TermUpdateWorker
             elseif ($patch) {
                 if ($selected !== $job->before) { $status = TermUpdateStatus::Conflict; $error = 'term_review_changed'; }
                 else {
-                    TermFields::period(array_replace($current, $job->changes));
+                    TermFields::updatePeriod(array_replace($current, $job->changes));
                     $permitted = $this->access->transaction(fn () => $this->store->liveLeaseMatches($job->id, $token, time()) && $this->allowed($job));
                     if (!$permitted) { $status = TermUpdateStatus::Blocked; $error = 'permission_revoked_or_trip_closed'; }
                     else {
@@ -47,6 +47,19 @@ final readonly class TermUpdateWorker
                     }
                 }
             }
+        } catch (ParticipationRejected $e) {
+            // A definite HTTP rejection is not an ambiguous timeout.
+            $status = TermUpdateStatus::Blocked;
+            $error = match ($e->getCode()) {
+                401 => 'term_update_unauthorized',
+                403 => 'term_update_forbidden',
+                404 => 'term_update_not_found',
+                default => in_array(['field' => 'end_participation', 'reason' => 'overlap'], $e->validationErrors, true)
+                    ? 'term_registration_overlap' : 'term_update_rejected',
+            };
+        } catch (AccessException $e) {
+            $error = $e->error === 'term_registration_overlap' ? $e->error : ($patchStarted ? 'external_outcome_unknown' : 'provider_preflight_failed');
+            if ($patch && !$patchStarted) { $status = TermUpdateStatus::Conflict; }
         } catch (\Throwable) {
             $error = $patchStarted ? 'external_outcome_unknown' : 'provider_preflight_failed';
             if ($patch && !$patchStarted) { $status = TermUpdateStatus::Conflict; }

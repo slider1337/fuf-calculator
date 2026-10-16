@@ -14,6 +14,7 @@ interface TermUpdateRepositoryInterface
     public function summaries(int $trip): array;
     /** @return array{id: int, requestHash: string}|null */
     public function operation(int $trip, string $key): ?array;
+    public function resolveUnknown(int $trip, int $job): bool;
     public function hasActiveJob(int $trip): bool;
     /** @param array<array-key, mixed> $review */
     public function request(int $trip, string $externalId, int $actor, string $key, string $hash, array $review, string $reason): int;

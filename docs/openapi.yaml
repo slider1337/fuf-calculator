@@ -3146,6 +3146,54 @@ paths:
               properties:
                 changes:
                   $ref: '#/components/schemas/TermChanges'
+  /api/trips/{id}/term/updates/resolve:
+    post:
+      summary: Unklaren Änderungsauftrag nach Prüfung des aktuellen easyVerein-Stands lokal abschließen
+      description: Benötigt term.manage, offene und nicht archivierte easyVerein-Reise, Bestätigung und Grund.
+        Liest den Provider frisch und prüft observedHash. Nur unknown ohne Worker-Lease ist abschließbar.
+        Kein erneuter PATCH. Der ursprüngliche Ausgang wird nicht nachträglich als sicher fehlgeschlagen bezeichnet.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId, observedHash, confirmed, reason]
+              properties:
+                jobId:
+                  type: integer
+                observedHash:
+                  type: string
+                confirmed:
+                  type: boolean
+                  enum: [true]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Aktueller Stand akzeptiert und Auftrag lokal abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermUpdateReceipt'
+        '401':
+          description: Anmeldung fehlt
+        '403':
+          description: term.manage fehlt
+        '404':
+          description: Reise nicht zugänglich
+        '409':
+          description: Reise gesperrt, Terminstand oder Auftrag geändert, Auftrag wird bearbeitet
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Providerstand nicht nachweisbar
   /api/trips/{id}/term/updates/request:
     post:
       summary: Begründeten Terminänderungsauftrag dauerhaft annehmen
@@ -6566,11 +6614,14 @@ components:
     TermUpdateState:
       type: object
       required:
+      - observedHash
       - externalId
       - fields
       - blockedReason
       - jobs
       properties:
+        observedHash:
+          type: string
         externalId:
           type: string
         fields:

@@ -36,8 +36,8 @@ final readonly class AuthController
     public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
-        $email = (string) ($body['email'] ?? '');
-        $password = (string) ($body['password'] ?? '');
+        $email = (string) \App\Application\Input::scalar(($body['email'] ?? ''));
+        $password = (string) \App\Application\Input::scalar(($body['password'] ?? ''));
 
         try {
             $user = $this->service->login($email, $password);
@@ -71,7 +71,7 @@ final readonly class AuthController
     public function forgotPassword(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
-        $email = (string) ($body['email'] ?? '');
+        $email = (string) \App\Application\Input::scalar(($body['email'] ?? ''));
 
         try {
             $this->service->requestPasswordReset($email);
@@ -85,7 +85,7 @@ final readonly class AuthController
 
     public function showSetPassword(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $token = (string) ($request->getQueryParams()['token'] ?? '');
+        $token = (string) \App\Application\Input::scalar($request->getQueryParams()['token'] ?? '');
 
         try {
             $authToken = $this->service->lookupToken($token);
@@ -111,9 +111,9 @@ final readonly class AuthController
     public function setPassword(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
-        $token = (string) ($body['token'] ?? '');
-        $password = (string) ($body['password'] ?? '');
-        $confirmation = (string) ($body['password_confirmation'] ?? '');
+        $token = (string) \App\Application\Input::scalar(($body['token'] ?? ''));
+        $password = (string) \App\Application\Input::scalar(($body['password'] ?? ''));
+        $confirmation = (string) \App\Application\Input::scalar(($body['password_confirmation'] ?? ''));
 
         try {
             $user = $this->service->consumeToken($token, $password, $confirmation);
@@ -144,7 +144,7 @@ final readonly class AuthController
     public function invite(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
-        $email = (string) ($body['email'] ?? '');
+        $email = (string) \App\Application\Input::scalar(($body['email'] ?? ''));
 
         try {
             $this->service->invite($email);

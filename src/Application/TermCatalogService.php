@@ -9,6 +9,10 @@ use App\Infrastructure\EasyVereinData;
 final readonly class TermCatalogService
 {
     public function __construct(private AccessPolicy $policy, private EasyVereinReadClient $client) {}
+    /**
+     * @param array<array-key,mixed> $p
+     * @return array<array-key,mixed>
+     */
     public function search(string $resource, array $p, ?int $tripId = null): array
     {
         if ($tripId === null) { $this->policy->actorId(); }

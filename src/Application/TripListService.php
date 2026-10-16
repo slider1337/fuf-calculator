@@ -13,6 +13,7 @@ use Throwable;
 /**
  * Read-Model fuer die Reiseliste. Buendelt Stammdaten, Teilnehmerzahlen und den Ueberschuss
  * je Reise, damit die Liste ohne Nachladen je Zeile auskommt.
+ * @phpstan-type TripListItem array{id:int,registrationMode:string,eventId:?int,archivedAt:?string,closedAt:?string,name:string,startDate:string,endDate:?string,nights:int,plannedParticipants:?int,registeredParticipants:?int,surplus:?float,surplusBasis:?string}
  */
 final readonly class TripListService
 {
@@ -26,8 +27,9 @@ final readonly class TripListService
     }
 
     /**
-     * @return array<int, array{id:int,name:string,startDate:string,endDate:?string,nights:int,
-     *     plannedParticipants:int,registeredParticipants:int,surplus:?float,surplusBasis:?string}>
+     * @return list<TripListItem>
+     *
+     * plannedParticipants:int,registeredParticipants:int,surplus:?float,surplusBasis:?string}>
      */
     public function listTrips(bool $archived = false): array
     {
@@ -41,11 +43,15 @@ final readonly class TripListService
         return $items;
     }
 
+    /**
+     * @param array{id:int,name:string,startDate:string,endDate:?string} $row
+     * @return TripListItem
+     */
     private function toListItem(array $row): array
     {
         $item = [
             'id' => (int) $row['id'],
-            'registrationMode'=>$this->policy->metadata((int)$row['id'])['registration_mode']??'clubdesk_csv',
+            'registrationMode'=>$this->policy->metadata((int)$row['id'])['registration_mode'],
             'eventId' => isset($this->policy->metadata((int) $row['id'])['event_id']) ? (int) $this->policy->metadata((int) $row['id'])['event_id'] : null,
             'archivedAt' => $this->policy->metadata((int) $row['id'])['archived_at'] ?? null,
             'closedAt' => $this->policy->metadata((int) $row['id'])['closed_at'] ?? null,
@@ -68,6 +74,7 @@ final readonly class TripListService
         }
     }
 
+    /** @return array{nights?:int,plannedParticipants?:?int,registeredParticipants?:?int,surplus?:?float,surplusBasis?:?string} */
     private function computeFor(int $tripId): array
     {
         $trip = $this->tripRepository->getById($tripId);
@@ -92,7 +99,7 @@ final readonly class TripListService
             'registeredParticipants' => $canRegistrations ? $registeredParticipants : null,
             'surplus' => !$canFinance ? null : ($hasRegistrations
                 ? $this->actualExpenseService->getSettlement($tripId)['surplus']
-                : (($snapshot = $this->policy->metadata($tripId)['calculation_snapshot'] ?? null) !== null ? json_decode($snapshot, true)['surplus'] : $this->calculator->calculate($trip)['surplus'])),
+                : (($snapshot = $this->policy->metadata($tripId)['calculation_snapshot'] ?? null) !== null ? $this->snapshotSurplus($snapshot) : $this->calculator->calculate($trip)['surplus'])),
             'surplusBasis' => $canFinance ? ($hasRegistrations ? 'settlement' : 'calculation') : null,
         ];
     }
@@ -105,5 +112,12 @@ final readonly class TripListService
         }
 
         return $total;
+    }
+
+    private function snapshotSurplus(string $json): float
+    {
+        $data=Input::map(json_decode($json,true,512,JSON_THROW_ON_ERROR));$value=$data['surplus']??null;
+        if(!is_float($value)&&!is_int($value))throw new \UnexpectedValueException('Invalid calculation snapshot');
+        return (float)$value;
     }
 }

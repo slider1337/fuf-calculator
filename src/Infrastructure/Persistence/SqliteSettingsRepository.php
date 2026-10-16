@@ -18,7 +18,7 @@ final readonly class SqliteSettingsRepository implements SettingsRepositoryInter
 
     public function get(): Settings
     {
-        $row = $this->pdo->query('SELECT * FROM settings WHERE id = 1')->fetch();
+        $row = StoredRow::fetch($this->pdo->query('SELECT * FROM settings WHERE id = 1'));
         if ($row === false) {
             $default = new Settings(
                 new Percentage(10.00),

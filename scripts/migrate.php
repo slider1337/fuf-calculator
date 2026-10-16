@@ -26,6 +26,7 @@ $pdo = null;
 
 $configPath = __DIR__ . '/../phinx.php';
 $configArray = require $configPath;
+if (!is_array($configArray)) { throw new RuntimeException('Invalid migration configuration'); }
 $config = new Config($configArray, $configPath);
 
 $manager = new Manager($config, new StringInput(' '), new ConsoleOutput());
@@ -92,7 +93,7 @@ function columnExists(PDO $pdo, string $table, string $column): bool
     if (!tableExists($pdo, $table)) {
         return false;
     }
-    $rows = $pdo->query(sprintf('PRAGMA table_info(%s)', $table))->fetchAll(PDO::FETCH_ASSOC);
+    $rows = \App\Infrastructure\Persistence\StoredRow::fetchAll($pdo->query(sprintf('PRAGMA table_info(%s)', $table)));
     foreach ($rows as $row) {
         if (($row['name'] ?? null) === $column) {
             return true;

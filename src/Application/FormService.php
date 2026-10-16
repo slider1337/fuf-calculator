@@ -5,6 +5,14 @@ namespace App\Application;
 use App\Application\Port\{FormRepositoryInterface,EventRepositoryInterface,TripRepositoryInterface};
 use App\Domain\Form\{FormSchema,AnswerValidator};
 
+/**
+ * @phpstan-import-type FormVersion from \App\Application\Port\FormRepositoryInterface
+ * @phpstan-import-type FormBinding from \App\Application\Port\FormRepositoryInterface
+ * @phpstan-import-type Field from \App\Domain\Form\FormSchema
+ *
+ * @phpstan-import-type AnswerMaps from \App\Domain\Form\AnswerValidator
+ * @phpstan-type FormPreview array{valid:bool,errors:array<string,string>,answers:AnswerMaps,persons:list<array{id:string,age:int,child:bool}>,startDate:string,adultAgeThreshold:int,versionId:int,revision:int}
+ */
 final readonly class FormService
 {
     public function __construct(private FormRepositoryInterface $forms, private EventRepositoryInterface $events, private TripRepositoryInterface $trips, private AccessPolicy $policy, private FormSchema $schema, private AnswerValidator $answers) {}
@@ -14,6 +22,7 @@ final readonly class FormService
         $event = $this->events->get($id) ?? throw new NotFoundException('Event not found');
         if ($write && $event->archived) { throw new AccessException('event_archived', 409); }
     }
+    /** @return FormVersion */
     private function version(int $eventId, int $id, string $capability, bool $write = false): array
     {
         $this->event($eventId,$capability,$write);
@@ -21,16 +30,23 @@ final readonly class FormService
         if ($v === null || $v['eventId'] !== $eventId) { throw new NotFoundException('Form not found'); }
         return $v;
     }
+    /** @param array<array-key,mixed> $p */
     private function revision(array $p, int $revision): void
     {
         if (!is_int($p['revision'] ?? null) || $p['revision'] !== $revision) { throw new AccessException('revision_conflict', 409); }
     }
+    /** @return list<FormVersion> */
     public function list(int $eventId): array
     {
         $this->event($eventId,'event.view');
         return $this->forms->list($eventId);
     }
+    /** @return FormVersion */
     public function get(int $eventId, int $id): array { return $this->version($eventId,$id,'event.view'); }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return FormVersion
+     */
     public function createDraft(int $eventId, array $p): array
     {
         return $this->policy->transaction(function () use ($eventId,$p) {
@@ -47,6 +63,10 @@ final readonly class FormService
             $this->policy->audit('form.draft','event',$eventId,'Entwurf id=' . $v['id']); return $v;
         });
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return FormVersion
+     */
     public function save(int $eventId, int $id, array $p): array
     {
         return $this->policy->transaction(function () use ($eventId,$id,$p) {
@@ -59,6 +79,10 @@ final readonly class FormService
             $this->policy->audit('form.save','event',$eventId,'Entwurf id=' . $id . ' revision=' . $v['revision']); return $v;
         });
     }
+    /**
+     * @param array<array-key,mixed> $fields
+     * @return list<Field>
+     */
     private function normalize(int $eventId, array $fields): array
     {
         if (!array_is_list($fields) || count($fields) > 100) { throw new ValidationException(['fields'=>'list_max_100']); }
@@ -104,6 +128,10 @@ final readonly class FormService
         }
         unset($f); return $this->schema->validate($result);
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return FormPreview
+     */
     public function preview(int $eventId, int $id, array $p): array
     {
         $v = $this->version($eventId,$id,'event.view'); $context = $p['context'] ?? null;
@@ -117,6 +145,10 @@ final readonly class FormService
         }
         return ['versionId'=>$id,'revision'=>$v['revision']] + $this->answers->validate($this->schema->validate($v['fields']),$context,$p['answers'] ?? []);
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return FormVersion
+     */
     public function publish(int $eventId, int $id, array $p): array
     {
         return $this->policy->transaction(function () use ($eventId,$id,$p) {
@@ -127,6 +159,10 @@ final readonly class FormService
             $this->policy->audit('form.publish','event',$eventId,'version=' . $v['number'] . ' · ' . $description); return $v;
         });
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return FormVersion
+     */
     public function archive(int $eventId, int $id, array $p): array
     {
         return $this->policy->transaction(function () use ($eventId,$id,$p) {
@@ -136,7 +172,13 @@ final readonly class FormService
             $v = $this->forms->archive($id,$v['revision']); $this->policy->audit('form.archive','event',$eventId,'version=' . $v['number'] . ' · ' . $reason); return $v;
         });
     }
+    /** @return array<array-key,mixed> */
     public function compare(int $eventId, int $from, int $to): array { return $this->diff($this->version($eventId,$from,'event.view'),$this->version($eventId,$to,'event.view')); }
+    /**
+     * @param FormVersion|null $from
+     * @param FormVersion $to
+     * @return array<array-key,mixed>
+     */
     private function diff(?array $from, array $to): array
     {
         $old = array_column($from['fields'] ?? [],null,'id'); $new = array_column($to['fields'],null,'id'); $rows = [];
@@ -150,6 +192,7 @@ final readonly class FormService
         }
         return ['fromVersionId'=>$from['id'] ?? null,'toVersionId'=>$to['id'],'rows'=>$rows];
     }
+    /** @return array<array-key,mixed> */
     public function binding(int $tripId): array
     {
         $this->policy->trip($tripId,'trip.view');
@@ -159,6 +202,10 @@ final readonly class FormService
         $choices = $eventId === null || !$this->policy->can('trip',$tripId,'trip.manage') ? [] : array_values(array_filter($this->forms->list($eventId),static fn ($v)=>$v['status']==='published'));
         return $binding + ['version'=>$version,'availableVersions'=>$choices];
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return array{FormBinding,FormVersion}
+     */
     private function target(int $tripId, array $p): array
     {
         $this->policy->trip($tripId,'trip.manage',true); $binding = $this->forms->binding($tripId); $this->revision($p,$binding['revision']);
@@ -168,6 +215,10 @@ final readonly class FormService
         if ($binding['versionId'] === $target['id']) { throw new AccessException('version_already_active',409); }
         return [$binding,$target];
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return array<array-key,mixed>
+     */
     public function switchPreview(int $tripId, array $p): array
     {
         return $this->policy->transaction(function () use ($tripId,$p) {
@@ -175,6 +226,10 @@ final readonly class FormService
             return $this->diff($b['versionId'] === null ? null : $this->forms->get($b['versionId']),$v) + ['revision'=>$b['revision'],'targetRevision'=>$v['revision'],'existingRegistrationCount'=>$this->policy->can('trip',$tripId,'registration.view') ? $this->forms->registrationCount($tripId) : null,'existingVersionBreakdownAvailable'=>$this->policy->can('trip',$tripId,'registration.view'),'existingVersionBreakdown'=>$this->policy->can('trip',$tripId,'registration.view') ? $this->forms->registrationVersions($tripId) : null,'canRequestSupplement'=>$this->policy->can('trip',$tripId,'registration.manage')];
         });
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return array<array-key,mixed>
+     */
     public function switchVersion(int $tripId, array $p): array
     {
         return $this->policy->writeTrip($tripId,'trip.manage',function () use ($tripId,$p) {

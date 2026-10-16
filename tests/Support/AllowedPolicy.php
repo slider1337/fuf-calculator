@@ -15,7 +15,7 @@ final class AllowedPolicy
             public function exists(string $type, int $id): bool { return true; }
             public function role(int $userId): ?string { return 'admin'; }
             public function capabilities(string $type, int $id, int $userId): array { return $type === 'event' ? AccessPolicy::EVENT_CAPABILITIES : AccessPolicy::TRIP_CAPABILITIES; }
-            public function metadata(int $tripId): array { return []; }
+            public function metadata(int $tripId): array { return ['registration_mode'=>'clubdesk_csv','registration_mode_revision'=>0,'archived_at'=>null,'form_version_id'=>null,'form_revision'=>0,'event_id'=>null,'closed_at'=>null,'closed_by'=>null,'settlement_snapshot'=>null,'calculation_snapshot'=>null]; }
             public function setMetadata(int $tripId, array $values): void {}
             public function team(string $type, int $id): array { return []; }
             public function replaceMember(string $type, int $id, int $userId, array $capabilities): void {}

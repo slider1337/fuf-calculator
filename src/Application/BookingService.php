@@ -5,24 +5,35 @@ namespace App\Application;
 use App\Application\Port\{BookingRepositoryInterface,FormRepositoryInterface,TripRepositoryInterface};
 use App\Domain\Form\{AnswerValidator,FormSchema};
 
-/** Local booking workflow. No external confirmation or network writes.
+/**
+ * Local booking workflow. No external confirmation or network writes.
  * @phpstan-import-type Booking from BookingRepositoryInterface
  * @phpstan-import-type FormVersion from FormRepositoryInterface
+ * @phpstan-import-type BookingOperation from \App\Application\Port\BookingRepositoryInterface
+ * @phpstan-import-type AnswerMaps from \App\Domain\Form\AnswerValidator
+ * @phpstan-import-type BookingView from \App\Application\Port\BookingRepositoryInterface
+ * @phpstan-import-type Booking from \App\Application\Port\BookingRepositoryInterface
  */
 final readonly class BookingService
 {
     public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private \App\Application\Port\BookingPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations) {}
+    /** @return list<BookingView> */
     public function list(int $tripId): array
     {
         $this->policy->trip($tripId,'registration.view');
         return array_map(fn($b)=>$this->visible($tripId,$b),$this->bookings->list($tripId));
     }
+    /**
+     * @param Booking $b
+     * @return BookingView
+     */
     private function visible(int $tripId,array $b): array
     {
         if(!$this->policy->can('trip',$tripId,'answers.view')){unset($b['answers'],$b['revisions']);}
         if($this->policy->can('trip',$tripId,'answers.view')){$b['formVersion']=$b['versionId']===null?null:$this->forms->get($b['versionId']);}
         return $b;
     }
+    /** @return BookingView */
     public function get(int $tripId,int $id): array
     {
         $this->policy->trip($tripId,'registration.view');
@@ -30,6 +41,7 @@ final readonly class BookingService
     }
     /** @return Booking */
     private function load(int $tripId,int $id): array { return $this->bookings->get($tripId,$id)??throw new NotFoundException('Booking not found'); }
+    /** @param array<array-key,mixed> $p */
     private function key(array $p): string
     {
         $k=$p['operationKey']??null;
@@ -40,6 +52,10 @@ final readonly class BookingService
     {
         if(!is_array($p)){return $p;}if(!array_is_list($p)){ksort($p);}return array_map(fn($v)=>$this->canonical($v),$p);
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return array{string,string,BookingOperation|null}
+     */
     private function repeat(int $tripId,array $p,string $kind,?int $id=null): array
     {
         $key=$this->key($p);$hash=hash('sha256',json_encode($this->canonical([$kind,$id,$p]),JSON_THROW_ON_ERROR));
@@ -57,7 +73,11 @@ final readonly class BookingService
         if(!$v||$v['status']==='draft'||$v['eventId']!==($this->policy->metadata($tripId)['event_id']??null)){throw new ValidationException(['versionId'=>'released_version_of_trip_event_required']);}
         return $v;
     }
-    /** @param FormVersion|null $v */
+    /**
+     * @param FormVersion|null $v
+     * @return AnswerMaps
+     * @param list<array{id:int|string,birthDate:string,...}> $people
+     */
     private function validate(int $tripId,?array $v,array $people,mixed $answers): array
     {
         if(!is_array($answers)){throw new ValidationException(['answers'=>'maps_required']);}
@@ -66,6 +86,10 @@ final readonly class BookingService
         if(!$r['valid']){throw new ValidationException($r['errors']);}
         return $r['answers'];
     }
+    /**
+     * @param AnswerMaps $answers
+     * @param Booking $b
+     */
     private function persistAnswers(array $b,array $answers,int $versionId,string $reason,bool $all=false): void
     {
         $old=[];foreach($b['answers'] as $a){$old[($a['participantId']??'booking').':'.$a['fieldId']]=$a;}
@@ -79,10 +103,14 @@ final readonly class BookingService
             }
         }
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return BookingView
+     */
     public function create(int $tripId,array $p): array
     {
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$p){
-            if(($this->policy->metadata($tripId)['registration_mode']??'clubdesk_csv')!=='easyverein'){throw new AccessException('registration_mode_easyverein_required',409);}
+            if(($this->policy->metadata($tripId)['registration_mode'])!=='easyverein'){throw new AccessException('registration_mode_easyverein_required',409);}
             $this->policy->trip($tripId,'answers.correct');
             if(($this->policy->metadata($tripId)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
             [$key,$hash,$op]=$this->repeat($tripId,$p,'create');
@@ -92,13 +120,18 @@ final readonly class BookingService
             if(!is_array($people)||!array_is_list($people)||count($people)<1||count($people)>100){throw new ValidationException(['persons'=>'list_1_100']);}
             foreach($people as $i=>$person){if(!is_array($person)||!is_string($person['name']??null)||trim($person['name'])===''||mb_strlen($person['name'])>200){throw new ValidationException(["persons.$i.name"=>'name_required_max_200']);}}
             foreach(['contactIdentity'=>200,'comment'=>2000,'roomCategory'=>200] as $k=>$max){$value=$p[$k]??($k==='roomCategory'?null:'');if(($value!==null&&!is_string($value))||(is_string($value)&&mb_strlen($value)>$max)||($k==='contactIdentity'&&(!is_string($value)||trim($value)===''))){throw new ValidationException([$k=>'invalid_text']);}}
+            $people=\App\Application\Data\BookingPersonData::list($people);
             $answers=$this->validate($tripId,$v,$people,$p['answers']??[]);
-            $id=$this->bookings->create($tripId,['persons'=>$people,'versionId'=>$v['id']??null,'contactIdentity'=>trim($p['contactIdentity']),'comment'=>$p['comment']??'','roomCategory'=>$p['roomCategory']??null]);
+            $id=$this->bookings->create($tripId,['persons'=>$people,'versionId'=>$v['id']??null,'contactIdentity'=>trim(Input::text($p['contactIdentity'])),'comment'=>$p['comment']??'','roomCategory'=>$p['roomCategory']??null]);
             $b=$this->load($tripId,$id);if($v){$this->persistAnswers($b,$answers,$v['id'],'Lokale Orga-Erfassung',true);}
             $this->bookings->recordOperation($tripId,$key,$hash,$id);$this->policy->audit('booking.create','trip',$tripId,'booking='.$id.' · local_pending');
             return $this->get($tripId,$id);
         });
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return BookingView
+     */
     public function correct(int $tripId,int $id,array $p): array
     {
         return $this->policy->transaction(function()use($tripId,$id,$p){
@@ -114,8 +147,8 @@ final readonly class BookingService
                 $new=$p['persons'];
                 if(!is_array($new)||!array_is_list($new)){throw new ValidationException(['persons'=>'list_required']);}
                 foreach($new as $person){if(!is_array($person)||!is_int($person['id']??null)||!is_string($person['name']??null)||trim($person['name'])===''||mb_strlen($person['name'])>200){throw new ValidationException(['persons'=>'stable_id_name_and_birth_date_required']);}}
-                if(!is_array($new)||!array_is_list($new)||count($new)!==count($people)||count(array_unique(array_column($new,'id')))!==count($people)||array_diff(array_column($new,'id'),array_column($people,'id'))!==[]){throw new ValidationException(['persons'=>'complete_active_stable_id_list_required']);}
-                $people=$new;
+                if(count($new)!==count($people)||count(array_unique(array_column($new,'id')))!==count($people)||array_diff(array_column($new,'id'),array_column($people,'id'))!==[]){throw new ValidationException(['persons'=>'complete_active_stable_id_list_required']);}
+                $people=\App\Application\Data\BookingPersonData::list($new);
             }
             $raw=['booking'=>[],'persons'=>[]];
             foreach($b['answers'] as $a){if(in_array($a['state'],['answered','unchecked'],true)){if($a['participantId']===null){$raw['booking'][$a['fieldId']]=$a['value'];}elseif(in_array($a['participantId'],array_column($people,'id'),true)){$raw['persons'][(string)$a['participantId']][$a['fieldId']]=$a['value'];}}}
@@ -125,6 +158,7 @@ final readonly class BookingService
             if(!is_array($patch)||!is_array($patch['booking']??[])||!is_array($patch['persons']??[])){throw new ValidationException(['answers'=>'maps_required']);}
             $raw['booking']=array_replace($raw['booking'],$patch['booking']??[]);
             foreach($patch['persons']??[] as $pid=>$entries){if(!is_array($entries)){throw new ValidationException(['answers.persons'=>'maps_required']);}$raw['persons'][(string)$pid]=array_replace($raw['persons'][(string)$pid]??[],$entries);}
+            $people=\App\Application\Data\BookingPersonData::list($people);
             $answers=$this->validate($tripId,$v,$people,$raw);
             if(array_key_exists('persons',$p)){
                 $original=array_column($b['persons'],null,'id');$changed=false;
@@ -141,20 +175,29 @@ final readonly class BookingService
             return $this->get($tripId,$id);
         });
     }
+    /** @param array<array-key,mixed> $p */
     private function reason(array $p): string
     {
         if(!is_string($p['reason']??null)){throw new ValidationException(['reason'=>'text_required']);}
         return $this->policy->reason($p['reason']);
     }
+    /**
+     * @param Booking $b
+     * @param array<array-key,mixed> $p
+     */
     private function revision(array $b,array $p): void { if(!is_int($p['revision']??null)||$p['revision']!==$b['revision']){throw new AccessException('revision_conflict',409);} }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return BookingView
+     */
     public function cancel(int $tripId,int $id,array $p): array
     {
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$id,$p){
             $b=$this->load($tripId,$id);[$key,$hash,$op]=$this->repeat($tripId,$p,'cancel',$id);if($op){return $this->get($tripId,$id);}
             $this->revision($b,$p);$reason=$this->reason($p);$ids=$p['personIds']??array_column($b['persons'],'id');
             foreach($b['persons'] as $person){if(in_array($person['id'],is_array($ids)?$ids:[],true)&&($person['externalReference']??null)!==null&&$person['status']!=='cancelled'){throw new AccessException('use_external_cancellation',409);}}
-            if(!is_array($ids)||!array_is_list($ids)||$ids===[]||count(array_filter($ids,'is_int'))!==count($ids)||array_diff($ids,array_column($b['persons'],'id'))!==[]){throw new ValidationException(['personIds'=>'owned_person_ids_required']);}
-            foreach($ids as $pid){$this->bookings->cancelPerson($id,$pid);}
+            if(!is_array($ids)||!array_is_list($ids)||$ids===[]||count(array_filter($ids,'is_int'))!==count($ids)||array_diff(Input::integers($ids),array_column($b['persons'],'id'))!==[]){throw new ValidationException(['personIds'=>'owned_person_ids_required']);}
+            foreach(Input::integers($ids) as $pid){$this->bookings->cancelPerson($id,$pid);}
             $remaining=array_filter($b['persons'],static fn($x)=>$x['status']!=='cancelled'&&!in_array($x['id'],$ids,true));
             $confirmed=count(array_filter($remaining,static fn($x)=>$x['status']==='confirmed'));
             $status=$remaining===[]?'cancelled':($confirmed===count($remaining)?'confirmed':($confirmed>0?'partially_confirmed':'pending'));
@@ -165,6 +208,10 @@ final readonly class BookingService
             return $this->get($tripId,$id);
         });
     }
+    /**
+     * @param array<array-key,mixed> $p
+     * @return BookingView
+     */
     public function assignRoom(int $tripId,int $id,array $p): array
     {
         return $this->policy->writeTrip($tripId,'registration.manage',function()use($tripId,$id,$p){

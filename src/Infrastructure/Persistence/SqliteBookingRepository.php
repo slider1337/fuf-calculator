@@ -15,10 +15,13 @@ use PDO;
 final readonly class SqliteBookingRepository implements BookingRepositoryInterface
 {
     public function __construct(private PDO $pdo) {}
+    /** @param array<array-key,mixed> $p */
     private function query(string $sql,array $p=[]): \PDOStatement { $s=$this->pdo->prepare($sql);$s->execute($p);return $s; }
-    /** @template T
+    /**
+     * @template T
      * @param callable():T $read
-     * @return T */
+     * @return T
+     */
     public function snapshot(callable $read): mixed
     {
         if($this->pdo->inTransaction()){return $read();}
@@ -94,13 +97,15 @@ final readonly class SqliteBookingRepository implements BookingRepositoryInterfa
         return ['request_hash'=>$row->text('request_hash'),'registration_id'=>$row->integer('registration_id')];
     }
     public function recordOperation(int $tripId,string $key,string $hash,int $id): void { $this->query('INSERT INTO booking_operations (trip_id,operation_key,request_hash,registration_id) VALUES (?,?,?,?)',[$tripId,$key,$hash,$id]); }
+    /** @param array<array-key,mixed> $d */
     public function create(int $tripId,array $d): int
     {
         $this->query("INSERT INTO registrations (trip_id,room_category,received_at,comment,source,reference,contact_identity,form_version_id,booking_status,sync_status,managed_booking,revision) VALUES (?,?,?,?,'manual',?,?,?,'pending','pending',1,1)",[$tripId,$d['roomCategory']??'',gmdate(DATE_ATOM),$d['comment']??'','B-'.bin2hex(random_bytes(12)),$d['contactIdentity'],$d['versionId']]);
         $id=(int)$this->pdo->lastInsertId();
-        foreach($d['persons'] as $p){$this->query("INSERT INTO registration_participants (registration_id,name,birth_date,client_reference,participation_status,sync_status) VALUES (?,?,?,?,'pending','pending')",[$id,$p['name'],$p['birthDate'],$p['id']]);}
+        foreach(\App\Application\Data\BookingPersonData::list($d['persons']) as $p){$this->query("INSERT INTO registration_participants (registration_id,name,birth_date,client_reference,participation_status,sync_status) VALUES (?,?,?,?,'pending','pending')",[$id,$p['name'],$p['birthDate'],$p['id']]);}
         return $id;
     }
+    /** @param array<array-key,mixed> $values */
     public function revise(int $id,int $revision,array $values): void
     {
         $allowed=['booking_status','form_version_id','room_assignment'];$sets=['revision=revision+1'];$p=[];
@@ -108,6 +113,7 @@ final readonly class SqliteBookingRepository implements BookingRepositoryInterfa
         $p[]=$id;$p[]=$revision;
         if($this->query('UPDATE registrations SET '.implode(',',$sets).' WHERE id=? AND revision=?',$p)->rowCount()!==1){throw new AccessException('revision_conflict',409);}
     }
+    /** @param array<array-key,mixed> $person */
     public function correctPerson(int $bookingId,array $person,int $actor,string $reason): void
     {
         $old=$this->query('SELECT name,birth_date FROM registration_participants WHERE registration_id=? AND id=?',[$bookingId,$person['id']])->fetch(PDO::FETCH_ASSOC);
@@ -117,6 +123,7 @@ final readonly class SqliteBookingRepository implements BookingRepositoryInterfa
         $this->query('UPDATE registration_participants SET name=?,birth_date=? WHERE registration_id=? AND id=?',[$person['name'],$person['birthDate'],$bookingId,$person['id']]);
     }
     public function cancelPerson(int $id,int $personId): void { $this->query("UPDATE registration_participants SET participation_status='cancelled' WHERE registration_id=? AND id=?",[$id,$personId]); }
+    /** @param array<array-key,mixed> $entry */
     public function append(int $id,?int $personId,int $versionId,string $fieldId,array $entry,int $actor,int $revision,string $reason): void
     {
         $this->query('INSERT INTO answer_revisions (registration_id,participant_id,version_id,field_id,state,value_json,actor_id,created_at,reason,booking_revision) VALUES (?,?,?,?,?,?,?,?,?,?)',[$id,$personId,$versionId,$fieldId,$entry['state'],$entry['value']===null?null:json_encode($entry['value'],JSON_THROW_ON_ERROR),$actor,gmdate(DATE_ATOM),$reason,$revision]);

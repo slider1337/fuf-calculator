@@ -21,7 +21,7 @@ final readonly class ScheduledReconciliation
         if($trip===null){return false;}
         $actor=new class($actorId) implements ActorInterface {
             public function __construct(private readonly int $id) {}
-            public function userId(): ?int {return $this->id;}
+            public function userId(): int {return $this->id;}
         };
         $policy=new AccessPolicy($this->access,$actor);
         $service=new ParticipationService($policy,$this->store,$this->external,$this->bookings,$this->access);

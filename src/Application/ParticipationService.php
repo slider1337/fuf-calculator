@@ -5,19 +5,28 @@ use App\Application\Port\{ParticipationPort,AccessRepositoryInterface,BookingRep
 use App\Application\Port\ParticipationRepositoryInterface;
 use App\Domain\Form\Decimal;
 
+/**
+ *
+ * @phpstan-type ProviderResult array{eventId?:string,externalId:string,memberReference:?string,status:string,priceGroupId:?string,price:?string,contactReference?:string,name?:?string,birthDate?:?string,priceConflict?:bool,isCompanion?:bool,companionName?:?string,parentExternalId?:?string,operationReference?:?string}
+ */
 final readonly class ParticipationService {
  public function __construct(private AccessPolicy $policy,private ParticipationRepositoryInterface $store,private ParticipationPort $external,private BookingRepositoryInterface $bookings,private AccessRepositoryInterface $access) {}
+ /** @return array<array-key,mixed> */
  public function read(int $trip): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $jobs=$this->store->recentJobs($trip);
   $o=$this->store->observation($trip);
   $cases=$this->store->clarifications($trip);
-  $snapshot=$o&&is_string($o['snapshot_json'])?json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
+  $snapshot=$o?json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
   $canView=$this->policy->can('trip',$trip,'registration.view');
-  $conflicts=$o?json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR):[];
+  $conflicts=$o?json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR):[];
   if(!$canView){if(!is_array($conflicts))throw new \LogicException('Invalid saved conflicts');$conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&!str_starts_with($c['field'],'person:')));}
   return ['blockedReason'=>($this->store->link($trip)===null?'confirmed_term_required':$this->external->blockedReason()),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>$conflicts]:null,'clarifications'=>$cases,'participants'=>$canView?($snapshot['participants']??[]):[],'guestsAllowed'=>$snapshot['guestsAllowed']??false];
  }
+ /**
+  * @param array<array-key,mixed> $p
+  * @return array<array-key,mixed>
+  */
  public function request(int $trip,int $booking,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->trip($trip,'registration.manage',true);
@@ -26,13 +35,13 @@ final readonly class ParticipationService {
    $b=$this->bookings->get($trip,$booking)??throw new NotFoundException('Booking');
    $key=PlanningTransferService::operationKey($p);$hash=PlanningTransferService::hash($p);
    $existing=$this->store->operationHashes($trip, $key);
-   if($existing){if(count(array_unique($existing))!==1||$existing[0]!==$hash){throw new AccessException('idempotency_conflict',409);}return;}
+   if($existing){if(count(array_unique(Input::strings($existing)))!==1||$existing[0]!==$hash){throw new AccessException('idempotency_conflict',409);}return;}
    if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}
    $kind=$p['kind']??null;if(!in_array($kind,['register','cancel'],true)){throw new ValidationException(['kind'=>'register_or_cancel']);}
    $selected=$p['persons']??null;if(!is_array($selected)||!array_is_list($selected)||!$selected||count($selected)>100){throw new ValidationException(['persons'=>'list_1_100']);}
    $people=array_column($b['persons'],null,'id');$seen=[];$link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);
    foreach($selected as $i=>$choice){
-    $id=$choice['id']??null;if(!is_int($id)||!isset($people[$id])||isset($seen[$id])){throw new ValidationException(["persons.$i.id"=>'owned_unique_id_required']);}$seen[$id]=true;$person=$people[$id];
+    $choice=Input::map($choice);$id=$choice['id']??null;if(!is_int($id)||!isset($people[$id])||isset($seen[$id])){throw new ValidationException(["persons.$i.id"=>'owned_unique_id_required']);}$seen[$id]=true;$person=$people[$id];
     $active=$this->store->activePersonJob($id);if($active!==false){throw new AccessException('person_operation_in_progress',409);}
     if($kind==='register'&&$person['status']==='confirmed'){continue;}
     $member=$person['memberReference']??null;$requested=$choice['memberReference']??$member;
@@ -48,7 +57,10 @@ final readonly class ParticipationService {
    $this->refresh($booking);$this->policy->audit('participation.request','trip',$trip,'booking='.$booking.' · '.$kind);
   });return $this->read($trip);
  }
- /** Internal transaction-only entry used by the scoped member workflow. */
+ /**
+  * Internal transaction-only entry used by the scoped member workflow.
+  * @param array<array-key,mixed> $payload
+  */
  public function enqueue(int $trip,int $booking,int $person,string $kind,string $key,string $hash,array $payload,int $actor,?string $member): void {
   $this->policy->requireRegistrationMode($trip,'easyverein');
   $status=$this->external->blockedReason()===null?'pending':'blocked';
@@ -62,6 +74,7 @@ final readonly class ParticipationService {
   $status=!$active?'cancelled':($n===count($active)?'confirmed':($n>0?'partially_confirmed':'pending'));
   $this->store->setBookingState($status, $sync, $booking);
  }
+ /** @return array<array-key,mixed> */
  public function retry(int $trip,int $jobId): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$jobId){
@@ -75,18 +88,18 @@ final readonly class ParticipationService {
    $this->policy->audit('participation.retry','trip',$trip,'job='.$jobId);
   });return $this->read($trip);
  }
+ /** @return array<array-key,mixed> */
  public function reconcile(int $trip): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
   $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$snapshot=$this->external->snapshot($link['externalId']);$this->validateSnapshot($snapshot,$link['externalId']);
   $this->access->transaction(function()use($trip,$link,$snapshot){
    $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if(($this->store->link($trip)['externalId']??null)!==$link['externalId']){throw new AccessException('term_changed',409);}
    $old=$this->store->observationRevision($trip);$conflicts=[];
-   $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==$snapshot[$field]){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>$snapshot[$field]];}}
-   foreach($snapshot['termFields']??[] as $field=>$value){if(($baseline['termFields'][$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>$baseline['termFields'][$field]??null,'external'=>$value];}}
+   $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==($snapshot[$field] ?? null)){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>($snapshot[$field] ?? null)];}}
+   foreach($snapshot['termFields']??[] as $field=>$value){if((Input::map($baseline['termFields']??[])[$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>Input::map($baseline['termFields']??[])[$field]??null,'external'=>$value];}}
    $editable=($this->access->metadata($trip)['archived_at']??null)===null&&($this->access->metadata($trip)['closed_at']??null)===null;
    $importer=new ExternalParticipationImporter($this->store,$this->bookings);
    foreach($snapshot['participants'] as $row){
-    if(!is_array($row)||!is_string($row['externalId']??null))throw new \LogicException('Invalid provider person');
     if($editable&&$this->policy->can('trip',$trip,'registration.manage'))$importer->import($trip,$row,$this->policy->actorId());
     $known=$this->store->peopleByExternal($row['externalId'], $trip);
     if(count($known)===1&&$known[0]['source']==='easyverein'){
@@ -96,7 +109,7 @@ final readonly class ParticipationService {
      $this->store->saveClarification($trip, $row['externalId'], json_encode($row,JSON_THROW_ON_ERROR), gmdate(DATE_ATOM));continue;
     }
     $p=$known[0];$this->store->completeClarification($trip, $row['externalId']);if($p['participation_status']===$row['status']&&$p['price_group_reference']===$row['priceGroupId']&&$p['expected_price']===$row['price']){continue;}
-    $accepted=$this->store->acceptedPriceHash($p['id']);$acceptedPrice=$accepted!==false&&hash_equals($accepted,$this->priceHash($row));
+    $accepted=$this->store->acceptedPriceHash($p['id']);$acceptedPrice=$accepted!==false&&is_string($accepted)&&hash_equals($accepted,$this->priceHash($row));
     if(($row['priceConflict']??false)||($this->access->metadata($trip)['archived_at']??null)!==null||($this->access->metadata($trip)['closed_at']??null)!==null||(!$acceptedPrice&&($p['price_group_reference']!==$row['priceGroupId']||$p['expected_price']!==$row['price']))){$conflicts[]=['field'=>'person:'.$p['id'],'before'=>['status'=>$p['participation_status'],'price'=>$p['expected_price']],'external'=>$row];continue;}
     $this->applyResult((int)$p['registration_id'],(int)$p['id'],$row, $this->policy->actorId());
    }
@@ -104,21 +117,29 @@ final readonly class ParticipationService {
    $this->policy->audit('participation.reconcile','trip',$trip,'Abgleich ohne automatisches Umbepreisen');
   });return $this->read($trip);
  }
+ /**
+  * @param array<array-key,mixed> $p
+  * @return array<array-key,mixed>
+  */
  public function acknowledge(int $trip,array $p): array {
   $this->policy->writeTrip($trip,'term.manage',function()use($trip,$p){
    $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}
    if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
-   $conflicts=json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR);$fields=$p['fields']??null;
-   if(!is_array($fields)||!array_is_list($fields)||!$fields||array_diff($fields,array_merge(['revision','canceled','bookingUntil','capacity','capacityRemaining','groups'],array_map(fn($key)=>'term:'.$key,TermFields::KEYS)))){throw new ValidationException(['fields'=>'event_fields_only']);}
+   $conflicts=Input::objects(json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR));$fields=$p['fields']??null;
+   if(!is_array($fields)||!array_is_list($fields)||!$fields||array_diff(Input::strings($fields),array_merge(['revision','canceled','bookingUntil','capacity','capacityRemaining','groups'],array_map(fn($key)=>'term:'.$key,TermFields::KEYS)))){throw new ValidationException(['fields'=>'event_fields_only']);}
    foreach($fields as $field){if(!is_string($field)){throw new ValidationException(['fields'=>'event_fields_only']);}}
-   $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$data=$link['data'];$external=json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR);foreach($fields as $field){if(str_starts_with($field,'term:')){$key=substr($field,5);if(!array_key_exists($key,$external['termFields']??[])){throw new ValidationException(['fields'=>'observed_field_required']);}$data['termFields'][$key]=$external['termFields'][$key];}else{if(!array_key_exists($field,$external)){throw new ValidationException(['fields'=>'observed_field_required']);}$data[$field]=$external[$field];}}
+   $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$data=$link['data'];$external=Input::map(json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR));foreach($fields as $field){if(str_starts_with($field,'term:')){$key=substr($field,5);if(!array_key_exists($key,Input::map($external['termFields']??[]))){throw new ValidationException(['fields'=>'observed_field_required']);}$data['termFields']=Input::map($data['termFields']??[]);$external['termFields']=Input::map($external['termFields']??[]);$data['termFields'][$key]=$external['termFields'][$key];}else{if(!array_key_exists($field,$external)){throw new ValidationException(['fields'=>'observed_field_required']);}$data[$field]=$external[$field];}}
    $conflicts=array_values(array_filter($conflicts,fn($c)=>!in_array($c['field'],$fields,true)));
    $this->store->saveLinkData(json_encode($data,JSON_THROW_ON_ERROR), $trip);
    $this->store->resolveConflicts(json_encode($conflicts,JSON_THROW_ON_ERROR), $trip);
    $this->policy->audit('term.conflict_acknowledge','trip',$trip,$reason.' · '.implode(',',$fields));
   });return $this->read($trip);
  }
+ /**
+  * @param array<array-key,mixed> $p
+  * @return array<array-key,mixed>
+  */
  public function assignExternal(int $trip,string $externalId,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$externalId,$p){
@@ -128,7 +149,7 @@ final readonly class ParticipationService {
    if(!$b['managed']){throw new AccessException('legacy_financial_mapping_requires_review',409);}
    $person=array_column($b['persons'],null,'id')[$p['personId']]??throw new NotFoundException('Person');
    $case=$this->store->unassignedClarification($trip, $externalId)?:throw new NotFoundException('Clarification');
-   $row=json_decode($case['data_json'],true,512,JSON_THROW_ON_ERROR);$this->validateResult($row);
+   $row=$this->result(json_decode(Input::text($case['data_json']),true,512,JSON_THROW_ON_ERROR));
    if(($person['guestId']!==null)!==($row['isCompanion']??false)||($person['guestId']!==null&&($row['companionName']??null)!==$person['name'])||$row['memberReference']===null||($p['memberReference']??null)!==$row['memberReference']||($person['memberReference']!==null&&$person['memberReference']!==$row['memberReference'])||($person['externalReference']!==null&&$person['externalReference']!==$externalId)||($row['priceConflict']??false)){throw new AccessException('external_identity_or_price_unproven',409);}
    if($this->store->duplicateExternal($externalId, $person['id'])!==false){throw new AccessException('external_reference_conflict',409);}
    if($this->store->runningPersonJob($person['id'])!==false){throw new AccessException('person_operation_in_progress',409);}
@@ -139,13 +160,17 @@ final readonly class ParticipationService {
    $this->store->assignClarification($case['id']);$this->policy->audit('participation.assign','trip',$trip,$reason.' · person='.$person['id']);
   });return $this->read($trip);
  }
+ /**
+  * @param array<array-key,mixed> $p
+  * @return array<array-key,mixed>
+  */
  public function resolvePerson(int $trip,int $personId,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$personId,$p){
    $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
-   $conflicts=json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR);$target=null;foreach($conflicts as $c){if($c['field']==='person:'.$personId){$target=$c;}}
-   if($target===null){throw new NotFoundException('Person conflict');}$row=$target['external'];$this->validateResult($row);
+   $conflicts=Input::objects(json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR));$target=null;foreach($conflicts as $c){if($c['field']==='person:'.$personId){$target=$c;}}
+   if($target===null){throw new NotFoundException('Person conflict');}$row=$this->result($target['external']);
    $person=$this->store->personInTrip($personId, $trip)?:throw new NotFoundException('Person');
    if(($person['guest_approval_id']!==null)!==($row['isCompanion']??false)||($person['guest_approval_id']!==null&&($row['companionName']??null)!==$person['name'])||$row['memberReference']===null||$row['memberReference']!==$person['member_reference']||$row['externalId']!==$person['external_reference']||($row['priceConflict']??false)){throw new AccessException('external_identity_or_price_unproven',409);}
    $this->acceptPrice($personId,$row,$reason);$this->applyResult((int)$person['registration_id'],$personId,$row,$this->policy->actorId());
@@ -153,24 +178,36 @@ final readonly class ParticipationService {
    $this->policy->audit('participation.person_resolve','trip',$trip,$reason.' · person='.$personId);
   });return $this->read($trip);
  }
+ /** @param ProviderResult $row */
  private function priceHash(array $row): string {return PlanningTransferService::hash([$row['externalId'],$row['memberReference'],$row['priceGroupId'],$row['price']]);}
+ /** @param ProviderResult $row */
  private function acceptPrice(int $id,array $row,string $reason): void {
   $this->store->recordPersonHistory($id, json_encode($row,JSON_THROW_ON_ERROR), $this->policy->actorId(), $reason, gmdate(DATE_ATOM));
   $this->store->acceptPersonPrice($id, $this->priceHash($row), $this->policy->actorId(), $reason, gmdate(DATE_ATOM));
   $this->store->setObservedPrice($row['priceGroupId'], $row['price'], $id);
  }
+ /** @param array<array-key,mixed> $s */
  public function validateSnapshot(array $s,string $event): void {
   if(($s['eventId']??null)!==$event||!is_string($s['revision']??null)||!is_bool($s['canceled']??null)||!is_int($s['bookingUntil']??null)||(!array_key_exists('capacityRemaining',$s)||($s['capacityRemaining']!==null&&!is_int($s['capacityRemaining'])))||(is_int($s['capacityRemaining'])&&$s['capacityRemaining']<0)||!is_array($s['groups']??null)||!array_is_list($s['groups'])||!is_array($s['participants']??null)||!array_is_list($s['participants'])){throw new AccessException('provider_snapshot_invalid',503);}
-  $seen=[];foreach($s['groups'] as $g){if(!is_string($g['id']??null)||!preg_match('/^[1-9][0-9]{0,18}$/D',$g['id'])||isset($seen[$g['id']])||!is_string($g['price']??null)||Decimal::normalize($g['price'])!==$g['price']){throw new AccessException('provider_snapshot_invalid',503);}$seen[$g['id']]=true;}
-  $seen=[];foreach($s['participants'] as $p){$this->validateResult($p);if(isset($seen[$p['externalId']])){throw new AccessException('provider_snapshot_invalid',503);}$seen[$p['externalId']]=true;}
+  $seen=[];foreach($s['groups'] as $g){if(!is_array($g)||!is_string($g['id']??null)||!preg_match('/^[1-9][0-9]{0,18}$/D',$g['id'])||isset($seen[$g['id']])||!is_string($g['price']??null)||Decimal::normalize($g['price'])!==$g['price']){throw new AccessException('provider_snapshot_invalid',503);}$seen[$g['id']]=true;}
+  $seen=[];foreach($s['participants'] as $p){$p=$this->result($p);if(isset($seen[$p['externalId']])){throw new AccessException('provider_snapshot_invalid',503);}$seen[$p['externalId']]=true;}
  }
- public function validateResult(array $r): void {
+ /** @return void */
+ public function validateResult(mixed $r): void {
+  if(!is_array($r))throw new AccessException('provider_result_invalid',503);
+  if(isset($r['eventId'])&&!is_string($r['eventId']))throw new AccessException('provider_result_invalid',503);
+  foreach(['name','birthDate','companionName','parentExternalId','operationReference'] as $key){if(isset($r[$key])&&!is_string($r[$key]))throw new AccessException('provider_result_invalid',503);}
+  if(isset($r['contactReference'])&&!is_string($r['contactReference']))throw new AccessException('provider_result_invalid',503);
+  foreach(['priceConflict','isCompanion'] as $key){if(isset($r[$key])&&!is_bool($r[$key]))throw new AccessException('provider_result_invalid',503);}
   foreach(['externalId','memberReference'] as $key){if($key==='memberReference'&&array_key_exists($key,$r)&&$r[$key]===null){continue;}if(!is_string($r[$key]??null)||!preg_match('/^[1-9][0-9]{0,18}$/D',$r[$key])){throw new AccessException('provider_result_invalid',503);}}
   if(!in_array($r['status']??null,['confirmed','cancelled','pending'],true)||!array_key_exists('priceGroupId',$r)||!array_key_exists('price',$r)){throw new AccessException('provider_result_invalid',503);}
   if($r['priceGroupId']!==null&&(!is_string($r['priceGroupId'])||!preg_match('/^[1-9][0-9]{0,18}$/D',$r['priceGroupId']))){throw new AccessException('provider_result_invalid',503);}
   if($r['price']!==null&&(!is_string($r['price'])||Decimal::normalize($r['price'])!==$r['price'])){throw new AccessException('provider_result_invalid',503);}
  }
- /** Must run under writer reservation; preserves revision history and marks booking quantities unchecked. */
+ /**
+  * Must run under writer reservation; preserves revision history and marks booking quantities unchecked.
+  * @param ProviderResult $r
+  */
  public function applyResult(int $booking,int $person,array $r,int $actor): void {
   $this->validateResult($r);$old=$this->store->bookingPersonStatus($booking, $person);
   if($old!==$r['status']){
@@ -179,5 +216,26 @@ final readonly class ParticipationService {
    foreach(($this->bookings->get((int)$b['trip_id'],$booking)??throw new NotFoundException('Booking'))['answers'] as $a){if(($r['status']==='cancelled'||$old==='confirmed')&&$a['participantId']===null&&$a['state']==='answered'){$this->bookings->append($booking,null,$a['versionId'],$a['fieldId'],['state'=>'unchecked','value'=>$a['value']],$actor,(int)$b['revision'],'Externer Personenstatus geändert');}}
   }
   $this->store->applyPersonResult($r['externalId'], $r['status'], $r['priceGroupId'], $r['price'], $booking, $person);$this->refresh($booking);
+ }
+
+ /** @return ProviderResult */
+ private function result(mixed $value): array {
+  $this->validateResult($value);
+  $r=Input::map($value);
+  $member=$r['memberReference'];$group=$r['priceGroupId'];$price=$r['price'];
+  return ['externalId'=>Input::text($r['externalId']),'memberReference'=>$member===null?null:Input::text($member),
+   'status'=>Input::text($r['status']),'priceGroupId'=>$group===null?null:Input::text($group),'price'=>$price===null?null:Input::text($price)]
+   +$this->resultDetails($r);
+ }
+ /**
+  * @param array<array-key,mixed> $r
+  * @return array{eventId?:string,contactReference?:string,name?:?string,birthDate?:?string,priceConflict?:bool,isCompanion?:bool,companionName?:?string,parentExternalId?:?string,operationReference?:?string}
+  */
+ private function resultDetails(array $r): array {
+  $details=[];
+  foreach(['eventId','contactReference'] as $key){if(isset($r[$key]))$details[$key]=Input::text($r[$key]);}
+  foreach(['name','birthDate','companionName','parentExternalId','operationReference'] as $key){if(array_key_exists($key,$r))$details[$key]=$r[$key]===null?null:Input::text($r[$key]);}
+  foreach(['priceConflict','isCompanion'] as $key){if(isset($r[$key])){if(!is_bool($r[$key]))throw new AccessException('provider_result_invalid',503);$details[$key]=$r[$key];}}
+  return $details;
  }
 }

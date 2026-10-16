@@ -70,7 +70,7 @@ final readonly class TermUpdateWorker
     private function allowed(TermUpdateJob $job): bool
     {
         $metadata = $this->access->metadata($job->tripId);
-        return ($metadata['registration_mode'] ?? 'clubdesk_csv') === 'easyverein'
+        return ($metadata['registration_mode']) === 'easyverein'
             && ($metadata['archived_at'] ?? null) === null && ($metadata['closed_at'] ?? null) === null
             && in_array('term.manage', $this->access->capabilities('trip', $job->tripId, $job->actorId), true)
             && ($this->terms->link($job->tripId)['externalId'] ?? null) === $job->externalId;

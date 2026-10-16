@@ -101,7 +101,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
             'SELECT * FROM registrations WHERE trip_id = :tripId ORDER BY id ASC'
         );
         $regStmt->execute([':tripId' => $tripId]);
-        $regRows = $regStmt->fetchAll();
+        $regRows = StoredRow::fetchAll($regStmt);
 
         $registrations = [];
         foreach ($regRows as $row) {
@@ -132,14 +132,12 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         return $registrations;
     }
 
-    /**
-     * @throws DateMalformedStringException
-     */
+    /** @throws DateMalformedStringException */
     public function findById(int $id): ?Registration
     {
         $stmt = $this->pdo->prepare('SELECT * FROM registrations WHERE id = :id');
         $stmt->execute([':id' => $id]);
-        $row = $stmt->fetch();
+        $row = StoredRow::fetch($stmt);
 
         if ($row === false) {
             return null;
@@ -233,7 +231,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         $stmt->execute([':id' => $registrationId]);
 
         $participants = [];
-        foreach ($stmt->fetchAll() as $row) {
+        foreach (StoredRow::fetchAll($stmt) as $row) {
             $participants[] = new Participant(
                 (string) $row['name'],
                 ($row['birth_date']??'')===''?null:new DateTimeImmutable((string) $row['birth_date']),
@@ -261,7 +259,7 @@ final readonly class SqliteRegistrationRepository implements RegistrationReposit
         $stmt->execute([':id' => $registrationId]);
 
         $items = [];
-        foreach ($stmt->fetchAll() as $row) {
+        foreach (StoredRow::fetchAll($stmt) as $row) {
             $items[] = new BillingLineItem(
                 (string) $row['participant_name'],
                 (string) $row['category_type'],

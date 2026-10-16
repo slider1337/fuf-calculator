@@ -12,7 +12,7 @@ use App\Infrastructure\Http\Controller\UserController;
 use Slim\App;
 
 return static function (App $app): void {
-    $renderSpa = static function ($request, $response) {
+    $renderSpa = static function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response) {
         ob_start();
         require __DIR__ . '/../templates/index.html.php';
         $html = ob_get_clean();
@@ -157,13 +157,13 @@ return static function (App $app): void {
     $app->get('/api/admin/legacy-access', [$eventController, 'legacyPreview']);
     $app->post('/api/admin/legacy-access', [$eventController, 'legacyImport']);
 
-    $app->get('/docs', static function ($request, $response) {
+    $app->get('/docs', static function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response) {
         $html = file_get_contents(__DIR__ . '/../public/docs/index.html');
         $response->getBody()->write((string) $html);
         return $response;
     });
 
-    $app->get('/openapi.yaml', static function ($request, $response) {
+    $app->get('/openapi.yaml', static function (\Psr\Http\Message\ServerRequestInterface $request, \Psr\Http\Message\ResponseInterface $response) {
         $content = file_get_contents(__DIR__ . '/../docs/openapi.yaml');
         $response->getBody()->write((string) $content);
         return $response->withHeader('Content-Type', 'application/yaml');

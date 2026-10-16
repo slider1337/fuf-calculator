@@ -29,7 +29,7 @@ final readonly class RegistrationController
         $uploadedFiles = $request->getUploadedFiles();
         $csvFile = $uploadedFiles['csv_file'] ?? null;
 
-        if ($csvFile === null || $csvFile->getError() !== UPLOAD_ERR_OK) {
+        if ($csvFile instanceof \Psr\Http\Message\UploadedFileInterface === false || $csvFile->getError() !== UPLOAD_ERR_OK) {
             return JsonResponder::write($response, [
                 'error' => 'validation_error',
                 'details' => ['csv_file' => 'file_required'],
@@ -52,9 +52,7 @@ final readonly class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations), 201);
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function create(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $body = (array) $request->getParsedBody();
@@ -73,9 +71,7 @@ final readonly class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations), 201);
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function list(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -87,9 +83,7 @@ final readonly class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations));
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function recalculate(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -101,9 +95,7 @@ final readonly class RegistrationController
         return JsonResponder::write($response, $this->registrationsToArray($registrations));
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function delete(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -115,9 +107,7 @@ final readonly class RegistrationController
         return JsonResponder::write($response, ['status' => 'deleted']);
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function deleteSingle(ServerRequestInterface $request, ResponseInterface $response, string $id, string $registrationId): ResponseInterface
     {
         try {
@@ -128,6 +118,10 @@ final readonly class RegistrationController
 
         return JsonResponder::write($response, $this->registrationsToArray($registrations));
     }
+    /**
+     * @param array<\App\Domain\Registration\Registration> $registrations
+     * @return array<array-key,mixed>
+     */
 
     private function registrationsToArray(array $registrations): array
     {

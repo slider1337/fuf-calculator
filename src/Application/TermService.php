@@ -6,17 +6,18 @@ use App\Application\Port\{ExternalEventPort,TripRepositoryInterface,FormReposito
 use App\Application\Port\TermRepositoryInterface;
 use App\Application\Data\TermDraftData;
 
-/** @phpstan-import-type DraftData from TermDraftData
+/**
+ * @phpstan-import-type DraftData from TermDraftData
  * @phpstan-import-type Draft from TermRepositoryInterface
  * @phpstan-import-type Link from TermRepositoryInterface
- * @phpstan-import-type CreationJob from TermRepositoryInterface
  * @phpstan-type TermState array{draft: Draft|null, link: Link|null, job: array<string, mixed>|null, blockedReason: string|null, referenceConfirmed: bool, registrationEnabled: bool, registrationReason: string}
  * @phpstan-type TermReview array{revision: int, reviewHash: string, data: DraftData, issues: list<string>, blockedReason: string|null, externalAction: string}
  */
 final readonly class TermService
 {
     public function __construct(private AccessPolicy $policy,private TermRepositoryInterface $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members) {}
-    /** @param array<array-key, mixed> $p
+    /**
+     * @param array<array-key, mixed> $p
      * @return array{tripId: int}
      */
     public function createTrip(array $p): array
@@ -60,14 +61,15 @@ final readonly class TermService
             if($link&&!$this->policy->can('trip',$id,'registration.view'))$link['data']['participants']=[];
             if($job){unset($job['leaseToken'],$job['requestHash'],$job['payload']);}
             $settings=$this->store->memberRegistrationEnabled($id);
-            $reason=($this->policy->metadata($id)['registration_mode']??'clubdesk_csv')!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));
+            $reason=($this->policy->metadata($id)['registration_mode'])!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));
             if($reason===null&&!$settings){$reason='member_release_disabled';}
             if($reason===null&&(!getenv('FUF_INTEGRATION_SERVICES')||!getenv('FUF_INTEGRATION_AUDIENCE'))){$reason='integration_not_configured';}
             if($reason===null&&(($this->policy->metadata($id)['archived_at']??null)!==null||($this->policy->metadata($id)['closed_at']??null)!==null)){$reason='trip_closed_or_booking_deadline_passed';}
             return ['draft'=>$draft,'link'=>$link,'job'=>$job,'blockedReason'=>$this->external->blockedReason(),'referenceConfirmed'=>$link!==null,'registrationEnabled'=>$reason===null,'registrationReason'=>$reason??'released'];
         });
     }
-    /** @param array<array-key, mixed> $input
+    /**
+     * @param array<array-key, mixed> $input
      * @return DraftData
      */
     private function validate(int $id, array $input): array
@@ -82,7 +84,8 @@ final readonly class TermService
         }
         return $data;
     }
-    /** @param array<array-key, mixed> $p
+    /**
+     * @param array<array-key, mixed> $p
      * @return TermState
      */
     public function save(int $id,array $p): array
@@ -115,7 +118,8 @@ final readonly class TermService
             return ['revision'=>$draft['revision'],'reviewHash'=>PlanningTransferService::hash($payload),'data'=>$d,'issues'=>$issues,'blockedReason'=>$this->external->blockedReason(),'externalAction'=>$d['mode']==='create'?'Ein Termin; keine Teilnahmen':'Ausgewählten Termin prüfen; kein externer Schreibauftrag'];
         });
     }
-    /** @param array<array-key, mixed> $p
+    /**
+     * @param array<array-key, mixed> $p
      * @return TermState
      */
     public function request(int $id,array $p): array
@@ -134,7 +138,8 @@ final readonly class TermService
         });
         return $this->read($id);
     }
-    /** @param array<array-key, mixed> $p
+    /**
+     * @param array<array-key, mixed> $p
      * @return TermState
      */
     public function resume(int $id,array $p): array
@@ -155,7 +160,8 @@ final readonly class TermService
         });
         return $this->read($id);
     }
-    /** @param array<array-key, mixed> $p
+    /**
+     * @param array<array-key, mixed> $p
      * @return TermState
      */
     public function link(int $id,array $p): array

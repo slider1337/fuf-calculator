@@ -8,12 +8,12 @@ use Slim\App;
 
 return static function (?ContainerInterface $container = null): App {
     if ($container === null) {
-        $containerFactory = require __DIR__ . '/container.php';
-        $container = $containerFactory();
+        $container = \App\Infrastructure\ContainerServices::create();
     }
 
     $app = Bridge::create($container);
     $routes = require __DIR__ . '/routes.php';
+    if (!is_callable($routes)) { throw new LogicException('Invalid routes configuration'); }
     $routes($app);
     $app->addBodyParsingMiddleware();
     $app->addRoutingMiddleware();

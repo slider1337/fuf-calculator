@@ -11,6 +11,7 @@ final class JsonResponder
 {
     /**
      * @throws JsonException
+     * @param array<array-key,mixed> $data
      */
     public static function write(ResponseInterface $response, array $data, int $status = 200): ResponseInterface
     {

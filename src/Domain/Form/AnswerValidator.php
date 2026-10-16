@@ -8,13 +8,16 @@ use App\Application\ValidationException;
  * @phpstan-type AnswerEntry array{state:string,value:mixed}
  * @phpstan-type AnswerMaps array{booking:array<array-key,AnswerEntry>,persons:array<array-key,array<array-key,AnswerEntry>>}
  * @phpstan-type ValidationResult array{valid:bool,errors:array<string,string>,answers:AnswerMaps,persons:list<array{id:string,age:int,child:bool}>,startDate:string,adultAgeThreshold:int}
+ * @phpstan-import-type Field from \App\Domain\Form\FormSchema
  */
 final class AnswerValidator
 {
-    /** @param array<array-key,mixed> $fields
+    /**
+     * @param list<Field> $fields
      * @param array<array-key,mixed> $context
      * @param array<array-key,mixed> $answers
-     * @return ValidationResult */
+     * @return ValidationResult
+     */
     public function validate(array $fields, array $context, array $answers): array
     {
         $date = $context['startDate'] ?? null; $threshold = $context['adultAgeThreshold'] ?? null; $people = $context['persons'] ?? null;
@@ -31,18 +34,18 @@ final class AnswerValidator
         foreach (array_keys($individual) as $pid) { if (!isset($persons[$pid]) || !is_array($individual[$pid])) { throw new ValidationException(['persons.' . $pid => 'unknown_person_or_invalid_map']); } }
         $byId = array_column($fields, null, 'id');
         foreach (['booking' => $booking] + array_combine(array_map(static fn ($id) => 'persons.' . $id, array_keys($persons)), array_map(static fn ($id) => $individual[$id] ?? [], array_keys($persons))) as $path => $values) {
-            foreach (array_keys($values) as $id) { if (!isset($byId[$id]) || $byId[$id]['scope'] !== ($path === 'booking' ? 'booking' : 'person') || !FormSchema::answerField($byId[$id])) { $errors[$path . '.' . $id] = 'unknown_field_or_wrong_scope'; } }
+            foreach (array_keys(is_array($values) ? $values : throw new ValidationException(['answers'=>'answer_maps_required'])) as $id) { if (!isset($byId[$id]) || $byId[$id]['scope'] !== ($path === 'booking' ? 'booking' : 'person') || !FormSchema::answerField($byId[$id])) { $errors[$path . '.' . $id] = 'unknown_field_or_wrong_scope'; } }
         }
         foreach ($fields as $f) {
-            if(!is_array($f)||!is_string($f['id']??null))throw new ValidationException(['fields'=>'invalid_definition']);
             $targets = $f['scope'] === 'booking' ? ['booking' => null] : $persons;
             foreach ($targets as $key => $person) {
                 $pid = $person['id'] ?? null; $values = $pid === null ? $booking : ($individual[$pid] ?? []);
                 $path = ($pid === null ? 'booking' : 'persons.' . $pid) . '.' . $f['id'];
                 $visibility = $f['visibility'];
-                if(!is_array($visibility)||!is_array($values))throw new ValidationException(['fields'=>'invalid_definition']);
+                if(!is_array($values))throw new ValidationException(['fields'=>'invalid_definition']);
                 $visible = match ($visibility['kind']) {
-                    'always' => true, 'children' => $hasChildren, 'child' => $person['child'], 'adult' => !$person['child'],
+                    'always' => true, 'children' => $hasChildren, 'child' => $person['child'] ?? false, 'adult' => !($person['child'] ?? true),
+                    default => throw new ValidationException(['fields'=>'invalid_visibility']),
                     'selection' => $this->selected($visibility, $result['booking'], $pid === null ? [] : ($result['persons'][$pid] ?? [])),
                 };
                 $entry = ['state' => 'not_applicable', 'value' => null];
@@ -64,16 +67,20 @@ final class AnswerValidator
         }
         return ['valid' => $errors === [], 'errors' => $errors, 'answers' => $result, 'persons' => array_values($persons), 'startDate' => $date, 'adultAgeThreshold' => $threshold];
     }
-    /** @param array<array-key,mixed> $v
+    /**
+     * @param array{kind:string,fieldId?:string,value?:bool|string} $v
      * @param array<array-key,AnswerEntry> $booking
-     * @param array<array-key,AnswerEntry> $person */
+     * @param array<array-key,AnswerEntry> $person
+     */
     private function selected(array $v, array $booking, array $person): bool
     {
-        $e = $person[$v['fieldId']] ?? $booking[$v['fieldId']] ?? null;
-        return $e !== null && $e['state'] === 'answered' && (is_array($e['value']) ? in_array($v['value'], $e['value'], true) : $e['value'] === $v['value']);
+        $e = $person[$v['fieldId'] ?? ''] ?? $booking[$v['fieldId'] ?? ''] ?? null;
+        return $e !== null && $e['state'] === 'answered' && (is_array($e['value']) ? in_array($v['value'] ?? null, $e['value'], true) : $e['value'] === ($v['value'] ?? null));
     }
-    /** @param array<array-key,mixed> $f
-     * @return array{bool,mixed} */
+    /**
+     * @param Field $f
+     * @return array{bool,mixed}
+     */
     private function value(array $f, mixed $v): array
     {
         switch ($f['type']) {
@@ -84,7 +91,7 @@ final class AnswerValidator
             case 'yes_no': return [is_bool($v), $v];
             case 'single_select': return [is_string($v) && in_array($v, array_column($f['options'], 'id'), true), $v];
             case 'multi_select':
-                return [is_array($v) && array_is_list($v) && count(array_filter($v, 'is_string')) === count($v) && count(array_unique($v, SORT_REGULAR)) === count($v) && count($v) >= $f['minSelections'] && count($v) <= $f['maxSelections'] && array_diff($v, array_column($f['options'], 'id')) === [], $v];
+                return [is_array($v) && array_is_list($v) && count(array_filter($v, 'is_string')) === count($v) && count(array_unique($v, SORT_REGULAR)) === count($v) && count($v) >= $f['minSelections'] && count($v) <= $f['maxSelections'] && array_diff(array_filter($v, 'is_string'), array_column($f['options'], 'id')) === [], $v];
             case 'short_text': case 'long_text': return [is_string($v) && trim($v) !== '' && mb_strlen($v) <= $f['maxLength'], $v];
             case 'date': return [FormSchema::date($v) && ($f['min'] === null || $v >= $f['min']) && ($f['max'] === null || $v <= $f['max']), $v];
         }

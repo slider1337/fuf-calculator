@@ -20,6 +20,7 @@ $iterator = new RecursiveIteratorIterator(
 );
 
 foreach ($iterator as $item) {
+        if (!$item instanceof SplFileInfo) { throw new RuntimeException("Invalid source entry"); }
     $destination = $target . '/' . $iterator->getSubPathName();
     if ($item->isDir()) {
         if (!is_dir($destination) && !mkdir($destination, 0777, true) && !is_dir($destination)) {

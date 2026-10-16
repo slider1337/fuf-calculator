@@ -18,9 +18,7 @@ final readonly class ActualExpenseController
     {
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function list(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -32,9 +30,7 @@ final readonly class ActualExpenseController
         return JsonResponder::write($response, $this->expensesToArray($expenses));
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function create(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -53,9 +49,7 @@ final readonly class ActualExpenseController
         return JsonResponder::write($response, $this->expenseToArray($expense), 201);
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function update(ServerRequestInterface $request, ResponseInterface $response, string $id, string $expenseId): ResponseInterface
     {
         $payload = (array) $request->getParsedBody();
@@ -74,9 +68,7 @@ final readonly class ActualExpenseController
         return JsonResponder::write($response, $this->expenseToArray($expense));
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function delete(ServerRequestInterface $request, ResponseInterface $response, string $id, string $expenseId): ResponseInterface
     {
         try {
@@ -88,9 +80,7 @@ final readonly class ActualExpenseController
         return JsonResponder::write($response, ['status' => 'deleted']);
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function settlement(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         try {
@@ -111,13 +101,18 @@ final readonly class ActualExpenseController
             'expenses' => $this->expensesToArray($settlement['expenses']),
         ]);
     }
+    /**
+     * @param array<\App\Domain\Trip\ActualExpense> $expenses
+     * @return array<array-key,mixed>
+     */
 
     private function expensesToArray(array $expenses): array
     {
         return array_map(fn ($e) => $this->expenseToArray($e), $expenses);
     }
 
-    private function expenseToArray($expense): array
+    /** @return array<array-key,mixed> */
+    private function expenseToArray(\App\Domain\Trip\ActualExpense $expense): array
     {
         return [
             'id' => $expense->id(),

@@ -41,7 +41,7 @@ final readonly class EasyVereinController
     {
         $body = (array) $request->getParsedBody();
         $csrf = $body['csrf'] ?? null;
-        if (!is_string($csrf) || !isset($_SESSION['easyverein_csrf'])
+        if (!is_string($csrf) || !is_string($_SESSION['easyverein_csrf']??null)
             || !hash_equals($_SESSION['easyverein_csrf'], $csrf)) {
             return $response->withStatus(403);
         }
@@ -67,7 +67,7 @@ final readonly class EasyVereinController
     {
         $body = (array) $request->getParsedBody();
         $csrf = $body['csrf'] ?? null;
-        if (!is_string($csrf) || !isset($_SESSION['easyverein_csrf'])
+        if (!is_string($csrf) || !is_string($_SESSION['easyverein_csrf']??null)
             || !hash_equals($_SESSION['easyverein_csrf'], $csrf)) {
             return $response->withStatus(403)->withHeader('Cache-Control', 'no-store');
         }
@@ -118,7 +118,7 @@ final readonly class EasyVereinController
             $state = $query['state'] ?? null;
             $code = $query['code'] ?? null;
             $storedState = $_SESSION['openid_connect_state'] ?? null;
-            if (!is_array($flow) || time() - $flow['started'] > 600 || isset($query['error'])
+            if (!is_array($flow) || !is_int($flow['started']??null) || time() - $flow['started'] > 600 || isset($query['error'])
                 || !is_string($code) || $code === '' || !is_string($state) || !is_string($storedState)
                 || !hash_equals($storedState, $state)) {
                 throw new RuntimeException('Invalid or expired callback');

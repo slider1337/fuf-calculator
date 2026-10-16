@@ -8,6 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 
 final class TemplateRenderer
 {
+    /** @param array<array-key,mixed> $data */
     public static function render(ResponseInterface $response, string $template, array $data = []): ResponseInterface
     {
         $path = __DIR__ . '/../../../templates/' . $template;

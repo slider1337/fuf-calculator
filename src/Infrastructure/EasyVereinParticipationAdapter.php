@@ -36,6 +36,7 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
     if(EasyVereinData::id($a['participation']??null,'participation')!==$id||EasyVereinData::money($a['pieces']??null)!=='1'){ $priceConflict=true; }
     $price=$groupMap[$gid]['price']??null;if($price===null){$priceConflict=true;}
    }elseif($assignments!==[]||$groups!==[]){$priceConflict=true;}
+   if(!is_array($row))throw new AccessException('provider_participation_invalid',503);
    $contact=is_array($row['participation_address']??null)?$row['participation_address']:[];
    $displayName=$row['is_companion']?($row['companion_name']??null):($contact['name']??null);
    $profileFields=['name'=>is_string($displayName)?$displayName:null,'birthDate'=>!$row['is_companion']&&\App\Domain\Form\FormSchema::date($contact['date_of_birth']??null)?$contact['date_of_birth']:null];

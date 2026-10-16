@@ -12,10 +12,10 @@ final readonly class ParticipationService {
   $jobs=$this->store->query('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
   $o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
   $cases=$this->store->query("SELECT external_id AS externalId,status,observed_at AS observedAt FROM external_clarifications WHERE trip_id=? AND status<>'imported' ORDER BY id DESC LIMIT 100",[$trip])->fetchAll(\PDO::FETCH_ASSOC);
-  $snapshot=$o?json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR):[];
+  $snapshot=$o&&is_string($o['snapshot_json'])?json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
   $canView=$this->policy->can('trip',$trip,'registration.view');
   $conflicts=$o?json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR):[];
-  if(!$canView)$conflicts=array_values(array_filter($conflicts,static fn($c)=>!str_starts_with($c['field'],'person:')));
+  if(!$canView){if(!is_array($conflicts))throw new \LogicException('Invalid saved conflicts');$conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&!str_starts_with($c['field'],'person:')));}
   return ['blockedReason'=>($this->store->link($trip)===null?'confirmed_term_required':$this->external->blockedReason()),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>$conflicts]:null,'clarifications'=>$cases,'participants'=>$canView?($snapshot['participants']??[]):[],'guestsAllowed'=>$snapshot['guestsAllowed']??false];
  }
  public function request(int $trip,int $booking,array $p): array {
@@ -86,9 +86,10 @@ final readonly class ParticipationService {
    $editable=($this->access->metadata($trip)['archived_at']??null)===null&&($this->access->metadata($trip)['closed_at']??null)===null;
    $importer=new ExternalParticipationImporter($this->store,$this->bookings);
    foreach($snapshot['participants'] as $row){
+    if(!is_array($row)||!is_string($row['externalId']??null))throw new \LogicException('Invalid provider person');
     if($editable&&$this->policy->can('trip',$trip,'registration.manage'))$importer->import($trip,$row,$this->policy->actorId());
     $known=$this->store->query('SELECT p.*,r.trip_id,r.source FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.external_reference=? AND r.trip_id=?',[$row['externalId'],$trip])->fetchAll(\PDO::FETCH_ASSOC);
-    if(count($known)===1&&$known[0]['source']==='easyverein'){
+    if(count($known)===1&&is_array($known[0])&&$known[0]['source']==='easyverein'){
      $this->store->query("UPDATE external_clarifications SET status='imported',data_json=?,observed_at=? WHERE trip_id=? AND external_id=?",[json_encode($row,JSON_THROW_ON_ERROR),gmdate(DATE_ATOM),$trip,$row['externalId']]);continue;
     }
     if($row['memberReference']===null||count($known)!==1||$known[0]['member_reference']!==$row['memberReference']){

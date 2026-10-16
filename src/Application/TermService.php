@@ -45,7 +45,7 @@ final readonly class TermService
         $this->policy->trip($id,'term.manage');
         return $this->policy->transaction(function() use($id){
             $draft=$this->store->draft($id);$link=$this->store->link($id);$job=$this->store->job($id);
-            if($link&&!$this->policy->can('trip',$id,'registration.view'))$link['data']['participants']=[];
+            if($link&&is_array($link['data'])&&!$this->policy->can('trip',$id,'registration.view'))$link['data']['participants']=[];
             if($job){unset($job['leaseToken'],$job['requestHash'],$job['payload']);}
             $settings=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$id])->fetch(\PDO::FETCH_ASSOC);
             $reason=($this->policy->metadata($id)['registration_mode']??'clubdesk_csv')!=='easyverein'?'clubdesk_csv_mode':($link===null?'confirmed_term_required':($this->participations->blockedReason()??$this->members->blockedReason()));

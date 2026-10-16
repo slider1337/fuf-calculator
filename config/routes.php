@@ -80,6 +80,7 @@ return static function (App $app): void {
     $app->get('/api/trips/{id:[0-9]+}/term', [$workflow, 'term']);
     $app->get('/api/trips/{id:[0-9]+}/term/updates', [$workflow, 'termUpdates']);
     $app->post('/api/trips/{id:[0-9]+}/term/updates/preview', [$workflow, 'termUpdatePreview']);
+    $app->post('/api/trips/{id:[0-9]+}/term/updates/resolve', [$workflow, 'termUpdateResolve']);
     $app->post('/api/trips/{id:[0-9]+}/term/updates/request', [$workflow, 'termUpdateRequest']);
     $app->put('/api/trips/{id:[0-9]+}/term/draft', [$workflow, 'draft']);
     $app->post('/api/trips/{id:[0-9]+}/term/review', [$workflow, 'review']);

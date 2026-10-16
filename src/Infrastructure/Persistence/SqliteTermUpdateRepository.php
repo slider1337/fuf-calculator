@@ -40,6 +40,11 @@ final readonly class SqliteTermUpdateRepository implements TermUpdateRepositoryI
         return ['id' => $row->integer('id'), 'requestHash' => $row->text('request_hash')];
     }
 
+    public function resolveUnknown(int $trip, int $job): bool
+    {
+        return $this->query("UPDATE term_update_jobs SET status='conflict',error_code='term_update_resolved',completed_at=?,lease_until=NULL WHERE trip_id=? AND id=? AND status='unknown' AND lease_token IS NULL", [gmdate(DATE_ATOM), $trip, $job])->rowCount() === 1;
+    }
+
     public function hasActiveJob(int $trip): bool
     {
         return $this->query("SELECT 1 FROM term_update_jobs WHERE trip_id=? AND status IN ('pending','running','unknown','reconciling')", [$trip])->fetchColumn() !== false;

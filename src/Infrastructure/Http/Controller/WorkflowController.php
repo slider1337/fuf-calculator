@@ -19,6 +19,7 @@ final readonly class WorkflowController
     public function changeRegistrationMode(Request $request,Response $response,string $id): Response {return $this->json($response,$this->modes->change((int)$id,(array)$request->getParsedBody()));}
     public function termUpdates(Request $request,Response $response,string $id): Response {return $this->json($response,$this->updates->read((int)$id));}
     public function termUpdatePreview(Request $request,Response $response,string $id): Response {return $this->json($response,$this->updates->preview((int)$id,(array)$request->getParsedBody()));}
+    public function termUpdateResolve(Request $request,Response $response,string $id): Response {return $this->json($response,$this->updates->resolve((int)$id,(array)$request->getParsedBody()));}
     public function termUpdateRequest(Request $request,Response $response,string $id): Response {return $this->json($response,$this->updates->request((int)$id,(array)$request->getParsedBody()),202);}
     public function catalogue(Request $request,Response $response,string $resource): Response {return $this->json($response,$this->catalog->search($resource,$request->getQueryParams()));}
     public function tripCatalogue(Request $request,Response $response,string $id,string $resource): Response {return $this->json($response,$this->catalog->search($resource,$request->getQueryParams(),(int)$id));}

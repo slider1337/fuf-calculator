@@ -9,13 +9,14 @@ final class TermUpdateFixture implements ExternalTermUpdatePort
 {
     public int $patches=0;
     public bool $timeout=false;
+    public ?\App\Application\ParticipationRejected $rejection=null;
     public bool $apply=true;
     public bool $blocked=false;
     public ?\Closure $onRead=null;
     public array $data=['title'=>'Fiktiver Termin','start'=>'2027-01-01T09:00:00+00:00','end'=>'2027-01-01T18:00:00+00:00','location'=>'Testort','description'=>'Fiktiv','capacity'=>40,'registrationDeadline'=>null,'visibleToMembers'=>true];
     public function blockedReason(): ?string {return $this->blocked?'easyverein_production_writes_disabled':null;}
     public function fields(string $eventId): array {if($this->onRead){($this->onRead)();}ksort($this->data);return $this->data;}
-    public function patch(string $eventId,array $changes): void {$this->patches++;if($this->apply){$this->data=array_replace($this->data,$changes);}if($this->timeout){throw new \RuntimeException('Lost response');}}
+    public function patch(string $eventId,array $changes): void {$this->patches++;if($this->rejection){throw $this->rejection;}if($this->apply){$this->data=array_replace($this->data,$changes);}if($this->timeout){throw new \RuntimeException('Lost response');}}
 }
 final class TermUpdateApiTest extends ApiTestCase
 {
@@ -110,6 +111,64 @@ final class TermUpdateApiTest extends ApiTestCase
         $this->db->prepare('UPDATE term_update_jobs SET payload_json=?')->execute([json_encode($payload,JSON_THROW_ON_ERROR)]);
         try { $this->worker()->runOne();self::fail('Malformed job was accepted'); }
         catch (\App\Application\ValidationException) { self::assertSame(0,$this->provider->patches); }
+    }
+    public function testDeadlineCannotOverlapStartIncludingExactBoundaryAndMovingStart(): void
+    {
+        foreach (['2027-01-01T09:00:00Z','2027-01-01T23:59:00Z'] as $deadline) {
+            $r=$this->call('POST','/preview',['changes'=>['registrationDeadline'=>$deadline]],409);
+            self::assertSame('term_registration_overlap',$r['error']);
+        }
+        $p=$this->request(['registrationDeadline'=>'2027-01-01T08:59:59Z']);
+        $this->call('POST','/request',$p,202);$this->worker()->runOne();
+        self::assertSame('succeeded',$this->call('GET','')['jobs'][0]['status']);
+        $this->call('POST','/preview',['changes'=>['start'=>'2027-01-01T08:00:00Z']],409);
+        // Atomic correction of start and deadline is allowed, including timezone conversion.
+        $this->call('POST','/preview',['changes'=>['start'=>'2027-01-01T08:00:00Z','registrationDeadline'=>'2027-01-01T08:59:59+01:00']]);
+    }
+    public function testQueuedDeadlineIsRevalidatedBeforePatch(): void
+    {
+        $this->call('POST','/request',$this->request(['registrationDeadline'=>'2027-01-01T08:59:59Z']),202);
+        $this->provider->data['start']='2027-01-01T08:00:00+00:00';
+        $this->worker()->runOne();self::assertSame(0,$this->provider->patches);
+        self::assertSame('term_registration_overlap',$this->call('GET','')['jobs'][0]['errorCode']);
+    }
+    public function testDefiniteProviderRejectionReleasesLockWithUsefulReason(): void
+    {
+        foreach ([400=>'term_registration_overlap',401=>'term_update_unauthorized',403=>'term_update_forbidden',404=>'term_update_not_found',422=>'term_update_rejected'] as $http=>$code) {
+            $this->provider->rejection=new \App\Application\ParticipationRejected('provider_rejected',$http,$http===400?[['field'=>'end_participation','reason'=>'overlap']]:[]);
+            $this->call('POST','/request',$this->request(['title'=>'Neuer Titel'],'rejected_update_'.$http),202);
+            $this->worker()->runOne();$job=$this->call('GET','')['jobs'][0];
+            self::assertSame('blocked',$job['status']);self::assertSame($code,$job['errorCode']);
+            self::assertFalse($this->worker()->runOne());
+        }
+    }
+    public function testUncertainLegacyJobCanBeClosedOnlyAfterFreshReviewWithoutAnotherPatch(): void
+    {
+        $this->call('POST','/request',$this->request(),202);$this->provider->apply=false;$this->provider->timeout=true;$this->worker()->runOne();
+        $state=$this->call('GET','');$id=$state['jobs'][0]['id'];
+        $p=['jobId'=>$id,'observedHash'=>$state['observedHash'],'confirmed'=>true,'reason'=>'easyVerein-Stand geprüft'];
+        $this->call('POST','/resolve',array_replace($p,['confirmed'=>false]),409);
+        $this->call('POST','/resolve',array_replace($p,['reason'=>'']),422);
+        $this->provider->data['location']='Inzwischen geändert';
+        $this->call('POST','/resolve',$p,409);
+        $p['observedHash']=$this->call('GET','')['observedHash'];
+        $this->call('POST','/resolve',array_replace($p,['jobId'=>$id+1]),409);
+        $this->db->exec("UPDATE term_update_jobs SET status='reconciling',lease_token='live-worker'");
+        $this->call('POST','/resolve',$p,409);
+        $this->db->exec("UPDATE term_update_jobs SET status='unknown',lease_token=NULL");
+        $result=$this->call('POST','/resolve',$p);
+        self::assertSame('term_update_resolved',$result['jobs'][0]['errorCode']);
+        self::assertSame('conflict',$result['jobs'][0]['status']);
+        self::assertFalse($this->worker()->runOne());self::assertSame(1,$this->provider->patches);
+        $this->call('POST','/request',$this->request(['location'=>'Neuer Ort'],'after_resolution_001'),202);
+    }
+    public function testResolutionChecksArchivePermissionsAndLinkAfterProviderRead(): void
+    {
+        $this->call('POST','/request',$this->request(),202);$this->provider->apply=false;$this->worker()->runOne();
+        $state=$this->call('GET','');$p=['jobId'=>$state['jobs'][0]['id'],'observedHash'=>$state['observedHash'],'confirmed'=>true,'reason'=>'Stand geprüft'];
+        $this->db->exec("UPDATE trips SET archived_at='2026-10-16'");$this->call('POST','/resolve',$p,409);$this->db->exec('UPDATE trips SET archived_at=NULL');
+        $this->provider->onRead=function(){$this->db->exec("UPDATE external_event_links SET external_id='88'");};
+        $this->call('POST','/resolve',$p,409);self::assertSame(1,$this->provider->patches);
     }
     public function testValidationOffModeAndForeignTrip(): void
     {

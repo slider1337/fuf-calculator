@@ -14,7 +14,7 @@ final readonly class TermUpdateService
 {
     public function __construct(private AccessPolicy $policy, private TermUpdateRepositoryInterface $store, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms) {}
 
-    /** @return array{externalId: string, fields: FieldValues, blockedReason: string|null, jobs: list<JobSummary>} */
+    /** @return array{externalId: string, fields: FieldValues, blockedReason: string|null, jobs: list<JobSummary>, observedHash: string} */
     public function read(int $trip): array
     {
         $this->policy->trip($trip, 'term.manage');
@@ -25,7 +25,7 @@ final readonly class TermUpdateService
         $this->policy->trip($trip, 'term.manage');
         $this->policy->requireRegistrationMode($trip, 'easyverein');
         if (($this->terms->link($trip)['externalId'] ?? null) !== $link['externalId']) { throw new AccessException('term_changed', 409); }
-        return ['externalId' => $link['externalId'], 'fields' => $fields, 'blockedReason' => $this->external->blockedReason(), 'jobs' => $this->store->summaries($trip)];
+        return ['observedHash' => PlanningTransferService::hash([$trip, $link['externalId'], $fields]), 'externalId' => $link['externalId'], 'fields' => $fields, 'blockedReason' => $this->external->blockedReason(), 'jobs' => $this->store->summaries($trip)];
     }
 
     /** @param array<array-key, mixed> $payload
@@ -37,7 +37,7 @@ final readonly class TermUpdateService
         if (!is_array($payload['changes'] ?? null)) { throw new ValidationException(['changes' => 'object_required']); }
         $changes = TermFields::changes($payload['changes']);
         $current = $this->read($trip);
-        TermFields::period(array_replace($current['fields'], $changes));
+        TermFields::updatePeriod(array_replace($current['fields'], $changes));
         $before = array_intersect_key($current['fields'], $changes);
         if (array_keys($before) !== array_keys($changes)) { throw new AccessException('provider_term_fields_unproven', 503); }
         if ($before === $changes) { throw new ValidationException(['changes' => 'changed_value_required']); }
@@ -67,6 +67,31 @@ final readonly class TermUpdateService
             $id = $this->store->request($trip, $review['externalId'], $this->policy->actorId(), $key, $hash, $review, $reason);
             $this->policy->audit('term.update_request', 'trip', $trip, $reason . ' · ' . implode(',', array_keys($review['changes'])));
             return ['jobId' => $id, 'jobs' => $this->store->summaries($trip)];
+        });
+    }
+
+    /** Accept a freshly reviewed external stand and close an uncertain job locally.
+     * No PATCH is repeated and no claim is made about the original outcome.
+     * @param array<array-key, mixed> $payload
+     * @return Receipt
+     */
+    public function resolve(int $trip, array $payload): array
+    {
+        $this->policy->trip($trip, 'term.manage', true);
+        $current = $this->read($trip);
+        if (($payload['confirmed'] ?? null) !== true || !is_int($payload['jobId'] ?? null)
+            || !is_string($payload['observedHash'] ?? null) || !hash_equals($current['observedHash'], $payload['observedHash'])) {
+            throw new AccessException('term_review_changed', 409);
+        }
+        $reason = $this->policy->reason(is_string($payload['reason'] ?? null) ? $payload['reason'] : '');
+        return $this->policy->writeTrip($trip, 'term.manage', function () use ($trip, $payload, $current, $reason) {
+            $this->policy->requireRegistrationMode($trip, 'easyverein');
+            if (($this->terms->link($trip)['externalId'] ?? null) !== $current['externalId']
+                || !$this->store->resolveUnknown($trip, $payload['jobId'])) {
+                throw new AccessException('term_review_changed', 409);
+            }
+            $this->policy->audit('term.update_resolved', 'trip', $trip, $reason . ' · Auftrag #' . $payload['jobId'] . ' · ' . $current['observedHash']);
+            return ['jobId' => $payload['jobId'], 'jobs' => $this->store->summaries($trip)];
         });
     }
 

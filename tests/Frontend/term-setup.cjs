@@ -1,6 +1,6 @@
 // Runs only isolated frontend logic with fake API responses; no browser/provider calls.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('public/assets/js/workflows.js','utf8');
+const source=['workflows','participation','term-updates'].map(name=>fs.readFileSync(`public/assets/js/${name}.js`,'utf8')).join('\n');
 const scope={JSON,Error};vm.createContext(scope);
 vm.runInContext(source.slice(source.indexOf('function termProblemText'),source.indexOf('async function loadWorkflowStatus')),scope);
 const draft={title:'Fiktive Reise',startDate:'2027-03-01',endDate:null,mode:'create',calendarReference:'42',externalId:'',priceGroups:[],teamUserIds:[],registrationDeadline:null,formVersionId:null};

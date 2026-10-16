@@ -1,4 +1,4 @@
-// Shared state and navigation belong to app.js; this file adds the event/team views.
+// Shared state belongs to core.js; routing belongs to navigation.js; this file adds the event/team views.
 const management = { events: [], event: null, view: 'cards', newEventId: null, modal: null, submit: null, team: [] };
 const tripCapabilities = ['trip.view','trip.manage','registration.view','registration.manage','answers.view','answers.correct','answers.export','analytics.view','calculation.manage','settlement.view','settlement.close','settlement.reopen','expense.view','expense.manage','term.manage','access.manage'];
 const eventCapabilities = ['event.view','event.manage','form.manage','form.publish','access.manage'];

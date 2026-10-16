@@ -1249,11 +1249,23 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
     </footer>
 </div>
 <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/assets/js/app.js?v=<?= $assetVersion('/assets/js/app.js') ?>"></script>
+<script src="/assets/js/core.js?v=<?= $assetVersion('/assets/js/core.js') ?>"></script>
+<script src="/assets/js/calculator.js?v=<?= $assetVersion('/assets/js/calculator.js') ?>"></script>
+<script src="/assets/js/calculator-preview.js?v=<?= $assetVersion('/assets/js/calculator-preview.js') ?>"></script>
+<script src="/assets/js/room-plan.js?v=<?= $assetVersion('/assets/js/room-plan.js') ?>"></script>
+<script src="/assets/js/trip-editor.js?v=<?= $assetVersion('/assets/js/trip-editor.js') ?>"></script>
+<script src="/assets/js/navigation.js?v=<?= $assetVersion('/assets/js/navigation.js') ?>"></script>
+<script src="/assets/js/trips.js?v=<?= $assetVersion('/assets/js/trips.js') ?>"></script>
+<script src="/assets/js/registrations.js?v=<?= $assetVersion('/assets/js/registrations.js') ?>"></script>
+<script src="/assets/js/settlement.js?v=<?= $assetVersion('/assets/js/settlement.js') ?>"></script>
+<script src="/assets/js/administration.js?v=<?= $assetVersion('/assets/js/administration.js') ?>"></script>
 <script src="/assets/js/management.js?v=<?= $assetVersion('/assets/js/management.js') ?>"></script>
 <script src="/assets/js/forms.js?v=<?= $assetVersion('/assets/js/forms.js') ?>"></script>
 <script src="/assets/js/bookings.js?v=<?= $assetVersion('/assets/js/bookings.js') ?>"></script>
 <script src="/assets/js/workflows.js?v=<?= $assetVersion('/assets/js/workflows.js') ?>"></script>
+<script src="/assets/js/participation.js?v=<?= $assetVersion('/assets/js/participation.js') ?>"></script>
+<script src="/assets/js/term-updates.js?v=<?= $assetVersion('/assets/js/term-updates.js') ?>"></script>
+<script src="/assets/js/app.js?v=<?= $assetVersion('/assets/js/app.js') ?>"></script>
 </body>
 </html>
 

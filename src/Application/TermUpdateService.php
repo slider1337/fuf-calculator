@@ -3,7 +3,7 @@
 declare(strict_types=1);
 namespace App\Application;
 
-use App\Application\Port\{ExternalTermUpdatePort, TermRepositoryInterface, TermUpdateRepositoryInterface};
+use App\Application\Port\{ExternalTermUpdatePort, TermRepositoryInterface, TermUpdateRepositoryInterface, TripRepositoryInterface};
 
 /** @phpstan-import-type FieldValues from TermFields
  * @phpstan-import-type JobSummary from TermUpdateRepositoryInterface
@@ -12,9 +12,9 @@ use App\Application\Port\{ExternalTermUpdatePort, TermRepositoryInterface, TermU
  */
 final readonly class TermUpdateService
 {
-    public function __construct(private AccessPolicy $policy, private TermUpdateRepositoryInterface $store, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms) {}
+    public function __construct(private AccessPolicy $policy, private TermUpdateRepositoryInterface $store, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms, private TripRepositoryInterface $trips, private TermUpdateWorker $worker) {}
 
-    /** @return array{externalId: string, fields: FieldValues, blockedReason: string|null, jobs: list<JobSummary>, observedHash: string} */
+    /** @return array{externalId: string, fields: FieldValues, blockedReason: string|null, jobs: list<JobSummary>, observedHash: string, tripFields: FieldValues} */
     public function read(int $trip): array
     {
         $this->policy->trip($trip, 'term.manage');
@@ -25,7 +25,8 @@ final readonly class TermUpdateService
         $this->policy->trip($trip, 'term.manage');
         $this->policy->requireRegistrationMode($trip, 'easyverein');
         if (($this->terms->link($trip)['externalId'] ?? null) !== $link['externalId']) { throw new AccessException('term_changed', 409); }
-        return ['observedHash' => PlanningTransferService::hash([$trip, $link['externalId'], $fields]), 'externalId' => $link['externalId'], 'fields' => $fields, 'blockedReason' => $this->external->blockedReason(), 'jobs' => $this->store->summaries($trip)];
+        $tripFields = $this->tripDates($trip);
+        return ['tripFields' => $tripFields, 'observedHash' => PlanningTransferService::hash([$trip, $link['externalId'], $fields, $tripFields]), 'externalId' => $link['externalId'], 'fields' => $fields, 'blockedReason' => $this->external->blockedReason(), 'jobs' => $this->store->summaries($trip)];
     }
 
     /** @param array<array-key, mixed> $payload
@@ -57,7 +58,7 @@ final readonly class TermUpdateService
         if ($old !== null) { return $old; }
         $review = $this->preview($trip, $payload); // Provider I/O stays outside the writer transaction.
         if (($payload['confirmed'] ?? null) !== true || !is_string($payload['reviewHash'] ?? null) || !hash_equals($review['reviewHash'], $payload['reviewHash'])) { throw new AccessException('term_review_changed', 409); }
-        $reason = $this->policy->reason(is_string($payload['reason'] ?? null) ? $payload['reason'] : '');
+        $reason = 'Termin im Calculator gespeichert';
         if ($review['blockedReason'] !== null) { throw new AccessException($review['blockedReason'], 409); }
         return $this->policy->writeTrip($trip, 'term.manage', function () use ($trip, $key, $hash, $review, $reason) {
             $old = $this->receipt($trip, $key, $hash);
@@ -68,6 +69,74 @@ final readonly class TermUpdateService
             $this->policy->audit('term.update_request', 'trip', $trip, $reason . ' · ' . implode(',', array_keys($review['changes'])));
             return ['jobId' => $id, 'jobs' => $this->store->summaries($trip)];
         });
+    }
+
+    /** One user action: validate, enqueue durably, execute this exact job and return its outcome.
+     * @param array<array-key, mixed> $payload
+     * @return array{jobId:?int,status:string,errorCode:?string,validationErrors:list<array{field:string,reason:string}>}
+     */
+    public function save(int $trip, array $payload): array
+    {
+        $this->policy->trip($trip, 'term.manage', true);
+        $key = PlanningTransferService::operationKey($payload);
+        $hash = PlanningTransferService::hash($payload);
+        $old = $this->receipt($trip, $key, $hash);
+        if ($old !== null) { return $this->execute($trip, $old['jobId']); }
+        $current = $this->read($trip);
+        if (!is_string($payload['observedHash'] ?? null) || !hash_equals($current['observedHash'], $payload['observedHash'])) {
+            throw new AccessException('term_review_changed', 409);
+        }
+        if ($current['blockedReason'] !== null) { throw new AccessException($current['blockedReason'], 409); }
+        if (!is_array($payload['changes'] ?? null)) { throw new ValidationException(['changes'=>'object_required']); }
+        // datetime-local values are interpreted in the club's timezone, not the device timezone.
+        $input = $payload['changes'];
+        $deadline = $input['registrationDeadline'] ?? null;
+        if (is_string($deadline) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/D', $deadline)) {
+            $local = strlen($deadline) === 16 ? $deadline . ':00' : $deadline;
+            $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s', $local, new \DateTimeZone('Europe/Berlin'));
+            if ($parsed === false || $parsed->format('Y-m-d\TH:i:s') !== $local) { throw new ValidationException(['changes.registrationDeadline'=>'invalid_term_value']); }
+            $input['registrationDeadline'] = $parsed->format(DATE_ATOM);
+        }
+        // Dates always come from the stored trip, even if a client submits other dates.
+        $changes = TermFields::changes(array_replace($input, $current['tripFields']));
+        TermFields::updatePeriod(array_replace($current['fields'], $changes));
+        $changes = array_filter($changes, static fn ($value, $field) => !array_key_exists($field, $current['fields']) || $value !== $current['fields'][$field], ARRAY_FILTER_USE_BOTH);
+        if (!$changes) { return ['jobId'=>null, 'status'=>'succeeded', 'errorCode'=>null, 'validationErrors'=>[]]; }
+        $before = array_intersect_key($current['fields'], $changes);
+        if (array_keys($before) !== array_keys($changes)) { throw new AccessException('provider_term_fields_unproven', 503); }
+        $id = $this->policy->writeTrip($trip, 'term.manage', function () use ($trip, $key, $hash, $current, $before, $changes) {
+            $old = $this->receipt($trip, $key, $hash);
+            if ($old !== null) { return $old['jobId']; }
+            if (($this->terms->link($trip)['externalId'] ?? null) !== $current['externalId'] || $this->tripDates($trip) !== $current['tripFields']) {
+                throw new AccessException('term_review_changed', 409);
+            }
+            if ($this->store->hasActiveJob($trip)) { throw new AccessException('term_update_in_progress', 409); }
+            $review = ['externalId'=>$current['externalId'], 'before'=>$before, 'changes'=>$changes];
+            $id = $this->store->request($trip, $current['externalId'], $this->policy->actorId(), $key, $hash, $review, 'Termin gespeichert');
+            $this->policy->audit('term.update_request', 'trip', $trip, implode(',', array_keys($changes)));
+            return $id;
+        });
+        return $this->execute($trip, $id);
+    }
+
+    /** @return FieldValues */
+    private function tripDates(int $id): array
+    {
+        $trip = $this->trips->getById($id) ?? throw new NotFoundException('Trip');
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $start = new \DateTimeImmutable($trip->startDate()->format('Y-m-d') . ' 00:00:00', $tz);
+        $end = new \DateTimeImmutable(($trip->endDate() ?? $trip->startDate())->format('Y-m-d') . ' 23:59:59', $tz);
+        return TermFields::observed(['start'=>$start->format(DATE_ATOM), 'end'=>$end->format(DATE_ATOM)]);
+    }
+
+    /** @return array{jobId:?int,status:string,errorCode:?string,validationErrors:list<array{field:string,reason:string}>} */
+    private function execute(int $trip, int $jobId): array
+    {
+        $this->worker->runOne($jobId);
+        foreach ($this->store->summaries($trip) as $job) {
+            if ($job['id'] === $jobId) { return ['jobId'=>$jobId, 'status'=>$job['status'], 'errorCode'=>$job['errorCode'], 'validationErrors'=>$job['validationErrors']]; }
+        }
+        throw new NotFoundException('Term update');
     }
 
     /** Accept a freshly reviewed external stand and close an uncertain job locally.
@@ -83,7 +152,7 @@ final readonly class TermUpdateService
             || !is_string($payload['observedHash'] ?? null) || !hash_equals($current['observedHash'], $payload['observedHash'])) {
             throw new AccessException('term_review_changed', 409);
         }
-        $reason = $this->policy->reason(is_string($payload['reason'] ?? null) ? $payload['reason'] : '');
+        $reason = 'Aktuellen easyVerein-Stand übernommen';
         return $this->policy->writeTrip($trip, 'term.manage', function () use ($trip, $payload, $current, $reason) {
             $this->policy->requireRegistrationMode($trip, 'easyverein');
             if (($this->terms->link($trip)['externalId'] ?? null) !== $current['externalId']

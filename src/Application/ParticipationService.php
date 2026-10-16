@@ -20,7 +20,8 @@ final readonly class ParticipationService {
   $snapshot=$o?json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
   $canView=$this->policy->can('trip',$trip,'registration.view');
   $conflicts=$o?json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR):[];
-  if(!$canView){if(!is_array($conflicts))throw new \LogicException('Invalid saved conflicts');$conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&!str_starts_with($c['field'],'person:')));}
+  if(!is_array($conflicts))throw new \LogicException('Invalid saved conflicts');
+  $conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&($c['field']==='groups'||($canView&&str_starts_with($c['field'],'person:')))));
   return ['blockedReason'=>($this->store->link($trip)===null?'confirmed_term_required':$this->external->blockedReason()),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>$conflicts]:null,'clarifications'=>$cases,'participants'=>$canView?($snapshot['participants']??[]):[],'guestsAllowed'=>$snapshot['guestsAllowed']??false];
  }
  /**
@@ -95,8 +96,13 @@ final readonly class ParticipationService {
   $this->access->transaction(function()use($trip,$link,$snapshot){
    $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if(($this->store->link($trip)['externalId']??null)!==$link['externalId']){throw new AccessException('term_changed',409);}
    $old=$this->store->observationRevision($trip);$conflicts=[];
-   $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==($snapshot[$field] ?? null)){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>($snapshot[$field] ?? null)];}}
-   foreach($snapshot['termFields']??[] as $field=>$value){if((Input::map($baseline['termFields']??[])[$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>Input::map($baseline['termFields']??[])[$field]??null,'external'=>$value];}}
+   $baseline=$link['data'];
+   // Current provider term metadata is authoritative. It is not a financial conflict.
+   foreach(['revision','canceled','bookingUntil','capacity','capacityRemaining','termFields'] as $field){
+    if(array_key_exists($field,$snapshot)){$baseline[$field]=$snapshot[$field];}
+   }
+   if(($baseline['groups']??null)!==$snapshot['groups']){$conflicts[]=['field'=>'groups','before'=>$baseline['groups']??null,'external'=>$snapshot['groups']];}
+   $this->store->saveLinkData(json_encode($baseline,JSON_THROW_ON_ERROR),$trip);
    $editable=($this->access->metadata($trip)['archived_at']??null)===null&&($this->access->metadata($trip)['closed_at']??null)===null;
    $importer=new ExternalParticipationImporter($this->store,$this->bookings);
    foreach($snapshot['participants'] as $row){
@@ -123,7 +129,7 @@ final readonly class ParticipationService {
   */
  public function acknowledge(int $trip,array $p): array {
   $this->policy->writeTrip($trip,'term.manage',function()use($trip,$p){
-   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
+   $reason='easyVerein-Stand übernommen';$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}
    if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $conflicts=Input::objects(json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR));$fields=$p['fields']??null;
@@ -143,7 +149,7 @@ final readonly class ParticipationService {
  public function assignExternal(int $trip,string $externalId,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$externalId,$p){
-   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');
+   $reason='easyVerein-Stand übernommen';
    if(($p['confirmed']??null)!==true||!is_int($p['bookingId']??null)||!is_int($p['personId']??null)){throw new ValidationException(['assignment'=>'explicit_booking_person_confirmation_required']);}
    $b=$this->bookings->get($trip,$p['bookingId'])??throw new NotFoundException('Booking');if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}
    if(!$b['managed']){throw new AccessException('legacy_financial_mapping_requires_review',409);}
@@ -167,7 +173,7 @@ final readonly class ParticipationService {
  public function resolvePerson(int $trip,int $personId,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$personId,$p){
-   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
+   $reason='easyVerein-Stand übernommen';$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $conflicts=Input::objects(json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR));$target=null;foreach($conflicts as $c){if($c['field']==='person:'.$personId){$target=$c;}}
    if($target===null){throw new NotFoundException('Person conflict');}$row=$this->result($target['external']);

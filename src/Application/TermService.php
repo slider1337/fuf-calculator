@@ -170,7 +170,7 @@ final readonly class TermService
         if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
         $externalId=$p['externalId']??null;
         if(!is_string($externalId)||!preg_match('/^[1-9][0-9]{0,18}$/D',$externalId)){throw new ValidationException(['externalId'=>'stable_provider_id_required']);}
-        $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');
+        $reason='easyVerein-Termin zugeordnet';
         $verified=$this->external->get($externalId); // Never hold SQLite transaction during network.
         if($verified===null||($verified['externalId']??null)!==$externalId){throw new ValidationException(['externalId'=>'verified_reference_required']);}
         $this->policy->writeTrip($id,'term.manage',function() use($id,$externalId,$verified,$reason){

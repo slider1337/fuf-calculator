@@ -6,7 +6,7 @@ namespace App\Application\Port;
 use App\Application\Data\{TermUpdateJob, TermUpdateStatus};
 
 /** No PDO, SQL or provider calls cross this boundary.
- * @phpstan-type JobSummary array{id: int, status: string, errorCode: string|null, createdAt: string, completedAt: string|null}
+ * @phpstan-type JobSummary array{id: int, status: string, errorCode: string|null, createdAt: string, completedAt: string|null, validationErrors: list<array{field:string,reason:string}>}
  */
 interface TermUpdateRepositoryInterface
 {
@@ -19,10 +19,11 @@ interface TermUpdateRepositoryInterface
     /** @param array<array-key, mixed> $review */
     public function request(int $trip, string $externalId, int $actor, string $key, string $hash, array $review, string $reason): int;
     public function expireLeases(int $now): void;
-    public function nextReady(int $now): ?TermUpdateJob;
+    public function nextReady(int $now, ?int $job = null): ?TermUpdateJob;
     public function block(int $job, string $reason): void;
     public function claim(int $job, bool $patch, string $token, int $until): void;
     public function leaseMatches(int $job, string $token): bool;
     public function liveLeaseMatches(int $job, string $token, int $now): bool;
-    public function finish(int $job, TermUpdateStatus $status, ?string $error, ?int $retryAt, ?string $completedAt): void;
+    /** @param list<array{field:string,reason:string}> $validationErrors */
+    public function finish(int $job, TermUpdateStatus $status, ?string $error, ?int $retryAt, ?string $completedAt, array $validationErrors = []): void;
 }

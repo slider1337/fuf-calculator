@@ -2,16 +2,16 @@
 declare(strict_types=1);
 namespace App\Application;
 use App\Application\Port\{MemberDirectoryPort,ParticipationPort,BookingRepositoryInterface,FormRepositoryInterface,TripRepositoryInterface,AccessRepositoryInterface};
-use App\Infrastructure\Persistence\SqliteWorkflowRepository;
+use App\Application\Port\MemberBookingRepositoryInterface;
 use App\Domain\Form\{AnswerValidator,FormSchema};
 
 final readonly class MemberBookingService {
- public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private SqliteWorkflowRepository $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync) {}
+ public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private MemberBookingRepositoryInterface $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync) {}
  private function allowed(int $trip,string $mode,?array $preflight=null): array {
   if(($this->access->metadata($trip)['registration_mode']??'clubdesk_csv')!=='easyverein'){throw new NotFoundException('Member trip');}
   if($this->directory->blockedReason()!==null){throw new AccessException($this->directory->blockedReason(),503);}
   if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),503);}
-  $s=$this->store->query('SELECT * FROM member_trip_settings WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
+  $s=$this->store->settings($trip);
   $link=$this->store->link($trip);
   if(!$s||!(bool)$s['enabled']||$link===null){throw new NotFoundException('Member trip');}
   if($mode!=='read'&&($this->access->metadata($trip)['archived_at']??null)!==null){throw new AccessException('trip_archived',409);}
@@ -33,17 +33,17 @@ final readonly class MemberBookingService {
   if(!$own){throw new AccessException('member_identity_unproven',503);}return $p;
  }
  public function resolve(string $event,MemberIdentity $identity): array {
-  $id=$this->store->query('SELECT trip_id FROM external_event_links WHERE external_id=?',[$event])->fetchColumn();
+  $id=$this->store->tripForEvent($event);
   if($id===false){throw new NotFoundException('Member trip');}return $this->context((int)$id,$identity);
  }
  public function context(int $trip,MemberIdentity $identity): array {
   $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->external->snapshot($link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $binding=$this->forms->binding($trip);$v=$binding['versionId']===null?null:$this->forms->get($binding['versionId']);
-  return ['contractVersion'=>'1.6.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'guests'=>$this->store->query("SELECT id,name,birth_date AS birthDate,parent_member AS parentMemberReference,price_group AS priceGroupId,price AS expectedPrice FROM guest_approvals WHERE trip_id=? AND owner_member=? AND status='approved' AND participant_id IS NULL",[$trip,$identity->memberReference])->fetchAll(\PDO::FETCH_ASSOC),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'guestsAllowed'=>($snapshot['guestsAllowed']??false),'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>$snapshot['bookingUntil'],'correctionUntil'=>$snapshot['bookingUntil'],'cancelUntil'=>$snapshot['bookingUntil']];
+  return ['contractVersion'=>'1.6.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'guests'=>$this->store->availableGuests($trip, $identity->memberReference),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'guestsAllowed'=>($snapshot['guestsAllowed']??false),'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>$snapshot['bookingUntil'],'correctionUntil'=>$snapshot['bookingUntil'],'cancelUntil'=>$snapshot['bookingUntil']];
  }
  private function engine(int $trip,MemberIdentity $identity): BookingService {return new BookingService($this->bookings,$this->forms,$this->trips,new MemberBookingPolicy($trip,$identity,$this->access,$this->store),$this->validator,$this->registrations);}
  private function owned(int $trip,int $booking,MemberIdentity $identity): array {
-  $owner=$this->store->query('SELECT owner_member_reference FROM registrations WHERE trip_id=? AND id=?',[$trip,$booking])->fetchColumn();if($owner!==$identity->memberReference){throw new NotFoundException('Booking');}return $this->bookings->get($trip,$booking)??throw new NotFoundException('Booking');
+  $owner=$this->store->bookingOwner($trip, $booking);if($owner!==$identity->memberReference){throw new NotFoundException('Booking');}return $this->bookings->get($trip,$booking)??throw new NotFoundException('Booking');
  }
  private function output(array $b): array {
   unset($b['revisions'],$b['personRevisions'],$b['formVersion']);
@@ -52,7 +52,7 @@ final readonly class MemberBookingService {
  public function get(int $trip,int $booking,MemberIdentity $identity): array {$this->allowed($trip,'read');$this->profile($identity);return $this->output($this->owned($trip,$booking,$identity));}
  public function list(int $trip,MemberIdentity $identity,array $q): array {
   $this->allowed($trip,'read');$this->profile($identity);$after=$q['after']??'0';if(!is_string($after)||!preg_match('/^[0-9]{1,9}$/D',$after)){throw new ValidationException(['after'=>'integer_cursor']);}
-  $ids=$this->store->query('SELECT id FROM registrations WHERE trip_id=? AND owner_member_reference=? AND id>? ORDER BY id LIMIT 26',[$trip,$identity->memberReference,(int)$after])->fetchAll(\PDO::FETCH_COLUMN);$more=count($ids)>25;$ids=array_slice($ids,0,25);
+  $ids=$this->store->ownedBookingIds($trip, $identity->memberReference, (int)$after);$more=count($ids)>25;$ids=array_slice($ids,0,25);
   return ['items'=>array_map(fn($id)=>$this->output($this->owned($trip,(int)$id,$identity)),$ids),'nextCursor'=>$more?(string)end($ids):null];
  }
  private function payload(int $trip,MemberIdentity $identity,array $p,array $ctx): array {
@@ -76,7 +76,7 @@ final readonly class MemberBookingService {
    if(array_key_exists('guestId',$person)){
     if(array_diff(array_keys($person),['guestId','priceGroupId','expectedPrice'])){throw new ValidationException(['guest'=>'only_approved_reference_and_price_allowed']);}
     $gid=$person['guestId'];if(!is_int($gid)||isset($ids['guest_'.$gid])){throw new AccessException('person_forbidden');}
-    $guest=$this->store->query("SELECT * FROM guest_approvals WHERE id=? AND trip_id=? AND owner_member=? AND status='approved' AND participant_id IS NULL",[$gid,$trip,$identity->memberReference])->fetch(\PDO::FETCH_ASSOC);
+    $guest=$this->store->availableGuest($gid, $trip, $identity->memberReference);
     if(!$guest||!isset($groups[$guest['price_group']])||$groups[$guest['price_group']]['price']!==$guest['price']||($person['expectedPrice']??null)!==$guest['price']||($person['priceGroupId']??null)!==$guest['price_group']){throw new AccessException('guest_approval_or_price_conflict',409);}
     if(($ctx['guestsAllowed']??false)!==true){throw new AccessException('provider_guests_disabled',409);}
     $ids['guest_'.$gid]=true;$selected[]=['id'=>'guest_'.$gid,'name'=>$guest['name'],'birthDate'=>$guest['birth_date'],'memberReference'=>$guest['parent_member'],'priceGroupId'=>$guest['price_group'],'expectedPrice'=>$guest['price'],'guestId'=>$gid,'guestName'=>$guest['name']];continue;
@@ -113,17 +113,17 @@ final readonly class MemberBookingService {
     if(!is_array($choice))throw new \LogicException('Invalid booking person');
     if(!isset($choice['guestDraft']))continue;
     $g=$choice['guestDraft'];if(!is_array($g)||!is_string($g['key']??null)||!is_string($choice['name']??null)||!is_string($choice['birthDate']??null))throw new \LogicException('Invalid guest identity');$guestKey='member_'.hash('sha256',$memberKey.':'.$g['key']);
-    $this->store->query('INSERT INTO guest_approvals(trip_id,owner_member,parent_member,name,birth_date,price_group,price,actor_id,created_at,reason,operation_key,request_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[$trip,$identity->memberReference,$identity->memberReference,$choice['name'],$choice['birthDate'],$choice['priceGroupId']??'',$choice['expectedPrice']??'',0,gmdate(DATE_ATOM),'Gastanmeldung gemäß easyVerein-Termin',$guestKey,$hash]);
-    $choice['guestId']=(int)$this->store->query('SELECT last_insert_rowid()')->fetchColumn();unset($choice['guestDraft']);
+    $choice['guestId']=$this->store->createGuest($trip, $identity->memberReference, $identity->memberReference, $choice['name'], $choice['birthDate'], $choice['priceGroupId']??'', $choice['expectedPrice']??'', 0, gmdate(DATE_ATOM), 'Gastanmeldung gemäß easyVerein-Termin', $guestKey, $hash);
+    unset($choice['guestDraft']);
    }unset($choice);
    // Include accepted price/version in the common engine's idempotency hash.
-   $b=$this->engine($trip,$identity)->create($trip,$data);$this->store->query('UPDATE registrations SET owner_member_reference=? WHERE id=?',[$identity->memberReference,$b['id']]);
+   $b=$this->engine($trip,$identity)->create($trip,$data);$this->store->setBookingOwner($identity->memberReference, $b['id']);
    $byClient=array_column($data['persons'],null,'id');foreach($b['persons'] as $person){$choice=$byClient[$person['clientReference']];
     if(isset($choice['guestId'])){
-     $changed=$this->store->query("UPDATE guest_approvals SET participant_id=? WHERE id=? AND owner_member=? AND trip_id=? AND participant_id IS NULL AND status='approved'",[$person['id'],$choice['guestId'],$identity->memberReference,$trip])->rowCount();if($changed!==1){throw new AccessException('guest_already_booked',409);}
-     $this->store->query('UPDATE registration_participants SET guest_approval_id=? WHERE id=?',[$choice['guestId'],$person['id']]);
+     $changed=$this->store->claimGuest($person['id'], $choice['guestId'], $identity->memberReference, $trip);if($changed!==1){throw new AccessException('guest_already_booked',409);}
+     $this->store->setPersonGuest($choice['guestId'], $person['id']);
     }
-    $duplicate=$this->store->query("SELECT 1 FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE r.trip_id=? AND p.member_reference=? AND p.guest_approval_id IS NULL AND p.participation_status<>'cancelled' AND r.id<>?",[$trip,$choice['memberReference'],$b['id']])->fetchColumn();if(!isset($choice['guestId'])&&$duplicate!==false){throw new AccessException('person_already_booked',409);}
+    $duplicate=$this->store->duplicateMember($trip, $choice['memberReference'], $b['id']);if(!isset($choice['guestId'])&&$duplicate!==false){throw new AccessException('person_already_booked',409);}
     $payload=['eventId'=>$ctx['eventId'],'memberReference'=>$choice['memberReference'],'externalId'=>null,'priceGroupId'=>$choice['priceGroupId'],'price'=>$choice['expectedPrice']]+(isset($choice['guestId'])?['guestId'=>$choice['guestId'],'guestName'=>$choice['guestName']]:[]);
     $this->sync->enqueue($trip,$b['id'],$person['id'],'register',$memberKey,$hash,$payload,0,$identity->memberReference);
    }
@@ -148,7 +148,7 @@ final readonly class MemberBookingService {
    foreach($b['persons'] as $parent){if(in_array($parent['id'],$ids,true)&&$parent['guestId']===null){foreach($b['persons'] as $guest){if($guest['guestId']!==null&&$guest['memberReference']===$parent['memberReference']&&$guest['status']!=='cancelled'&&!in_array($guest['id'],$ids,true)){throw new AccessException('guest_cancellation_required',409);}}}}
    $event=($this->store->link($trip)??throw new AccessException('confirmed_term_required',409))['externalId'];$people=$b['persons'];usort($people,static fn($a,$z)=>($a['guestId']===null?1:0)<=>($z['guestId']===null?1:0));foreach($people as $person){if(!in_array($person['id'],$ids,true)||$person['status']==='cancelled'){continue;}
     if($person['status']!=='confirmed'||$person['externalReference']===null){throw new AccessException('external_participation_pending',409);}
-    if($this->store->query("SELECT 1 FROM participation_jobs WHERE participant_id=? AND status IN ('pending','running','unknown','reconciling')",[$person['id']])->fetchColumn()!==false){throw new AccessException('person_operation_in_progress',409);}
+    if($this->store->activePersonJob($person['id'])!==false){throw new AccessException('person_operation_in_progress',409);}
     $payload=['eventId'=>$event,'memberReference'=>$person['memberReference'],'externalId'=>$person['externalReference'],'priceGroupId'=>$person['externalPriceGroupId']??$person['priceGroupId'],'price'=>$person['externalPrice']??$person['expectedPrice']];$this->sync->enqueue($trip,$booking,$person['id'],'cancel',$key,$hash,$payload,0,$identity->memberReference);
    }
    $this->bookings->recordOperation($trip,$key,$hash,$booking);$this->sync->refresh($booking);(new MemberBookingPolicy($trip,$identity,$this->access,$this->store))->audit('booking.cancel_request','trip',$trip,$reason);return $this->output($this->owned($trip,$booking,$identity));

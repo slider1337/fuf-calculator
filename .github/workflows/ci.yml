@@ -15,12 +15,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          coverage: xdebug
+          coverage: xdebug-3.5.3
+          tools: composer:2.10.3
 
       - name: Install Composer dependencies
         env:
@@ -40,5 +43,14 @@ jobs:
       - name: Run PHPUnit with coverage
         run: composer test:coverage
 
-
-
+      - name: Check changed container builds
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --quiet HEAD^ HEAD -- Dockerfile deploy/Dockerfile.prod composer.json composer.lock scripts/patch-openid-nullability.php; then
+            echo "Container inputs unchanged; build check skipped."
+            exit 0
+          fi
+          docker build --tag fuf-development-check .
+          docker run --rm --entrypoint php fuf-development-check -r 'if (!extension_loaded("xdebug") || !extension_loaded("mbstring")) exit(1);'
+          docker build --file deploy/Dockerfile.prod --tag fuf-production-check .
+          docker run --rm --entrypoint php fuf-production-check -r 'if (extension_loaded("xdebug") || !extension_loaded("mbstring")) exit(1);'

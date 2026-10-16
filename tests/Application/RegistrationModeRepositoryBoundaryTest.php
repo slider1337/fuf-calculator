@@ -13,12 +13,12 @@ final class RegistrationModeRepositoryBoundaryTest extends TestCase
 {
     private function policy(): AccessPolicy
     {
-        $access=$this->createMock(AccessRepositoryInterface::class);
+        $access=$this->createStub(AccessRepositoryInterface::class);
         $access->method('role')->willReturn('user');
         $access->method('capabilities')->willReturn(['trip.view','trip.manage']);
         $access->method('metadata')->willReturn(['archived_at'=>null,'closed_at'=>null]);
         $access->method('transaction')->willReturnCallback(static fn(callable $operation)=>$operation());
-        $actor=$this->createMock(ActorInterface::class);$actor->method('userId')->willReturn(1);
+        $actor=$this->createStub(ActorInterface::class);$actor->method('userId')->willReturn(1);
         return new AccessPolicy($access,$actor);
     }
 

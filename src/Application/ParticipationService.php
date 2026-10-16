@@ -2,16 +2,16 @@
 declare(strict_types=1);
 namespace App\Application;
 use App\Application\Port\{ParticipationPort,AccessRepositoryInterface,BookingRepositoryInterface};
-use App\Infrastructure\Persistence\SqliteWorkflowRepository;
+use App\Application\Port\ParticipationRepositoryInterface;
 use App\Domain\Form\Decimal;
 
 final readonly class ParticipationService {
- public function __construct(private AccessPolicy $policy,private SqliteWorkflowRepository $store,private ParticipationPort $external,private BookingRepositoryInterface $bookings,private AccessRepositoryInterface $access) {}
+ public function __construct(private AccessPolicy $policy,private ParticipationRepositoryInterface $store,private ParticipationPort $external,private BookingRepositoryInterface $bookings,private AccessRepositoryInterface $access) {}
  public function read(int $trip): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
-  $jobs=$this->store->query('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100',[$trip])->fetchAll(\PDO::FETCH_ASSOC);
-  $o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
-  $cases=$this->store->query("SELECT external_id AS externalId,status,observed_at AS observedAt FROM external_clarifications WHERE trip_id=? AND status<>'imported' ORDER BY id DESC LIMIT 100",[$trip])->fetchAll(\PDO::FETCH_ASSOC);
+  $jobs=$this->store->recentJobs($trip);
+  $o=$this->store->observation($trip);
+  $cases=$this->store->clarifications($trip);
   $snapshot=$o&&is_string($o['snapshot_json'])?json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
   $canView=$this->policy->can('trip',$trip,'registration.view');
   $conflicts=$o?json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR):[];
@@ -25,7 +25,7 @@ final readonly class ParticipationService {
    $this->policy->trip($trip,'registration.manage',true);
    $b=$this->bookings->get($trip,$booking)??throw new NotFoundException('Booking');
    $key=PlanningTransferService::operationKey($p);$hash=PlanningTransferService::hash($p);
-   $existing=$this->store->query('SELECT request_hash FROM participation_jobs WHERE trip_id=? AND operation_key=?',[$trip,$key])->fetchAll(\PDO::FETCH_COLUMN);
+   $existing=$this->store->operationHashes($trip, $key);
    if($existing){if(count(array_unique($existing))!==1||$existing[0]!==$hash){throw new AccessException('idempotency_conflict',409);}return;}
    if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}
    $kind=$p['kind']??null;if(!in_array($kind,['register','cancel'],true)){throw new ValidationException(['kind'=>'register_or_cancel']);}
@@ -33,7 +33,7 @@ final readonly class ParticipationService {
    $people=array_column($b['persons'],null,'id');$seen=[];$link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);
    foreach($selected as $i=>$choice){
     $id=$choice['id']??null;if(!is_int($id)||!isset($people[$id])||isset($seen[$id])){throw new ValidationException(["persons.$i.id"=>'owned_unique_id_required']);}$seen[$id]=true;$person=$people[$id];
-    $active=$this->store->query("SELECT 1 FROM participation_jobs WHERE participant_id=? AND status IN ('pending','running','unknown','reconciling')",[$id])->fetchColumn();if($active!==false){throw new AccessException('person_operation_in_progress',409);}
+    $active=$this->store->activePersonJob($id);if($active!==false){throw new AccessException('person_operation_in_progress',409);}
     if($kind==='register'&&$person['status']==='confirmed'){continue;}
     $member=$person['memberReference']??null;$requested=$choice['memberReference']??$member;
     if(!is_string($requested)||!preg_match('/^[1-9][0-9]{0,18}$/D',$requested)||($member!==null&&$member!==$requested)){throw new ValidationException(["persons.$i.memberReference"=>'stable_verified_reference_required']);}
@@ -52,26 +52,26 @@ final readonly class ParticipationService {
  public function enqueue(int $trip,int $booking,int $person,string $kind,string $key,string $hash,array $payload,int $actor,?string $member): void {
   $this->policy->requireRegistrationMode($trip,'easyverein');
   $status=$this->external->blockedReason()===null?'pending':'blocked';
-  $this->store->query('INSERT INTO participation_jobs (trip_id,registration_id,participant_id,kind,operation_key,request_hash,payload_json,actor_id,member_actor,status,error_code,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[$trip,$booking,$person,$kind,$key,$hash,json_encode($payload,JSON_THROW_ON_ERROR),$actor,$member,$status,$this->external->blockedReason(),gmdate(DATE_ATOM)]);
-  $this->store->query('UPDATE registration_participants SET member_reference=?,price_group_reference=?,expected_price=?,sync_status=? WHERE registration_id=? AND id=?',[$payload['memberReference'],$payload['priceGroupId'],$payload['price'],$status==='blocked'?'error':'pending',$booking,$person]);
+  $this->store->enqueue($trip, $booking, $person, $kind, $key, $hash, json_encode($payload,JSON_THROW_ON_ERROR), $actor, $member, $status, $this->external->blockedReason(), gmdate(DATE_ATOM));
+  $this->store->markPersonPending($payload['memberReference'], $payload['priceGroupId'], $payload['price'], $status==='blocked'?'error':'pending', $booking, $person);
  }
  public function refresh(int $booking): void {
-  $rows=$this->store->query('SELECT participation_status,sync_status FROM registration_participants WHERE registration_id=?',[$booking])->fetchAll(\PDO::FETCH_ASSOC);
+  $rows=$this->store->personStates($booking);
   $active=array_values(array_filter($rows,fn($r)=>$r['participation_status']!=='cancelled'));$n=count(array_filter($active,fn($r)=>$r['participation_status']==='confirmed'));
   $states=array_column($rows,'sync_status');$sync=in_array('unknown',$states,true)?'unknown':(in_array('error',$states,true)?'error':(in_array('pending',$states,true)?'pending':(count(array_unique($states))===1?$states[0]:'pending')));
   $status=!$active?'cancelled':($n===count($active)?'confirmed':($n>0?'partially_confirmed':'pending'));
-  $this->store->query('UPDATE registrations SET booking_status=?,sync_status=? WHERE id=?',[$status,$sync,$booking]);
+  $this->store->setBookingState($status, $sync, $booking);
  }
  public function retry(int $trip,int $jobId): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$jobId){
-   $j=$this->store->query('SELECT * FROM participation_jobs WHERE id=? AND trip_id=?',[$jobId,$trip])->fetch(\PDO::FETCH_ASSOC)?:throw new NotFoundException('Job');
+   $j=$this->store->job($jobId, $trip)?:throw new NotFoundException('Job');
    if($j['status']!=='failed'){throw new AccessException('only_proven_rejection_retryable',409);}
    if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
-   $person=$this->store->query('SELECT participation_status FROM registration_participants WHERE id=?',[$j['participant_id']])->fetchColumn();
+   $person=$this->store->personStatus($j['participant_id']);
    if($j['kind']==='register'&&$person==='confirmed'){throw new AccessException('person_already_confirmed',409);}
-   $this->store->query("UPDATE participation_jobs SET status='pending',error_code=NULL,lease_until=NULL,actor_id=?,member_actor=NULL WHERE id=?",[$this->policy->actorId(),$jobId]);
-   $this->store->query("UPDATE registration_participants SET sync_status='pending' WHERE id=?",[$j['participant_id']]);$this->refresh((int)$j['registration_id']);
+   $this->store->retryJob($this->policy->actorId(), $jobId);
+   $this->store->markPending($j['participant_id']);$this->refresh((int)$j['registration_id']);
    $this->policy->audit('participation.retry','trip',$trip,'job='.$jobId);
   });return $this->read($trip);
  }
@@ -80,7 +80,7 @@ final readonly class ParticipationService {
   $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$snapshot=$this->external->snapshot($link['externalId']);$this->validateSnapshot($snapshot,$link['externalId']);
   $this->access->transaction(function()use($trip,$link,$snapshot){
    $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if(($this->store->link($trip)['externalId']??null)!==$link['externalId']){throw new AccessException('term_changed',409);}
-   $old=$this->store->query('SELECT revision FROM external_observations WHERE trip_id=?',[$trip])->fetchColumn();$conflicts=[];
+   $old=$this->store->observationRevision($trip);$conflicts=[];
    $baseline=$link['data'];foreach(['revision','canceled','bookingUntil',array_key_exists('capacity',$snapshot)?'capacity':'capacityRemaining','groups'] as $field){if(($baseline[$field]??null)!==$snapshot[$field]){$conflicts[]=['field'=>$field,'before'=>$baseline[$field]??null,'external'=>$snapshot[$field]];}}
    foreach($snapshot['termFields']??[] as $field=>$value){if(($baseline['termFields'][$field]??null)!==$value){$conflicts[]=['field'=>'term:'.$field,'before'=>$baseline['termFields'][$field]??null,'external'=>$value];}}
    $editable=($this->access->metadata($trip)['archived_at']??null)===null&&($this->access->metadata($trip)['closed_at']??null)===null;
@@ -88,25 +88,25 @@ final readonly class ParticipationService {
    foreach($snapshot['participants'] as $row){
     if(!is_array($row)||!is_string($row['externalId']??null))throw new \LogicException('Invalid provider person');
     if($editable&&$this->policy->can('trip',$trip,'registration.manage'))$importer->import($trip,$row,$this->policy->actorId());
-    $known=$this->store->query('SELECT p.*,r.trip_id,r.source FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.external_reference=? AND r.trip_id=?',[$row['externalId'],$trip])->fetchAll(\PDO::FETCH_ASSOC);
-    if(count($known)===1&&is_array($known[0])&&$known[0]['source']==='easyverein'){
-     $this->store->query("UPDATE external_clarifications SET status='imported',data_json=?,observed_at=? WHERE trip_id=? AND external_id=?",[json_encode($row,JSON_THROW_ON_ERROR),gmdate(DATE_ATOM),$trip,$row['externalId']]);continue;
+    $known=$this->store->peopleByExternal($row['externalId'], $trip);
+    if(count($known)===1&&$known[0]['source']==='easyverein'){
+     $this->store->markImported(json_encode($row,JSON_THROW_ON_ERROR), gmdate(DATE_ATOM), $trip, $row['externalId']);continue;
     }
     if($row['memberReference']===null||count($known)!==1||$known[0]['member_reference']!==$row['memberReference']){
-     $this->store->query('INSERT INTO external_clarifications (trip_id,external_id,data_json,observed_at) VALUES (?,?,?,?) ON CONFLICT(trip_id,external_id) DO UPDATE SET data_json=excluded.data_json,observed_at=excluded.observed_at',[$trip,$row['externalId'],json_encode($row,JSON_THROW_ON_ERROR),gmdate(DATE_ATOM)]);continue;
+     $this->store->saveClarification($trip, $row['externalId'], json_encode($row,JSON_THROW_ON_ERROR), gmdate(DATE_ATOM));continue;
     }
-    $p=$known[0];$this->store->query("UPDATE external_clarifications SET status='imported' WHERE trip_id=? AND external_id=?",[$trip,$row['externalId']]);if($p['participation_status']===$row['status']&&$p['price_group_reference']===$row['priceGroupId']&&$p['expected_price']===$row['price']){continue;}
-    $accepted=$this->store->query('SELECT external_hash FROM accepted_person_observations WHERE participant_id=?',[$p['id']])->fetchColumn();$acceptedPrice=$accepted!==false&&hash_equals($accepted,$this->priceHash($row));
+    $p=$known[0];$this->store->completeClarification($trip, $row['externalId']);if($p['participation_status']===$row['status']&&$p['price_group_reference']===$row['priceGroupId']&&$p['expected_price']===$row['price']){continue;}
+    $accepted=$this->store->acceptedPriceHash($p['id']);$acceptedPrice=$accepted!==false&&hash_equals($accepted,$this->priceHash($row));
     if(($row['priceConflict']??false)||($this->access->metadata($trip)['archived_at']??null)!==null||($this->access->metadata($trip)['closed_at']??null)!==null||(!$acceptedPrice&&($p['price_group_reference']!==$row['priceGroupId']||$p['expected_price']!==$row['price']))){$conflicts[]=['field'=>'person:'.$p['id'],'before'=>['status'=>$p['participation_status'],'price'=>$p['expected_price']],'external'=>$row];continue;}
     $this->applyResult((int)$p['registration_id'],(int)$p['id'],$row, $this->policy->actorId());
    }
-   $this->store->query('INSERT INTO external_observations (trip_id,revision,snapshot_json,conflicts_json,observed_at) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,conflicts_json=excluded.conflicts_json,observed_at=excluded.observed_at',[$trip,$old===false?1:(int)$old+1,json_encode($snapshot,JSON_THROW_ON_ERROR),json_encode($conflicts,JSON_THROW_ON_ERROR),gmdate(DATE_ATOM)]);
+   $this->store->saveObservation($trip, $old===false?1:(int)$old+1, json_encode($snapshot,JSON_THROW_ON_ERROR), json_encode($conflicts,JSON_THROW_ON_ERROR), gmdate(DATE_ATOM));
    $this->policy->audit('participation.reconcile','trip',$trip,'Abgleich ohne automatisches Umbepreisen');
   });return $this->read($trip);
  }
  public function acknowledge(int $trip,array $p): array {
   $this->policy->writeTrip($trip,'term.manage',function()use($trip,$p){
-   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
+   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}
    if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $conflicts=json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR);$fields=$p['fields']??null;
@@ -114,8 +114,8 @@ final readonly class ParticipationService {
    foreach($fields as $field){if(!is_string($field)){throw new ValidationException(['fields'=>'event_fields_only']);}}
    $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$data=$link['data'];$external=json_decode($o['snapshot_json'],true,512,JSON_THROW_ON_ERROR);foreach($fields as $field){if(str_starts_with($field,'term:')){$key=substr($field,5);if(!array_key_exists($key,$external['termFields']??[])){throw new ValidationException(['fields'=>'observed_field_required']);}$data['termFields'][$key]=$external['termFields'][$key];}else{if(!array_key_exists($field,$external)){throw new ValidationException(['fields'=>'observed_field_required']);}$data[$field]=$external[$field];}}
    $conflicts=array_values(array_filter($conflicts,fn($c)=>!in_array($c['field'],$fields,true)));
-   $this->store->query('UPDATE external_event_links SET external_json=? WHERE trip_id=?',[json_encode($data,JSON_THROW_ON_ERROR),$trip]);
-   $this->store->query('UPDATE external_observations SET revision=revision+1,conflicts_json=? WHERE trip_id=?',[json_encode($conflicts,JSON_THROW_ON_ERROR),$trip]);
+   $this->store->saveLinkData(json_encode($data,JSON_THROW_ON_ERROR), $trip);
+   $this->store->resolveConflicts(json_encode($conflicts,JSON_THROW_ON_ERROR), $trip);
    $this->policy->audit('term.conflict_acknowledge','trip',$trip,$reason.' · '.implode(',',$fields));
   });return $this->read($trip);
  }
@@ -127,37 +127,37 @@ final readonly class ParticipationService {
    $b=$this->bookings->get($trip,$p['bookingId'])??throw new NotFoundException('Booking');if(($p['revision']??null)!==$b['revision']){throw new AccessException('revision_conflict',409);}
    if(!$b['managed']){throw new AccessException('legacy_financial_mapping_requires_review',409);}
    $person=array_column($b['persons'],null,'id')[$p['personId']]??throw new NotFoundException('Person');
-   $case=$this->store->query("SELECT * FROM external_clarifications WHERE trip_id=? AND external_id=? AND status='unassigned'",[$trip,$externalId])->fetch(\PDO::FETCH_ASSOC)?:throw new NotFoundException('Clarification');
+   $case=$this->store->unassignedClarification($trip, $externalId)?:throw new NotFoundException('Clarification');
    $row=json_decode($case['data_json'],true,512,JSON_THROW_ON_ERROR);$this->validateResult($row);
    if(($person['guestId']!==null)!==($row['isCompanion']??false)||($person['guestId']!==null&&($row['companionName']??null)!==$person['name'])||$row['memberReference']===null||($p['memberReference']??null)!==$row['memberReference']||($person['memberReference']!==null&&$person['memberReference']!==$row['memberReference'])||($person['externalReference']!==null&&$person['externalReference']!==$externalId)||($row['priceConflict']??false)){throw new AccessException('external_identity_or_price_unproven',409);}
-   if($this->store->query('SELECT 1 FROM registration_participants WHERE external_reference=? AND id<>?',[$externalId,$person['id']])->fetchColumn()!==false){throw new AccessException('external_reference_conflict',409);}
-   if($this->store->query("SELECT 1 FROM participation_jobs WHERE participant_id=? AND status IN ('running','reconciling')",[$person['id']])->fetchColumn()!==false){throw new AccessException('person_operation_in_progress',409);}
-   $this->store->query('UPDATE registration_participants SET member_reference=? WHERE id=?',[$row['memberReference'],$person['id']]);
+   if($this->store->duplicateExternal($externalId, $person['id'])!==false){throw new AccessException('external_reference_conflict',409);}
+   if($this->store->runningPersonJob($person['id'])!==false){throw new AccessException('person_operation_in_progress',409);}
+   $this->store->setPersonMember($row['memberReference'], $person['id']);
    $this->acceptPrice($person['id'],$row,$reason);$this->applyResult($b['id'],$person['id'],$row,$this->policy->actorId());
    // Explicit matching proof resolves the unknown operation; it never retries a create.
-   $this->store->query("UPDATE participation_jobs SET status='succeeded',error_code=NULL,lease_token=NULL,lease_until=NULL WHERE participant_id=? AND status IN ('pending','unknown','blocked') AND kind=?",[$person['id'],$row['status']==='cancelled'?'cancel':($row['status']==='confirmed'?'register':'no_such_kind')]);
-   $this->store->query("UPDATE external_clarifications SET status='assigned' WHERE id=?",[$case['id']]);$this->policy->audit('participation.assign','trip',$trip,$reason.' · person='.$person['id']);
+   $this->store->completePersonJobs($person['id'], $row['status']==='cancelled'?'cancel':($row['status']==='confirmed'?'register':'no_such_kind'));
+   $this->store->assignClarification($case['id']);$this->policy->audit('participation.assign','trip',$trip,$reason.' · person='.$person['id']);
   });return $this->read($trip);
  }
  public function resolvePerson(int $trip,int $personId,array $p): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');
   $this->policy->writeTrip($trip,'registration.manage',function()use($trip,$personId,$p){
-   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->query('SELECT * FROM external_observations WHERE trip_id=?',[$trip])->fetch(\PDO::FETCH_ASSOC);
+   $reason=$this->policy->reason(is_string($p['reason']??null)?$p['reason']:'');$o=$this->store->observation($trip);
    if(!$o||($p['revision']??null)!==(int)$o['revision']){throw new AccessException('revision_conflict',409);}if(($p['confirmed']??null)!==true){throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);}
    $conflicts=json_decode($o['conflicts_json'],true,512,JSON_THROW_ON_ERROR);$target=null;foreach($conflicts as $c){if($c['field']==='person:'.$personId){$target=$c;}}
    if($target===null){throw new NotFoundException('Person conflict');}$row=$target['external'];$this->validateResult($row);
-   $person=$this->store->query('SELECT p.*,r.trip_id FROM registration_participants p JOIN registrations r ON r.id=p.registration_id WHERE p.id=? AND r.trip_id=?',[$personId,$trip])->fetch(\PDO::FETCH_ASSOC)?:throw new NotFoundException('Person');
+   $person=$this->store->personInTrip($personId, $trip)?:throw new NotFoundException('Person');
    if(($person['guest_approval_id']!==null)!==($row['isCompanion']??false)||($person['guest_approval_id']!==null&&($row['companionName']??null)!==$person['name'])||$row['memberReference']===null||$row['memberReference']!==$person['member_reference']||$row['externalId']!==$person['external_reference']||($row['priceConflict']??false)){throw new AccessException('external_identity_or_price_unproven',409);}
    $this->acceptPrice($personId,$row,$reason);$this->applyResult((int)$person['registration_id'],$personId,$row,$this->policy->actorId());
-   $conflicts=array_values(array_filter($conflicts,fn($c)=>$c['field']!=='person:'.$personId));$this->store->query('UPDATE external_observations SET revision=revision+1,conflicts_json=? WHERE trip_id=?',[json_encode($conflicts,JSON_THROW_ON_ERROR),$trip]);
+   $conflicts=array_values(array_filter($conflicts,fn($c)=>$c['field']!=='person:'.$personId));$this->store->resolveConflicts(json_encode($conflicts,JSON_THROW_ON_ERROR), $trip);
    $this->policy->audit('participation.person_resolve','trip',$trip,$reason.' · person='.$personId);
   });return $this->read($trip);
  }
  private function priceHash(array $row): string {return PlanningTransferService::hash([$row['externalId'],$row['memberReference'],$row['priceGroupId'],$row['price']]);}
  private function acceptPrice(int $id,array $row,string $reason): void {
-  $this->store->query('INSERT INTO person_observation_history (participant_id,data_json,actor_id,reason,created_at) VALUES (?,?,?,?,?)',[$id,json_encode($row,JSON_THROW_ON_ERROR),$this->policy->actorId(),$reason,gmdate(DATE_ATOM)]);
-  $this->store->query('INSERT INTO accepted_person_observations (participant_id,external_hash,actor_id,reason,created_at) VALUES (?,?,?,?,?) ON CONFLICT(participant_id) DO UPDATE SET external_hash=excluded.external_hash,actor_id=excluded.actor_id,reason=excluded.reason,created_at=excluded.created_at',[$id,$this->priceHash($row),$this->policy->actorId(),$reason,gmdate(DATE_ATOM)]);
-  $this->store->query('UPDATE registration_participants SET external_price_group=?,external_price=? WHERE id=?',[$row['priceGroupId'],$row['price'],$id]);
+  $this->store->recordPersonHistory($id, json_encode($row,JSON_THROW_ON_ERROR), $this->policy->actorId(), $reason, gmdate(DATE_ATOM));
+  $this->store->acceptPersonPrice($id, $this->priceHash($row), $this->policy->actorId(), $reason, gmdate(DATE_ATOM));
+  $this->store->setObservedPrice($row['priceGroupId'], $row['price'], $id);
  }
  public function validateSnapshot(array $s,string $event): void {
   if(($s['eventId']??null)!==$event||!is_string($s['revision']??null)||!is_bool($s['canceled']??null)||!is_int($s['bookingUntil']??null)||(!array_key_exists('capacityRemaining',$s)||($s['capacityRemaining']!==null&&!is_int($s['capacityRemaining'])))||(is_int($s['capacityRemaining'])&&$s['capacityRemaining']<0)||!is_array($s['groups']??null)||!array_is_list($s['groups'])||!is_array($s['participants']??null)||!array_is_list($s['participants'])){throw new AccessException('provider_snapshot_invalid',503);}
@@ -172,12 +172,12 @@ final readonly class ParticipationService {
  }
  /** Must run under writer reservation; preserves revision history and marks booking quantities unchecked. */
  public function applyResult(int $booking,int $person,array $r,int $actor): void {
-  $this->validateResult($r);$old=$this->store->query('SELECT participation_status FROM registration_participants WHERE registration_id=? AND id=?',[$booking,$person])->fetchColumn();
+  $this->validateResult($r);$old=$this->store->bookingPersonStatus($booking, $person);
   if($old!==$r['status']){
-   $this->store->query('UPDATE registrations SET revision=revision+1 WHERE id=?',[$booking]);
-   $b=$this->store->query('SELECT trip_id,revision FROM registrations WHERE id=?',[$booking])->fetch(\PDO::FETCH_ASSOC);
+   $this->store->advanceBookingRevision($booking);
+   $b=$this->store->bookingRevision($booking)?:throw new NotFoundException('Booking');
    foreach($this->bookings->get((int)$b['trip_id'],$booking)['answers'] as $a){if(($r['status']==='cancelled'||$old==='confirmed')&&$a['participantId']===null&&$a['state']==='answered'){$this->bookings->append($booking,null,$a['versionId'],$a['fieldId'],['state'=>'unchecked','value'=>$a['value']],$actor,(int)$b['revision'],'Externer Personenstatus geändert');}}
   }
-  $this->store->query("UPDATE registration_participants SET external_reference=?,participation_status=?,external_price_group=?,external_price=?,sync_status='synced' WHERE registration_id=? AND id=?",[$r['externalId'],$r['status'],$r['priceGroupId'],$r['price'],$booking,$person]);$this->refresh($booking);
+  $this->store->applyPersonResult($r['externalId'], $r['status'], $r['priceGroupId'], $r['price'], $booking, $person);$this->refresh($booking);
  }
 }

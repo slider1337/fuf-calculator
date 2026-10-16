@@ -5,6 +5,7 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 
 /** Durable planning snapshots, local term drafts and one creation operation per trip. */
+/** @phpstan-import-type CreationJob from \App\Application\Port\TermRepositoryInterface */
 final readonly class SqliteWorkflowRepository
 {
     public function __construct(private PDO $pdo) {}
@@ -25,20 +26,21 @@ final readonly class SqliteWorkflowRepository
         $this->query('INSERT INTO calculation_snapshots (trip_id,source_hash,snapshot_json,actor_id,created_at,operation_key,request_hash) VALUES (?,?,?,?,?,?,?)',[$tripId,$sourceHash,json_encode($data,JSON_THROW_ON_ERROR),$actor,gmdate(DATE_ATOM),$key,$requestHash]);
         return $this->snapshot($tripId,$key);
     }
+    /** @return array{revision: int, data: array<array-key, mixed>}|null */
     public function draft(int $tripId): ?array
     {
-        $r=$this->query('SELECT * FROM term_drafts WHERE trip_id=?',[$tripId])->fetch(PDO::FETCH_ASSOC);
-        return $r?['revision'=>(int)$r['revision'],'data'=>json_decode($r['draft_json'],true,512,JSON_THROW_ON_ERROR)]:null;
+        return (new SqliteTermRepository($this->pdo))->draft($tripId);
     }
+    /** @phpstan-impure
+     * @return array{externalId: string, confirmedAt: string, data: array<array-key, mixed>}|null
+     */
     public function link(int $tripId): ?array
     {
-        $r=$this->query('SELECT * FROM external_event_links WHERE trip_id=?',[$tripId])->fetch(PDO::FETCH_ASSOC);
-        return $r?['externalId'=>$r['external_id'],'confirmedAt'=>$r['confirmed_at'],'data'=>json_decode($r['external_json'],true,512,JSON_THROW_ON_ERROR)]:null;
+        return (new SqliteTermRepository($this->pdo))->link($tripId);
     }
+    /** @return CreationJob|null */
     public function job(int $tripId): ?array
     {
-        $r=$this->query('SELECT * FROM sync_jobs WHERE trip_id=?',[$tripId])->fetch(PDO::FETCH_ASSOC);
-        if(!$r){return null;}
-        return ['id'=>(int)$r['id'],'tripId'=>$tripId,'operationKey'=>$r['operation_key'],'requestHash'=>$r['request_hash'],'payload'=>json_decode($r['payload_json'],true,512,JSON_THROW_ON_ERROR),'actorId'=>(int)$r['actor_id'],'status'=>$r['status'],'attempts'=>(int)$r['attempts'],'externalId'=>$r['external_id'],'errorCode'=>$r['error_code'],'validationErrors'=>json_decode($r['validation_errors_json']??'[]',true)??[],'leaseToken'=>$r['lease_token'],'leaseUntil'=>$r['lease_until']===null?null:(int)$r['lease_until'],'createdAt'=>$r['created_at']];
+        return (new SqliteTermRepository($this->pdo))->job($tripId);
     }
 }

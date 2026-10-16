@@ -43,9 +43,10 @@ final readonly class TripService
                 if ($event->archived) { throw new AccessException('event_archived', 409); }
             }
             $trip = $this->repository->save($this->mapPayloadToTrip($payload, null));
-            $this->policy->setMetadata($trip->id(), ['event_id' => $eventId,'registration_mode'=>$mode]);
-            $this->policy->initializeTrip($trip->id(), $eventId);
-            return $this->repository->getById($trip->id());
+            $id=$trip->id()??throw new \LogicException('Saved trip has no ID');
+            $this->policy->setMetadata($id, ['event_id' => $eventId,'registration_mode'=>$mode]);
+            $this->policy->initializeTrip($id, $eventId);
+            return $this->repository->getById($id)??throw new NotFoundException('Saved trip');
         });
     }
 
@@ -63,7 +64,7 @@ final readonly class TripService
         }
 
         $this->repository->update($this->mapPayloadToTrip($payload, $id));
-        return $this->repository->getById($id);
+        return $this->repository->getById($id)??throw new NotFoundException('Trip');
     }
 
     private function mapPayloadToTrip(array $payload, ?int $id): Trip

@@ -89,6 +89,28 @@ final class TermUpdateApiTest extends ApiTestCase
     {
         $this->call('POST','/request',$this->request(),202);$this->provider->onRead=function(){$this->db->exec("DELETE FROM trip_access WHERE trip_id=".$this->trip." AND capability='term.manage'");};$this->worker()->runOne();self::assertSame(0,$this->provider->patches);
     }
+    public function testLeaseExpiryDuringProviderPreflightCannotPatch(): void
+    {
+        $this->call('POST','/request',$this->request(),202);
+        $this->provider->onRead=function(){$this->db->exec('UPDATE term_update_jobs SET lease_until=0');};
+        $this->worker()->runOne();
+        self::assertSame(0,$this->provider->patches);
+        self::assertSame('blocked',$this->call('GET','')['jobs'][0]['status']);
+    }
+    public function testChangedLinkDuringProviderReadCannotProduceAReview(): void
+    {
+        $this->provider->onRead=function(){$this->db->exec("UPDATE external_event_links SET external_id='88' WHERE trip_id=".$this->trip);};
+        $this->call('POST','/preview',['changes'=>['title'=>'Anderer Titel']],409);
+        self::assertSame(0,$this->provider->patches);
+    }
+    public function testMalformedStoredChangesNeverReachTheProvider(): void
+    {
+        $this->call('POST','/request',$this->request(),202);
+        $payload=['externalId'=>'77','before'=>['title'=>'Fiktiver Termin'],'changes'=>['capacity'=>'invalid']];
+        $this->db->prepare('UPDATE term_update_jobs SET payload_json=?')->execute([json_encode($payload,JSON_THROW_ON_ERROR)]);
+        try { $this->worker()->runOne();self::fail('Malformed job was accepted'); }
+        catch (\App\Application\ValidationException) { self::assertSame(0,$this->provider->patches); }
+    }
     public function testValidationOffModeAndForeignTrip(): void
     {
         foreach([['capacity'=>0],['groups'=>[]],['start'=>'2027-02-30T12:00:00Z'],['start'=>'2028-01-01T00:00:00Z'],['visibleToMembers'=>'true'],[]] as $changes){$this->call('POST','/preview',['changes'=>$changes],422);}

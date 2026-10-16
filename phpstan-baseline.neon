@@ -295,24 +295,6 @@ parameters:
 			path: scripts/workers.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/AccessPolicy.php
-
-		-
-			message: '#^Cannot access offset ''capabilities'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/AccessPolicy.php
-
-		-
-			message: '#^Cannot access offset ''userId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/AccessPolicy.php
-
-		-
 			message: '#^Method App\\Application\\AccessPolicy\:\:candidates\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -367,18 +349,6 @@ parameters:
 			path: src/Application/AccessPolicy.php
 
 		-
-			message: '#^Parameter \#3 \$userId of method App\\Application\\Port\\AccessRepositoryInterface\:\:replaceMember\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AccessPolicy.php
-
-		-
-			message: '#^Parameter \#4 \$capabilities of method App\\Application\\Port\\AccessRepositoryInterface\:\:replaceMember\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/AccessPolicy.php
-
-		-
 			message: '#^Cannot access offset ''expenses'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -403,12 +373,6 @@ parameters:
 			path: src/Application/ActualExpenseService.php
 
 		-
-			message: '#^Method App\\Application\\ActualExpenseService\:\:addExpense\(\) should return App\\Domain\\Trip\\ActualExpense but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/ActualExpenseService.php
-
-		-
 			message: '#^Method App\\Application\\ActualExpenseService\:\:addExpenseInternal\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -429,12 +393,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\ActualExpenseService\:\:updateExpense\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/ActualExpenseService.php
-
-		-
-			message: '#^Method App\\Application\\ActualExpenseService\:\:updateExpense\(\) should return App\\Domain\\Trip\\ActualExpense but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/ActualExpenseService.php
 
@@ -1045,12 +1003,6 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Method App\\Application\\BookingService\:\:assignRoom\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Method App\\Application\\BookingService\:\:cancel\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1059,12 +1011,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\BookingService\:\:cancel\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Method App\\Application\\BookingService\:\:cancel\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/BookingService.php
 
@@ -1081,12 +1027,6 @@ parameters:
 			path: src/Application/BookingService.php
 
 		-
-			message: '#^Method App\\Application\\BookingService\:\:correct\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
 			message: '#^Method App\\Application\\BookingService\:\:create\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1095,12 +1035,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\BookingService\:\:create\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/BookingService.php
-
-		-
-			message: '#^Method App\\Application\\BookingService\:\:create\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/BookingService.php
 
@@ -1441,12 +1375,6 @@ parameters:
 			path: src/Application/EventService.php
 
 		-
-			message: '#^Method App\\Application\\EventService\:\:create\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/EventService.php
-
-		-
 			message: '#^Method App\\Application\\EventService\:\:get\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1473,12 +1401,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\EventService\:\:update\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/EventService.php
-
-		-
-			message: '#^Method App\\Application\\EventService\:\:update\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/EventService.php
 
@@ -1621,12 +1543,6 @@ parameters:
 			path: src/Application/FormService.php
 
 		-
-			message: '#^Method App\\Application\\FormService\:\:archive\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Method App\\Application\\FormService\:\:binding\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1647,12 +1563,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\FormService\:\:createDraft\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Method App\\Application\\FormService\:\:createDraft\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/FormService.php
 
@@ -1723,12 +1633,6 @@ parameters:
 			path: src/Application/FormService.php
 
 		-
-			message: '#^Method App\\Application\\FormService\:\:publish\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Method App\\Application\\FormService\:\:revision\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1747,12 +1651,6 @@ parameters:
 			path: src/Application/FormService.php
 
 		-
-			message: '#^Method App\\Application\\FormService\:\:save\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Method App\\Application\\FormService\:\:switchPreview\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1765,12 +1663,6 @@ parameters:
 			path: src/Application/FormService.php
 
 		-
-			message: '#^Method App\\Application\\FormService\:\:switchPreview\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/FormService.php
-
-		-
 			message: '#^Method App\\Application\\FormService\:\:switchVersion\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1779,12 +1671,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\FormService\:\:switchVersion\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/FormService.php
-
-		-
-			message: '#^Method App\\Application\\FormService\:\:switchVersion\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/FormService.php
 
@@ -1945,12 +1831,6 @@ parameters:
 			path: src/Application/GuestService.php
 
 		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/GuestService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1958,12 +1838,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$array of function array_filter expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/GuestService.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/GuestService.php
@@ -2155,12 +2029,6 @@ parameters:
 			path: src/Application/MemberBookingService.php
 
 		-
-			message: '#^Method App\\Application\\MemberBookingService\:\:cancel\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
 			message: '#^Method App\\Application\\MemberBookingService\:\:context\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2179,12 +2047,6 @@ parameters:
 			path: src/Application/MemberBookingService.php
 
 		-
-			message: '#^Method App\\Application\\MemberBookingService\:\:correct\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
 			message: '#^Method App\\Application\\MemberBookingService\:\:create\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2193,12 +2055,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\MemberBookingService\:\:create\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Method App\\Application\\MemberBookingService\:\:create\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/MemberBookingService.php
 
@@ -2281,12 +2137,6 @@ parameters:
 			path: src/Application/MemberBookingService.php
 
 		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 4
-			path: src/Application/MemberBookingService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 5
@@ -2320,12 +2170,6 @@ parameters:
 			message: '#^Parameter \#1 \$errors of class App\\Application\\ValidationException constructor expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
 			path: src/Application/MemberBookingService.php
 
 		-
@@ -2366,12 +2210,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#2 \$booking of method App\\Application\\ParticipationService\:\:enqueue\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/MemberBookingService.php
-
-		-
-			message: '#^Parameter \#2 \$event of method App\\Application\\ParticipationService\:\:validateSnapshot\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/MemberBookingService.php
@@ -2437,12 +2275,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Cannot access offset ''bookingUntil''\|''canceled''\|''capacity''\|''capacityRemaining''\|''groups''\|''revision'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Cannot access offset ''companionName'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 2
@@ -2486,12 +2318,6 @@ parameters:
 
 		-
 			message: '#^Cannot access offset ''fieldId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Cannot access offset ''groups'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationService.php
@@ -2595,7 +2421,7 @@ parameters:
 		-
 			message: '#^Cannot access offset ''termFields'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
+			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2619,7 +2445,7 @@ parameters:
 		-
 			message: '#^Cannot access offset mixed on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2743,18 +2569,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Offset ''data'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_column expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 2
@@ -2791,18 +2605,6 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$haystack of function str_starts_with expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#1 \$id of method App\\Application\\ParticipationService\:\:acceptPrice\(\) expects int, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -2812,12 +2614,6 @@ parameters:
 			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 5
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#1 \$key of function array_key_exists expects int\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2839,27 +2635,9 @@ parameters:
 			path: src/Application/ParticipationService.php
 
 		-
-			message: '#^Parameter \#1 \$string of function substr expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
 			message: '#^Parameter \#2 \$array of function array_key_exists expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 2
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, list given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationService.php
-
-		-
-			message: '#^Parameter \#2 \$event of method App\\Application\\ParticipationService\:\:validateSnapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2895,7 +2673,7 @@ parameters:
 		-
 			message: '#^Possibly invalid array key type mixed\.$#'
 			identifier: offsetAccess.invalidOffset
-			count: 3
+			count: 2
 			path: src/Application/ParticipationService.php
 
 		-
@@ -2907,18 +2685,6 @@ parameters:
 		-
 			message: '#^Binary operation "\." between ''calculator\-person\-'' and mixed results in an error\.$#'
 			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''actor_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''attempts'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationWorker.php
 
@@ -2953,57 +2719,15 @@ parameters:
 			path: src/Application/ParticipationWorker.php
 
 		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/ParticipationWorker.php
-
-		-
 			message: '#^Cannot access offset ''isCompanion'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationWorker.php
 
 		-
-			message: '#^Cannot access offset ''job'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''kind'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/ParticipationWorker.php
-
-		-
 			message: '#^Cannot access offset ''memberReference'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 6
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''member_actor'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''mode'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''participant_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''payload_json'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
 			path: src/Application/ParticipationWorker.php
 
 		-
@@ -3019,31 +2743,7 @@ parameters:
 			path: src/Application/ParticipationWorker.php
 
 		-
-			message: '#^Cannot access offset ''registration_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''skip'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
 			message: '#^Cannot access offset ''status'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''token'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Cannot access offset ''trip_id'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
 			path: src/Application/ParticipationWorker.php
@@ -3080,18 +2780,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Parameter \#1 \$j of method App\\Application\\ParticipationWorker\:\:allowed\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/ParticipationWorker.php
-
-		-
-			message: '#^Parameter \#1 \$j of method App\\Application\\ParticipationWorker\:\:block\(\) expects array, mixed given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Application/ParticipationWorker.php
@@ -3385,12 +3073,6 @@ parameters:
 			path: src/Application/PlanningTransferService.php
 
 		-
-			message: '#^Method App\\Application\\PlanningTransferService\:\:apply\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/PlanningTransferService.php
-
-		-
 			message: '#^Method App\\Application\\PlanningTransferService\:\:build\(\) has parameter \$p with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3571,12 +3253,6 @@ parameters:
 			path: src/Application/Port/AccessRepositoryInterface.php
 
 		-
-			message: '#^Method App\\Application\\Port\\AccessRepositoryInterface\:\:team\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/AccessRepositoryInterface.php
-
-		-
 			message: '#^Method App\\Application\\Port\\BookingPolicy\:\:metadata\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -3677,18 +3353,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/Port/ExternalEventPort.php
-
-		-
-			message: '#^Method App\\Application\\Port\\ExternalTermUpdatePort\:\:fields\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/ExternalTermUpdatePort.php
-
-		-
-			message: '#^Method App\\Application\\Port\\ExternalTermUpdatePort\:\:patch\(\) has parameter \$changes with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/Port/ExternalTermUpdatePort.php
 
 		-
 			message: '#^Method App\\Application\\Port\\FormRepositoryInterface\:\:archive\(\) return type has no value type specified in iterable type array\.$#'
@@ -3817,42 +3481,6 @@ parameters:
 			path: src/Application/Port/RecoverableExternalEventPort.php
 
 		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/RegistrationModeService.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: src/Application/RegistrationModeService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationModeService\:\:change\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationModeService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationModeService\:\:change\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationModeService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationModeService\:\:change\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/RegistrationModeService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationModeService\:\:read\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationModeService.php
-
-		-
 			message: '#^Cannot access offset ''birthDate'' on mixed\.$#'
 			identifier: offsetAccess.nonOffsetAccessible
 			count: 1
@@ -3865,61 +3493,13 @@ parameters:
 			path: src/Application/RegistrationService.php
 
 		-
-			message: '#^Method App\\Application\\RegistrationService\:\:addManualRegistration\(\) should return array\<App\\Domain\\Registration\\Registration\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
 			message: '#^Method App\\Application\\RegistrationService\:\:addManualRegistrationInternal\(\) has parameter \$data with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/RegistrationService.php
 
 		-
-			message: '#^Method App\\Application\\RegistrationService\:\:addManualRegistrationInternal\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:deleteRegistration\(\) should return array\<App\\Domain\\Registration\\Registration\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:deleteRegistrationInternal\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:importCsv\(\) should return array\<App\\Domain\\Registration\\Registration\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:importCsvInternal\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
 			message: '#^Method App\\Application\\RegistrationService\:\:parseRegistrationRow\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:recalculateBillings\(\) should return array\<App\\Domain\\Registration\\Registration\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/RegistrationService.php
-
-		-
-			message: '#^Method App\\Application\\RegistrationService\:\:recalculateBillingsInternal\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/RegistrationService.php
@@ -3945,12 +3525,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\Port\\ActorInterface@anonymous/src/Application/ScheduledReconciliation\.php\:22\:\:userId\(\) never returns null so it can be removed from the return type\.$#'
 			identifier: return.unusedType
-			count: 1
-			path: src/Application/ScheduledReconciliation.php
-
-		-
-			message: '#^Parameter \#1 \$trip of method App\\Application\\ParticipationService\:\:reconcile\(\) expects int, mixed given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Application/ScheduledReconciliation.php
 
@@ -3995,744 +3569,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Application/TermCreationNotStarted.php
-
-		-
-			message: '#^Method App\\Application\\TermFields\:\:changes\(\) has parameter \$changes with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermFields.php
-
-		-
-			message: '#^Method App\\Application\\TermFields\:\:changes\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermFields.php
-
-		-
-			message: '#^Method App\\Application\\TermFields\:\:period\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermFields.php
-
-		-
-			message: '#^Parameter \#1 \$datetime of class DateTimeImmutable constructor expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Application/TermFields.php
-
-		-
-			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
-			identifier: foreach.nonIterable
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Binary operation "\+" between mixed and 1 results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Binary operation "\." between ''Preis fehlt\: '' and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot access offset ''externalId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot access offset ''label'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot access offset ''mode'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot access offset ''price'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot access offset ''userId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot call method endDate\(\) on App\\Domain\\Trip\\Trip\|null\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot call method name\(\) on App\\Domain\\Trip\\Trip\|null\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot call method startDate\(\) on App\\Domain\\Trip\\Trip\|null\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:bindVerified\(\) has parameter \$verified with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:createTrip\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:createTrip\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:createTrip\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:link\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:link\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:read\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:readLocal\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:readLocal\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:request\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:request\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:resume\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:resume\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:review\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:review\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:save\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:save\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:validate\(\) has parameter \$d with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Method App\\Application\\TermService\:\:validate\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Offset ''id'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Offset ''revision'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_diff expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_unique expects an array of values castable to string, list given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\Port\\FormRepositoryInterface\:\:get\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\TermService\:\:save\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\TermService\:\:validate\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$known_string of function hash_equals expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#1 \$tripId of method App\\Application\\FormService\:\:switchVersion\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$array of function implode expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$arrays of function array_diff expects an array of values castable to string, list given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$d of method App\\Application\\TermService\:\:validate\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$haystack of function in_array expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$id of method App\\Application\\AccessPolicy\:\:grant\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$id of method App\\Application\\Port\\AccessRepositoryInterface\:\:team\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#2 \$subject of function preg_match expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Parameter \#3 \$userId of method App\\Application\\AccessPolicy\:\:grant\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermService.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:jobs\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:preview\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:preview\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:read\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:request\(\) has parameter \$p with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:request\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateService\:\:request\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_intersect_key expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_keys expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_replace expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$error of class App\\Application\\AccessException constructor expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ExternalTermUpdatePort\:\:fields\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Parameter \#1 \$known_string of function hash_equals expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Application/TermUpdateService.php
-
-		-
-			message: '#^Anonymous function has an unused use \$current\.$#'
-			identifier: closure.unusedUse
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Binary operation "\." between mixed and '' · '' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''actor_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''before'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''changes'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 8
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''external_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''mode'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''payload_json'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''reason'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''skip'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''termFields'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''token'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot access offset ''trip_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 5
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Method App\\Application\\TermUpdateWorker\:\:allowed\(\) has parameter \$job with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Offset ''data'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_keys expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$array of function array_replace expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ExternalTermUpdatePort\:\:fields\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ExternalTermUpdatePort\:\:patch\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$job of method App\\Application\\TermUpdateWorker\:\:allowed\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#2 \$changes of method App\\Application\\Port\\ExternalTermUpdatePort\:\:patch\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$arrays of function array_intersect_key expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Parameter \#2 \.\.\.\$replacements of function array_replace expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermUpdateWorker.php
-
-		-
-			message: '#^Binary operation "\." between ''calculator\-term\-'' and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Binary operation "\." between non\-falsy\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''actorId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''job'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''mode'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''operationKey'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''payload'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 3
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''skip'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''token'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 2
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Cannot access offset ''tripId'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 4
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Method App\\Application\\TermWorker\:\:allowed\(\) has parameter \$job with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Offset ''id'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Offset ''leaseToken'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Offset ''status'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$actor of method App\\Application\\Port\\AccessRepositoryInterface\:\:audit\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$draft of method App\\Application\\Port\\ExternalEventPort\:\:create\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$draft of method App\\Application\\Port\\RecoverableExternalEventPort\:\:createGuarded\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$draft of method App\\Application\\Port\\RecoverableExternalEventPort\:\:resume\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\TermService\:\:bindVerified\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$job of method App\\Application\\TermWorker\:\:allowed\(\) expects array, array\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$job of method App\\Application\\TermWorker\:\:allowed\(\) expects array, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$tripId of method App\\Application\\Port\\AccessRepositoryInterface\:\:metadata\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 3
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#1 \$tripId of method App\\Infrastructure\\Persistence\\SqliteWorkflowRepository\:\:job\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#2 \$id of method App\\Application\\Port\\AccessRepositoryInterface\:\:capabilities\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#2 \$verified of method App\\Application\\TermService\:\:bindVerified\(\) expects array, array\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#3 \$userId of method App\\Application\\Port\\AccessRepositoryInterface\:\:capabilities\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
-
-		-
-			message: '#^Parameter \#4 \$id of method App\\Application\\Port\\AccessRepositoryInterface\:\:audit\(\) expects int, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TermWorker.php
 
 		-
 			message: '#^Method App\\Application\\TripData\:\:fromTrip\(\) return type has no value type specified in iterable type array\.$#'
@@ -4837,12 +3673,6 @@ parameters:
 			path: src/Application/TripManagementService.php
 
 		-
-			message: '#^Method App\\Application\\TripManagementService\:\:archive\(\) should return array but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TripManagementService.php
-
-		-
 			message: '#^Method App\\Application\\TripManagementService\:\:duplicate\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -4851,12 +3681,6 @@ parameters:
 		-
 			message: '#^Method App\\Application\\TripManagementService\:\:duplicate\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TripManagementService.php
-
-		-
-			message: '#^Method App\\Application\\TripManagementService\:\:duplicate\(\) should return array but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Application/TripManagementService.php
 
@@ -4957,12 +3781,6 @@ parameters:
 			path: src/Application/TripService.php
 
 		-
-			message: '#^Method App\\Application\\TripService\:\:createFromArray\(\) should return App\\Domain\\Trip\\Trip but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TripService.php
-
-		-
 			message: '#^Method App\\Application\\TripService\:\:mapPayloadToTrip\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -4981,38 +3799,8 @@ parameters:
 			path: src/Application/TripService.php
 
 		-
-			message: '#^Method App\\Application\\TripService\:\:updateFromArray\(\) should return App\\Domain\\Trip\\Trip but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TripService.php
-
-		-
 			message: '#^Method App\\Application\\TripService\:\:updateInternal\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Application/TripService.php
-
-		-
-			message: '#^Method App\\Application\\TripService\:\:updateInternal\(\) should return App\\Domain\\Trip\\Trip but returns App\\Domain\\Trip\\Trip\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Application/TripService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\AccessPolicy\:\:initializeTrip\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TripService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\AccessPolicy\:\:setMetadata\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application/TripService.php
-
-		-
-			message: '#^Parameter \#1 \$id of method App\\Application\\Port\\TripRepositoryInterface\:\:getById\(\) expects int, int\|null given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Application/TripService.php
 
@@ -5503,12 +4291,6 @@ parameters:
 			path: src/Infrastructure/EasyVereinEventAdapter.php
 
 		-
-			message: '#^Method App\\Infrastructure\\EasyVereinEventAdapter\:\:fields\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/EasyVereinEventAdapter.php
-
-		-
 			message: '#^Method App\\Infrastructure\\EasyVereinEventAdapter\:\:findOriginal\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -5546,12 +4328,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Infrastructure\\EasyVereinEventAdapter\:\:jobReference\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/EasyVereinEventAdapter.php
-
-		-
-			message: '#^Method App\\Infrastructure\\EasyVereinEventAdapter\:\:patch\(\) has parameter \$changes with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Infrastructure/EasyVereinEventAdapter.php
@@ -5947,24 +4723,6 @@ parameters:
 			path: src/Infrastructure/EasyVereinReadHttpClient.php
 
 		-
-			message: '#^Method App\\Infrastructure\\EasyVereinTermFields\:\:read\(\) has parameter \$row with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/EasyVereinTermFields.php
-
-		-
-			message: '#^Method App\\Infrastructure\\EasyVereinTermFields\:\:read\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/EasyVereinTermFields.php
-
-		-
-			message: '#^Parameter \#1 \$datetime of class DateTimeImmutable constructor expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Infrastructure/EasyVereinTermFields.php
-
-		-
 			message: '#^Method App\\Infrastructure\\EasyVereinValidation\:\:fromBody\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -6343,18 +5101,6 @@ parameters:
 			path: src/Infrastructure/Http/Controller/MemberController.php
 
 		-
-			message: '#^Offset ''externalId'' might not exist on array\|null\.$#'
-			identifier: offsetAccess.notFound
-			count: 2
-			path: src/Infrastructure/Http/Controller/MemberController.php
-
-		-
-			message: '#^Parameter \#1 \$eventId of method App\\Application\\Port\\ParticipationPort\:\:snapshot\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 2
-			path: src/Infrastructure/Http/Controller/MemberController.php
-
-		-
 			message: '#^Cannot call method billingCalculatedAt\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -6637,32 +5383,8 @@ parameters:
 			path: src/Infrastructure/Http/TemplateRenderer.php
 
 		-
-			message: '#^Cannot access offset ''capability'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
-
-		-
-			message: '#^Cannot access offset ''email'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
-
-		-
-			message: '#^Cannot access offset ''user_id'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
-
-		-
 			message: '#^Cannot call method fetchAll\(\) on PDOStatement\|false\.$#'
 			identifier: method.nonObject
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
 
@@ -6698,12 +5420,6 @@ parameters:
 
 		-
 			message: '#^Method App\\Infrastructure\\Persistence\\SqliteAccessRepository\:\:table\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteAccessRepository\:\:team\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Infrastructure/Persistence/SqliteAccessRepository.php
@@ -7617,25 +6333,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 7
-			path: src/Infrastructure/Persistence/SqliteWorkflowRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteWorkflowRepository\:\:draft\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteWorkflowRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteWorkflowRepository\:\:job\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Infrastructure/Persistence/SqliteWorkflowRepository.php
-
-		-
-			message: '#^Method App\\Infrastructure\\Persistence\\SqliteWorkflowRepository\:\:link\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
+			count: 2
 			path: src/Infrastructure/Persistence/SqliteWorkflowRepository.php
 
 		-
@@ -7671,5 +6369,5 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$json of function json_decode expects string, mixed given\.$#'
 			identifier: argument.type
-			count: 5
+			count: 1
 			path: src/Infrastructure/Persistence/SqliteWorkflowRepository.php

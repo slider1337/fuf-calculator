@@ -33,6 +33,7 @@ final readonly class RegistrationService
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->importCsvInternal($tripId, $csvContent));
     }
 
+    /** @return Registration[] */
     private function importCsvInternal(int $tripId, string $csvContent): array
     {
         $this->policy->requireRegistrationMode($tripId,'clubdesk_csv');
@@ -67,6 +68,7 @@ final readonly class RegistrationService
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->addManualRegistrationInternal($tripId, $data));
     }
 
+    /** @return Registration[] */
     private function addManualRegistrationInternal(int $tripId, array $data): array
     {
         $trip = $this->tripRepository->getById($tripId);
@@ -135,6 +137,7 @@ final readonly class RegistrationService
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->deleteRegistrationInternal($tripId, $registrationId));
     }
 
+    /** @return Registration[] */
     private function deleteRegistrationInternal(int $tripId, int $registrationId): array
     {
         $trip = $this->tripRepository->getById($tripId);
@@ -174,6 +177,7 @@ final readonly class RegistrationService
         return $this->policy->writeTrip($tripId, 'registration.manage', fn () => $this->recalculateBillingsInternal($tripId));
     }
 
+    /** @return Registration[] */
     private function recalculateBillingsInternal(int $tripId): array
     {
         $trip = $this->tripRepository->getById($tripId);

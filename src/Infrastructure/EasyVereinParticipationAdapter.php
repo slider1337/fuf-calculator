@@ -66,7 +66,6 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
   $event=EasyVereinData::id($p['eventId'],'event');$member=EasyVereinData::id($p['memberReference'],'member');
   $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
   if(EasyVereinData::id($profile['id']??null,'member')!==$member){throw new ParticipationRejected('member_reference_changed');}$contact=EasyVereinData::id($profile['contact_details']??null,'contact-details');
-  $this->memberCache[$contact]=$member;
   $current=$this->snapshot($event);$guest=($p['guestId']??null)!==null;
   if($kind==='cancel'){
    $id=EasyVereinData::id($p['externalId']??null,'participation');$row=$this->find($current,$id);
@@ -104,7 +103,7 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
    $member=EasyVereinData::id($p['memberReference'],'member');if(isset($seen[$member]))throw new ParticipationRejected('existing_participation_requires_clarification');$seen[$member]=true;
    $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
    if(EasyVereinData::id($profile['id']??null,'member')!==$member)throw new ParticipationRejected('member_reference_changed');
-   $contacts[$member]=EasyVereinData::id($profile['contact_details']??null,'contact-details');$this->memberCache[$contacts[$member]]=$member;
+   $contacts[$member]=EasyVereinData::id($profile['contact_details']??null,'contact-details');
   }
   $current=$this->snapshot($event);$groups=array_column($current['groups'],null,'id');$entries=[];
   if($kind==='register'&&($current['canceled']||$current['bookingUntil']<time()||!is_int($current['capacityRemaining'])||$current['capacityRemaining']<count($people)))throw new ParticipationRejected('event_unavailable');

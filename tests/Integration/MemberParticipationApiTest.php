@@ -218,7 +218,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $this->provider->groups=[];$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;$b=$this->create($p);$this->worker();self::assertSame('confirmed',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
  }
  public function testDirectExternalParticipationAndFieldConflictsNeverGuessContact(): void {
-  $this->provider->rows['888']=['externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
+  $this->provider->rows['888']=['eventId'=>'77','externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$d=json_decode((string)$r->getBody(),true);self::assertCount(0,$d['clarifications']);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame('easyverein',$this->db->query('SELECT source FROM registrations')->fetchColumn());self::assertContains('groups',array_column($d['observation']['conflicts'],'field'));
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Neuen Terminpreis geprüft']);self::assertSame(200,$r->getStatusCode());
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Veralteter Stand']);self::assertSame(409,$r->getStatusCode());
@@ -252,10 +252,10 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
- public function testReleasedTermStatusReadsProviderOutsideTransactionAndUsesLiveDeadline(): void {
+ public function testTermStatusReusesCacheAndExplicitRefreshChecksLiveDeadline(): void {
   $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
   $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
-  $this->provider->bookingUntil=1;$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
+  $this->provider->bookingUntil=1;$cached=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertTrue(json_decode((string)$cached->getBody(),true)['registrationEnabled']);$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term?refresh=1");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
  }
  public function testFailedReleasePreflightLeavesSettingsUnchangedAndDisablingStillWorks(): void {
   $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');

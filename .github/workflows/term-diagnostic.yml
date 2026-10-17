@@ -1,0 +1,23 @@
+name: Targeted term diagnostic
+on:
+  push:
+    branches: [diagnose/term-creation-20261017]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      # User explicitly authorized reading the affected production job through
+      # GitHub Actions on 2026-10-17. No credentials or participant data are output.
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml ps app worker
+            docker compose -f docker-compose.prod.yml exec -T app php -r '$db=new PDO("sqlite:/app/database/fuf.sqlite"); $db->exec("PRAGMA query_only=ON"); foreach(["job"=>"SELECT id,trip_id,status,attempts,error_code,lease_until,created_at,validation_errors_json FROM sync_jobs WHERE trip_id=2","link"=>"SELECT external_id,confirmed_at FROM external_event_links WHERE trip_id=2"] as $name=>$query){echo $name," ",json_encode($db->query($query)->fetchAll(PDO::FETCH_ASSOC)),PHP_EOL;}'

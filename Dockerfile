@@ -6,7 +6,7 @@ COPY scripts/copy-bootstrap.php ./scripts/copy-bootstrap.php
 COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
 RUN composer install --no-interaction --prefer-dist --no-progress
 
-FROM php:8.4.26-cli-bookworm@sha256:836ac6c672d1372a47c8fd61b625015bd07760f493fb2eaab2087636498a2b4b
+FROM php:8.5.11-cli-bookworm@sha256:819080ed413631f6ec564184dd9acd08d9425bd863b9f8b5876b5ea2147d55e7
 WORKDIR /var/www/html
 
 RUN apt-get update \

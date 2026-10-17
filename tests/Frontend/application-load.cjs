@@ -82,6 +82,18 @@ function load(readyState = 'loading', beforeStartup = () => {}) {
   scope.renderHeadKpi = () => {};
   input[0]();
   assert.equal(previews, 1);
+  // Real lifecycle listeners: successful writes leave the modal and return to the list.
+  vm.runInContext("state.currentTrip={id:2,archivedAt:null};",scope);
+  scope.dirtyPlanning=()=>false;scope.performManagement=fn=>fn();
+  let submit,markup,hidden=0;const writes=[];
+  scope.showManagementModal=(title,html,fn)=>{markup=html;submit=fn;};
+  vm.runInContext('management.modal={hide:()=>hideLifecycleModal()};',scope);scope.hideLifecycleModal=()=>hidden++;
+  scope.api=async(url,options)=>{writes.push({url,options});return {archivedAt:'2026-10-17'};};
+  scope.openTrip=async()=>{throw Error('Archived trip must not be reopened after save');};
+  await nodes.get('trip-archive').listeners.get('click')[0]();assert(!markup.includes('action-reason'));await submit();
+  assert.equal(writes[0].url,'/api/trips/2/archive');assert.equal(navigation.at(-1),'/');assert.equal(hidden,1);
+  await nodes.get('trip-delete').listeners.get('click')[0]();assert(markup.includes('easyVerein bleiben bestehen'));await submit();
+  assert.equal(writes[1].options.method,'DELETE');assert.deepEqual(JSON.parse(writes[1].options.body),{confirmed:true});assert.equal(hidden,2);
   const startup = [];
   const complete = load('complete', context => {
     context.window.bootstrap = {Modal: class {}};

@@ -175,6 +175,8 @@ final class InMemoryTripRepository implements TripRepositoryInterface
         return $saved;
     }
 
+    public function remove(int $id): void {unset($this->items[$id]);}
+
     public function getById(int $id): ?Trip
     {
         return $this->items[$id] ?? null;

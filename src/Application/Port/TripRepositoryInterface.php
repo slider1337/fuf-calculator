@@ -12,6 +12,9 @@ interface TripRepositoryInterface
 
     public function update(Trip $trip): Trip;
 
+    /** Mark locally deleted and archived; preserve all dependent history. */
+    public function remove(int $id): void;
+
     public function getById(int $id): ?Trip;
 
     /** @return array<int, array{id:int,name:string,startDate:string,endDate:?string}> */

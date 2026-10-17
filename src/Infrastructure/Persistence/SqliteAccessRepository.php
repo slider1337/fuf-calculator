@@ -28,7 +28,8 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
     public function exists(string $type, int $id): bool
     {
         $table = $type === 'trip' ? 'trips' : 'events';
-        $s = $this->pdo->prepare("SELECT 1 FROM $table WHERE id = ?");
+        $filter=$type==='trip'?' AND deleted_at IS NULL':'';
+        $s = $this->pdo->prepare("SELECT 1 FROM $table WHERE id = ?$filter");
         $s->execute([$id]); return $s->fetchColumn() !== false;
     }
     public function role(int $userId): ?string
@@ -39,6 +40,7 @@ final readonly class SqliteAccessRepository implements AccessRepositoryInterface
     /** @return list<string> */
     public function capabilities(string $type, int $id, int $userId): array
     {
+        if($type==='trip'&&!$this->exists($type,$id))return [];
         [$table, $key] = $this->table($type);
         $s = $this->pdo->prepare("SELECT capability FROM $table WHERE $key = ? AND user_id = ? ORDER BY capability");
         $s->execute([$id, $userId]); return array_values(array_map(static fn (mixed $v): string => StoredRow::from(['capability'=>$v])->text('capability'), $s->fetchAll(PDO::FETCH_COLUMN)));

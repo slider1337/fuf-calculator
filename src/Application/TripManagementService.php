@@ -7,7 +7,7 @@ use App\Domain\Service\PriceCalculatorService;
 
 final readonly class TripManagementService
 {
-    public function __construct(private AccessPolicy $policy, private TripService $trips, private ActualExpenseService $expenses, private PriceCalculatorService $calculator) {}
+    public function __construct(private AccessPolicy $policy, private TripService $trips, private ActualExpenseService $expenses, private PriceCalculatorService $calculator,private TripRepositoryInterface $repository) {}
     public function close(int $id, string $reason): void
     {
         $this->policy->writeTrip($id, 'settlement.close', function () use ($id, $reason) {
@@ -42,12 +42,25 @@ final readonly class TripManagementService
             $this->policy->trip($id, 'trip.manage');
             if (!is_bool($p['archived'] ?? null)) { throw new ValidationException(['archived'=>'boolean_required']); }
             $metadata = $this->policy->metadata($id);
+            if($p['archived']===(($metadata['archived_at']??null)!==null)){return ['archivedAt'=>$metadata['archived_at']??null];}
             if (!array_key_exists('archivedAt', $p) || $p['archivedAt'] !== ($metadata['archived_at'] ?? null)) { throw new AccessException('revision_conflict',409); }
-            $reason = $this->policy->reason(is_string($p['reason'] ?? null) ? $p['reason'] : '');
+            $reason = $p['archived']?'Reise archiviert':'Reise aus Archiv geholt';
             $archivedAt = $p['archived'] ? (($metadata['archived_at'] ?? null) ?? gmdate(DATE_ATOM)) : null;
             $this->policy->setMetadata($id, ['archived_at'=>$archivedAt]);
             $this->policy->audit($p['archived']?'trip.archive':'trip.restore','trip',$id,$reason);
             return ['archivedAt'=>$archivedAt];
+        });
+    }
+    /** @param array<array-key,mixed> $payload
+     * @return array{deleted:bool} */
+    public function remove(int $id,array $payload): array
+    {
+        return $this->policy->transaction(function()use($id,$payload){
+            $this->policy->trip($id,'trip.manage');
+            if(($payload['confirmed']??null)!==true)throw new ValidationException(['confirmed'=>'explicit_confirmation_required']);
+            $this->repository->remove($id);
+            $this->policy->audit('trip.delete','trip',$id,'Reise nur im Calculator gelöscht; Historie erhalten');
+            return ['deleted'=>true];
         });
     }
     /**

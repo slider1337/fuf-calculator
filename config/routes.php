@@ -153,6 +153,7 @@ return static function (App $app): void {
         $app->put($teamPath . '/{userId:[0-9]+}', [$eventController, 'grant']);
     }
     $app->put('/api/trips/{id:[0-9]+}/event', [$eventController, 'assign']);
+    $app->delete('/api/trips/{id:[0-9]+}', [$eventController, 'removeTrip']);
     $app->put('/api/trips/{id:[0-9]+}/archive', [$eventController, 'archive']);
     $app->post('/api/trips/{id:[0-9]+}/close', [$eventController, 'close']);
     $app->post('/api/trips/{id:[0-9]+}/reopen', [$eventController, 'reopen']);

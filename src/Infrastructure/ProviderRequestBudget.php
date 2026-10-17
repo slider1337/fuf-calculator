@@ -10,7 +10,7 @@ final readonly class ProviderRequestBudget {
   $this->access->transaction(function()use($bucket){
    $now=time();$limit=max(1,min(90,(int)(getenv('EASYVEREIN_REQUESTS_PER_MINUTE')?:60)));
    $this->store->query('DELETE FROM provider_api_calls WHERE called_at<=?',[$now-60]);
-   if((int)$this->store->query('SELECT COUNT(*) FROM provider_api_calls WHERE bucket=?',[$bucket])->fetchColumn()>=$limit){throw new AccessException('provider_rate_limited',503);}
+   if((int)$this->store->query('SELECT COUNT(*) FROM provider_api_calls WHERE bucket=?',[$bucket])->fetchColumn()>=$limit){throw new AccessException('provider_rate_limited',503,60);}
    $this->store->query('INSERT INTO provider_api_calls (bucket,called_at) VALUES (?,?)',[$bucket,$now]);
   });
  }

@@ -66,6 +66,7 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
   $event=EasyVereinData::id($p['eventId'],'event');$member=EasyVereinData::id($p['memberReference'],'member');
   $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
   if(EasyVereinData::id($profile['id']??null,'member')!==$member){throw new ParticipationRejected('member_reference_changed');}$contact=EasyVereinData::id($profile['contact_details']??null,'contact-details');
+  $this->memberCache[$contact]=$member;
   $current=$this->snapshot($event);$guest=($p['guestId']??null)!==null;
   if($kind==='cancel'){
    $id=EasyVereinData::id($p['externalId']??null,'participation');$row=$this->find($current,$id);

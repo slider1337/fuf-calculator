@@ -91,9 +91,17 @@ final readonly class ParticipationService {
   });return $this->read($trip);
  }
  /** @return array<array-key,mixed> */
- public function reconcile(int $trip): array {
+ public function reconcile(int $trip,bool $allowRecent=false): array {
   $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if($this->external->blockedReason()!==null){throw new AccessException($this->external->blockedReason(),409);}
-  $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);$snapshot=$this->external->snapshot($link['externalId']);$this->validateSnapshot($snapshot,$link['externalId']);
+  $link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);
+  if($allowRecent){
+   $observation=$this->store->observation($trip);
+   if($observation&&strtotime(Input::text($observation['observed_at']))>=time()-60){
+    $saved=json_decode(Input::text($observation['snapshot_json']),true,512,JSON_THROW_ON_ERROR);
+    if(is_array($saved)&&($saved['eventId']??null)===$link['externalId'])return $this->read($trip);
+   }
+  }
+  $snapshot=$this->external->snapshot($link['externalId']);$this->validateSnapshot($snapshot,$link['externalId']);
   $this->access->transaction(function()use($trip,$link,$snapshot){
    $this->policy->trip($trip,'term.manage');$this->policy->requireRegistrationMode($trip,'easyverein');if(($this->store->link($trip)['externalId']??null)!==$link['externalId']){throw new AccessException('term_changed',409);}
    $old=$this->store->observationRevision($trip);$conflicts=[];

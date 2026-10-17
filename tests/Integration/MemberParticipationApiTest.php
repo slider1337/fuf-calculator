@@ -89,6 +89,39 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testReadThrottleQueuesRetryAndPausesFamilyWithoutWrites(): void {
+  $this->create($this->payload(2));
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_rate_limited',503,180);};
+  $this->worker();
+  $jobs=$this->db->query('SELECT status,error_code,attempts,lease_until FROM participation_jobs ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+  self::assertSame('pending',$jobs[0]['status']);self::assertSame('provider_rate_limited',$jobs[0]['error_code']);self::assertGreaterThanOrEqual(time()+179,$jobs[0]['lease_until']);
+  self::assertSame(0,$jobs[1]['attempts']);self::assertSame(0,$this->provider->writes);
+  self::assertSame('pending',$this->db->query('SELECT sync_status FROM registration_participants ORDER BY id LIMIT 1')->fetchColumn());
+ }
+ public function testTransientReadAutomaticallyRetriesButForbiddenDoesNot(): void {
+  $this->create($this->payload(1));
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_read_failed',503);};
+  $this->worker(1);self::assertSame('pending',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame(0,$this->provider->writes);
+  $this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->provider->onSnapshot=null;$this->worker(1);
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame(1,$this->provider->writes);
+ }
+ public function testWriteThrottleRetriesSameJobAndLostReplyOnlyReconciles(): void {
+  $this->create($this->payload(1));
+  $this->provider->onExecute=static function(){throw new ParticipationRejected('provider_rate_limited',429,[],120);};
+  $this->worker(1);self::assertSame('pending',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
+  $this->provider->onExecute=null;$this->db->exec('UPDATE participation_jobs SET lease_until=0');
+  // A fresh process resumes after the rate-limit pause.
+  $c=$this->app->getContainer();$worker=new ParticipationWorker($c->get(\App\Application\Port\ParticipationRepositoryInterface::class),$c->get(\App\Application\Port\AccessRepositoryInterface::class),$this->provider,$c->get(\App\Application\ParticipationService::class),$this->directory);
+  $this->provider->timeout=true;$worker->runOne();self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
+  $writes=$this->provider->writes;$this->db->exec('UPDATE participation_jobs SET lease_until=0');$worker->runOne();
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame($writes,$this->provider->writes);
+ }
+ public function testAutomaticRefreshReusesRecentObservationButManualRefreshReadsProvider(): void {
+  $_SESSION['user_id']=1;$calls=0;$this->provider->onSnapshot=static function()use(&$calls){$calls++;};
+  $path="/api/trips/{$this->trip}/participation-sync/reconcile";
+  $this->dispatch('POST',$path,['allowRecent'=>true]);$this->dispatch('POST',$path,['allowRecent'=>true]);self::assertSame(1,$calls);
+  $this->dispatch('POST',$path,[]);self::assertSame(2,$calls);
+ }
  public function testWebsiteRoutingNeverFallsBackWhenReleaseIsDisabledAndIndexIsOwned(): void {
   $event=(string)$this->db->query('SELECT external_id FROM external_event_links WHERE trip_id='.$this->trip)->fetchColumn();
   $route=$this->call('GET',"/integration/v1/events/$event/route");

@@ -180,7 +180,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     /** @return list<array<string,scalar|null>> */
     public function recentJobs(mixed $trip): array
     {
-        $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
+        $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,lease_until AS nextAttemptAt,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
         $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function markUnknown(mixed $person): void

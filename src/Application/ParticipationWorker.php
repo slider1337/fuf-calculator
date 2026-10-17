@@ -9,10 +9,12 @@ use App\Domain\Form\Decimal;
  *
  * @phpstan-import-type ParticipationJob from \App\Application\Port\ParticipationRepositoryInterface
  */
-final readonly class ParticipationWorker {
+final class ParticipationWorker {
+ private int $pauseUntil=0;
+ public function paused(): bool {return $this->pauseUntil>time();}
  public function __construct(private ParticipationRepositoryInterface $store,private AccessRepositoryInterface $access,private ParticipationPort $external,private ParticipationService $sync,private MemberDirectoryPort $directory) {}
  public function runOne(): bool {
-  if($this->external->blockedReason()!==null){return false;}
+  if($this->paused()||$this->external->blockedReason()!==null){return false;}
   $claim=$this->access->transaction(function(){
    $now=time();$this->store->expireLeases($now);
    $j=$this->store->nextJob($now);if(!$j){return null;}
@@ -20,7 +22,7 @@ final readonly class ParticipationWorker {
    $mode=$j['status']==='pending'?'execute':'reconcile';$token=bin2hex(random_bytes(16));
    $this->store->claimJob($mode==='execute'?'running':'reconciling', $token, $now+300, $j['id']);return ['job'=>$j,'mode'=>$mode,'token'=>$token];
   });
-  if($claim===null){return false;}if(isset($claim['skip'])){return true;}$j=$claim['job'];$payload=\App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true,512,JSON_THROW_ON_ERROR));$reference='calculator-person-'.$j['id'];$result=null;$error=null;$status='unknown';$executeStarted=false;
+  if($claim===null){return false;}if(isset($claim['skip'])){return true;}$j=$claim['job'];$payload=\App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true,512,JSON_THROW_ON_ERROR));$reference='calculator-person-'.$j['id'];$result=null;$error=null;$status='unknown';$executeStarted=false;$retryAfter=0;
   try {
    if($claim['mode']==='execute'){
     $s=$this->external->snapshot($payload['eventId']);$this->sync->validateSnapshot($s,$payload['eventId']);
@@ -48,9 +50,20 @@ final readonly class ParticipationWorker {
    if($result!==null&&isset($payload['guestId'])&&(($result['isCompanion']??false)!==true||($result['companionName']??null)!==($payload['guestName'] ?? null)||!is_string($result['parentExternalId']??null))){$result=null;$error='external_guest_reference_conflict';}
    if($result===null){$error='external_result_unproven';}
    else{$this->sync->validateResult($result);if($result['eventId']!==$payload['eventId']||$result['memberReference']!==$payload['memberReference']||$result['priceGroupId']!==$payload['priceGroupId']||$result['price']!==$payload['price']||($j['kind']==='cancel'&&($result['externalId']!==$payload['externalId']||$result['status']!=='cancelled'))||($j['kind']==='register'&&$result['status']!=='confirmed')){$error='external_result_conflict';}}
-  }catch(ParticipationRejected $e){if($claim['mode']==='execute'){$status='failed';$error=in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','guest_parent_not_confirmed','guest_not_allowed','guest_approval_revoked','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected';}else{$error='external_result_unproven';}}
-  catch(\Throwable){$error=$executeStarted||$claim['mode']==='reconcile'?'external_outcome_unknown':'provider_preflight_failed';if(!$executeStarted&&$claim['mode']==='execute'){$status='failed';}}
-  $this->access->transaction(function()use($claim,$j,$result,$error,$status){
+  }catch(ParticipationRejected $e){
+   if($claim['mode']==='execute'&&$e->getCode()===429){$status='pending';$error='provider_rate_limited';$retryAfter=max(60,$e->retryAfter);}
+   elseif($claim['mode']==='execute'){$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','guest_parent_not_confirmed','guest_not_allowed','guest_approval_revoked','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
+   else{$error='external_result_unproven';}
+  }catch(AccessException $e){
+   $error=$e->error;
+   if(!$executeStarted&&$claim['mode']==='execute'){
+    $status=in_array($error,['provider_rate_limited','provider_read_failed'],true)?'pending':'failed';
+   }
+   if($error==='provider_rate_limited')$retryAfter=max(60,$e->retryAfter);
+  }catch(\Throwable){$error=$executeStarted||$claim['mode']==='reconcile'?'external_outcome_unknown':'provider_preflight_failed';if(!$executeStarted&&$claim['mode']==='execute'){$status='failed';}}
+  // A throttle pauses the whole participation batch; do not fail the remaining family.
+  if($retryAfter>0)$this->pauseUntil=time()+$retryAfter;
+  $this->access->transaction(function()use($claim,$j,$result,$error,$status,$retryAfter){
    $token=$this->store->leaseToken($j['id']);if($token!==$claim['token']){return;}
    if(!$this->allowed($j)){$this->block($j);return;}
    if($error===null && $result!==null){
@@ -58,9 +71,9 @@ final readonly class ParticipationWorker {
     if($dup!==false){$error='external_reference_conflict';$status='unknown';}
     else{$this->sync->applyResult((int)$j['registration_id'],(int)$j['participant_id'],$result,(int)$j['actor_id']);$this->store->completeJob($j['id']);return;}
    }
-   $backoff=min(3600,60*(2**min(6,(int)$j['attempts'])));
+   $backoff=max($retryAfter,min(3600,60*(2**min(6,(int)$j['attempts']))))+random_int(0,15);
    $this->store->deferJob($status, time()+$backoff, $error, $j['id']);
-   $this->store->setPersonSync($status==='unknown'?'unknown':'error', $j['participant_id']);$this->sync->refresh((int)$j['registration_id']);
+   $this->store->setPersonSync($status==='unknown'?'unknown':($status==='pending'?'pending':'error'), $j['participant_id']);$this->sync->refresh((int)$j['registration_id']);
   });return true;
  }
  /** @param ParticipationJob $j */

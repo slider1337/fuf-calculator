@@ -16,7 +16,8 @@ do {
         try { if(!$worker->runOne()){break;} $processed++; }
         catch(\Throwable){fwrite(STDERR,gmdate(DATE_ATOM)." worker_batch_failed\n");break;}
     }}
-    for($i=0;$i<$batch;$i++){if(!$reconciliation->runOne($reconcileActor,$reconcileInterval)){break;}$processed++;}
+    $participation=$workers[2];
+    for($i=0;$i<$batch&&!$participation->paused();$i++){if(!$reconciliation->runOne($reconcileActor,$reconcileInterval)){break;}$processed++;}
     if($processed>0){echo gmdate(DATE_ATOM).' worker_operations='.$processed.PHP_EOL;}
     if(in_array('--once',$argv,true)){break;}
     sleep(max(1,$interval-(time()-$began)));

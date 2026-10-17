@@ -5,5 +5,5 @@ namespace App\Application;
 final class ParticipationRejected extends \RuntimeException
 {
     /** @param list<array{field:string,reason:string}> $validationErrors */
-    public function __construct(string $message='',int $code=0,public readonly array $validationErrors=[]) {parent::__construct($message,$code);}
+    public function __construct(string $message='',int $code=0,public readonly array $validationErrors=[],public readonly int $retryAfter=0) {parent::__construct($message,$code);}
 }

@@ -229,6 +229,7 @@ final readonly class TripService
     public function calculate(int $tripId): array
     {
         $this->policy->trip($tripId, 'calculation.manage');
+        if(($this->policy->metadata($tripId)['closed_at']??null)!==null)throw new AccessException('trip_closed',409);
         return $this->calculator->calculate($this->getTrip($tripId));
     }
 }

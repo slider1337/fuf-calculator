@@ -92,6 +92,43 @@ paths:
         '409':
           description: Abgerechnete Reise gesperrt
   /api/trips/{id}:
+    delete:
+      summary: Reise nur im Calculator löschen; Historie und easyVerein-Termin bleiben erhalten
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmed]
+              properties:
+                confirmed:
+                  type: boolean
+                  enum: [true]
+      responses:
+        '200':
+          description: Reise lokal entfernt
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: boolean
+        '403':
+          description: Reiserechte fehlen
+        '404':
+          description: Reise nicht verfügbar
+        '422':
+          description: Ausdrückliche Bestätigung fehlt
+
     get:
       summary: Reise laden
       parameters:
@@ -2893,16 +2930,12 @@ paths:
               required:
               - archived
               - archivedAt
-              - reason
               properties:
                 archived:
                   type: boolean
                 archivedAt:
                   type: string
                   nullable: true
-                reason:
-                  type: string
-                  minLength: 1
       responses:
         '200':
           description: Archivstand aktualisiert

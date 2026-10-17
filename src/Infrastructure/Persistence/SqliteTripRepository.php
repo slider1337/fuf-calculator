@@ -124,9 +124,15 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
     }
 
     /** @throws DateMalformedStringException */
+    public function remove(int $id): void
+    {
+        $at=gmdate(DATE_ATOM);
+        $this->pdo->prepare('UPDATE trips SET deleted_at=?,archived_at=COALESCE(archived_at,?) WHERE id=? AND deleted_at IS NULL')->execute([$at,$at,$id]);
+    }
+
     public function getById(int $id): ?Trip
     {
-        $tripRow = $this->pdo->prepare('SELECT * FROM trips WHERE id = :id');
+        $tripRow = $this->pdo->prepare('SELECT * FROM trips WHERE id = :id AND deleted_at IS NULL');
         $tripRow->execute([':id' => $id]);
         $trip = StoredRow::fetch($tripRow);
 
@@ -204,7 +210,7 @@ final readonly class SqliteTripRepository implements TripRepositoryInterface
     public function findAll(): array
     {
         $rows = StoredRow::fetchAll($this->pdo
-            ->query('SELECT id, name, start_date, end_date FROM trips ORDER BY start_date DESC, id DESC'));
+            ->query('SELECT id, name, start_date, end_date FROM trips WHERE deleted_at IS NULL ORDER BY start_date DESC, id DESC'));
         $result = [];
         foreach ($rows as $row) {
             $result[] = [

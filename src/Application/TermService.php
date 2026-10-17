@@ -42,7 +42,7 @@ final readonly class TermService
     public function read(int $id): array
     {
         $data=$this->readLocal($id);
-        if($data['link']===null)return $data;
+        if($data['link']===null||($this->policy->metadata($id)['archived_at']??null)!==null)return $data;
         try{$deadline=$this->participations->snapshot($data['link']['externalId'])['bookingUntil'];}
         catch(AccessException $e){
             $current=$this->readLocal($id);

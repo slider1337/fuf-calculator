@@ -228,7 +228,7 @@ final readonly class TripService
     /** @return array<array-key,mixed> */
     public function calculate(int $tripId): array
     {
-        $this->policy->trip($tripId, 'calculation.manage', true);
+        $this->policy->trip($tripId, 'calculation.manage');
         return $this->calculator->calculate($this->getTrip($tripId));
     }
 }

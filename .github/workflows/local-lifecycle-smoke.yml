@@ -1,0 +1,52 @@
+name: Local trip lifecycle smoke
+on:
+  push:
+    branches: [diagnose/local-lifecycle-smoke-20261017]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml exec -T app php <<'PHP'
+            <?php
+            require "/app/vendor/autoload.php";
+            $c=App\Infrastructure\ContainerServices::create();
+            if(!$c instanceof DI\Container)throw new RuntimeException("container");
+            $db=$c->get(PDO::class);
+            $actor=$db->query("SELECT user_id FROM trip_access WHERE trip_id=2 AND capability='trip.manage' ORDER BY user_id LIMIT 1")->fetchColumn();
+            if(!$actor)throw new RuntimeException("No authorized trip manager");
+            $c->set(App\Application\Port\ActorInterface::class,new class((int)$actor) implements App\Application\Port\ActorInterface{
+                public function __construct(private int $id){}
+                public function userId(): ?int{return $this->id;}
+            });
+            $db->beginTransaction();
+            try{
+                $trips=$c->get(App\Application\TripService::class);
+                $management=$c->get(App\Application\TripManagementService::class);
+                $trip=$trips->createFromArray(["name"=>"Temporary lifecycle smoke","registrationMode"=>"clubdesk_csv","startDate"=>"2027-01-02","endDate"=>null,"markupPercent"=>0,"clubFeePercent"=>0,"distributionMethod"=>"PER_PERSON","spaTaxPerPerson"=>0,"spaTaxAgeThreshold"=>18,"adultAgeThreshold"=>18,"bookings"=>array_map(fn($type)=>["categoryType"=>$type,"count"=>0,"basePricePerPerson"=>0],["ADULT_DOUBLE","ADULT_MULTI","CHILD"]),"groupExpenses"=>[]]);
+                $id=$trip->id();
+                $a=$management->archive($id,["archived"=>true,"archivedAt"=>null]);
+                $management->archive($id,["archived"=>true,"archivedAt"=>null]);
+                $trips->calculate($id);
+                $trips->getTrip($id);
+                $management->archive($id,["archived"=>false,"archivedAt"=>$a["archivedAt"]]);
+                $management->remove($id,["confirmed"=>true]);
+                $gone=false;
+                try{$trips->getTrip($id);}catch(App\Application\AccessException|App\Application\NotFoundException){$gone=true;}
+                if(!$gone)throw new RuntimeException("Deleted trip still accessible");
+                echo "PASS archive, repeated archive, archived read/calculation, restore, Calculator-only delete\n";
+            }finally{
+                if($db->inTransaction())$db->rollBack();
+                echo "Temporary transaction rolled back\n";
+            }
+            PHP

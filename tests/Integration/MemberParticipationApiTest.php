@@ -37,7 +37,7 @@ class FakeParticipationProvider implements ParticipationPort {
 final class FakeBatchParticipationProvider extends FakeParticipationProvider implements \App\Application\Port\BatchParticipationPort {
  public int $batches=0;
  public function executeBatch(string $kind,array $people,callable $beforeWrite): array {
-  $beforeWrite();$this->batches++;$out=[];
+  $beforeWrite($this->bookingUntil??time()+3600);$this->batches++;$out=[];
   foreach($people as $reference=>$person)$out[$reference]=$this->execute($kind,$person,$reference);
   return $out;
  }
@@ -97,6 +97,22 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testLocalWriteBudgetIsASafeRetryBeforeAnyNetworkWrite(): void {
+  $c=$this->app->getContainer();$token='fixture-only-token';$stmt=$this->db->prepare('INSERT INTO provider_api_calls(bucket,called_at) VALUES (?,?)');
+  for($i=0;$i<90;$i++)$stmt->execute([hash('sha256',$token),time()]);
+  $reads=new class implements \App\Application\Port\EasyVereinReadClient {
+   public function configured(): bool {return true;}
+   public function get(string $path,array $query=[]): array {throw new \LogicException('No network allowed');}
+  };
+  $client=new \App\Infrastructure\EasyVereinWriteHttpClient($reads,$token,'production',$c->get(\App\Infrastructure\ProviderRequestBudget::class));
+  try{$client->write('POST','participation/',[]);self::fail('Budget must stop the write');}
+  catch(ParticipationRejected $e){self::assertSame(429,$e->getCode());self::assertSame('provider_rate_limited',$e->getMessage());self::assertGreaterThanOrEqual(60,$e->retryAfter);}
+ }
+ public function testFamilyBatchChecksMemberDeadlineAgainBeforeWriting(): void {
+  $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(2));$batch->bookingUntil=1;$this->worker(1);
+  self::assertSame(0,$batch->writes);self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE error_code='event_unavailable' AND status='failed'")->fetchColumn());
+ }
  public function testFamilyWorkerClaimsAndCompletesOneBatchWithIndividualProofs(): void {
   $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
   $this->create($this->payload(4));$this->worker(1);

@@ -128,7 +128,7 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
    if($code!==0)throw new ParticipationRejected($e->error,$code,[],$e->retryAfter);
    throw $e;
   }
-  $beforeWrite();
+  $beforeWrite($current['bookingUntil']);
   try{$this->client->write($kind==='cancel'?'PATCH':'POST',$path,['entries'=>$entries]);}
   catch(ParticipationRejected $e){
    // Bulk validation may have partial side effects; only authentication/throttling prove no write.

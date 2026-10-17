@@ -103,7 +103,8 @@ final class ParticipationWorker {
    }
    // One fresh family permission check precedes the provider's common event check and bulk write.
    foreach($jobs as $j){if(!$this->allowed($j))throw new ParticipationRejected('permission_revoked_or_trip_closed');}
-   $started=true;$results=$external->executeBatch($jobs[0]['kind'],$people,function()use($jobs,$token){
+   $started=true;$results=$external->executeBatch($jobs[0]['kind'],$people,function(int $deadline)use($jobs,$token){
+    foreach($jobs as $job){if($job['member_actor']!==null&&$deadline<time())throw new ParticipationRejected('event_unavailable');}
     foreach($jobs as $job){if($this->store->leaseToken($job['id'])!==$token||!$this->allowed($job))throw new ParticipationRejected('permission_revoked_or_trip_closed');}
    });
   }catch(ParticipationRejected $e){

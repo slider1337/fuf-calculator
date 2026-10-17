@@ -20,7 +20,8 @@ final readonly class EasyVereinWriteHttpClient implements EasyVereinWriteClient 
   if(!$this->writeEnabled()){throw new AccessException('easyverein_production_writes_disabled',409);}
   $valid=($method==='POST'&&in_array($path,['event/','price-group/','participation/','participation/create-participation-with-price-groups/','participation/bulk-create/','participation/bulk-create-participations-with-price-groups/'],true))||($method==='PATCH'&&($path==='participation/bulk-update/'||preg_match('~^(?:event|participation)/[1-9][0-9]{0,18}/$~D',$path)));
   if(!$valid){throw new \InvalidArgumentException('Provider write path is not allowed');}
-  $this->budget?->reserve(hash('sha256',$this->token));
+  try{$this->budget?->reserve(hash('sha256',$this->token));}
+  catch(AccessException $e){if($e->error==='provider_rate_limited')throw new ParticipationRejected('provider_rate_limited',429,[],$e->retryAfter);throw $e;}
   $retryAfter=60;
   $headers=static function(\CurlHandle $handle,string $line)use(&$retryAfter): int {if(str_starts_with(strtolower($line),'retry-after:')){$retryAfter=ProviderRetryAfter::seconds(substr($line,12));}return strlen($line);};
   $h=curl_init('https://easyverein.com/api/v3.0/'.$path);curl_setopt_array($h,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_RETURNTRANSFER=>true,CURLOPT_HEADERFUNCTION=>$headers,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Content-Type: application/json','Accept: application/json']]);

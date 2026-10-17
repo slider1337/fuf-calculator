@@ -71,6 +71,9 @@ interface ParticipationRepositoryInterface
     public function claimJob(mixed $status, mixed $token, mixed $until, mixed $job): void;
     /** @return ParticipationJob|false */
     public function nextJob(mixed $now): array|false;
+    public function invalidateObservation(int $trip): void;
+    /** @return list<ParticipationJob> */
+    public function pendingFamilyJobs(int $booking,string $kind,int $now): array;
     public function expireLeases(mixed $now): void;
     public function recordImportedHistory(mixed $person, mixed $data, mixed $actor, mixed $reason, mixed $createdAt): void;
     public function syncImportedPerson(mixed $status, mixed $priceGroup, mixed $price, mixed $person): void;

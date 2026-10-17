@@ -6,7 +6,7 @@ use App\Application\Port\{ParticipationPort,MemberDirectoryPort};
 use PDO;
 use Slim\Psr7\Factory\{ServerRequestFactory,StreamFactory};
 
-final class FakeParticipationProvider implements ParticipationPort {
+class FakeParticipationProvider implements ParticipationPort {
  public ?int $bookingUntil=null;
  public ?\Closure $onSnapshot=null;
  public int $writes=0;
@@ -33,6 +33,14 @@ final class FakeParticipationProvider implements ParticipationPort {
   return $row;
  }
  public function reconcile(string $kind,array $person,string $operationReference): ?array {return is_array($this->outcomes[$operationReference]??null)?$this->outcomes[$operationReference]:null;}
+}
+final class FakeBatchParticipationProvider extends FakeParticipationProvider implements \App\Application\Port\BatchParticipationPort {
+ public int $batches=0;
+ public function executeBatch(string $kind,array $people,callable $beforeWrite): array {
+  $beforeWrite();$this->batches++;$out=[];
+  foreach($people as $reference=>$person)$out[$reference]=$this->execute($kind,$person,$reference);
+  return $out;
+ }
 }
 final class FakeMemberDirectory implements MemberDirectoryPort {
  public bool $bad=false;
@@ -89,6 +97,29 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testFamilyWorkerClaimsAndCompletesOneBatchWithIndividualProofs(): void {
+  $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(4));$this->worker(1);
+  self::assertSame(1,$batch->batches);self::assertSame(4,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
+  self::assertSame(4,(int)$this->db->query("SELECT COUNT(DISTINCT external_reference) FROM registration_participants WHERE participation_status='confirmed'")->fetchColumn());
+ }
+ public function testAmbiguousFamilyBatchReconcilesWithoutAnotherBatchWrite(): void {
+  $batch=new FakeBatchParticipationProvider();$batch->timeout=true;$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(2));$this->worker(1);self::assertSame(1,$batch->batches);
+  self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='unknown'")->fetchColumn());
+  $this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->worker();
+  self::assertSame(1,$batch->batches);self::assertSame(1,$batch->writes);
+  self::assertSame(1,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
+ }
+ public function testWebsiteSharesOneCachedEventReadAcrossContextAndBookingPages(): void {
+  $calls=0;$this->provider->onSnapshot=static function()use(&$calls){$calls++;};
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+  $this->call('GET','/integration/v1/bookings?after=0');
+  self::assertSame(1,$calls);
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_read_failed',503);};
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+ }
  public function testReadThrottleQueuesRetryAndPausesFamilyWithoutWrites(): void {
   $this->create($this->payload(2));
   $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_rate_limited',503,180);};

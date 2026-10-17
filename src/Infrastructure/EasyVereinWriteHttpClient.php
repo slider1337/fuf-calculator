@@ -18,7 +18,7 @@ final readonly class EasyVereinWriteHttpClient implements EasyVereinWriteClient 
   */
  public function write(string $method,string $path,array $payload): array {
   if(!$this->writeEnabled()){throw new AccessException('easyverein_production_writes_disabled',409);}
-  $valid=($method==='POST'&&in_array($path,['event/','price-group/','participation/','participation/create-participation-with-price-groups/'],true))||($method==='PATCH'&&preg_match('~^(?:event|participation)/[1-9][0-9]{0,18}/$~D',$path));
+  $valid=($method==='POST'&&in_array($path,['event/','price-group/','participation/','participation/create-participation-with-price-groups/','participation/bulk-create/','participation/bulk-create-participations-with-price-groups/'],true))||($method==='PATCH'&&($path==='participation/bulk-update/'||preg_match('~^(?:event|participation)/[1-9][0-9]{0,18}/$~D',$path)));
   if(!$valid){throw new \InvalidArgumentException('Provider write path is not allowed');}
   $this->budget?->reserve(hash('sha256',$this->token));
   $retryAfter=60;

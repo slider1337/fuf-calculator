@@ -8,7 +8,7 @@ use App\Application\{AccessException,ParticipationRejected,Port\ParticipationPor
  * @phpstan-type EasyVereinPerson array{eventId:string,externalId:string,memberReference:?string,status:string,priceGroupId:?string,price:?string,contactReference:string,name?:?string,birthDate?:?string,priceConflict:bool,isCompanion:bool,companionName?:?string,parentExternalId:?string,operationReference:?string}
  * @phpstan-type EasyVereinSnapshot array{eventId:string,revision:string,canceled:bool,bookingUntil:int,capacityRemaining:?int,groups:list<array{id:string,price:string,label?:string}>,participants:list<EasyVereinPerson>,capacityConfirmed?:bool,capacity?:int,guestsAllowed:bool,termFields?:array<string,mixed>}
  */
-final class EasyVereinParticipationAdapter implements ParticipationPort {
+final class EasyVereinParticipationAdapter implements \App\Application\Port\BatchParticipationPort {
  public function __construct(private readonly EasyVereinWriteClient $client) {}
  /** @var array<int|string,?string> */
  private array $memberCache=[];
@@ -90,6 +90,58 @@ final class EasyVereinParticipationAdapter implements ParticipationPort {
   $created=$this->client->write('POST',$path,$body);
   if(!isset($created['id'])){return $this->reconcile('register',$p,$operationReference)??throw new \RuntimeException('provider_result_unproven');}
   $id=EasyVereinData::id($created['id'],'participation');return $this->proved($event,$p,$id,'confirmed');
+ }
+ /** @param array<string,ParticipationPayload> $people
+  * @return array<string,EasyVereinPerson> */
+ public function executeBatch(string $kind,array $people,callable $beforeWrite): array {
+  if(count($people)<2||count($people)>25||!in_array($kind,['register','cancel'],true))throw new \InvalidArgumentException('Invalid participation batch');
+  if($this->blockedReason()!==null)throw new AccessException($this->blockedReason(),409);
+  try{
+  $event=null;$contacts=[];$seen=[];
+  foreach($people as $reference=>$p){
+   if(!preg_match('/^calculator-person-[1-9][0-9]*$/D',$reference)||isset($p['guestId']))throw new \InvalidArgumentException('Only independent people can be batched');
+   $id=EasyVereinData::id($p['eventId'],'event');$event??=$id;if($event!==$id)throw new \InvalidArgumentException('Mixed events');
+   $member=EasyVereinData::id($p['memberReference'],'member');if(isset($seen[$member]))throw new ParticipationRejected('existing_participation_requires_clarification');$seen[$member]=true;
+   $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
+   if(EasyVereinData::id($profile['id']??null,'member')!==$member)throw new ParticipationRejected('member_reference_changed');
+   $contacts[$member]=EasyVereinData::id($profile['contact_details']??null,'contact-details');$this->memberCache[$contacts[$member]]=$member;
+  }
+  $current=$this->snapshot($event);$groups=array_column($current['groups'],null,'id');$entries=[];
+  if($kind==='register'&&($current['canceled']||$current['bookingUntil']<time()||!is_int($current['capacityRemaining'])||$current['capacityRemaining']<count($people)))throw new ParticipationRejected('event_unavailable');
+  foreach($people as $reference=>$p){
+   $contact=$contacts[$p['memberReference']];
+   if($kind==='cancel'){
+    $id=EasyVereinData::id($p['externalId'],'participation');$row=$this->find($current,$id);
+    if(!$row||$row['memberReference']!==$p['memberReference']||$row['contactReference']!==$contact)throw new ParticipationRejected('participation_reference_changed');
+    if(array_filter($current['participants'],fn($g)=>$g['isCompanion']&&$g['parentExternalId']===$id&&$g['status']!=='cancelled'))throw new ParticipationRejected('cancel_dependents_first');
+    $entries[]=['id'=>(int)$id,'state'=>0];continue;
+   }
+   $gid=$p['priceGroupId'];
+   if(($groups&&(!isset($groups[$gid??''])||$groups[$gid]['price']!==$p['price']))||(!$groups&&($gid!==null||$p['price']!==null)))throw new ParticipationRejected('price_conflict');
+   foreach($current['participants'] as $row){if(!$row['isCompanion']&&$row['contactReference']===$contact&&$row['status']!=='cancelled')throw new ParticipationRejected('existing_participation_requires_clarification');}
+   $entry=['participation_event'=>(int)$event,'participation_address'=>(int)$contact,'state'=>1,'description'=>$reference];
+   if($groups)$entry['participation_price_groups']=[['price_group'=>(int)$gid,'pieces'=>1]];
+   $entries[]=$entry;
+  }
+  $path=$kind==='cancel'?'participation/bulk-update/':($groups?'participation/bulk-create-participations-with-price-groups/':'participation/bulk-create/');
+  }catch(AccessException $e){
+   $code=match($e->error){'provider_rate_limited'=>429,'provider_read_failed'=>503,'provider_unauthorized'=>401,'provider_forbidden'=>403,default=>0};
+   if($code!==0)throw new ParticipationRejected($e->error,$code,[],$e->retryAfter);
+   throw $e;
+  }
+  $beforeWrite();
+  try{$this->client->write($kind==='cancel'?'PATCH':'POST',$path,['entries'=>$entries]);}
+  catch(ParticipationRejected $e){
+   // Bulk validation may have partial side effects; only authentication/throttling prove no write.
+   if(in_array($e->getCode(),[401,403,429],true))throw $e;
+   throw new \RuntimeException('provider_batch_outcome_unknown',0,$e);
+  }
+  $after=$this->snapshot($event);$results=[];
+  foreach($people as $reference=>$p){
+   $matches=array_values(array_filter($after['participants'],fn($row)=>($kind==='cancel'?$row['externalId']===$p['externalId']:$row['operationReference']===$reference)&&$row['memberReference']===$p['memberReference']&&$row['contactReference']===$contacts[$p['memberReference']]));
+   if(count($matches)===1&&!$matches[0]['priceConflict']&&$matches[0]['status']===($kind==='cancel'?'cancelled':'confirmed'))$results[$reference]=$matches[0];
+  }
+  return $results;
  }
  /**
   * @param ParticipationPayload $p

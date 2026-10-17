@@ -7,6 +7,7 @@ use App\Domain\Form\Decimal;
 
 /**
  *
+ * @phpstan-import-type ProviderSnapshot from \App\Application\Port\ParticipationPort
  * @phpstan-type ProviderResult array{eventId?:string,externalId:string,memberReference:?string,status:string,priceGroupId:?string,price:?string,contactReference?:string,name?:?string,birthDate?:?string,priceConflict?:bool,isCompanion?:bool,companionName?:?string,parentExternalId?:?string,operationReference?:?string}
  */
 final readonly class ParticipationService {
@@ -24,6 +25,26 @@ final readonly class ParticipationService {
   $conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&($c['field']==='groups'||($canView&&str_starts_with($c['field'],'person:')))));
   return ['blockedReason'=>($this->store->link($trip)===null?'confirmed_term_required':$this->external->blockedReason()),'priceGroups'=>$this->store->link($trip)['data']['groups']??[],'jobs'=>$jobs,'observation'=>$o?['revision'=>(int)$o['revision'],'observedAt'=>$o['observed_at'],'conflicts'=>$conflicts]:null,'clarifications'=>$cases,'participants'=>$canView?($snapshot['participants']??[]):[],'guestsAllowed'=>$snapshot['guestsAllowed']??false];
  }
+ /**
+  * Shared Calculator read model. Page views reuse it; workers still read fresh before writing.
+  * @return ProviderSnapshot
+  */
+ public function readSnapshot(int $trip,string $event,bool $force=false): array {
+  $o=$this->store->observation($trip);
+  if(!$force&&$o&&($o['cache_invalidated']??0)===0&&strtotime(Input::text($o['observed_at']))>=time()-300){
+   $saved=json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR);
+   if(is_array($saved)&&($saved['eventId']??null)===$event){$this->assertStoredSnapshot($saved,$event);return $saved;}
+  }
+  $snapshot=$this->external->snapshot($event);$this->validateSnapshot($snapshot,$event);
+  $this->access->transaction(function()use($trip,$event,$snapshot){
+   if(($this->store->link($trip)['externalId']??null)!==$event)throw new AccessException('term_review_changed',409);
+   $old=$this->store->observation($trip);
+   $this->store->saveObservation($trip,$old===false?1:(int)$old['revision']+1,json_encode($snapshot,JSON_THROW_ON_ERROR),$old?Input::text($old['conflicts_json']):'[]',gmdate(DATE_ATOM));
+  });return $snapshot;
+ }
+ /** @param array<array-key,mixed> $snapshot
+  * @phpstan-assert ProviderSnapshot $snapshot */
+ private function assertStoredSnapshot(array $snapshot,string $event): void {$this->validateSnapshot($snapshot,$event);}
  /**
   * @param array<array-key,mixed> $p
   * @return array<array-key,mixed>
@@ -204,8 +225,9 @@ final readonly class ParticipationService {
  /** @param array<array-key,mixed> $s */
  public function validateSnapshot(array $s,string $event): void {
   if(($s['eventId']??null)!==$event||!is_string($s['revision']??null)||!is_bool($s['canceled']??null)||!is_int($s['bookingUntil']??null)||(!array_key_exists('capacityRemaining',$s)||($s['capacityRemaining']!==null&&!is_int($s['capacityRemaining'])))||(is_int($s['capacityRemaining'])&&$s['capacityRemaining']<0)||!is_array($s['groups']??null)||!array_is_list($s['groups'])||!is_array($s['participants']??null)||!array_is_list($s['participants'])){throw new AccessException('provider_snapshot_invalid',503);}
-  $seen=[];foreach($s['groups'] as $g){if(!is_array($g)||!is_string($g['id']??null)||!preg_match('/^[1-9][0-9]{0,18}$/D',$g['id'])||isset($seen[$g['id']])||!is_string($g['price']??null)||Decimal::normalize($g['price'])!==$g['price']){throw new AccessException('provider_snapshot_invalid',503);}$seen[$g['id']]=true;}
-  $seen=[];foreach($s['participants'] as $p){$p=$this->result($p);if(isset($seen[$p['externalId']])){throw new AccessException('provider_snapshot_invalid',503);}$seen[$p['externalId']]=true;}
+  if(isset($s['guestsAllowed'])&&!is_bool($s['guestsAllowed']))throw new AccessException('provider_snapshot_invalid',503);
+  $seen=[];foreach($s['groups'] as $g){if(!is_array($g)||!is_string($g['id']??null)||!preg_match('/^[1-9][0-9]{0,18}$/D',$g['id'])||isset($seen[$g['id']])||(isset($g['label'])&&!is_string($g['label']))||!is_string($g['price']??null)||Decimal::normalize($g['price'])!==$g['price']){throw new AccessException('provider_snapshot_invalid',503);}$seen[$g['id']]=true;}
+  $seen=[];foreach($s['participants'] as $p){if(!is_array($p)||($p['eventId']??null)!==$event)throw new AccessException('provider_snapshot_invalid',503);$p=$this->result($p);if(isset($seen[$p['externalId']])){throw new AccessException('provider_snapshot_invalid',503);}$seen[$p['externalId']]=true;}
  }
  /** @return void */
  public function validateResult(mixed $r): void {

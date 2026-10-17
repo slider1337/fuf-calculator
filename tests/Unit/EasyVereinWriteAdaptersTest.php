@@ -12,18 +12,35 @@ final class ProviderFixture implements EasyVereinWriteClient {
   if($path==='event/77/'){return ['id'=>77,'name'=>'Fiktiver Termin','canceled'=>false,'access'=>2,'max_participators'=>$this->capacity,'end_participation'=>'2030-12-31T23:59:59+01:00','start_participation'=>null];}
   if($path==='price-group/'){return ['results'=>[['id'=>21,'event'=>77,'name'=>'Gastpreis','selling_price'=>'12.00']],'next'=>null];}
   if($path==='participation/'){return ['results'=>array_values($this->rows),'next'=>$this->next];}
-  if($path==='member/11/'){return ['id'=>11,'contact_details'=>['id'=>51]];}
-  if($path==='member/'){$this->memberReads++;return ['results'=>[['id'=>11,'contact_details'=>['id'=>51]]],'next'=>null];}
+  if(in_array($path,['member/11/','member/12/'],true)){$id=(int)explode('/',$path)[1];return ['id'=>$id,'contact_details'=>['id'=>$id+40]];}
+  if($path==='member/'){$this->memberReads++;$rows=[['id'=>11,'contact_details'=>['id'=>51]],['id'=>12,'contact_details'=>['id'=>52]]];if(isset($q['contact_details']))$rows=array_values(array_filter($rows,fn($m)=>(string)$m['contact_details']['id']===(string)$q['contact_details']));return ['results'=>$rows,'next'=>null];}
   throw new \RuntimeException('Unexpected fixture path '.$path);
  }
  public function write(string $m,string $path,array $p): array {
   $this->writes[]=[$m,$path,$p];
+  if(isset($p['entries'])){
+   $calls=$this->writes;$out=[];foreach($p['entries'] as $entry){$out[]=$this->write($m,$m==='PATCH'?'participation/'.$entry['id'].'/':'participation/',$entry);}$this->writes=$calls;return $out;
+  }
   if($m==='PATCH'){$id=(int)explode('/',$path)[1];$this->rows[$id]['state']=$p['state'];return $this->rows[$id];}
-  $id=100+count($this->rows);$row=['id'=>$id,'participation_event'=>77,'participation_address'=>51,'state'=>1,'is_companion'=>$p['is_companion']??false,'companion_name'=>$p['companion_name']??null,'parent'=>$p['parent']??null,'description'=>$p['description'],'participation_price_groups'=>[['id'=>500+$id,'participation'=>$id,'price_group'=>21,'pieces'=>1]]];$this->rows[$id]=$row;
+  $id=100+count($this->rows);$row=['id'=>$id,'participation_event'=>77,'participation_address'=>$p['participation_address'],'state'=>1,'is_companion'=>$p['is_companion']??false,'companion_name'=>$p['companion_name']??null,'parent'=>$p['parent']??null,'description'=>$p['description'],'participation_price_groups'=>[['id'=>500+$id,'participation'=>$id,'price_group'=>21,'pieces'=>1]]];$this->rows[$id]=$row;
   if($this->timeout){$this->timeout=false;throw new \RuntimeException('Fake lost response');}return $row;
  }
 }
 final class EasyVereinWriteAdaptersTest extends TestCase {
+ public function testFamilyBatchUsesOneWriteAndProvesEachOperationMarker(): void {
+  $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);$p=$this->payload();$q=array_replace($p,['memberReference'=>'12']);$guard=0;
+  $result=$a->executeBatch('register',['calculator-person-1'=>$p,'calculator-person-2'=>$q],function()use(&$guard){$guard++;});
+  self::assertSame(1,$guard);self::assertCount(1,$c->writes);self::assertSame('participation/bulk-create-participations-with-price-groups/',$c->writes[0][1]);self::assertCount(2,$c->writes[0][2]['entries']);self::assertCount(2,$result);
+  self::assertSame('11',$result['calculator-person-1']['memberReference']);self::assertSame('12',$result['calculator-person-2']['memberReference']);
+  $p['externalId']=$result['calculator-person-1']['externalId'];$q['externalId']=$result['calculator-person-2']['externalId'];
+  $cancel=$a->executeBatch('cancel',['calculator-person-3'=>$p,'calculator-person-4'=>$q],static function(){});
+  self::assertCount(2,$cancel);self::assertCount(2,$c->writes);self::assertSame('participation/bulk-update/',$c->writes[1][1]);
+ }
+ public function testBatchGuardPreventsWriteAfterPermissionsChange(): void {
+  $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);
+  try{$a->executeBatch('register',['calculator-person-1'=>$this->payload(),'calculator-person-2'=>array_replace($this->payload(),['memberReference'=>'12'])],static function(){throw new \App\Application\ParticipationRejected('permission_revoked_or_trip_closed');});self::fail('Guard must stop write');}catch(\App\Application\ParticipationRejected){}
+  self::assertSame([],$c->writes);
+ }
  private function payload(): array {return ['eventId'=>'77','memberReference'=>'11','externalId'=>null,'priceGroupId'=>'21','price'=>'12'];}
  public function testParticipationContactProvidesDisplayNameAndDoesNotGiveGuestTheMembersBirthday(): void {
   $c=new ProviderFixture();$c->rows[100]=['id'=>100,'participation_event'=>77,'participation_address'=>['id'=>51,'name'=>'Provider Mitglied','date_of_birth'=>'1980-01-02'],'state'=>1,'is_companion'=>false,'companion_name'=>null,'parent'=>null,'description'=>'Fixture','participation_price_groups'=>[['id'=>600,'participation'=>100,'price_group'=>21,'pieces'=>1]]];

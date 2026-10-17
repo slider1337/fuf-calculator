@@ -15,10 +15,14 @@ final readonly class EasyVereinReadHttpClient implements EasyVereinReadClient {
   $url='https://easyverein.com/api/v3.0/'.$path;
   if($query){$url.='?'.http_build_query($query,'','&',PHP_QUERY_RFC3986);}
   $this->budget?->reserve(hash('sha256',$this->token));
-  $h=curl_init($url);curl_setopt_array($h,[CURLOPT_HTTPGET=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Accept: application/json','Cache-Control: no-cache'],CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS]);
+  $retryAfter=60;
+  $headers=static function(\CurlHandle $handle,string $line)use(&$retryAfter): int {if(str_starts_with(strtolower($line),'retry-after:')){$retryAfter=ProviderRetryAfter::seconds(substr($line,12));}return strlen($line);};
+  $h=curl_init($url);curl_setopt_array($h,[CURLOPT_HTTPGET=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_HEADERFUNCTION=>$headers,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Accept: application/json','Cache-Control: no-cache'],CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS]);
   $body=curl_exec($h);$status=curl_getinfo($h,CURLINFO_RESPONSE_CODE);curl_close($h);
+  if($status===429){throw new AccessException('provider_rate_limited',503,$retryAfter);}
+  if(in_array($status,[401,403],true)){throw new AccessException($status===401?'provider_unauthorized':'provider_forbidden',503);}
   if($status===404&&preg_match('~^event/[1-9][0-9]{0,18}/$~D',$path)){throw new AccessException('provider_event_not_found',404);}
-  if(!is_string($body)||$status!==200||strlen($body)>4194304){throw new AccessException($status===429?'provider_rate_limited':'provider_read_failed',503);}
+  if(!is_string($body)||$status!==200||strlen($body)>4194304){throw new AccessException('provider_read_failed',503);}
   try{$data=json_decode($body,true,64,JSON_THROW_ON_ERROR);}catch(\Throwable){throw new AccessException('provider_read_invalid',503);}
   if(!is_array($data)){throw new AccessException('provider_read_invalid',503);}return $data;
  }

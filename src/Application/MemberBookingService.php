@@ -89,7 +89,7 @@ final readonly class MemberBookingService {
  }
  /** @return MemberContext */
  public function context(int $trip,MemberIdentity $identity): array {
-  $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->external->snapshot($link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
+  $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->sync->readSnapshot($trip,$link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $this->importExisting($trip,$profile,$snapshot);
   $binding=$this->forms->binding($trip);$v=$binding['versionId']===null?null:$this->forms->get($binding['versionId']);
   $t=$this->trips->getById($trip)??throw new NotFoundException('Trip');
@@ -112,7 +112,7 @@ final readonly class MemberBookingService {
  private function importExisting(int $trip,array $profile,?array $snapshot=null): void {
   $this->allowed($trip,'read');
   $link=$this->store->link($trip)??throw new NotFoundException('Member trip');
-  $snapshot??=$this->external->snapshot($link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
+  $snapshot??=$this->sync->readSnapshot($trip,$link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $members=array_column($profile['persons'],'memberReference');
   $this->access->transaction(function()use($trip,$link,$snapshot,$members){
    $this->allowed($trip,'read');

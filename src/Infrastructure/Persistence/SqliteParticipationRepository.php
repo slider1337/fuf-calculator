@@ -94,7 +94,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     }
     public function saveObservation(mixed $trip, mixed $revision, mixed $snapshot, mixed $conflicts, mixed $observedAt): void
     {
-        $s=$this->execute('INSERT INTO external_observations (trip_id,revision,snapshot_json,conflicts_json,observed_at) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,conflicts_json=excluded.conflicts_json,observed_at=excluded.observed_at', [$trip, $revision, $snapshot, $conflicts, $observedAt]);
+        $s=$this->execute('INSERT INTO external_observations (trip_id,revision,snapshot_json,conflicts_json,observed_at) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO UPDATE SET revision=excluded.revision,snapshot_json=excluded.snapshot_json,conflicts_json=excluded.conflicts_json,observed_at=excluded.observed_at,cache_invalidated=0', [$trip, $revision, $snapshot, $conflicts, $observedAt]);
     }
     public function acceptedPriceHash(mixed $person): int|string|false|null
     {
@@ -180,7 +180,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     /** @return list<array<string,scalar|null>> */
     public function recentJobs(mixed $trip): array
     {
-        $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
+        $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,lease_until AS nextAttemptAt,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
         $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function markUnknown(mixed $person): void
@@ -243,6 +243,12 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute("SELECT * FROM participation_jobs WHERE status IN ('pending','unknown') AND (lease_until IS NULL OR lease_until<=?) ORDER BY id LIMIT 1", [$now]);
         $row=StoredRow::fetch($s); if($row===false)return false; return self::jobRow($row);
+    }
+    public function invalidateObservation(int $trip): void {$this->execute("UPDATE external_observations SET cache_invalidated=1 WHERE trip_id=?",[$trip]);}
+    public function pendingFamilyJobs(int $booking,string $kind,int $now): array
+    {
+        $s=$this->execute("SELECT * FROM participation_jobs WHERE registration_id=? AND kind=? AND status='pending' AND (lease_until IS NULL OR lease_until<=?) AND json_extract(payload_json,'$.guestId') IS NULL ORDER BY id LIMIT 25",[$booking,$kind,$now]);
+        return array_map(self::jobRow(...),StoredRow::fetchAll($s));
     }
     public function expireLeases(mixed $now): void
     {

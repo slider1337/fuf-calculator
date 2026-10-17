@@ -45,7 +45,7 @@ async function saveTermSetup(context,draft,execute){
   context.command={input:JSON.stringify(draft),url:`/api/trips/${context.id}/term/${linking?'link':'request'}`,body:JSON.stringify(linking?{externalId:draft.externalId,reason:'Ausgewählten easyVerein-Termin im Einrichtungsdialog bestätigt'}:{operationKey:context.actionKey,reviewHash:review.reviewHash,confirmed:true,executeImmediately:true})};
   return api(context.command.url,{method:'POST',body:context.command.body});
 }
-async function loadWorkflowStatus(trip) {
+async function loadWorkflowStatus(trip,refresh=false) {
   clearTimeout(workflowUI.refreshTimer);
   workflowUI.tripId=trip.id;
   byId('participation-details').textContent='Terminstatus wird geprüft.';
@@ -58,7 +58,7 @@ async function loadWorkflowStatus(trip) {
   if(planningAllowed){const data=await api(`/api/trips/${trip.id}/planning-transfer`);if(state.currentTripId!==trip.id)return;
     byId('planning-transfer-status').textContent=data.snapshot?`${data.stale?'Kalkulationsstand veraltet':'Übernommener Stand aktuell'} · ${new Date(data.snapshot.createdAt).toLocaleString('de-DE')}`:'Noch keine Anmeldedaten übernommen.';
   }
-  if(trip.capabilities.includes('term.manage')){const data=await api(`/api/trips/${trip.id}/term`);if(state.currentTripId!==trip.id)return;workflowUI.term=data;
+  if(trip.capabilities.includes('term.manage')){const data=await api(`/api/trips/${trip.id}/term${refresh?'?refresh=1':''}`);if(state.currentTripId!==trip.id)return;workflowUI.term=data;
     byId('term-status').textContent=termProgressText(data);
     const editable=!trip.archivedAt&&!trip.closedAt;
     if(data.deleted){
@@ -77,14 +77,14 @@ async function loadWorkflowStatus(trip) {
     byId('term-edit-open')?.addEventListener('click',()=>performManagement(()=>openTermUpdate(trip)));
     byId('term-resume')?.addEventListener('click',()=>performManagement(async()=>{const button=byId('term-resume');button.disabled=true;try{await resumeTermSetup(trip);}finally{if(button.isConnected)button.disabled=false;}}));
     byId('term-recover')?.addEventListener('click',()=>performManagement(()=>openTermRecovery(trip)));
-    byId('term-refresh')?.addEventListener('click',()=>performManagement(()=>loadWorkflowStatus(trip)));
+    byId('term-refresh')?.addEventListener('click',()=>performManagement(()=>loadWorkflowStatus(trip,true)));
     byId('term-wizard').hidden=!!data.link||!!data.job;
     byId('term-wizard').disabled=!editable||!!data.link||!!data.job;
     if(!data.link&&data.job&&['pending','running','reconciling','unknown','resume_pending'].includes(data.job.status)){
       workflowUI.polls=workflowUI.pollTrip===trip.id?(workflowUI.polls??0)+1:0;workflowUI.pollTrip=trip.id;
       if(workflowUI.polls<24)workflowUI.refreshTimer=setTimeout(()=>{if(state.currentTripId===trip.id&&tripUsesEasyVerein(state.currentTrip))performManagement(()=>loadWorkflowStatus(state.currentTrip));},5000);
     }else{workflowUI.polls=0;workflowUI.pollTrip=trip.id;}
-    if(data.link){await loadParticipationStatus(trip,true);}else{byId('participation-details').textContent='Der Teilnahmeabgleich ist verfügbar, sobald der Termin verbunden ist.';}
+    if(data.link){await loadParticipationStatus(trip);}else{byId('participation-details').textContent='Der Teilnahmeabgleich ist verfügbar, sobald der Termin verbunden ist.';}
   }
 }
 byId('planning-transfer-btn').addEventListener('click',()=>performManagement(async()=>{

@@ -119,6 +119,10 @@ jobs:
             # Restart with new image
             docker compose -f docker-compose.prod.yml up -d
 
+            # Read-only sync diagnostics; never make provider calls during deployment verification.
+            docker compose -f docker-compose.prod.yml exec -T app php scripts/sync-health.php
+            docker compose -f docker-compose.prod.yml ps --status running --services
+
             # Clean up old images
             docker image prune -f
 

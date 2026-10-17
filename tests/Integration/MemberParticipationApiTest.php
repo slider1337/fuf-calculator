@@ -6,7 +6,7 @@ use App\Application\Port\{ParticipationPort,MemberDirectoryPort};
 use PDO;
 use Slim\Psr7\Factory\{ServerRequestFactory,StreamFactory};
 
-final class FakeParticipationProvider implements ParticipationPort {
+class FakeParticipationProvider implements ParticipationPort {
  public ?int $bookingUntil=null;
  public ?\Closure $onSnapshot=null;
  public int $writes=0;
@@ -33,6 +33,14 @@ final class FakeParticipationProvider implements ParticipationPort {
   return $row;
  }
  public function reconcile(string $kind,array $person,string $operationReference): ?array {return is_array($this->outcomes[$operationReference]??null)?$this->outcomes[$operationReference]:null;}
+}
+final class FakeBatchParticipationProvider extends FakeParticipationProvider implements \App\Application\Port\BatchParticipationPort {
+ public int $batches=0;
+ public function executeBatch(string $kind,array $people,callable $beforeWrite): array {
+  $beforeWrite($this->bookingUntil??time()+3600);$this->batches++;$out=[];
+  foreach($people as $reference=>$person)$out[$reference]=$this->execute($kind,$person,$reference);
+  return $out;
+ }
 }
 final class FakeMemberDirectory implements MemberDirectoryPort {
  public bool $bad=false;
@@ -89,6 +97,78 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testLocalWriteBudgetIsASafeRetryBeforeAnyNetworkWrite(): void {
+  $c=$this->app->getContainer();$token='fixture-only-token';$stmt=$this->db->prepare('INSERT INTO provider_api_calls(bucket,called_at) VALUES (?,?)');
+  for($i=0;$i<90;$i++)$stmt->execute([hash('sha256',$token),time()]);
+  $reads=new class implements \App\Application\Port\EasyVereinReadClient {
+   public function configured(): bool {return true;}
+   public function get(string $path,array $query=[]): array {throw new \LogicException('No network allowed');}
+  };
+  $client=new \App\Infrastructure\EasyVereinWriteHttpClient($reads,$token,'production',$c->get(\App\Infrastructure\ProviderRequestBudget::class));
+  try{$client->write('POST','participation/',[]);self::fail('Budget must stop the write');}
+  catch(ParticipationRejected $e){self::assertSame(429,$e->getCode());self::assertSame('provider_rate_limited',$e->getMessage());self::assertGreaterThanOrEqual(60,$e->retryAfter);}
+ }
+ public function testFamilyBatchChecksMemberDeadlineAgainBeforeWriting(): void {
+  $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(2));$batch->bookingUntil=1;$this->worker(1);
+  self::assertSame(0,$batch->writes);self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE error_code='event_unavailable' AND status='failed'")->fetchColumn());
+ }
+ public function testFamilyWorkerClaimsAndCompletesOneBatchWithIndividualProofs(): void {
+  $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(4));$this->worker(1);
+  self::assertSame(1,$batch->batches);self::assertSame(4,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
+  self::assertSame(4,(int)$this->db->query("SELECT COUNT(DISTINCT external_reference) FROM registration_participants WHERE participation_status='confirmed'")->fetchColumn());
+ }
+ public function testAmbiguousFamilyBatchReconcilesWithoutAnotherBatchWrite(): void {
+  $batch=new FakeBatchParticipationProvider();$batch->timeout=true;$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
+  $this->create($this->payload(2));$this->worker(1);self::assertSame(1,$batch->batches);
+  self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='unknown'")->fetchColumn());
+  $this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->worker();
+  self::assertSame(1,$batch->batches);self::assertSame(1,$batch->writes);
+  self::assertSame(1,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
+ }
+ public function testWebsiteSharesOneCachedEventReadAcrossContextAndBookingPages(): void {
+  $calls=0;$this->provider->onSnapshot=static function()use(&$calls){$calls++;};
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+  $this->call('GET','/integration/v1/bookings?after=0');
+  self::assertSame(1,$calls);
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_read_failed',503);};
+  $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
+ }
+ public function testReadThrottleQueuesRetryAndPausesFamilyWithoutWrites(): void {
+  $this->create($this->payload(2));
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_rate_limited',503,180);};
+  $this->worker();
+  $jobs=$this->db->query('SELECT status,error_code,attempts,lease_until FROM participation_jobs ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+  self::assertSame('pending',$jobs[0]['status']);self::assertSame('provider_rate_limited',$jobs[0]['error_code']);self::assertGreaterThanOrEqual(time()+179,$jobs[0]['lease_until']);
+  self::assertSame(0,$jobs[1]['attempts']);self::assertSame(0,$this->provider->writes);
+  self::assertSame('pending',$this->db->query('SELECT sync_status FROM registration_participants ORDER BY id LIMIT 1')->fetchColumn());
+ }
+ public function testTransientReadAutomaticallyRetriesButForbiddenDoesNot(): void {
+  $this->create($this->payload(1));
+  $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_read_failed',503);};
+  $this->worker(1);self::assertSame('pending',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame(0,$this->provider->writes);
+  $this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->provider->onSnapshot=null;$this->worker(1);
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame(1,$this->provider->writes);
+ }
+ public function testWriteThrottleRetriesSameJobAndLostReplyOnlyReconciles(): void {
+  $this->create($this->payload(1));
+  $this->provider->onExecute=static function(){throw new ParticipationRejected('provider_rate_limited',429,[],120);};
+  $this->worker(1);self::assertSame('pending',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
+  $this->provider->onExecute=null;$this->db->exec('UPDATE participation_jobs SET lease_until=0');
+  // A fresh process resumes after the rate-limit pause.
+  $c=$this->app->getContainer();$worker=new ParticipationWorker($c->get(\App\Application\Port\ParticipationRepositoryInterface::class),$c->get(\App\Application\Port\AccessRepositoryInterface::class),$this->provider,$c->get(\App\Application\ParticipationService::class),$this->directory);
+  $this->provider->timeout=true;$worker->runOne();self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
+  $writes=$this->provider->writes;$this->db->exec('UPDATE participation_jobs SET lease_until=0');$worker->runOne();
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());self::assertSame($writes,$this->provider->writes);
+ }
+ public function testAutomaticRefreshReusesRecentObservationButManualRefreshReadsProvider(): void {
+  $_SESSION['user_id']=1;$calls=0;$this->provider->onSnapshot=static function()use(&$calls){$calls++;};
+  $path="/api/trips/{$this->trip}/participation-sync/reconcile";
+  $this->dispatch('POST',$path,['allowRecent'=>true]);$this->dispatch('POST',$path,['allowRecent'=>true]);self::assertSame(1,$calls);
+  $this->dispatch('POST',$path,[]);self::assertSame(2,$calls);
+ }
  public function testWebsiteRoutingNeverFallsBackWhenReleaseIsDisabledAndIndexIsOwned(): void {
   $event=(string)$this->db->query('SELECT external_id FROM external_event_links WHERE trip_id='.$this->trip)->fetchColumn();
   $route=$this->call('GET',"/integration/v1/events/$event/route");
@@ -154,7 +234,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $this->provider->groups=[];$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;$b=$this->create($p);$this->worker();self::assertSame('confirmed',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
  }
  public function testDirectExternalParticipationAndFieldConflictsNeverGuessContact(): void {
-  $this->provider->rows['888']=['externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
+  $this->provider->rows['888']=['eventId'=>'77','externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$d=json_decode((string)$r->getBody(),true);self::assertCount(0,$d['clarifications']);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());self::assertSame('easyverein',$this->db->query('SELECT source FROM registrations')->fetchColumn());self::assertContains('groups',array_column($d['observation']['conflicts'],'field'));
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Neuen Terminpreis geprüft']);self::assertSame(200,$r->getStatusCode());
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/acknowledge",['revision'=>$d['observation']['revision'],'fields'=>['groups'],'confirmed'=>true,'reason'=>'Veralteter Stand']);self::assertSame(409,$r->getStatusCode());
@@ -188,10 +268,10 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
- public function testReleasedTermStatusReadsProviderOutsideTransactionAndUsesLiveDeadline(): void {
+ public function testTermStatusReusesCacheAndExplicitRefreshChecksLiveDeadline(): void {
   $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
   $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
-  $this->provider->bookingUntil=1;$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
+  $this->provider->bookingUntil=1;$cached=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertTrue(json_decode((string)$cached->getBody(),true)['registrationEnabled']);$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term?refresh=1");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
  }
  public function testFailedReleasePreflightLeavesSettingsUnchangedAndDisablingStillWorks(): void {
   $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');

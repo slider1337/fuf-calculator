@@ -15,7 +15,7 @@ use App\Application\Data\TermDraftData;
  */
 final readonly class TermService
 {
-    public function __construct(private AccessPolicy $policy,private TermRepositoryInterface $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members) {}
+    public function __construct(private AccessPolicy $policy,private TermRepositoryInterface $store,private ExternalEventPort $external,private TripRepositoryInterface $trips,private FormRepositoryInterface $forms,private \App\Application\Port\AccessRepositoryInterface $access,private TripService $tripService,private FormService $formService,private \App\Application\Port\ParticipationPort $participations,private \App\Application\Port\MemberDirectoryPort $members,private ParticipationService $readModel) {}
     /**
      * @param array<array-key, mixed> $p
      * @return array{tripId: int}
@@ -39,11 +39,11 @@ final readonly class TermService
         });
     }
     /** @return TermState */
-    public function read(int $id): array
+    public function read(int $id,bool $refresh=false): array
     {
         $data=$this->readLocal($id);
         if($data['link']===null||($this->policy->metadata($id)['archived_at']??null)!==null)return $data;
-        try{$deadline=$this->participations->snapshot($data['link']['externalId'])['bookingUntil'];}
+        try{$deadline=$this->readModel->readSnapshot($id,$data['link']['externalId'],$refresh)['bookingUntil'];}
         catch(AccessException $e){
             $current=$this->readLocal($id);
             if(($current['link']['externalId']??null)!==$data['link']['externalId'])throw new AccessException('term_review_changed',409);

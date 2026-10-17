@@ -24,7 +24,7 @@ final readonly class WorkflowController
     public function termUpdateRequest(Request $request,Response $response,string $id): Response {return $this->json($response,$this->updates->request((int)$id,(array)$request->getParsedBody()),202);}
     public function catalogue(Request $request,Response $response,string $resource): Response {return $this->json($response,$this->catalog->search($resource,$request->getQueryParams()));}
     public function tripCatalogue(Request $request,Response $response,string $id,string $resource): Response {return $this->json($response,$this->catalog->search($resource,$request->getQueryParams(),(int)$id));}
-    public function term(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->read((int)$id));}
+    public function term(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->read((int)$id,($request->getQueryParams()['refresh']??null)==='1'));}
     public function confirmDeletedTerm(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->confirmDeleted((int)$id,(array)$request->getParsedBody()));}
     public function draft(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->save((int)$id,(array)$request->getParsedBody()));}
     public function review(Request $request,Response $response,string $id): Response {return $this->json($response,$this->terms->review((int)$id));}

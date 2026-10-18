@@ -1,4 +1,4 @@
-name: Diagnose affected cancellation codes
+name: Resume six affected cancellation requests
 on:
   push:
     branches: [diagnose/booking-guest-20261018]
@@ -18,17 +18,37 @@ jobs:
           script: |
             set -e
             cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml exec -T app php scripts/backup.php
             docker compose -f docker-compose.prod.yml exec -T app php <<'PHP'
             <?php
             require '/app/vendor/autoload.php';
-            $c=App\Infrastructure\ContainerServices::create();
-            $db=App\Infrastructure\ContainerServices::get($c,PDO::class);
-            $jobs=$db->query("SELECT id,kind,status,error_code,initial_error_code,validation_errors_json,attempts,payload_json FROM participation_jobs WHERE trip_id=3 AND registration_id=19 AND kind='cancel' ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
-            foreach($jobs as $j){$p=json_decode($j['payload_json'],true);unset($j['payload_json']);$j['hasGuestId']=isset($p['guestId']);$j['validation_errors_json']=json_decode($j['validation_errors_json'],true);echo json_encode($j).PHP_EOL;}
-            if(!$jobs)exit("no_cancel_jobs\n");
-            try{
-             $full=$db->query("SELECT payload_json FROM participation_jobs WHERE id=".(int)$jobs[0]['id'])->fetchColumn();$p=json_decode($full,true);
-             $a=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);$s=$a->snapshot($p['eventId']);
-             foreach($jobs as $j){$q=$db->query('SELECT payload_json FROM participation_jobs WHERE id='.(int)$j['id'])->fetchColumn();$p=json_decode($q,true);$found=array_values(array_filter($s['participants'],fn($r)=>$r['externalId']===($p['externalId']??null)));echo json_encode(['stage'=>'external','job'=>$j['id'],'matches'=>count($found),'status'=>$found[0]['status']??null,'isGuest'=>$found[0]['isCompanion']??null]).PHP_EOL;}
+            $c=App\Infrastructure\ContainerServices::create();$db=App\Infrastructure\ContainerServices::get($c,PDO::class);
+            try {
+             $jobs=$db->query("SELECT j.*,p.guest_approval_id,p.name AS person_name,p.member_reference AS person_member,p.external_reference AS person_external FROM participation_jobs j JOIN registration_participants p ON p.id=j.participant_id AND p.registration_id=j.registration_id WHERE j.trip_id=3 AND j.registration_id=19 AND j.kind='cancel' AND j.id BETWEEN 13 AND 18 ORDER BY j.id")->fetchAll(PDO::FETCH_ASSOC);
+             if(count($jobs)!==6)exit("scope_changed\n");
+             $audit='participation.manual_resume.cancel_13_18.20261018';$q=$db->prepare('SELECT 1 FROM member_audit WHERE trip_id=3 AND action=?');$q->execute([$audit]);if($q->fetchColumn())exit("already_resumed_once\n");
+             $adapter=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);if($adapter->blockedReason()!==null)exit("writes_blocked\n");
+             $p=json_decode($jobs[0]['payload_json'],true);$s=$adapter->snapshot($p['eventId']);$sync=App\Infrastructure\ContainerServices::get($c,App\Application\ParticipationService::class);$sync->validateSnapshot($s,$p['eventId']);
+             $settings=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationRepositoryInterface::class);
+             foreach($jobs as &$j){
+              $p=json_decode($j['payload_json'],true);
+              if($j['status']!=='failed'||$j['error_code']!=='existing_participation_requires_clarification'||$j['lease_token']!==null||$j['attempts']!==1||$p['eventId']!==$s['eventId']||$p['memberReference']!==$j['person_member']||$p['externalId']!==$j['person_external'])throw new RuntimeException('scope_changed');
+              $matches=array_values(array_filter($s['participants'],fn($r)=>$r['externalId']===$p['externalId']&&$r['memberReference']===$p['memberReference']));
+              if(count($matches)!==1||$matches[0]['status']!=='confirmed'||$matches[0]['isCompanion']!==($j['guest_approval_id']!==null))throw new RuntimeException('external_state_changed');
+              if($j['guest_approval_id']!==null){
+               $g=$settings->guestForJob($j['guest_approval_id'],3);if(!$g||$g['status']!=='approved'||(int)$g['participant_id']!==$j['participant_id']||$g['parent_member']!==$p['memberReference']||$matches[0]['companionName']!==$j['person_name'])throw new RuntimeException('guest_reference_changed');
+               $p['guestId']=$j['guest_approval_id'];$p['guestName']=$j['person_name'];
+              }
+              $j['corrected_payload']=json_encode($p,JSON_THROW_ON_ERROR);
+             }unset($j);
+             $access=App\Infrastructure\ContainerServices::get($c,App\Application\Port\AccessRepositoryInterface::class);
+             $access->transaction(function()use($db,$jobs,$audit,$settings,$sync){
+              foreach($jobs as $j){
+               $q=$db->prepare("UPDATE participation_jobs SET payload_json=?,status='pending',error_code=NULL,lease_token=NULL,lease_until=NULL WHERE id=? AND trip_id=3 AND registration_id=19 AND kind='cancel' AND status='failed' AND error_code='existing_participation_requires_clarification' AND attempts=1 AND lease_token IS NULL AND payload_json=?");
+               $q->execute([$j['corrected_payload'],$j['id'],$j['payload_json']]);if($q->rowCount()!==1)throw new RuntimeException('scope_changed');$settings->markPending($j['participant_id']);
+              }
+              $sync->refresh(19);$db->prepare('INSERT INTO member_audit(member_reference,service_id,action,trip_id,created_at) VALUES (?,?,?,?,?)')->execute([$jobs[0]['member_actor'],'authorized-maintenance',$audit,3,gmdate(DATE_ATOM)]);
+             });
+             echo json_encode(['stage'=>'resume_cancellations','count'=>6,'status'=>'pending']).PHP_EOL;
             }catch(Throwable $e){echo json_encode(['error'=>$e instanceof App\Application\AccessException?$e->error:get_class($e),'location'=>basename($e->getFile()).':'.$e->getLine()]).PHP_EOL;exit(1);}
             PHP

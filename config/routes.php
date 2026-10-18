@@ -119,6 +119,7 @@ return static function (App $app): void {
     $app->post('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}/participations', [$participation, 'request']);
 
     $booking = \App\Infrastructure\Http\Controller\BookingController::class;
+    $app->get('/api/trips/{id:[0-9]+}/booking-options', [$booking, 'options']);
     $app->get('/api/trips/{id:[0-9]+}/bookings', [$booking, 'list']);
     $app->post('/api/trips/{id:[0-9]+}/bookings', [$booking, 'create']);
     $app->get('/api/trips/{id:[0-9]+}/bookings/{bookingId:[0-9]+}', [$booking, 'get']);

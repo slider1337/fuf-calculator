@@ -19,6 +19,8 @@ do {
         try { if(!$worker->runOne()){break;} $processed++; }
         catch(\Throwable){fwrite(STDERR,gmdate(DATE_ATOM)." worker_batch_failed\n");break;}
     }}
+    try { \App\Infrastructure\ContainerServices::get($container,\App\Infrastructure\TripTermBasisSync::class)->runOne(); }
+    catch(\Throwable){fwrite(STDERR,gmdate(DATE_ATOM)." trip_basis_sync_failed\n");}
     $participation=$workers[2];
     $actors=$reconcileActor>0?[$reconcileActor]:array_map(static fn($row)=>\App\Infrastructure\Persistence\StoredRow::from($row)->integer('user_id'),$workflow->query("SELECT DISTINCT a.user_id FROM trip_access a JOIN users u ON u.id=a.user_id WHERE a.capability='term.manage' ORDER BY a.user_id")->fetchAll(\PDO::FETCH_ASSOC));
     $remaining=$batch;

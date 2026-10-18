@@ -66,7 +66,8 @@ function roomFillRows(registrations, reservations) {
     rowFor(reservation.roomType).reserved += reservation.count;
   });
   registrations.forEach((reg) => {
-    if (reg.roomCategory && reg.participants.some(p => !p.status || p.status === 'confirmed')) { rowFor(reg.roomCategory).registered += 1; }
+    if(reg.rooms?.length){for(const room of reg.rooms){if(room.personIds.some(id=>reg.participants.some(p=>String(p.id)===String(id)&&p.status!=='cancelled')))rowFor(room.category).registered+=1;}}
+    else if (reg.roomCategory && reg.participants.some(p => p.status !== 'cancelled')) { rowFor(reg.roomCategory).registered += 1; }
   });
 
   return Array.from(rows.values())

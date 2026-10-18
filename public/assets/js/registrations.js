@@ -1,3 +1,5 @@
+const activeRegistrationPeople = reg => reg.participants.filter(p=>p.status!=="cancelled");
+const activeRegistrations = regs => regs.filter(reg=>activeRegistrationPeople(reg).length>0);
 // Registration rendering, CSV import and manual intake actions.
 function resetRegistrations() {
   state.currentRegistrations = [];
@@ -37,20 +39,21 @@ function resetRegistrationFilter() {
 function billingGroupsFor(reg) {
   const groups = reg.participants.map(() => ({ main: null, correction: null, total: null }));
   let index = -1;
+  const activeIndices=reg.participants.map((p,i)=>p.status!=='cancelled'?i:null).filter(i=>i!==null);
 
   (reg.billingItems || []).forEach((item) => {
     if (categoryShortLabels[item.categoryType] !== undefined) {
       index += 1;
-      if (groups[index]) {
-        groups[index].main = item;
-        groups[index].total = item.price;
+      if (groups[activeIndices[index]]) {
+        groups[activeIndices[index]].main = item;
+        groups[activeIndices[index]].total = item.price;
       }
       return;
     }
 
-    if (groups[index]) {
-      groups[index].correction = item;
-      groups[index].total = round2((groups[index].total ?? 0) + item.price);
+    if (groups[activeIndices[index]]) {
+      groups[activeIndices[index]].correction = item;
+      groups[activeIndices[index]].total = round2((groups[activeIndices[index]].total ?? 0) + item.price);
     }
   });
 
@@ -62,10 +65,13 @@ function registrationRows(reg, startDate) {
 
   return reg.participants.map((participant, i) => {
     const group = groups[i];
+    const cancelled=participant.status==='cancelled';
     const age = ageAtArrival(participant.birthDate, startDate);
     const ageNote = age === null ? "" : `<span class="help reg-age">${age} J. bei Anreise</span>`;
 
-    let category = '<span class="help">–</span>';
+    const pricePerson=reg.bookingPeople?.find(p=>p.id===participant.id);
+    const selectedGroup=bookingUI.priceGroups.find(g=>g.id===pricePerson?.priceGroupId);
+    let category = selectedGroup?`<span class="chip c-green">${escapeHtml(selectedGroup.label)}</span>`:'<span class="help">–</span>';
     if (group && group.main) {
       const tone = group.main.categoryType === "CHILD" ? "c-orange" : "c-green";
       category = `<span class="chip ${tone}">${categoryShortLabels[group.main.categoryType]}</span>`;
@@ -75,11 +81,11 @@ function registrationRows(reg, startDate) {
       }
     }
 
-    const price = group && group.total !== null ? formatCurrency(group.total) : "–";
+    const price = !cancelled && group && group.total !== null ? formatCurrency(group.total) : !cancelled&&pricePerson?.expectedPrice!==null&&pricePerson?.expectedPrice!==undefined?formatCurrency(Number(pricePerson.expectedPrice)):"–";
 
     return `
       <tr>
-        <td class="tb-head">${escapeHtml(participant.name)}</td>
+        <td class="tb-head">${escapeHtml(participant.name)}${cancelled?' <span class="chip c-grey">Storniert</span>':''}</td>
         <td class="reg-date" data-col="Geburtstag">${formatDate(participant.birthDate)}${ageNote}</td>
         <td data-col="Kategorie">${category}</td>
         <td class="r" data-col="Preis"><b>${price}</b></td>
@@ -89,13 +95,14 @@ function registrationRows(reg, startDate) {
 
 function registrationItem(reg, index, startDate, adultAgeThreshold) {
   const collapseId = `reg-collapse-${index}`;
+  const cancelled=activeRegistrationPeople(reg).length===0;
   const primaryName = reg.participants.length > 0 ? reg.participants[0].name : "Unbekannt";
-  const sourceChip = reg.source === "easyverein" ? '<span class="chip c-green">easyVerein</span>' : reg.source === "manual"
+  const sourceChip = reg.source === "website" ? '<span class="chip c-green">Website</span>' : reg.source === "easyverein" ? '<span class="chip c-green">easyVerein</span>' : reg.source === "manual"
     ? '<span class="chip c-amber">Manuell</span>'
     : '<span class="chip c-grey">CSV</span>';
   const amount = reg.billingTotal !== null
     ? `<b class="reg-amount">${formatCurrency(reg.billingTotal)}</b>`
-    : '<b class="reg-amount reg-amount-none">keine Abrechnung</b>';
+    : reg.bookingTotal!==null&&reg.bookingTotal!==undefined?`<b class="reg-amount">${formatCurrency(reg.bookingTotal)}</b>`:'<b class="reg-amount reg-amount-none">keine Preisangabe</b>';
   const foot = reg.billingTotal !== null
     ? `<tfoot><tr class="sum-row"><td colspan="3">Gesamt</td><td class="r">${formatCurrency(reg.billingTotal)}</td></tr></tfoot>`
     : "";
@@ -113,6 +120,7 @@ function registrationItem(reg, index, startDate, adultAgeThreshold) {
   const item = document.createElement("div");
   item.className = "reg-item";
   item.setAttribute("data-reg-source", reg.source);
+  item.dataset.cancelled=String(cancelled);
   item.setAttribute("data-reg-name", [primaryName, ...reg.participants.map((p) => p.name)].join(" ").toLowerCase());
   item.innerHTML = `
     <div class="reg-row">
@@ -120,14 +128,15 @@ function registrationItem(reg, index, startDate, adultAgeThreshold) {
         <span class="reg-name">${escapeHtml(primaryName)}</span>
         <span class="chip c-green">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V4a1 1 0 011-1h9a1 1 0 011 1v17M14 12h.01"/></svg>
-          ${escapeHtml(reg.roomCategory || 'Ohne Unterkunft')}
+          ${escapeHtml(reg.rooms?.length?reg.rooms.map((r,i)=>`Zimmer ${i+1}: ${r.category}`).join(' · '):(reg.roomCategory || 'Ohne Unterkunft'))}
         </span>
-        <span class="chip c-grey">${reg.participants.length} Pers.</span>
+        <span class="chip c-grey">${activeRegistrationPeople(reg).length} Pers.</span>
         ${sourceChip}
+        ${cancelled?'<span class="chip c-grey">Storniert</span>':''}
         ${amount}
       </button>
       <div class="reg-actions">
-        <button type="button" class="ib" disabled title="Anmeldungen lassen sich noch nicht bearbeiten" aria-label="Anmeldung bearbeiten">
+        <button type="button" class="ib" data-edit-registration="${reg.id}" title="Anmeldung bearbeiten" aria-label="Anmeldung bearbeiten">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2 2 0 013 3L7 19l-4 1 1-4z"/></svg>
         </button>
         <button type="button" class="ib ib-danger" data-delete-registration="${reg.id}" aria-label="Anmeldung löschen" title="Anmeldung löschen">
@@ -184,23 +193,25 @@ function renderRegistrations(registrations) {
     if (reg.billingTotal !== null) {
       totalBilling += reg.billingTotal;
     }
-    if (reg.source === "manual") {
+    if (reg.source === "manual" && activeRegistrationPeople(reg).length) {
       manualCount += 1;
     }
   });
 
-  const csvCount = registrations.filter(r=>r.source==="csv").length;
-  const easyCount = registrations.filter(r=>r.source==="easyverein").length;
+  const active=activeRegistrations(registrations);
+  const csvCount = active.filter(r=>r.source==="csv").length;
+  const easyCount = active.filter(r=>r.source==="easyverein").length;
   const planned = numberFromField("adultDoubleCount")
     + numberFromField("adultMultiCount")
     + numberFromField("childCount");
   const plannedRevenue = previewCalculation().totalCalculatedRevenue;
 
-  byId("reg-count").textContent = String(registrations.length);
+  byId("reg-count").textContent = String(active.length);
   byId("reg-count-note").textContent = [
     manualCount > 0 ? `${manualCount} manuell` : null,
     csvCount > 0 ? `${csvCount} aus CSV` : null,
     easyCount > 0 ? `${easyCount} aus easyVerein` : null,
+    active.some(r=>r.source==="website") ? `${active.filter(r=>r.source==="website").length} über Website` : null,
   ].filter(Boolean).join(" · ");
 
   byId("reg-participant-count").textContent = planned > 0
@@ -217,7 +228,7 @@ function renderRegistrations(registrations) {
     : "";
 
   byId("sum-anmeldungen").textContent = [
-    `${registrations.length} ${registrations.length === 1 ? "Anmeldung" : "Anmeldungen"}`,
+    `${active.length} ${active.length === 1 ? "Anmeldung" : "Anmeldungen"}`,
     `${totalParticipants} Teilnehmer`,
     formatCurrency(totalBilling),
   ].join(" · ");
@@ -276,7 +287,8 @@ function applyRegistrationFilter() {
   let visible = 0;
 
   items.forEach((item) => {
-    const matchesSource = source === "all" || item.getAttribute("data-reg-source") === source;
+    const cancelled=item.dataset.cancelled==='true';
+    const matchesSource = source==='cancelled'?cancelled:!cancelled&&(source === "all" || item.getAttribute("data-reg-source") === source);
     const matchesQuery = needle === "" || (item.getAttribute("data-reg-name") || "").includes(needle);
     const show = matchesSource && matchesQuery;
     item.classList.toggle("d-none", !show);
@@ -285,14 +297,17 @@ function applyRegistrationFilter() {
     }
   });
 
-  const registrations = state.currentRegistrations || [];
+  const allRegistrations=state.currentRegistrations||[];
+  const registrations = activeRegistrations(allRegistrations);
+  byId("reg-filter-cancelled").textContent=`Storniert ${allRegistrations.length-registrations.length}`;
   const manualCount = registrations.filter((reg) => reg.source === "manual").length;
+  byId("reg-filter-website").textContent = `Website ${registrations.filter(r=>r.source==="website").length}`;
   byId("reg-filter-all").textContent = `Alle ${registrations.length}`;
   byId("reg-filter-csv").textContent = `CSV ${registrations.filter(r=>r.source==="csv").length}`;
   byId("reg-filter-manual").textContent = `Manuell ${manualCount}`;
   byId("reg-filter-easyverein").textContent = `easyVerein ${registrations.filter(r=>r.source==="easyverein").length}`;
 
-  byId("registrations-no-match").classList.toggle("d-none", visible > 0 || registrations.length === 0);
+  byId("registrations-no-match").classList.toggle("d-none", visible > 0 || allRegistrations.length === 0);
 }
 
 async function loadRegistrations(tripId) {
@@ -302,7 +317,7 @@ async function loadRegistrations(tripId) {
     if (typeof loadBookingWorkspace === "function") { await loadBookingWorkspace(Number(tripId)); }
   applyTripWriteControls();
   } catch (error) {
-    resetRegistrations();
+    byId("booking-intake-error").textContent="Anmeldungen konnten nicht geladen werden: "+error.message;
   }
 }
 
@@ -448,7 +463,7 @@ function initRegistrations() {
   byId("add-participant-row-btn").addEventListener("click", () => {
     const container = byId("manual-participants-container");
     const rows = container.querySelectorAll(".manual-participant-row");
-    if (rows.length >= 5) return;
+    if (rows.length >= 100) return;
     const num = rows.length + 1;
     const row = document.createElement("div");
     row.className = "reg-manual-row manual-participant-row";
@@ -490,6 +505,8 @@ function initRegistrations() {
 
     // DESIGN: Der Loeschen-Knopf ist jetzt ein Icon-Button - geklickt wird oft das
     // SVG darin, deshalb ueber closest() statt direkt am Ziel.
+    const editButton=target.closest("[data-edit-registration]");
+    if(editButton){await performManagement(()=>openBookingDetail(Number(editButton.dataset.editRegistration)));return;}
     const button = target.closest("[data-delete-registration]");
     if (!button) return;
 

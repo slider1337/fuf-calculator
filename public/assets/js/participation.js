@@ -40,7 +40,7 @@ function participationJobMessage(job){
   if(job.status==='unknown'&&job.attempts>=3)messages.push('Der automatische Abgleich konnte den Fall wiederholt nicht lösen. Bitte die Orga die Teilnahme in easyVerein und den ursprünglichen Fehler prüfen lassen.');
   return messages.filter(Boolean).join(' ');
 }
-async function openParticipationRequest(booking){
+async function openParticipationRequest(booking,initialKind='register'){
   const data=await api(`/api/trips/${booking.tripId}/participation-sync`);
   const key=crypto.randomUUID();
   showManagementModal('Teilnahmeauftrag vorbereiten',`${data.blockedReason?'<p class="status-note is-error">Anbindung gesperrt. Ein Auftrag bleibt gesperrt und erzeugt keine externe Teilnahme.</p>':''}<label class="f">Aktion<div class="in"><select id="participation-kind"><option value="register">Offene Personen anmelden</option><option value="cancel">Externe Teilnahmen stornieren</option></select></div></label><p class="help">Bereits in easyVerein angemeldete Personen werden automatisch übernommen. Gäste können sich anmelden, wenn der Termin dies erlaubt.</p>${booking.persons.filter(p=>p.status!=='cancelled').map(p=>`<fieldset class="booking-persons"><legend>${escapeHtml(p.name)} · Person #${p.id}</legend><label><input type="checkbox" data-participation-person="${p.id}"> Diese Person übertragen</label><label class="f">easyVerein-Mitglieds-ID<div class="in"><input id="participation-member-${p.id}" inputmode="numeric" value="${escapeHtml(p.memberReference||'')}" ${p.memberReference?'readonly':''}></div></label>${data.priceGroups.length?`<label class="f">Preisgruppe<div class="in"><select id="participation-price-${p.id}"><option value="">Auswählen</option>${data.priceGroups.map(g=>`<option value="${escapeHtml(g.id)}" ${g.id===p.priceGroupId?'selected':''}>#${escapeHtml(g.id)} · ${escapeHtml(g.price)} €</option>`).join('')}</select></div></label>`:'<p>Keine geprüften Preisgruppen vorhanden.</p>'}</fieldset>`).join('')}`,async()=>{
@@ -48,5 +48,7 @@ async function openParticipationRequest(booking){
     const persons=[...byId('management-fields').querySelectorAll('[data-participation-person]:checked')].map(input=>{const id=Number(input.dataset.participationPerson),person=booking.persons.find(p=>p.id===id);const gid=kind==='cancel'?person.priceGroupId:(byId('participation-price-'+id)?.value||null);return {id,memberReference:byId('participation-member-'+id).value,priceGroupId:gid,expectedPrice:kind==='cancel'?person.expectedPrice:(data.priceGroups.find(g=>g.id===gid)?.price??null)};});
     if(!persons.length)throw new Error('Bitte mindestens eine Person auswählen.');
     await api(`/api/trips/${booking.tripId}/bookings/${booking.id}/participations`,{method:'POST',body:JSON.stringify({operationKey:key,revision:booking.revision,kind,persons})});await loadRegistrations(String(booking.tripId));await loadWorkflowStatus(state.currentTrip);
-  },'Auftrag speichern');
+  },initialKind==='cancel'?'Stornieren':'Auftrag speichern');
+  byId('participation-kind').value=initialKind;
+  if(initialKind==='cancel')byId('management-fields').querySelectorAll('[data-participation-person]').forEach(el=>el.checked=true);
 }

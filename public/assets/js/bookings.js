@@ -1,11 +1,11 @@
 // Uses the existing session, tabs and accessible management dialog.
-const bookingUI = {items: [], version: null, answers: {booking: {}, persons: {}}, operation: null, payload: null, tripId: null};
+const bookingUI = {items: [], priceGroups: [], roomCategories: [], readRooms:()=>[], version: null, answers: {booking: {}, persons: {}}, operation: null, payload: null, tripId: null};
 const bookingStatus = {pending:'In Bearbeitung',confirmed:'Bestätigt',partially_confirmed:'Teilweise bestätigt',cancelled:'Storniert'};
 const syncStatus = {pending:'Übertragung ausstehend',local_only:'Lokal · keine externe Bestätigung',synced:'Synchronisiert',error:'Übertragungsfehler',unknown:'Klärung nötig'};
 const answerStatus = {answered:'beantwortet',missing:'fehlt',not_applicable:'nicht anwendbar',not_asked:'nicht abgefragt',unchecked:'ungeprüft'};
 const operationKey = () => crypto.randomUUID();
 const valueText = v => v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'Ja' : 'Nein') : Array.isArray(v) ? v.join(', ') : String(v);
-function bookingPeople() {return [...document.querySelectorAll('.manual-participant-row')].map((row,i)=>({id:`person_${i}`,name:row.querySelector('.manual-participant-name').value,birthDate:row.querySelector('.manual-participant-birthdate').value}));}
+function bookingPeople() {return [...document.querySelectorAll('.manual-participant-row')].map((row,i)=>({id:`person_${i}`,name:row.querySelector('.manual-participant-name').value,birthDate:row.querySelector('.manual-participant-birthdate').value,priceGroupId:row.querySelector('[data-manual-price]')?.value||null,expectedPrice:bookingUI.priceGroups.find(g=>g.id===row.querySelector('[data-manual-price]')?.value)?.price??null}));}
 function readBookingInputs(root) {
   const answers = {booking:{},persons:{}};
   root.querySelectorAll('[data-booking-answer]').forEach(input => {
@@ -41,20 +41,29 @@ function answerFields(version,people,answers,trip) {
     if(vis.kind==='selection'){const selected=vals[vis.fieldId]??answers.booking[vis.fieldId];visible=Array.isArray(selected)?selected.includes(vis.value):selected===vis.value;}
     return bookingInput(f,pid,vals,visible);
   }).join('');
-  return `<h3>Zusatzangaben · ${version.number?'v'+version.number:'kein Zusatzformular'}</h3>${render('booking')}${people.map(p=>`<fieldset><legend>${escapeHtml(p.name||'Person')} · ${escapeHtml(String(p.id))}</legend>${render('person',p)}</fieldset>`).join('')}`;
+  return `<h3>Zusatzangaben · ${version.number?'v'+version.number:'kein Zusatzformular'}</h3>${render('booking')}${version.fields.some(f=>f.scope==='person')?people.map((p,i)=>`<fieldset><legend>${escapeHtml(p.name||('Teilnehmer '+(i+1)))}</legend>${render('person',p)}</fieldset>`).join(''):''}`;
 }
 function renderBookingIntake() {
-  if(!tripUsesEasyVerein()){byId('booking-extra-fields').innerHTML='';return;}
+  if(!tripUsesEasyVerein()){byId('booking-extra-fields').innerHTML='';byId('booking-rooms').innerHTML='';return;}
   const root=byId('booking-extra-fields');
+  renderManualPrices();
+  bookingUI.readRooms=bookingRoomEditor(byId('booking-rooms'),bookingPeople(),bookingUI.roomCategories,bookingUI.readRooms());
   const read=readBookingInputs(root);bookingUI.answers.booking={...bookingUI.answers.booking,...read.booking};for(const [p,v] of Object.entries(read.persons)){bookingUI.answers.persons[p]={...bookingUI.answers.persons[p],...v};}
   root.innerHTML=bookingUI.version?answerFields(bookingUI.version,bookingPeople(),bookingUI.answers,state.currentTrip):'<p class="help">Kein Zusatzformular.</p>';
 }
 async function loadBookingWorkspace(tripId) {
   if(!tripUsesEasyVerein()){bookingUI.items=[];bookingUI.version=null;renderBookingIntake();byId('manual-registration-form').classList.toggle('d-none',!hasTripCapability('registration.manage'));return;}
-  if(bookingUI.tripId!==tripId){bookingUI.answers={booking:{},persons:{}};bookingUI.payload=null;bookingUI.operation=null;bookingUI.tripId=tripId;}
-  const [items,binding]=await Promise.all([api(`/api/trips/${tripId}/bookings`),api(`/api/trips/${tripId}/form`)]);
+  if(bookingUI.tripId!==tripId){bookingUI.answers={booking:{},persons:{}};bookingUI.payload=null;bookingUI.operation=null;bookingUI.tripId=tripId;bookingUI.readRooms=()=>[];}
+  const [items,binding,options]=await Promise.all([api(`/api/trips/${tripId}/bookings`),api(`/api/trips/${tripId}/form`),api(`/api/trips/${tripId}/booking-options`)]);
+  if(state.currentTripId!==tripId)return;
+  bookingUI.priceGroups=options.priceGroups;bookingUI.roomCategories=options.roomCategories;
+  const roomSelect=byId('manualRoomCategory');roomSelect.innerHTML='<option value="">Ohne Unterkunft</option>'+options.roomCategories.map(c=>`<option>${escapeHtml(c)}</option>`).join('');
+  roomSelect.closest('.f').classList.toggle('d-none',tripUsesEasyVerein());
   if(state.currentTripId!==tripId)return;
   bookingUI.items=items;bookingUI.version=binding.version;renderBookingIntake();
+  for(const reg of state.currentRegistrations||[]){const booking=items.find(b=>b.id===reg.id);reg.rooms=booking?.rooms||[];reg.bookingPeople=booking?.persons||[];reg.bookingTotal=reg.bookingPeople.length&&reg.bookingPeople.filter(p=>p.status!=='cancelled').every(p=>p.expectedPrice!==null)?reg.bookingPeople.filter(p=>p.status!=='cancelled').reduce((sum,p)=>sum+Number(p.expectedPrice),0):null;}
+  renderRegistrations(state.currentRegistrations||[]);
+  document.querySelectorAll('.booking-meta').forEach(e=>e.remove());
   document.querySelectorAll('[data-delete-registration]').forEach(btn=>{
     const b=items.find(x=>x.id===Number(btn.dataset.deleteRegistration));if(!b)return;
     const body=btn.closest('.reg-item')||btn.closest('[data-source]')||btn.closest('.reg-row').parentElement;
@@ -71,10 +80,10 @@ async function bookingCreate(event) {
   event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type=submit]');button.disabled=true;
   try {
     if(!tripUsesEasyVerein()){await api(`/api/trips/${state.currentTripId}/registrations`,{method:'POST',body:JSON.stringify({roomCategory:byId('manualRoomCategory').value||null,comment:byId('manualComment').value,participants:bookingPeople().map(p=>({name:p.name,birthDate:p.birthDate}))})});form.reset();await loadRegistrations(String(state.currentTripId));await loadSettlement(String(state.currentTripId));return;}
-    const data={versionId:bookingUI.version?.id??null,persons:bookingPeople(),contactIdentity:byId('booking-contact').value,roomCategory:byId('manualRoomCategory').value||null,comment:byId('manualComment').value,answers:readBookingInputs(byId('booking-extra-fields'))};
+    const data={rooms:bookingUI.readRooms(),versionId:bookingUI.version?.id??null,persons:bookingPeople(),contactIdentity:byId('booking-contact').value,roomCategory:byId('manualRoomCategory').value||null,comment:byId('manualComment').value,answers:readBookingInputs(byId('booking-extra-fields'))};
     const serialized=JSON.stringify(data);if(bookingUI.payload!==serialized){bookingUI.operation=operationKey();bookingUI.payload=serialized;}
     await api(`/api/trips/${state.currentTripId}/bookings`,{method:'POST',body:JSON.stringify({...data,operationKey:bookingUI.operation})});
-    bookingUI.operation=null;bookingUI.payload=null;bookingUI.answers={booking:{},persons:{}};form.reset();byId('booking-intake-error').textContent='Lokal gespeichert · externe Teilnahme ausstehend.';await loadRegistrations(String(state.currentTripId));await loadAnalyticsWorkspace();
+    bookingUI.operation=null;bookingUI.payload=null;bookingUI.answers={booking:{},persons:{}};bookingUI.readRooms=()=>[];form.reset();byId('booking-intake-error').textContent='Lokal gespeichert · externe Teilnahme ausstehend.';await loadRegistrations(String(state.currentTripId));await loadAnalyticsWorkspace();
   } catch(error){byId('booking-intake-error').textContent=`Fehler: ${error.message}`;byId('booking-intake-error').focus();}
   finally {button.disabled=false;applyTripWriteControls();}
 }
@@ -83,16 +92,17 @@ async function openBookingDetail(id) {
   const definition=b.formVersion;
   const labels=new Map((definition?.fields||[]).map(f=>[f.id,f.label]));
   const history=(b.revisions||[]).map(a=>`<li>${escapeHtml(labels.get(a.fieldId)||a.fieldId)} · Person ${a.participantId??'Buchung'} · v#${a.versionId} · ${escapeHtml(answerStatus[a.state])}: ${escapeHtml(valueText(a.value))}<br><small>${escapeHtml(a.createdAt)} · Akteur #${a.actorId} · ${escapeHtml(a.reason)}</small></li>`).join('');
-  showManagementModal(`Buchung ${b.reference}`,`<p><span class="chip c-amber">${bookingStatus[b.status]}</span> <span class="chip c-grey">${syncStatus[b.syncStatus]}</span></p><p>${escapeHtml(b.contactIdentity || 'Kontakt nicht erfasst')} · ${escapeHtml(b.source)} · ${b.versionId?'Formular #'+b.versionId:(b.source==='easyverein'?'Direkt aus easyVerein · Zusatzformular nicht abgefragt':'Altanmeldung ohne Zusatzformular')} ${b.supplementPending?'· Ergänzung erforderlich':''}</p><p>Zimmerwunsch: ${escapeHtml(b.roomCategory||'Ohne Unterkunft')} · Zuteilung: ${escapeHtml(b.roomAssignment||'offen')}</p><div class="booking-persons">${b.persons.map(p=>`<div><b>${escapeHtml(p.name)}</b>${p.guestId?' · Gast':''} · #${p.id} · ${escapeHtml(p.birthDate)}<br><span class="chip c-grey">${bookingStatus[p.status]}</span> <span class="chip c-grey">${syncStatus[p.syncStatus]}</span></div>`).join('')}</div><h3>Aktuelle Antworten</h3>${(b.answers||[]).map(a=>`<p><b>${escapeHtml(labels.get(a.fieldId)||a.fieldId)}</b> · ${a.participantId?'Person #'+a.participantId:'pro Buchung'}<br>${escapeHtml(answerStatus[a.state])}: ${escapeHtml(valueText(a.value))}</p>`).join('')||'<p>Keine lesbaren Zusatzangaben.</p>'}<details><summary>Personenkorrekturen (${b.personRevisions?.length??0})</summary>${(b.personRevisions||[]).map(r=>`<p>Person #${r.participant_id} · ${escapeHtml(r.created_at)} · ${escapeHtml(r.reason)}<br>${escapeHtml(r.before_json)} → ${escapeHtml(r.after_json)}</p>`).join('')}</details><details><summary>Antwortrevisionen (${b.revisions?.length??0})</summary><ol>${history}</ol></details><div class="event-toolbar">${!state.currentTrip.archivedAt&&hasTripCapability('answers.correct')&&hasTripCapability('answers.view')&&b.status!=='cancelled'?'<button type="button" class="btn btn-o" id="booking-correct">Antworten korrigieren / ergänzen</button>':''}${hasTripCapability('registration.manage')&&!state.currentTrip.archivedAt&&!state.currentTrip.closedAt&&b.status!=='cancelled'?`${b.source!=='easyverein'?'<button type="button" class="btn btn-o" id="booking-transmit">Teilnahmeauftrag vorbereiten</button><button type="button" class="btn btn-o" id="booking-cancel">Personen stornieren</button>':''}<button type="button" class="btn btn-o" id="booking-room">Zimmer zuweisen</button>`:''}</div>`,async()=>{},'Schließen');
+  showManagementModal(`Buchung ${b.reference}`,`<p><span class="chip c-amber">${bookingStatus[b.status]}</span> <span class="chip c-grey">${syncStatus[b.syncStatus]}</span></p><p>${escapeHtml(b.contactIdentity?.startsWith('member:')?(b.persons.find(p=>p.guestId===null)?.name||'Buchendes Mitglied'):(b.contactIdentity||'Kontakt nicht erfasst'))} · ${escapeHtml(({website:'Website',easyverein:'easyVerein',manual:'Manuell',csv:'CSV'})[b.source]||b.source)} · ${b.versionId?'Formular #'+b.versionId:(b.source==='easyverein'?'Direkt aus easyVerein · Zusatzformular nicht abgefragt':'Altanmeldung ohne Zusatzformular')} ${b.supplementPending?'· Ergänzung erforderlich':''}</p><p>Zimmerwunsch: ${escapeHtml(b.rooms?.length?b.rooms.map((r,i)=>`Zimmer ${i+1}: ${r.category} (${r.personIds.map(id=>b.persons.find(p=>String(p.id)===String(id))?.name||'').filter(Boolean).join(', ')})`).join('; '):(b.roomCategory||'Ohne Unterkunft'))} · Zuteilung: ${escapeHtml(b.roomAssignment||'offen')}</p><div class="booking-persons">${b.persons.map(p=>`<div><b>${escapeHtml(p.name)}</b>${p.guestId?' · Gast':''} · #${p.id} · ${escapeHtml(p.birthDate)}<br><span class="chip c-grey">${bookingStatus[p.status]}</span> <span class="chip c-grey">${syncStatus[p.syncStatus]}</span></div>`).join('')}</div><h3>Aktuelle Antworten</h3>${(b.answers||[]).map(a=>`<p><b>${escapeHtml(labels.get(a.fieldId)||a.fieldId)}</b> · ${a.participantId?'Person #'+a.participantId:'pro Buchung'}<br>${escapeHtml(answerStatus[a.state])}: ${escapeHtml(valueText(a.value))}</p>`).join('')||'<p>Keine lesbaren Zusatzangaben.</p>'}<details><summary>Personenkorrekturen (${b.personRevisions?.length??0})</summary>${(b.personRevisions||[]).map(r=>`<p>Person #${r.participant_id} · ${escapeHtml(r.created_at)} · ${escapeHtml(r.reason)}<br>${escapeHtml(r.before_json)} → ${escapeHtml(r.after_json)}</p>`).join('')}</details><details><summary>Antwortrevisionen (${b.revisions?.length??0})</summary><ol>${history}</ol></details><div class="event-toolbar">${!state.currentTrip.archivedAt&&hasTripCapability('answers.correct')&&hasTripCapability('answers.view')&&b.status!=='cancelled'?'<button type="button" class="btn btn-o" id="booking-correct">Buchung bearbeiten</button>':''}${hasTripCapability('registration.manage')&&!state.currentTrip.archivedAt&&!state.currentTrip.closedAt&&b.status!=='cancelled'?`${b.source!=='easyverein'?'<button type="button" class="btn btn-o" id="booking-transmit">Teilnahmeauftrag vorbereiten</button>':''}<button type="button" class="btn btn-o" id="booking-cancel">Personen stornieren</button><button type="button" class="btn btn-o" id="booking-room">Zimmer zuweisen</button>`:''}</div>`,async()=>{},'Schließen');
   if(byId('booking-transmit')){byId('booking-transmit').disabled=!hasTripCapability('term.manage');byId('booking-transmit').onclick=()=>performManagement(()=>openParticipationRequest(b));}
   byId('booking-correct')?.addEventListener('click',()=>performManagement(()=>editBooking(b,binding)));
   byId('booking-cancel')?.addEventListener('click',()=>{
+    if(b.persons.some(p=>p.externalReference&&p.status!=='cancelled')){performManagement(()=>openParticipationRequest(b,'cancel'));return;}
     const key=operationKey();showManagementModal('Personen stornieren',reasonField()+b.persons.filter(p=>p.status!=='cancelled').map(p=>`<label><input type="checkbox" name="cancel-person" value="${p.id}"> ${escapeHtml(p.name)}</label>`).join('')+'<p>Buchungsmengen werden ungeprüft. Historische Antworten bleiben erhalten.</p>',async()=>{
-      await api(`/api/trips/${tripId}/bookings/${id}/cancel`,{method:'POST',body:JSON.stringify({operationKey:key,revision:b.revision,reason:byId('action-reason').value,personIds:[...document.querySelectorAll('[name=cancel-person]:checked')].map(x=>Number(x.value))})});await loadRegistrations(String(tripId));await loadAnalyticsWorkspace();
+      await api(`/api/trips/${tripId}/bookings/${id}/cancel`,{method:'POST',body:JSON.stringify({operationKey:key,revision:b.revision,reason:'Änderung im Calculator',personIds:[...document.querySelectorAll('[name=cancel-person]:checked')].map(x=>Number(x.value))})});await loadRegistrations(String(tripId));await loadAnalyticsWorkspace();
     },'Stornieren');
   });
   byId('booking-room')?.addEventListener('click',()=>{
-    const key=operationKey();showManagementModal('Zimmer zuweisen',reasonField()+textField('booking-room-value','Zuteilung',b.roomAssignment),async()=>{await api(`/api/trips/${tripId}/bookings/${id}/room`,{method:'PUT',body:JSON.stringify({operationKey:key,revision:b.revision,reason:byId('action-reason').value,roomAssignment:byId('booking-room-value').value})});await loadRegistrations(String(tripId));});
+    const key=operationKey();showManagementModal('Zimmer zuweisen',reasonField()+textField('booking-room-value','Zuteilung',b.roomAssignment),async()=>{await api(`/api/trips/${tripId}/bookings/${id}/room`,{method:'PUT',body:JSON.stringify({operationKey:key,revision:b.revision,reason:'Änderung im Calculator',roomAssignment:byId('booking-room-value').value})});await loadRegistrations(String(tripId));});
   });
 }
 async function editBooking(b,binding) {
@@ -106,7 +116,9 @@ async function editBooking(b,binding) {
   const canEditPeople=hasTripCapability('registration.manage')&&!state.currentTrip.archivedAt&&!state.currentTrip.closedAt;
   const personFields=canEditPeople?`<details><summary>Personen korrigieren (IDs bleiben erhalten)</summary>${people.map(p=>textField('person-name-'+p.id,'Name · #'+p.id,p.name)+textField('person-birth-'+p.id,'Geburtsdatum',p.birthDate,'date')).join('')}</details>`:'';
   const currentPeople=()=>canEditPeople?people.map(p=>({...p,name:byId('person-name-'+p.id).value,birthDate:byId('person-birth-'+p.id).value})):people;
-  showManagementModal('Antworten korrigieren',reasonField()+personFields+`<label class="f">Formularstand ausdrücklich bestätigen<select id="booking-correction-version">${versions.map(x=>`<option value="${x.id}">${x.number?'v'+x.number:'Ohne Zusatzformular'}${x.id===b.versionId?' · gespeicherter Stand':' · Ergänzung auf aktiven Stand'}</option>`).join('')}</select></label><div id="booking-correction-fields">${answerFields(v,people,answers,state.currentTrip)}</div>`,async()=>{await api(`/api/trips/${b.tripId}/bookings/${b.id}/answers`,{method:'PUT',body:JSON.stringify({operationKey:key,revision:b.revision,versionId:v.id,reason:byId('action-reason').value,answers:readBookingInputs(byId('booking-correction-fields')),...(canEditPeople?{persons:currentPeople().map(p=>({id:p.id,name:p.name,birthDate:p.birthDate}))}:{})})});await loadRegistrations(String(b.tripId));await loadAnalyticsWorkspace();});
+  showManagementModal('Buchung bearbeiten',reasonField()+personFields+`<label class="f">Formularstand ausdrücklich bestätigen<select id="booking-correction-version">${versions.map(x=>`<option value="${x.id}">${x.number?'v'+x.number:'Ohne Zusatzformular'}${x.id===b.versionId?' · gespeicherter Stand':' · Ergänzung auf aktiven Stand'}</option>`).join('')}</select></label><div id="booking-correction-rooms"></div><div id="booking-correction-fields">${answerFields(v,people,answers,state.currentTrip)}</div>`,async()=>{await api(`/api/trips/${b.tripId}/bookings/${b.id}/answers`,{method:'PUT',body:JSON.stringify({operationKey:key,revision:b.revision,rooms:readRooms(),versionId:v.id,reason:'Änderung im Calculator',answers:readBookingInputs(byId('booking-correction-fields')),...(canEditPeople?{persons:currentPeople().map(p=>({id:p.id,name:p.name,birthDate:p.birthDate}))}:{})})});await loadRegistrations(String(b.tripId));await loadAnalyticsWorkspace();});
+  const options=await api(`/api/trips/${b.tripId}/booking-options`);
+  const readRooms=bookingRoomEditor(byId('booking-correction-rooms'),people,options.roomCategories,b.rooms||[]);
   const refresh=()=>{const read=readBookingInputs(byId('booking-correction-fields'));answers.booking={...answers.booking,...read.booking};for(const [pid,vals] of Object.entries(read.persons)){answers.persons[pid]={...answers.persons[pid],...vals};}v=versions.find(x=>String(x.id)===byId('booking-correction-version').value);byId('booking-correction-fields').innerHTML=answerFields(v,currentPeople(),answers,state.currentTrip);};
   byId('booking-correction-version').onchange=refresh;byId('booking-correction-fields').addEventListener('change',refresh);if(canEditPeople){people.forEach(p=>byId('person-birth-'+p.id).addEventListener('change',refresh));}
 }
@@ -163,3 +175,28 @@ function renderAnalytics(data) {
 byId('event-analytics-open')?.addEventListener('click',()=>performManagement(async()=>{
   showManagementModal('Veranstaltungsauswertung',analyticsControls(true),async()=>{},'Schließen');analyticsUI.path=`/api/events/${management.event.id}/analytics`;analyticsUI.query={};analyticsUI.page=1;wireAnalytics();await fetchAnalytics();
 }));
+
+function renderManualPrices(){
+  document.querySelectorAll('.manual-participant-row').forEach((row,i)=>{
+    let label=row.querySelector('[data-manual-price-field]');
+    const old=row.querySelector('[data-manual-price]')?.value||'';
+    if(!label){label=document.createElement('label');label.className='f';label.dataset.manualPriceField='';row.append(label);}
+    label.classList.toggle('d-none',!tripUsesEasyVerein()||!bookingUI.priceGroups.length);
+    label.innerHTML=`Preisgruppe<div class="in"><select data-manual-price aria-label="Preisgruppe für Teilnehmer ${i+1}"><option value="">Bitte wählen</option>${bookingUI.priceGroups.map(g=>`<option value="${escapeHtml(g.id)}" ${g.id===old?'selected':''}>${escapeHtml(g.label)} · ${escapeHtml(g.price)} €</option>`).join('')}</select></div>`;
+    label.querySelector('select').required=tripUsesEasyVerein()&&bookingUI.priceGroups.length>0;
+  });
+}
+
+// One room row per actual room; the person selection allows families to split rooms.
+function bookingRoomEditor(root,people,categories,saved=[]){
+  let rooms=saved.map(r=>({category:r.category,personIds:r.personIds.filter(id=>people.some(p=>String(p.id)===String(id)))}));
+  if(!categories.length){root.innerHTML='';return ()=>[];}
+  if(!rooms.length)rooms=[{category:categories[0],personIds:people.map(p=>p.id)}];
+  const render=()=>{
+    root.innerHTML=`<h3>Zimmer wählen</h3><p class="help">Füge jedes gewünschte Zimmer hinzu und ordne die Personen zu. Gäste und Kinder können eigene Zimmer bekommen.</p>${rooms.map((room,i)=>`<label class="f">Zimmer ${i+1}<select data-room-category="${i}">${[...new Set([...categories,room.category])].map(c=>`<option ${c===room.category?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select></label><button type="button" class="btn btn-o btn-s" data-remove-room="${i}">Zimmer ${i+1} entfernen</button>`).join('')}<button type="button" class="btn btn-o" data-add-room>Weiteres Zimmer</button>${people.map((p,i)=>`<label class="f">${escapeHtml(p.name||('Teilnehmer '+(i+1)))}<select data-room-person="${i}" required><option value="">Zimmer wählen</option>${rooms.map((room,j)=>`<option value="${j}" ${room.personIds.some(id=>String(id)===String(p.id))?'selected':''}>Zimmer ${j+1} · ${escapeHtml(room.category)}</option>`).join('')}</select></label>`).join('')}`;
+    root.querySelectorAll('[data-room-category]').forEach(el=>el.onchange=()=>{rooms[Number(el.dataset.roomCategory)].category=el.value;render();});
+    root.querySelector('[data-add-room]').onclick=()=>{rooms.push({category:categories[0],personIds:[]});render();};
+    root.querySelectorAll('[data-remove-room]').forEach(el=>el.onclick=()=>{rooms.splice(Number(el.dataset.removeRoom),1);render();});
+    root.querySelectorAll('[data-room-person]').forEach(el=>el.onchange=()=>{const p=people[Number(el.dataset.roomPerson)];for(const r of rooms)r.personIds=r.personIds.filter(id=>String(id)!==String(p.id));if(el.value!=='')rooms[Number(el.value)].personIds.push(p.id);});
+  };render();return ()=>rooms.filter(r=>r.personIds.length).map(r=>({...r,personIds:[...r.personIds]}));
+}

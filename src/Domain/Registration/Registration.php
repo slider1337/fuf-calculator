@@ -12,6 +12,7 @@ final readonly class Registration
     public const string SOURCE_CSV = 'csv';
     public const string SOURCE_MANUAL = 'manual';
     public const string SOURCE_EASYVEREIN = 'easyverein';
+    public const string SOURCE_WEBSITE = 'website';
 
     /**
      * @param Participant[]     $participants
@@ -36,7 +37,7 @@ final readonly class Registration
             throw new InvalidArgumentException('At least one participant is required.');
         }
 
-        if (!in_array($source, [self::SOURCE_CSV, self::SOURCE_MANUAL, self::SOURCE_EASYVEREIN], true)) {
+        if (!in_array($source, [self::SOURCE_CSV, self::SOURCE_MANUAL, self::SOURCE_EASYVEREIN, self::SOURCE_WEBSITE], true)) {
             throw new InvalidArgumentException('Unsupported registration source.');
         }
     }

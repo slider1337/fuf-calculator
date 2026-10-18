@@ -9,6 +9,7 @@ use Psr\Http\Message\{ResponseInterface as Response,ServerRequestInterface as Re
 final readonly class BookingController
 {
     public function __construct(private BookingService $bookings,private AnalyticsService $analytics,private AccessPolicy $policy,private \App\Application\Port\TripRepositoryInterface $trips) {}
+    public function options(Request $request,Response $response,string $id): Response {return JsonResponder::write($response,$this->bookings->options((int)$id));}
     public function list(Request $request,Response $response,string $id): Response {return JsonResponder::write($response,$this->bookings->list((int)$id));}
     public function get(Request $request,Response $response,string $id,string $bookingId): Response {return JsonResponder::write($response,$this->bookings->get((int)$id,(int)$bookingId));}
     public function create(Request $request,Response $response,string $id): Response {return JsonResponder::write($response,$this->bookings->create((int)$id,(array)$request->getParsedBody()),201);}

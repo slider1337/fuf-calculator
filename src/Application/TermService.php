@@ -109,6 +109,9 @@ final readonly class TermService
     private function validate(int $id, array $input): array
     {
         $data = TermDraftData::fromArray($input)->toArray();
+        $trip=$this->trips->getById($id)??throw new NotFoundException('Trip');
+        $data['priceGroups']=TripTermBasis::groups($trip,$data['priceGroups']);
+        $data['description']=TripTermBasis::description($trip,$data['description']);
         $version = $data['formVersionId'];
         if ($version !== null) {
             $form = $this->forms->get($version);

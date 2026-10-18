@@ -383,7 +383,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                                     </div>
                                 </div>
                                 <label class="f" id="booking-contact-field" for="booking-contact">Kontakt / Buchende Person<div class="in"><input id="booking-contact" required maxlength="200"></div></label>
-                                <p class="help" id="booking-intake-note">Lokaler Eingang · externe Teilnahme ausstehend. Zusatzfragen gemäß gebundener Version.</p><div id="booking-extra-fields"></div><p id="booking-intake-error" class="help" role="alert" tabindex="-1"></p>
+                                <p class="help" id="booking-intake-note">Lokaler Eingang · externe Teilnahme ausstehend. Zusatzfragen gemäß gebundener Version.</p><div id="booking-rooms"></div><div id="booking-extra-fields"></div><p id="booking-intake-error" class="help" role="alert" tabindex="-1"></p>
                                 <div class="reg-manual-foot">
                                     <button type="button" id="add-participant-row-btn" class="ib" aria-label="Teilnehmer hinzuf&uuml;gen" title="Teilnehmer hinzuf&uuml;gen">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -400,8 +400,10 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                             <div class="reg-filters" role="group" aria-label="Anmeldungen filtern">
                                 <button type="button" class="chip chip-btn is-active" id="reg-filter-all" data-reg-filter="all">Alle</button>
                                 <button type="button" class="chip chip-btn" id="reg-filter-easyverein" data-reg-filter="easyverein">easyVerein</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-website" data-reg-filter="website">Website</button>
                                 <button type="button" class="chip chip-btn" id="reg-filter-csv" data-reg-filter="csv">CSV</button>
                                 <button type="button" class="chip chip-btn" id="reg-filter-manual" data-reg-filter="manual">Manuell</button>
+                                <button type="button" class="chip chip-btn" id="reg-filter-cancelled" data-reg-filter="cancelled">Storniert</button>
                             </div>
                             <div class="in in-search">
                                 <span class="p">
@@ -422,7 +424,7 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
                             </div>
                             <div class="fuf-empty-text">
                                 <b>Noch keine Anmeldungen</b>
-                                <span class="help">CSV importieren oder eine Anmeldung manuell hinzuf&uuml;gen.</span>
+                                <span class="help" id="registrations-empty-hint">CSV importieren oder eine Anmeldung manuell hinzuf&uuml;gen.</span>
                             </div>
                         </div>
                     </div>

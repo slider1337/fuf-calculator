@@ -7,6 +7,34 @@ security:
 servers:
   - url: /
 paths:
+  /api/trips/{id}/booking-options:
+    get:
+      summary: Lokal gespeicherte Preise und Zimmerkategorien für die Anmeldung
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema: {type: integer}
+      responses:
+        '200':
+          description: Buchungsoptionen aus Reise und lokalem Terminbestand
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [priceGroups, roomCategories, basePriceGroups]
+                properties:
+                  priceGroups:
+                    type: array
+                    items: {$ref: '#/components/schemas/ExternalPriceGroup'}
+                  roomCategories:
+                    type: array
+                    items: {type: string}
+                  basePriceGroups:
+                    type: array
+                    items: {$ref: '#/components/schemas/TermPriceGroup'}
+        '403': {description: Keine Leseberechtigung}
+        '404': {description: Reise nicht gefunden}
   /api/settings:
     get:
       summary: Globale Defaults laden
@@ -4113,7 +4141,7 @@ components:
           type: string
         source:
           type: string
-          enum: [csv, manual, easyverein]
+          enum: [csv, manual, easyverein, website]
         participants:
           type: array
           items:
@@ -5017,6 +5045,8 @@ components:
     Booking:
       type: object
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         id:
           type: integer
         tripId:
@@ -5089,6 +5119,21 @@ components:
       - managed
       - persons
       - supplementPending
+    BookingRooms:
+      type: array
+      maxItems: 100
+      items:
+        type: object
+        required: [category, personIds]
+        properties:
+          category: {type: string}
+          personIds:
+            type: array
+            minItems: 1
+            items:
+              oneOf:
+              - {type: integer}
+              - {type: string}
     BookingAnswers:
       type: object
       properties:
@@ -5106,6 +5151,8 @@ components:
     BookingCreate:
       type: object
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         operationKey:
           type: string
           minLength: 8
@@ -5153,6 +5200,8 @@ components:
     BookingCorrection:
       type: object
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         operationKey:
           type: string
         revision:
@@ -5215,7 +5264,6 @@ components:
       required:
       - operationKey
       - revision
-      - reason
       - roomAssignment
     AnalyticsRow:
       type: object
@@ -6145,6 +6193,9 @@ components:
       - guests
       - guestsAllowed
       properties:
+        roomCategories:
+          type: array
+          items: {type: string}
         startDate:
           type: string
           format: date
@@ -6226,6 +6277,8 @@ components:
       - persons
       - answers
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         operationKey:
           type: string
         versionId:
@@ -6293,9 +6346,10 @@ components:
       - operationKey
       - revision
       - confirmed
-      - reason
       - answers
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         operationKey:
           type: string
         revision:
@@ -6314,7 +6368,6 @@ components:
       - operationKey
       - revision
       - confirmed
-      - reason
       properties:
         operationKey:
           type: string
@@ -6343,6 +6396,8 @@ components:
     MemberBooking:
       type: object
       properties:
+        rooms:
+          $ref: '#/components/schemas/BookingRooms'
         form:
           type: object
           nullable: true
@@ -6895,7 +6950,6 @@ components:
       - registrationMode
       - revision
       - confirmed
-      - reason
       properties:
         registrationMode:
           type: string

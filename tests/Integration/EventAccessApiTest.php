@@ -88,8 +88,7 @@ final class EventAccessApiTest extends ApiTestCase
         }
         self::assertSame($before,$this->json('GET',"/api/trips/$trip/settlement"));
         self::assertNotNull($this->json('GET',"/api/trips/$trip")['calculationSnapshot']);
-        $this->json('POST',"/api/trips/$trip/reopen",['reason'=>''],422);
-        $this->json('POST',"/api/trips/$trip/reopen",['reason'=>'Korrektur Test']);
+        $this->json('POST',"/api/trips/$trip/reopen",[]);
         $this->json('POST',"/api/trips/$trip/calculate");
         $rows=$this->app->getContainer()->get(PDO::class)->query("SELECT action, reason, correlation_id FROM audit_events WHERE action LIKE 'settlement.%'")->fetchAll();
         self::assertSame(['settlement.close','settlement.reopen'],array_column($rows,'action')); self::assertNotEmpty($rows[0]['correlation_id']);
@@ -157,12 +156,12 @@ final class EventAccessApiTest extends ApiTestCase
         $user=$this->person(); $this->login($user,'admin');
         $this->json('PUT','/api/settings',[],403); $this->json('GET','/api/users',null,403); $this->json('POST','/api/auth/invite',['email'=>'nobody@example.com'],403);
     }
-    public function testDelegationRequiresHeldCapabilitiesAndEmptyReasonIsRejected(): void
+    public function testDelegationRequiresHeldCapabilitiesWithoutMandatoryReason(): void
     {
         $trip=$this->trip(); $user=$this->person(); $third=$this->person('third@example.com');
         $this->grant($trip,$user,['trip.view','access.manage']); $this->login($user);
         $this->json('PUT',"/api/trips/$trip/team/$third",['capabilities'=>['settlement.view'],'reason'=>'Nicht erlaubt'],403);
-        $this->json('PUT',"/api/trips/$trip/team/$third",['capabilities'=>['trip.view'],'reason'=>''],422);
+        $this->json('PUT',"/api/trips/$trip/team/$third",['capabilities'=>['trip.view']]);
     }
     public function testNewApiContractAndDeepLinks(): void
     {

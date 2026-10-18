@@ -98,6 +98,22 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testWebsiteFamilyAndGuestCanBookSeparateRoomsAndCorrectWithoutReason(): void {
+  $_SESSION['user_id']=1;
+  $planning=$this->validTripPayload()+['roomReservations'=>[['roomType'=>'2-Bettzimmer','count'=>3],['roomType'=>'4-Bettzimmer','count'=>2]]];
+  $r=$this->dispatch('PUT',"/api/trips/{$this->trip}",$planning);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$_SESSION=[];
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();
+  $ctx=$this->call('GET',"/integration/v1/trips/{$this->trip}/context");self::assertSame(['2-Bettzimmer','4-Bettzimmer'],$ctx['roomCategories']);
+  $p=$this->payload(2);$guest=['key'=>'separate_guest_01','name'=>'Gast im eigenen Zimmer','birthDate'=>'1980-01-01'];
+  $guestId='guest_'.hash('sha256',$guest['key']);$p['persons'][]=['guest'=>$guest,'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $p['rooms']=[['category'=>'2-Bettzimmer','personIds'=>['member_11']],['category'=>'4-Bettzimmer','personIds'=>['member_12']],['category'=>'2-Bettzimmer','personIds'=>[$guestId]]];
+  $b=$this->create($p);self::assertSame('website',$b['source']);self::assertCount(3,$b['rooms']);
+  self::assertSame($b['persons'][2]['id'],$b['rooms'][2]['personIds'][0]);
+  $correct=['operationKey'=>'website_room_correction','revision'=>$b['revision'],'versionId'=>null,'confirmed'=>true,'rooms'=>[['category'=>'4-Bettzimmer','personIds'=>array_map('strval',array_column($b['persons'],'id'))]],'answers'=>[]];
+  $updated=$this->call('PUT',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/answers",$correct);self::assertCount(1,$updated['rooms']);self::assertSame(array_column($b['persons'],'id'),$updated['rooms'][0]['personIds']);
+  $this->worker(3);$updated=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");
+  $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/cancel",['operationKey'=>'room_cancel_without_reason','revision'=>$updated['revision'],'confirmed'=>true,'personIds'=>array_column($updated['persons'],'id')],202);
+ }
  public function testLocalWriteBudgetIsASafeRetryBeforeAnyNetworkWrite(): void {
   $c=$this->app->getContainer();$token='fixture-only-token';$stmt=$this->db->prepare('INSERT INTO provider_api_calls(bucket,called_at) VALUES (?,?)');
   for($i=0;$i<90;$i++)$stmt->execute([hash('sha256',$token),time()]);

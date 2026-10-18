@@ -59,7 +59,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private int $trip;
  private const KEY='test-secret-32-characters-minimum-only-fixture';
  protected function setUp(): void {
-  parent::setUp();$c=$this->app->getContainer();$this->provider=new FakeParticipationProvider();$this->directory=new FakeMemberDirectory();$c->set(ParticipationPort::class,$this->provider);$c->set(MemberDirectoryPort::class,$this->directory);$this->db=$c->get(PDO::class);
+  parent::setUp();$c=$this->app->getContainer();$c->set(\App\Application\MemberBookingService::class,\DI\autowire()->constructorParameter('displayDirectory',null));$this->provider=new FakeParticipationProvider();$this->directory=new FakeMemberDirectory();$c->set(ParticipationPort::class,$this->provider);$c->set(MemberDirectoryPort::class,$this->directory);$this->db=$c->get(PDO::class);
   // Enforce the real production network/transaction guard for every fake provider read.
   $this->provider->onSnapshot=fn()=>$c->get(\App\Infrastructure\ProviderRequestBudget::class)->reserve('member-fixture');
   putenv('FUF_INTEGRATION_AUDIENCE=calculator-test');putenv('FUF_INTEGRATION_SERVICES='.json_encode(['website'=>['issuer'=>'https://website.test','keys'=>['current'=>self::KEY,'previous'=>self::KEY],'scopes'=>['member.read','member.write']]]));
@@ -132,7 +132,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
   $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
   $this->call('GET','/integration/v1/bookings?after=0');
-  self::assertSame(1,$calls);
+  self::assertSame(0,$calls);
   $this->provider->onSnapshot=static function(){throw new \App\Application\AccessException('provider_read_failed',503);};
   $this->call('GET',"/integration/v1/trips/{$this->trip}/context");
  }
@@ -222,6 +222,10 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $p=$this->payload();$p['operationKey']=$this->db->query('SELECT operation_key FROM participation_jobs LIMIT 1')->fetchColumn(); // unrelated key is not an ownership bypass
   $this->directory->bad=true;$this->call('GET',"/integration/v1/trips/{$this->trip}/context",null,503);
  }
+ private function backgroundRefresh(): void {
+  $session=$_SESSION;$_SESSION['user_id']=1;$_SESSION['user_role']='admin';
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$_SESSION=$session;
+ }
  private function createError(array $p,int $status): void {$this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p,$status);}
  public function testRepeatedRequestSurvivesProviderChangeButDifferentContentConflicts(): void {
   $p=$this->payload(1);$b=$this->create($p);$this->provider->capacity=0;$this->provider->revision='r2';self::assertSame($b,$this->create($p));$p['confirmed']=false;$this->createError($p,409);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
@@ -231,7 +235,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $this->db->exec("UPDATE trips SET closed_at='2026-10-13' WHERE id=".$this->trip);$this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$this->payload(1),409);
  }
  public function testNoGroupsMeansNoPriceSelection(): void {
-  $this->provider->groups=[];$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;$b=$this->create($p);$this->worker();self::assertSame('confirmed',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
+  $this->provider->groups=[];$this->backgroundRefresh();$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;$b=$this->create($p);$this->worker();self::assertSame('confirmed',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
  }
  public function testDirectExternalParticipationAndFieldConflictsNeverGuessContact(): void {
   $this->provider->rows['888']=['eventId'=>'77','externalId'=>'888','memberReference'=>'999','status'=>'confirmed','priceGroupId'=>'21','price'=>'12'];$this->provider->groups=[['id'=>'21','price'=>'13']];$_SESSION['user_id']=1;
@@ -268,10 +272,10 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;self::assertSame(401,$this->dispatch('GET',"/integration/v1/trips/{$this->trip}/context")->getStatusCode());
  }
 
- public function testTermStatusReusesCacheAndExplicitRefreshChecksLiveDeadline(): void {
+ public function testTermStatusAndRefreshRemainLocalUntilBackgroundUpdate(): void {
   $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
   $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());self::assertTrue(json_decode((string)$r->getBody(),true)['registrationEnabled']);
-  $this->provider->bookingUntil=1;$cached=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertTrue(json_decode((string)$cached->getBody(),true)['registrationEnabled']);$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term?refresh=1");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
+  $this->provider->bookingUntil=1;$cached=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertTrue(json_decode((string)$cached->getBody(),true)['registrationEnabled']);$this->backgroundRefresh();$r=$this->dispatch('GET',"/api/trips/{$this->trip}/term?refresh=1");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('trip_closed_or_booking_deadline_passed',$data['registrationReason']);
  }
  public function testFailedReleasePreflightLeavesSettingsUnchangedAndDisablingStillWorks(): void {
   $_SESSION['user_id']=1;$this->db->exec('UPDATE member_trip_settings SET enabled=0');
@@ -296,16 +300,16 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $this->provider->onSnapshot=function()use($guard){$guard();$this->db->exec("DELETE FROM trip_access WHERE user_id=1 AND capability='trip.manage'");};
   $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true]);self::assertSame(403,$r->getStatusCode(),(string)$r->getBody());self::assertSame(0,(int)$this->db->query('SELECT enabled FROM member_trip_settings')->fetchColumn());
  }
- public function testTermStatusRechecksReleaseAfterProviderRead(): void {
+ public function testTermStatusDoesNotTriggerProviderCallback(): void {
   $_SESSION['user_id']=1;$guard=$this->provider->onSnapshot;
   $this->provider->onSnapshot=function()use($guard){$guard();$this->db->exec('UPDATE member_trip_settings SET enabled=0');};
-  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertFalse($data['registrationEnabled']);self::assertSame('member_release_disabled',$data['registrationReason']);
+  $r=$this->dispatch('GET',"/api/trips/{$this->trip}/term");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertTrue($data['registrationEnabled']);
  }
  public function testReleaseInheritsLiveTermDeadlineAndIgnoresOldCutoff(): void {
   $_SESSION['user_id']=1;$this->provider->bookingUntil=time()+7000;
   $r=$this->dispatch('PUT',"/api/trips/{$this->trip}/member-settings",['enabled'=>true,'bookingUntil'=>1]);
   self::assertSame(200,$r->getStatusCode());$result=json_decode((string)$r->getBody(),true);self::assertSame($this->provider->bookingUntil,$result['bookingUntil']);
-  $this->db->exec('UPDATE member_trip_settings SET booking_until=1');$_SESSION=[];
+  $this->backgroundRefresh();$this->db->exec('UPDATE member_trip_settings SET booking_until=1');$_SESSION=[];
   self::assertSame($this->provider->bookingUntil,$this->call('GET',"/integration/v1/trips/{$this->trip}/context")['bookingUntil']);
   $this->create($this->payload(1));$this->worker();self::assertSame(1,$this->provider->writes);
   $_SESSION['user_id']=1;$this->provider->bookingUntil=PHP_INT_MAX;
@@ -341,7 +345,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
  }
 
  public function testApprovedGuestOnlyOwnerCanBookAndImmutableApprovalSurvivesCancellation(): void {
-  $this->provider->guestsAllowed=true;$_SESSION['user_id']=1;
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$_SESSION['user_id']=1;
   $p=['operationKey'=>'guest_approval_001','ownerMemberReference'=>'11','parentMemberReference'=>'11','name'=>'Fiktiver Gast','birthDate'=>'2000-01-01','priceGroupId'=>'21','expectedPrice'=>'12','reason'=>'Orga hat Gast und Preis freigegeben'];
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests",$p);self::assertSame(201,$r->getStatusCode(),(string)$r->getBody());$guest=json_decode((string)$r->getBody(),true)[0];$id=(int)$guest['id'];
   $r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests",$p);self::assertSame(201,$r->getStatusCode());self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());$_SESSION=[];
@@ -350,7 +354,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/guests/$id/revoke",['reason'=>'Nicht heimlich widerrufen']);self::assertSame(409,$r->getStatusCode());
  }
  public function testForeignUnapprovedGuestCannotBeCreatedByMemberPayload(): void {
-  $this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][]=['guestId'=>999,'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$p=$this->payload(1);$p['persons'][]=['guestId'=>999,'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
  }
  public function testExternalPriceConflictAcceptedSeparatelyFromOriginalQuote(): void {
   $b=$this->create($this->payload(1));$this->worker();$this->provider->rows[array_key_first($this->provider->rows)]['price']='13';$_SESSION['user_id']=1;
@@ -394,18 +398,18 @@ final class MemberParticipationApiTest extends ApiTestCase {
   unset($this->provider->rows['703']['birthDate']);$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode());self::assertSame('1981-02-03',$this->db->query('SELECT birth_date FROM registration_participants')->fetchColumn());
  }
  public function testInlineGuestCanBookWhenEventAllowsGuestsWithoutIndividualApproval(): void {
-  $this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_001','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_001','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
   $b=$this->create($p);self::assertSame($b,$this->create($p));self::assertCount(2,$b['persons']);self::assertNotNull($b['persons'][1]['guestId']);
   self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());self::assertSame('11',$this->db->query('SELECT owner_member FROM guest_approvals')->fetchColumn());
   $this->worker();$next=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$next['status']);self::assertSame(2,$this->provider->writes);
  }
  public function testInlineGuestsCannotBypassProviderGuestFlagOrPrice(): void {
   $p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_002','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());
-  $this->provider->guestsAllowed=true;$p['persons'][1]['expectedPrice']='0';$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$p['persons'][1]['expectedPrice']='0';$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM registrations')->fetchColumn());
  }
 
  public function testInlineGuestWithoutPriceGroupsAndDuplicateKeyProtection(): void {
-  $this->provider->groups=[];$this->provider->guestsAllowed=true;$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;
+  $this->provider->groups=[];$this->backgroundRefresh();$this->provider->guestsAllowed=true;$this->backgroundRefresh();$p=$this->payload(1);$p['persons'][0]['priceGroupId']=null;$p['persons'][0]['expectedPrice']=null;
   $guest=['guest'=>['key'=>'guest_client_003','name'=>'Ohne Preisgruppe','birthDate'=>'2000-01-01'],'priceGroupId'=>null,'expectedPrice'=>null];$p['persons'][]=$guest;$p['persons'][]=$guest;
   $this->createError($p,403);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());array_pop($p['persons']);
   $preview=$this->call('POST',"/integration/v1/trips/{$this->trip}/preview",$p);self::assertTrue($preview['valid']);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());
@@ -445,7 +449,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
   return ['eventId'=>'77','externalId'=>$id,'memberReference'=>$member,'contactReference'=>'51','name'=>'Bereits angemeldet','birthDate'=>'1980-01-01','status'=>'confirmed','priceGroupId'=>'21','price'=>'12','isCompanion'=>false];
  }
  public function testParticipationPredatingFormIsVisibleCancelableAndCanRegisterAgain(): void {
-  $this->provider->rows['700']=$this->oldProviderPerson();$form=$this->bindRequiredFormAfterExistingParticipation();
+  $this->provider->rows['700']=$this->oldProviderPerson();$this->backgroundRefresh();$form=$this->bindRequiredFormAfterExistingParticipation();
   $index=$this->call('GET','/integration/v1/bookings?after=0');self::assertCount(1,$index['items']);$b=$index['items'][0];
   self::assertNull($b['versionId']);self::assertSame([],$b['answers']);self::assertTrue($b['supplementPending']);self::assertSame('700',$b['persons'][0]['externalReference']);
   self::assertCount(1,$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0")['items']);
@@ -457,14 +461,14 @@ final class MemberParticipationApiTest extends ApiTestCase {
   self::assertNotSame($b['id'],$new['id']);self::assertSame(2,$this->provider->writes);
  }
  public function testImportedParticipationAllowsAddingFormAnswersWithoutRegisteringAgain(): void {
-  $this->provider->rows['700']=$this->oldProviderPerson();$form=$this->bindRequiredFormAfterExistingParticipation();
+  $this->provider->rows['700']=$this->oldProviderPerson();$this->backgroundRefresh();$form=$this->bindRequiredFormAfterExistingParticipation();
   $b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0")['items'][0];
   $p=['operationKey'=>'answers_for_import_001','revision'=>$b['revision'],'versionId'=>$form['id'],'confirmed'=>true,'reason'=>'Angaben ergänzt','answers'=>['booking'=>[$form['fields'][0]['id']=>'2']]];
   $updated=$this->call('PUT',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/answers",$p);
   self::assertSame($form['id'],$updated['versionId']);self::assertSame('confirmed',$updated['status']);self::assertFalse($updated['supplementPending']);self::assertSame(0,$this->provider->writes);
  }
  public function testImportedFamilyAccessUsesVerifiedReferencesAndNeverNames(): void {
-  $this->provider->rows=['700'=>$this->oldProviderPerson('12'),'701'=>$this->oldProviderPerson('99','701')];
+  $this->provider->rows=['700'=>$this->oldProviderPerson('12'),'701'=>$this->oldProviderPerson('99','701')];$this->backgroundRefresh();
   $own=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings?after=0");self::assertCount(1,$own['items']);$b=$own['items'][0];self::assertSame('12',$b['persons'][0]['memberReference']);
   self::assertCount(1,$this->call('GET','/integration/v1/bookings?after=0',null,200,'12')['items']);
   $this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}",null,404,'99');

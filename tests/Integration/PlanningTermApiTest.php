@@ -99,7 +99,7 @@ final class PlanningTermApiTest extends ApiTestCase
         $db->prepare('INSERT INTO member_trip_settings(trip_id,enabled,booking_until,correction_until,cancel_until) VALUES (?,1,0,0,0)')->execute([$t]);
         $db->exec("UPDATE trips SET name='Aktueller Reisename' WHERE id=".$t);
         $provider->deleted=true;unset($f->events['101']);
-        $state=$this->json('GET',"/api/trips/$t/term?refresh=1");self::assertTrue($state['deleted']);self::assertFalse($state['registrationEnabled']);
+        $state=$this->json('GET',"/api/trips/$t/term?refresh=1");self::assertFalse($state['deleted']); // Page refresh keeps the last local state; explicit confirmation checks presence.
         $next=$this->json('POST',"/api/trips/$t/term/confirm-deleted",['externalId'=>'101','confirmed'=>true]);
         self::assertNull($next['link']);self::assertNull($next['job']);self::assertNotNull($next['draft']);
         self::assertSame(1,(int)$db->query('SELECT COUNT(*) FROM deleted_term_history')->fetchColumn());

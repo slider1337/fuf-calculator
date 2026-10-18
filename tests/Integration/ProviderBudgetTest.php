@@ -11,6 +11,11 @@ final class ProviderBudgetTest extends ApiTestCase {
    self::assertSame(2,(int)$this->app->getContainer()->get(PDO::class)->query('SELECT COUNT(*) FROM provider_api_calls')->fetchColumn());
   }finally{putenv('EASYVEREIN_REQUESTS_PER_MINUTE');}
  }
+ public function testRetryAfterIsSharedAcrossWorkersAndRequestsBeforeNetwork(): void {
+  $budget=$this->app->getContainer()->get(ProviderRequestBudget::class);$budget->defer('fixture',900);
+  try{$budget->reserve('fixture');self::fail('Cooldown ignored');}catch(AccessException $e){self::assertSame('provider_rate_limited',$e->error);self::assertGreaterThanOrEqual(899,$e->retryAfter);}
+  $budget->reserve('other-token');self::assertSame(1,(int)$this->app->getContainer()->get(PDO::class)->query('SELECT COUNT(*) FROM provider_api_calls')->fetchColumn());
+ }
  public function testNetworkBudgetCannotBeEnteredDuringBusinessTransaction(): void {
   $db=$this->app->getContainer()->get(PDO::class);$db->beginTransaction();try{
    try{$this->app->getContainer()->get(ProviderRequestBudget::class)->reserve('fixture');self::fail('Open transaction');}catch(AccessException $e){self::assertSame('provider_network_transaction_forbidden',$e->error);}

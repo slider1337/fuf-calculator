@@ -30,17 +30,18 @@ final readonly class ParticipationService {
   * @return ProviderSnapshot
   */
  public function readSnapshot(int $trip,string $event,bool $force=false): array {
+  if(($this->store->link($trip)['data']['providerDeleted']??false)===true)throw new AccessException('provider_event_not_found',404);
   $o=$this->store->observation($trip);
-  if(!$force&&$o&&($o['cache_invalidated']??0)===0&&strtotime(Input::text($o['observed_at']))>=time()-300){
+  if($o){
    $saved=json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR);
    if(is_array($saved)&&($saved['eventId']??null)===$event){$this->assertStoredSnapshot($saved,$event);return $saved;}
   }
-  $snapshot=$this->external->snapshot($event);$this->validateSnapshot($snapshot,$event);
-  $this->access->transaction(function()use($trip,$event,$snapshot){
-   if(($this->store->link($trip)['externalId']??null)!==$event)throw new AccessException('term_review_changed',409);
-   $old=$this->store->observation($trip);
-   $this->store->saveObservation($trip,$old===false?1:(int)$old['revision']+1,json_encode($snapshot,JSON_THROW_ON_ERROR),$old?Input::text($old['conflicts_json']):'[]',gmdate(DATE_ATOM));
-  });return $snapshot;
+  $linked=$this->store->link($trip);
+  if(($linked['externalId']??null)===$event){
+   try{$this->assertStoredSnapshot($linked['data'],$event);return $linked['data'];}
+   catch(AccessException){} // A draft without a complete provider snapshot is still loading.
+  }
+  throw new AccessException('provider_snapshot_loading',503,60);
  }
  /** @param array<array-key,mixed> $snapshot
   * @phpstan-assert ProviderSnapshot $snapshot */

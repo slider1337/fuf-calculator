@@ -1,38 +1,60 @@
 <?php
 declare(strict_types=1);
 namespace Tests\Integration;
-use App\Application\Port\EasyVereinReadClient;
+use App\Application\{AccessException,Port\EasyVereinReadClient};
+use App\Infrastructure\LocalTermCatalog;
 use PDO;
 final class CatalogReadFixture implements EasyVereinReadClient {
- public array $calls=[]; public array $response=['results'=>[],'next'=>null];
+ public array $calls=[];public array $pages=[];public ?\Closure $duringRead=null;public ?AccessException $failure=null;
  public function configured(): bool {return true;}
- public function get(string $path,array $query=[]): array {$this->calls[]=[$path,$query];return $this->response;}
+ public function get(string $path,array $query=[]): array {
+  $this->calls[]=[$path,$query];if($this->duringRead!==null)($this->duringRead)();
+  if($this->failure!==null)throw $this->failure;
+  return $this->pages[$path.':'.($query['offset']??0)]??['results'=>[],'next'=>null];
+ }
 }
 final class TermCatalogApiTest extends ApiTestCase {
  private function fake(): CatalogReadFixture {$f=new CatalogReadFixture();$this->app->getContainer()->set(EasyVereinReadClient::class,$f);return $f;}
- private function event(): array {return ['id'=>77,'name'=>'Winterfreizeit','start'=>'2027-01-01T10:00:00+01:00','end'=>'2027-01-03T18:00:00+01:00','calendar'=>'https://easyverein.com/api/v3.0/calendar/42/','canceled'=>false,'note'=>'PRIVATE','participants'=>['PRIVATE']];}
- public function testNamedResultsFilterPagingAndMinimalProjection(): void {
-  $f=$this->fake();$f->response=['results'=>[$this->event()],'next'=>'https://easyverein.com/api/v3.0/event/?offset=50'];
-  $r=$this->dispatch('GET','/api/trip-wizard/catalog/events?q=Winter&from=2027-01-01&offset=0');self::assertSame(200,$r->getStatusCode());self::assertSame('no-store',$r->getHeaderLine('Cache-Control'));
-  $d=json_decode((string)$r->getBody(),true);self::assertSame(50,$d['nextOffset']);self::assertSame('42',$d['items'][0]['calendarId']);self::assertArrayNotHasKey('note',$d['items'][0]);self::assertArrayNotHasKey('participants',$d['items'][0]);
-  self::assertSame('Winter',$f->calls[0][1]['search']);self::assertSame('2027-01-01T00:00:00',$f->calls[0][1]['start__gte']);self::assertSame(50,$f->calls[0][1]['limit']);
-  $this->dispatch('GET','/api/trip-wizard/catalog/events?q=Winter&offset=50');self::assertSame(50,$f->calls[1][1]['offset']);
+ private function db(): PDO {return $this->app->getContainer()->get(PDO::class);}
+ private function catalog(): LocalTermCatalog {return $this->app->getContainer()->get(LocalTermCatalog::class);}
+ private function event(): array {return ['id'=>77,'name'=>'Winterfreizeit','start'=>'2027-01-01T10:00:00+01:00','end'=>'2027-01-03T18:00:00+01:00','calendar'=>42,'canceled'=>false,'location_name'=>'Erding','prologue'=>'Text','max_participators'=>30,'end_participation'=>null,'start_participation'=>null,'access'=>2,'show_memberarea'=>true];}
+ private function seed(string $path,array $rows): void {$s=$this->db()->prepare('INSERT OR REPLACE INTO provider_catalog (resource,data_json,succeeded_at,due_at) VALUES (?,?,?,?)');$s->execute([$path,json_encode($rows),time(),time()+3600]);}
+ public function testPageReadsOnlyLocalDataEvenWhenStaleAndMissingReferencesQueueOnce(): void {
+  $f=$this->fake();$this->seed('event/',[$this->event()]);$this->seed('calendar/',[['id'=>42,'name'=>'FuF Verein']]);$this->db()->exec('UPDATE provider_catalog SET succeeded_at=1,due_at=0');
+  $r=$this->dispatch('GET','/api/trip-wizard/catalog/events?q=Winter&from=2027-01-01');self::assertSame(200,$r->getStatusCode());$d=json_decode((string)$r->getBody(),true);self::assertSame('42',$d['items'][0]['calendarId']);self::assertArrayNotHasKey('prologue',$d['items'][0]);
+  self::assertSame(200,$this->dispatch('GET','/api/trip-wizard/catalog/calendars?selected=42')->getStatusCode());
+  for($i=0;$i<2;$i++)self::assertSame(503,$this->dispatch('GET','/api/trip-wizard/catalog/calendars?selected=99')->getStatusCode());
+  self::assertSame('1',$this->db()->query("SELECT COUNT(*) FROM provider_catalog WHERE resource='calendar/99/'")->fetchColumn().'');self::assertSame([],$f->calls);
  }
- public function testCalendarAndSelectedDraftReferencesReadOnly(): void {
-  $f=$this->fake();$f->response=['results'=>[['id'=>42,'name'=>'FuF Verein','private'=>'SECRET']],'next'=>null];$r=$this->dispatch('GET','/api/trip-wizard/catalog/calendars?q=FuF');self::assertSame(200,$r->getStatusCode());self::assertSame(['items'=>[['id'=>'42','name'=>'FuF Verein']],'nextOffset'=>null],json_decode((string)$r->getBody(),true));
-  $f->response=$this->event();$r=$this->dispatch('GET','/api/trip-wizard/catalog/events?selected=77');self::assertSame(200,$r->getStatusCode());self::assertSame('event/77/',$f->calls[1][0]);
-  $f->response=['id'=>42,'name'=>'FuF Verein'];self::assertSame(200,$this->dispatch('GET','/api/trip-wizard/catalog/calendars?selected=42')->getStatusCode());self::assertSame('calendar/42/',$f->calls[2][0]);
+ public function testWorkerMinuteEventsHourlyCalendarsAndCompletePagination(): void {
+  $f=$this->fake();$f->pages=['calendar/:0'=>['results'=>[['id'=>42,'name'=>'FuF Verein']],'next'=>null],'event/:0'=>['results'=>[$this->event()],'next'=>null]];
+  $this->catalog()->run();self::assertCount(2,$f->calls);$this->catalog()->run();self::assertCount(2,$f->calls);
+  $this->db()->exec("UPDATE provider_catalog SET due_at=0 WHERE resource='event/'");$this->catalog()->run();self::assertCount(3,$f->calls);self::assertSame('event/',$f->calls[2][0]);
+  $due=$this->db()->query("SELECT due_at-succeeded_at FROM provider_catalog WHERE resource='event/'")->fetchColumn();self::assertSame(60,(int)$due);
+  self::assertSame(3600,(int)$this->db()->query("SELECT due_at-succeeded_at FROM provider_catalog WHERE resource='calendar/'")->fetchColumn());
  }
- public function testTripScopeModeAndPermissionsBeforeProvider(): void {
+ public function testIncompletePagePreservesSnapshotAndHonorsRetryAfterAndExpiredLease(): void {
+  $f=$this->fake();$this->seed('calendar/',[['id'=>42,'name'=>'FuF Verein']]);$this->seed('event/',[$this->event()]);$this->db()->exec("UPDATE provider_catalog SET due_at=0 WHERE resource='event/'");
+  $f->failure=new AccessException('provider_rate_limited',503,900);$this->catalog()->run();$r=$this->db()->query("SELECT * FROM provider_catalog WHERE resource='event/'")->fetch(PDO::FETCH_ASSOC);self::assertGreaterThanOrEqual(time()+890,$r['due_at']);self::assertSame('Winterfreizeit',json_decode($r['data_json'],true)[0]['name']);$this->catalog()->run();self::assertCount(1,$f->calls);
+  $f->failure=null;$query=['query'=>'{id,name,start,end,calendar,canceled,updated_at,access,start_participation,end_participation,max_participators,location_name,prologue,show_memberarea}','start__gte'=>gmdate('Y-m-d',time()-86400),'limit'=>100,'offset'=>100];
+  $f->pages['event/:0']=['results'=>[$this->event()],'next'=>'https://easyverein.com/api/v3.0/event/?'.http_build_query($query)];$f->pages['event/:100']=['results'=>'broken','next'=>null];
+  $this->db()->exec("UPDATE provider_catalog SET due_at=0,lease_until=1,lease_token='expired' WHERE resource='event/'");$this->catalog()->run();self::assertSame($r['data_json'],$this->db()->query("SELECT data_json FROM provider_catalog WHERE resource='event/'")->fetchColumn());
+  $f->pages['event/:100']=['results'=>[array_replace($this->event(),['id'=>78,'name'=>'Zweiter Termin'])],'next'=>null];$this->db()->exec("UPDATE provider_catalog SET due_at=0 WHERE resource='event/'");$this->catalog()->run();self::assertCount(2,json_decode($this->db()->query("SELECT data_json FROM provider_catalog WHERE resource='event/'")->fetchColumn(),true));
+ }
+ public function testParallelWorkerDoesNotClaimSameResourceAndPermissionsRemainEnforced(): void {
+  $f=$this->fake();$this->seed('calendar/',[['id'=>42,'name'=>'FuF Verein']]);$f->pages['event/:0']=['results'=>[$this->event()],'next'=>null];$f->duringRead=fn()=>$this->catalog()->run();$this->catalog()->run();self::assertCount(1,$f->calls);
+  $_SESSION=[];self::assertSame(401,$this->dispatch('GET','/api/trip-wizard/catalog/events')->getStatusCode());self::assertCount(1,$f->calls);
+ }
+ public function testFullBackgroundDetectsDeletedFutureTermOnlyAfterCompleteSuccess(): void {
   $f=$this->fake();$trip=json_decode((string)$this->dispatch('POST','/api/trips',$this->validTripPayload()+['registrationMode'=>'easyverein'])->getBody(),true)['id'];
-  self::assertSame(200,$this->dispatch('GET',"/api/trips/$trip/term/catalog/calendars")->getStatusCode());self::assertCount(1,$f->calls);
-  $db=$this->app->getContainer()->get(PDO::class);$db->exec("INSERT INTO users (id,email,role,created_at) VALUES (2,'reader@example.com','user','2026-10-14')");$_SESSION['user_id']=2;$_SESSION['user_role']='user';self::assertSame(404,$this->dispatch('GET',"/api/trips/$trip/term/catalog/events")->getStatusCode());self::assertCount(1,$f->calls);
-  $_SESSION['user_id']=1;$_SESSION['user_role']='admin';$db->exec("UPDATE trips SET registration_mode='clubdesk_csv' WHERE id=$trip");self::assertSame(409,$this->dispatch('GET',"/api/trips/$trip/term/catalog/events")->getStatusCode());self::assertCount(1,$f->calls);
-  $_SESSION=[];self::assertSame(401,$this->dispatch('GET','/api/trip-wizard/catalog/calendars')->getStatusCode());self::assertCount(1,$f->calls);
+  $event=$this->event();$s=$this->db()->prepare('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)');$s->execute([$trip,'77',json_encode(['start'=>$event['start']]),gmdate(DATE_ATOM)]);
+  $this->seed('calendar/',[['id'=>42,'name'=>'FuF Verein']]);$f->pages['event/:0']=['results'=>[]];$this->catalog()->run();
+  $data=json_decode($this->db()->query('SELECT external_json FROM external_event_links')->fetchColumn(),true);self::assertArrayNotHasKey('providerDeleted',$data);
+  $this->db()->exec("UPDATE provider_catalog SET due_at=0 WHERE resource='event/'");$f->pages['event/:0']=['results'=>[],'next'=>null];$this->catalog()->run();
+  $data=json_decode($this->db()->query('SELECT external_json FROM external_event_links')->fetchColumn(),true);self::assertTrue($data['providerDeleted']);
  }
- public function testInvalidQueryDoesNotReachProviderAndMalformedProviderFails(): void {
-  $f=$this->fake();foreach(['offset=-1','offset=10001','selected=https%3A%2F%2Fevil.test','q%5B%5D=bad','from=2027-02-30'] as $q){self::assertSame(422,$this->dispatch('GET','/api/trip-wizard/catalog/events?'.$q)->getStatusCode(),$q);}self::assertCount(0,$f->calls);
-  $f->response=['results'=>[$this->event()],'next'=>['invalid']];self::assertSame(503,$this->dispatch('GET','/api/trip-wizard/catalog/events')->getStatusCode());
-  $f->response=['id'=>78]+$this->event();self::assertSame(503,$this->dispatch('GET','/api/trip-wizard/catalog/events?selected=77')->getStatusCode());
+ public function testFirstStockShowsLoadingAndInvalidQueriesDoNotContactProvider(): void {
+  $f=$this->fake();self::assertSame(503,$this->dispatch('GET','/api/trip-wizard/catalog/events')->getStatusCode());
+  foreach(['offset=-1','offset=10001','selected=https%3A%2F%2Fevil.test','q%5B%5D=bad','from=2027-02-30'] as $q)self::assertSame(422,$this->dispatch('GET','/api/trip-wizard/catalog/events?'.$q)->getStatusCode());self::assertSame([],$f->calls);
  }
 }

@@ -28,6 +28,7 @@ final class TermUpdateApiTest extends ApiTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->app->getContainer()->set(\App\Application\TermUpdateService::class,\DI\autowire()->constructorParameter('displayClient',null));
         $r=$this->dispatch('POST','/api/trips',$this->validTripPayload());$this->trip=json_decode((string)$r->getBody(),true)['id'];
         $this->db=$this->app->getContainer()->get(PDO::class);
         $this->db->prepare('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)')->execute([$this->trip,'77','{}',gmdate(DATE_ATOM)]);

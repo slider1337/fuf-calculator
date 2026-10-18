@@ -242,7 +242,7 @@ final readonly class MemberBookingService {
    $event=($this->store->link($trip)??throw new AccessException('confirmed_term_required',409))['externalId'];$people=$b['persons'];usort($people,static fn($a,$z)=>($a['guestId']===null?1:0)<=>($z['guestId']===null?1:0));foreach($people as $person){if(!in_array($person['id'],$ids,true)||$person['status']==='cancelled'){continue;}
     if($person['status']!=='confirmed'||$person['externalReference']===null){throw new AccessException('external_participation_pending',409);}
     if($this->store->activePersonJob($person['id'])!==false){throw new AccessException('person_operation_in_progress',409);}
-    $payload=['eventId'=>$event,'memberReference'=>$person['memberReference'],'externalId'=>$person['externalReference'],'priceGroupId'=>$person['externalPriceGroupId']??$person['priceGroupId'],'price'=>$person['externalPrice']??$person['expectedPrice']];$this->sync->enqueue($trip,$booking,$person['id'],'cancel',$key,$hash,$payload,0,$identity->memberReference);
+    $payload=['eventId'=>$event,'memberReference'=>$person['memberReference'],'externalId'=>$person['externalReference'],'priceGroupId'=>$person['externalPriceGroupId']??$person['priceGroupId'],'price'=>$person['externalPrice']??$person['expectedPrice']]+($person['guestId']!==null?['guestId'=>$person['guestId'],'guestName'=>$person['name']]:[]);$this->sync->enqueue($trip,$booking,$person['id'],'cancel',$key,$hash,$payload,0,$identity->memberReference);
    }
    $this->bookings->recordOperation($trip,$key,$hash,$booking);$this->sync->refresh($booking);(new MemberBookingPolicy($trip,$identity,$this->access,$this->store))->audit('booking.cancel_request','trip',$trip,$reason);return $this->output($this->owned($trip,$booking,$identity,$members));
   });

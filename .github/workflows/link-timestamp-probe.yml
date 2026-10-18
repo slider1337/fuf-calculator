@@ -1,3 +1,4 @@
+# Explicit disposable-event test authorized by user on 2026-10-18.
 name: Test link timestamp and remove disposable event
 on:
   push:

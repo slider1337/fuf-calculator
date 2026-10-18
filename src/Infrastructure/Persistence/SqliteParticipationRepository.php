@@ -248,7 +248,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     public function invalidateObservation(int $trip): void {$this->execute("UPDATE external_observations SET cache_invalidated=1 WHERE trip_id=?",[$trip]);}
     public function pendingFamilyJobs(int $booking,string $kind,int $now): array
     {
-        $s=$this->execute("SELECT * FROM participation_jobs WHERE registration_id=? AND kind=? AND status='pending' AND (lease_until IS NULL OR lease_until<=?) AND json_extract(payload_json,'$.guestId') IS NULL ORDER BY id LIMIT 25",[$booking,$kind,$now]);
+        $s=$this->execute("SELECT * FROM participation_jobs WHERE registration_id=? AND kind=? AND status='pending' AND (lease_until IS NULL OR lease_until<=?) AND json_extract(payload_json,'$.guestId') IS NULL AND participant_id IN (SELECT id FROM registration_participants WHERE guest_approval_id IS NULL) ORDER BY id LIMIT 25",[$booking,$kind,$now]);
         return array_map(self::jobRow(...),StoredRow::fetchAll($s));
     }
     public function expireLeases(mixed $now): void

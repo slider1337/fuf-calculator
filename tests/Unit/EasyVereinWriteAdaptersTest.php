@@ -73,6 +73,15 @@ final class EasyVereinWriteAdaptersTest extends TestCase {
  public function testCompanionRequiresConfirmedParentAndKeepsExplicitParentReference(): void {
   $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);$parent=$a->execute('register',$this->payload(),'calculator-person-1');$p=$this->payload()+['guestId'=>1,'guestName'=>'Fiktiver Gast'];$guest=$a->execute('register',$p,'calculator-person-2');self::assertTrue($guest['isCompanion']);self::assertSame($parent['externalId'],$guest['parentExternalId']);self::assertSame('Fiktiver Gast',$guest['companionName']);
  }
+ public function testGuestCancellationUsesExactParticipationAndUnblocksParent(): void {
+  $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);$parent=$a->execute('register',$this->payload(),'calculator-person-1');
+  $p=$this->payload()+['guestId'=>1,'guestName'=>'Fiktiver Gast'];$guest=$a->execute('register',$p,'calculator-person-2');
+  $parentCancel=array_replace($this->payload(),['externalId'=>$parent['externalId']]);
+  try{$a->execute('cancel',$parentCancel,'calculator-person-3');self::fail('Active guest must block parent');}catch(\App\Application\ParticipationRejected $e){self::assertSame('cancel_dependents_first',$e->getMessage());}
+  $p['externalId']=$guest['externalId'];self::assertSame('cancelled',$a->execute('cancel',$p,'calculator-person-4')['status']);
+  self::assertSame('cancelled',$a->execute('cancel',$parentCancel,'calculator-person-3')['status']);
+  self::assertSame('participation/'.$guest['externalId'].'/',$c->writes[2][1]);self::assertSame('participation/'.$parent['externalId'].'/',$c->writes[3][1]);
+ }
  public function testOffModeAndUnsafePaginationCannotWriteOrFollowExternalUrls(): void {
   $c=new ProviderFixture();$c->enabled=false;$a=new EasyVereinParticipationAdapter($c);self::assertNotNull($a->blockedReason());
   try{$a->execute('register',$this->payload(),'calculator-person-1');self::fail('Blocked');}catch(\App\Application\AccessException $e){self::assertSame(409,$e->status);}self::assertSame([],$c->writes);

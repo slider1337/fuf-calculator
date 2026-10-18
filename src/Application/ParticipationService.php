@@ -75,7 +75,7 @@ final readonly class ParticipationService {
     $group=$choice['priceGroupId']??null;$price=$choice['expectedPrice']??null;
     if($group!==null&&(!is_string($group)||!preg_match('/^[1-9][0-9]{0,18}$/D',$group))){throw new ValidationException(["persons.$i.priceGroupId"=>'stable_id_or_null']);}
     if($price!==null&&(!is_string($price)||Decimal::normalize($price)===null||Decimal::compare($price,'0')<0)){throw new ValidationException(["persons.$i.expectedPrice"=>'nonnegative_decimal_or_null']);}
-    $payload=['eventId'=>$link['externalId'],'memberReference'=>$requested,'externalId'=>$person['externalReference']??null,'priceGroupId'=>$group,'price'=>$price===null?null:Decimal::normalize($price)];
+    $payload=['eventId'=>$link['externalId'],'memberReference'=>$requested,'externalId'=>$person['externalReference']??null,'priceGroupId'=>$group,'price'=>$price===null?null:Decimal::normalize($price)]+($person['guestId']!==null?['guestId'=>$person['guestId'],'guestName'=>$person['name']]:[]);
     $this->enqueue($trip,$booking,$id,$kind,$key,$hash,$payload,$this->policy->actorId(),null);
    }
    $this->refresh($booking);$this->policy->audit('participation.request','trip',$trip,'booking='.$booking.' · '.$kind);

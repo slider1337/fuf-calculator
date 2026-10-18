@@ -120,6 +120,32 @@ final class MemberParticipationApiTest extends ApiTestCase {
   self::assertSame(1,$batch->batches);self::assertSame(4,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
   self::assertSame(4,(int)$this->db->query("SELECT COUNT(DISTINCT external_reference) FROM registration_participants WHERE participation_status='confirmed'")->fetchColumn());
  }
+ public function testFamilyCancellationKeepsGuestsSeparateAndCancelsThemBeforeMembers(): void {
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$batch=new FakeBatchParticipationProvider();$batch->guestsAllowed=true;$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);$this->provider=$batch;
+  $p=$this->payload(4);
+  foreach(['guest_cancel_001','guest_cancel_002'] as $key)$p['persons'][]=['guest'=>['key'=>$key,'name'=>'Gast '.$key,'birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $b=$this->create($p);$this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$b['status']);$batch->batches=0;
+  $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/cancel",['operationKey'=>'family_guest_cancel_001','revision'=>$b['revision'],'confirmed'=>true,'reason'=>'Familie meldet sich ab'],202);
+  $payloads=$this->db->query("SELECT payload_json FROM participation_jobs WHERE kind='cancel' ORDER BY id")->fetchAll(PDO::FETCH_COLUMN);
+  self::assertCount(6,$payloads);foreach(array_slice($payloads,0,2) as $payload){self::assertArrayHasKey('guestId',json_decode($payload,true));}
+  $this->worker(2);self::assertSame(0,$batch->batches);self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE kind='cancel' AND status='succeeded'")->fetchColumn());
+  $this->worker();self::assertSame(1,$batch->batches);self::assertSame('cancelled',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
+ }
+ public function testLegacyGuestCancellationCannotJoinMemberBatch(): void {
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$batch=new FakeBatchParticipationProvider();$batch->guestsAllowed=true;$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);$this->provider=$batch;
+  $p=$this->payload(2);$p['persons'][]=['guest'=>['key'=>'legacy_cancel_001','name'=>'Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $b=$this->create($p);$this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");$batch->batches=0;
+  $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/cancel",['operationKey'=>'legacy_guest_cancel_001','revision'=>$b['revision'],'confirmed'=>true,'reason'=>'Abmeldung'],202);
+  $this->db->exec("UPDATE participation_jobs SET payload_json=json_remove(payload_json,'$.guestId','$.guestName') WHERE kind='cancel'");
+  $this->worker(1);self::assertSame(0,$batch->batches);$this->worker();self::assertSame(1,$batch->batches);self::assertSame('cancelled',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
+ }
+ public function testCancellationWaitsForGuestInsteadOfFailingFamily(): void {
+  $b=$this->create($this->payload(1));$this->worker();$b=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");
+  $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}/cancel",['operationKey'=>'dependent_cancel_001','revision'=>$b['revision'],'confirmed'=>true,'reason'=>'Abmeldung'],202);
+  $this->provider->onExecute=static function(){throw new ParticipationRejected('cancel_dependents_first');};$this->worker(1);
+  self::assertSame(['status'=>'pending','error_code'=>'cancel_dependents_first'],$this->db->query("SELECT status,error_code FROM participation_jobs WHERE kind='cancel'")->fetch(PDO::FETCH_ASSOC));
+  $this->provider->onExecute=null;$this->db->exec("UPDATE participation_jobs SET lease_until=0 WHERE kind='cancel'");$this->worker();self::assertSame('cancelled',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
+ }
  public function testAmbiguousFamilyBatchReconcilesWithoutAnotherBatchWrite(): void {
   $batch=new FakeBatchParticipationProvider();$batch->timeout=true;$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
   $this->create($this->payload(2));$this->worker(1);self::assertSame(1,$batch->batches);

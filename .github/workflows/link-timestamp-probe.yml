@@ -1,0 +1,82 @@
+name: Test link timestamp and remove disposable event
+on:
+  push:
+    branches: [diagnose/link-timestamp-20261018]
+    paths: [.github/workflows/link-timestamp-probe.yml]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check custom field timestamp propagation on disposable private event
+        env:
+          EV_TOKEN: ${{ secrets.EASYVEREIN_API_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os,json,time,urllib.request,urllib.parse,urllib.error,uuid
+          BASE='https://easyverein.com/api/v3.0/'
+          TOKEN=os.environ['EV_TOKEN']
+          marker='FuF API Link-Zeitstempel TEST '+uuid.uuid4().hex
+          event_id=None
+          def call(method,path,data=None,query=None):
+              url=BASE+path
+              if query: url+='?'+urllib.parse.urlencode(query)
+              req=urllib.request.Request(url,data=None if data is None else json.dumps(data).encode(),method=method,headers={'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json','Accept':'application/json'})
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as r:
+                      b=r.read()
+                      return r.status,json.loads(b) if b else None
+              except urllib.error.HTTPError as e:
+                  body=e.read().decode()
+                  try: detail=json.loads(body)
+                  except: detail={}
+                  # Only validation keys, never arbitrary provider records.
+                  raise RuntimeError('HTTP '+str(e.code)+' '+method+' '+path+' validation_keys='+','.join(detail.keys()) if isinstance(detail,dict) else 'HTTP '+str(e.code))
+          def event():
+              return call('GET','event/'+str(event_id)+'/',query={'query':'{id,name,note,updated_at}'})[1]
+          def timestamp(label):
+              r=event()
+              if r.get('name')!=marker or r.get('note')!=marker: raise RuntimeError('test_identity_mismatch')
+              print(json.dumps({'stage':label,'event_id':event_id,'event_updated_at':r.get('updated_at')}),flush=True)
+              return r.get('updated_at')
+          try:
+              fields=call('GET','custom-field/',query={'limit':100,'query':'{id,name,kind}'})[1]
+              matches=[f for f in fields['results'] if ' '.join(f.get('name','').lower().split())=='externer anmeldelink' and f.get('kind','').upper()=='H']
+              if len(matches)!=1: raise RuntimeError('external_link_field_not_unique_on_first_page')
+              field_id=matches[0]['id']
+              calendars=call('GET','calendar/',query={'limit':100,'query':'{id}'})[1]
+              if not calendars['results']: raise RuntimeError('no_calendar')
+              payload={'name':marker,'note':marker,'start':'2026-01-02T10:00:00+01:00','end':'2026-01-02T11:00:00+01:00','calendar':calendars['results'][0]['id'],'access':0,'is_public':False,'show_memberarea':False,'send_mail_check':False,'confirmation_to_addresses':[],'all_day':False}
+              _,created=call('POST','event/',payload)
+              event_id=created['id']
+              print(json.dumps({'created_test_event':event_id}),flush=True)
+              before=timestamp('before_link')
+              time.sleep(3)
+              _,assignment=call('POST','event-custom-field-assignment/',{'custom_field':field_id,'event_object':event_id,'value':'https://example.org/fuf-test-a'})
+              assignment_id=assignment['id']
+              added=timestamp('after_add')
+              time.sleep(3)
+              call('PATCH','event-custom-field-assignment/'+str(assignment_id)+'/',{'value':'https://example.org/fuf-test-b'})
+              verified=call('GET','event-custom-field-assignment/'+str(assignment_id)+'/',query={'query':'{id,value,updated_at,event_object}'})[1]
+              if verified.get('value')!='https://example.org/fuf-test-b': raise RuntimeError('link_change_unverified')
+              changed=timestamp('after_change')
+              print(json.dumps({'assignment_updated_at':verified.get('updated_at'),'event_timestamp_changed_on_add':before!=added,'event_timestamp_changed_on_value_change':added!=changed}),flush=True)
+              time.sleep(3)
+              call('DELETE','event-custom-field-assignment/'+str(assignment_id)+'/')
+              removed=timestamp('after_remove')
+              print(json.dumps({'event_timestamp_changed_on_remove':changed!=removed}),flush=True)
+          finally:
+              if event_id is not None:
+                  owned=event()
+                  if owned.get('name')!=marker or owned.get('note')!=marker: raise RuntimeError('cleanup_identity_mismatch')
+                  call('DELETE','event/'+str(event_id)+'/')
+                  req=urllib.request.Request(BASE+'event/'+str(event_id)+'/',headers={'Authorization':'Bearer '+TOKEN,'Accept':'application/json'})
+                  try:
+                      with urllib.request.urlopen(req,timeout=25) as r: raise RuntimeError('cleanup_event_still_accessible')
+                  except urllib.error.HTTPError as e:
+                      if e.code!=404: raise
+                      print(json.dumps({'cleanup_verified':True,'event_id':event_id,'get_status':404}),flush=True)
+          
+          PY

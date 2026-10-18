@@ -1,0 +1,56 @@
+name: Diagnose affected member booking reads
+on:
+  push:
+    branches: [diagnose/booking-guest-20261018]
+    paths: [.github/workflows/diagnose-booking-guest.yml]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml exec -T app php <<'PHP'
+            <?php
+            require '/app/vendor/autoload.php';
+            function reportError(string $stage,Throwable $e): void {
+                echo json_encode(['stage'=>$stage,'type'=>get_class($e),
+                    'error'=>$e instanceof App\Application\AccessException?$e->error:null,
+                    'location'=>basename($e->getFile()).':'.$e->getLine(),
+                    'trace'=>array_map(static fn($t)=>($t['class']??'').'::'.($t['function']??'').' '.basename($t['file']??'').':'.($t['line']??0),array_slice($e->getTrace(),0,8))]).PHP_EOL;
+            }
+            $c=App\Infrastructure\ContainerServices::create();
+            $db=App\Infrastructure\ContainerServices::get($c,PDO::class);
+            $j=$db->query('SELECT j.id,j.kind,j.status,j.error_code,j.attempts,j.payload_json,r.owner_member_reference FROM participation_jobs j JOIN registrations r ON r.id=j.registration_id WHERE j.id=11 AND j.trip_id=3 AND j.registration_id=19')->fetch(PDO::FETCH_ASSOC);
+            if(!$j)exit("affected_job_not_found\n");
+            $p=json_decode($j['payload_json'],true);$owner=(string)$j['owner_member_reference'];
+            unset($j['payload_json'],$j['owner_member_reference']);
+            echo json_encode(['stage'=>'job','job'=>$j,'guest'=>isset($p['guestId']),'priceGroup'=>isset($p['priceGroupId'])]).PHP_EOL;
+            // The display path only reads the provider cache. Roll back its reference-enqueue bookkeeping.
+            $db->beginTransaction();
+            try {
+                $s=App\Infrastructure\ContainerServices::get($c,App\Application\MemberBookingService::class);
+                $r=$s->all(new App\Application\MemberIdentity($owner,'website',[]),['after'=>'0']);
+                echo json_encode(['stage'=>'booking_index','status'=>'ok']).PHP_EOL;
+            }catch(Throwable $e){reportError('booking_index',$e);}
+            finally{if($db->inTransaction())$db->rollBack();}
+            // Only GETs: compare the affected guest and parent internally; never output identities.
+            try {
+                $a=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);
+                $s=$a->snapshot($p['eventId']);$exact=[];$guests=[];$parents=[];
+                foreach($s['participants'] as $row){
+                    if(($row['operationReference']??null)==='calculator-person-11')$exact[]=$row;
+                    if(($row['isCompanion']??false)&&$row['memberReference']===$p['memberReference']&&($row['companionName']??null)===($p['guestName']??null))$guests[]=$row;
+                    if(!($row['isCompanion']??false)&&$row['memberReference']===$p['memberReference']&&$row['status']==='confirmed')$parents[]=$row;
+                }
+                echo json_encode(['stage'=>'guest_read','guestsAllowed'=>$s['guestsAllowed']??null,'operationMatches'=>count($exact),'guestMatches'=>count($guests),'confirmedParents'=>count($parents)]).PHP_EOL;
+            }catch(Throwable $e){reportError('guest_read',$e);}
+            PHP

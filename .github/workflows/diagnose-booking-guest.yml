@@ -1,4 +1,4 @@
-name: Verify affected guest and booking index
+name: Diagnose affected cancellation codes
 on:
   push:
     branches: [diagnose/booking-guest-20261018]
@@ -23,21 +23,12 @@ jobs:
             require '/app/vendor/autoload.php';
             $c=App\Infrastructure\ContainerServices::create();
             $db=App\Infrastructure\ContainerServices::get($c,PDO::class);
-            try {
-             $j=$db->query('SELECT j.*,r.owner_member_reference FROM participation_jobs j JOIN registrations r ON r.id=j.registration_id WHERE j.id=11 AND j.trip_id=3 AND j.registration_id=19 AND j.participant_id=53')->fetch(PDO::FETCH_ASSOC);
-             if(!$j)exit("affected_job_not_found\n");
-             echo json_encode(['stage'=>'guest_job','status'=>$j['status'],'error'=>$j['error_code'],'initialError'=>$j['initial_error_code'],'attempts'=>$j['attempts'],'validationCodes'=>json_decode($j['validation_errors_json'],true)]).PHP_EOL;
-             $person=$db->query('SELECT external_reference,participation_status FROM registration_participants WHERE id=53 AND registration_id=19')->fetch(PDO::FETCH_ASSOC);
-             echo json_encode(['stage'=>'guest_person','status'=>$person['participation_status'],'hasExternalReference'=>$person['external_reference']!==null]).PHP_EOL;
-             $p=App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true));
-             $a=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);
-             $snapshot=$a->snapshot($p['eventId']);
-             $matches=0;
-             foreach($snapshot['participants'] as $row){
-              if(($row['operationReference']??null)==='calculator-person-11'||(($row['isCompanion']??false)&&$row['memberReference']===$p['memberReference']&&($row['companionName']??null)===$p['guestName']))$matches++;
-             }
-             echo json_encode(['stage'=>'guest_snapshot','matchingGuests'=>$matches]).PHP_EOL;
-             try{App\Infrastructure\ContainerServices::get($c,App\Application\MemberBookingService::class)->all(new App\Application\MemberIdentity((string)$j['owner_member_reference'],'website',[]),['after'=>'0']);echo "{\"stage\":\"booking_index\",\"status\":\"ok\"}\n";}
-             catch(App\Application\AccessException $e){echo json_encode(['stage'=>'booking_index','error'=>$e->error,'location'=>basename($e->getFile()).':'.$e->getLine()]).PHP_EOL;}
-            }catch(Throwable $e){echo json_encode(['stage'=>'verification','type'=>get_class($e),'error'=>$e instanceof App\Application\AccessException?$e->error:null,'location'=>basename($e->getFile()).':'.$e->getLine()]).PHP_EOL;exit(1);}
+            $jobs=$db->query("SELECT id,kind,status,error_code,initial_error_code,validation_errors_json,attempts,payload_json FROM participation_jobs WHERE trip_id=3 AND registration_id=19 AND kind='cancel' ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+            foreach($jobs as $j){$p=json_decode($j['payload_json'],true);unset($j['payload_json']);$j['hasGuestId']=isset($p['guestId']);$j['validation_errors_json']=json_decode($j['validation_errors_json'],true);echo json_encode($j).PHP_EOL;}
+            if(!$jobs)exit("no_cancel_jobs\n");
+            try{
+             $full=$db->query("SELECT payload_json FROM participation_jobs WHERE id=".(int)$jobs[0]['id'])->fetchColumn();$p=json_decode($full,true);
+             $a=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);$s=$a->snapshot($p['eventId']);
+             foreach($jobs as $j){$q=$db->query('SELECT payload_json FROM participation_jobs WHERE id='.(int)$j['id'])->fetchColumn();$p=json_decode($q,true);$found=array_values(array_filter($s['participants'],fn($r)=>$r['externalId']===($p['externalId']??null)));echo json_encode(['stage'=>'external','job'=>$j['id'],'matches'=>count($found),'status'=>$found[0]['status']??null,'isGuest'=>$found[0]['isCompanion']??null]).PHP_EOL;}
+            }catch(Throwable $e){echo json_encode(['error'=>$e instanceof App\Application\AccessException?$e->error:get_class($e),'location'=>basename($e->getFile()).':'.$e->getLine()]).PHP_EOL;exit(1);}
             PHP

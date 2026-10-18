@@ -22,7 +22,7 @@ final class EasyVereinData {
   $out=[];$seen=[];$query+=['limit'=>100];
   for($page=0;$page<100;$page++){
    $key=json_encode($query);if(isset($seen[$key])){throw new AccessException('provider_pagination_invalid',503);}$seen[$key]=true;
-   $r=$client->get($path,$query);if(!is_array($r['results']??null)||!array_is_list($r['results'])){throw new AccessException('provider_collection_invalid',503);}
+   $r=$client->get($path,$query);if(!array_key_exists('next',$r)||!is_array($r['results']??null)||!array_is_list($r['results'])){throw new AccessException('provider_collection_invalid',503);}
    foreach($r['results'] as $row){if(!is_array($row)){throw new AccessException('provider_collection_invalid',503);}$out[]=$row;}
    $next=$r['next']??null;if($next===null||$next===''){return $out;}
    if(!is_string($next)){throw new AccessException('provider_pagination_invalid',503);}$u=parse_url($next);

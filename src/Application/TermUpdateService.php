@@ -12,7 +12,7 @@ use App\Application\Port\{ExternalTermUpdatePort, TermRepositoryInterface, TermU
  */
 final readonly class TermUpdateService
 {
-    public function __construct(private AccessPolicy $policy, private TermUpdateRepositoryInterface $store, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms, private TripRepositoryInterface $trips, private TermUpdateWorker $worker) {}
+    public function __construct(private AccessPolicy $policy, private TermUpdateRepositoryInterface $store, private ExternalTermUpdatePort $external, private TermRepositoryInterface $terms, private TripRepositoryInterface $trips, private TermUpdateWorker $worker, private ?\App\Application\Port\EasyVereinReadClient $displayClient=null) {}
 
     /** @return array{externalId: string, fields: FieldValues, blockedReason: string|null, jobs: list<JobSummary>, observedHash: string, tripFields: FieldValues} */
     public function read(int $trip): array
@@ -20,7 +20,7 @@ final readonly class TermUpdateService
         $this->policy->trip($trip, 'term.manage');
         $this->policy->requireRegistrationMode($trip, 'easyverein');
         $link = $this->terms->link($trip) ?? throw new AccessException('confirmed_term_required', 409);
-        $fields = TermFields::observed($this->external->fields($link['externalId']));
+        $fields = $this->displayClient === null ? TermFields::observed($this->external->fields($link['externalId'])) : \App\Infrastructure\EasyVereinTermFields::read($this->displayClient->get('event/'.$link['externalId'].'/'));
         TermFields::period($fields);
         $this->policy->trip($trip, 'term.manage');
         $this->policy->requireRegistrationMode($trip, 'easyverein');

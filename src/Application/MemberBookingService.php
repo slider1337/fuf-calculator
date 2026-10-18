@@ -17,7 +17,7 @@ use App\Domain\Form\{AnswerValidator,FormSchema};
  * @phpstan-import-type Field from \App\Domain\Form\FormSchema
  */
 final readonly class MemberBookingService {
- public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private MemberBookingRepositoryInterface $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync,private \App\Application\Port\ParticipationRepositoryInterface $participations) {}
+ public function __construct(private MemberDirectoryPort $directory,private ParticipationPort $external,private MemberBookingRepositoryInterface $store,private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private AccessRepositoryInterface $access,private AnswerValidator $validator,private RegistrationService $registrations,private ParticipationService $sync,private ?MemberDirectoryPort $displayDirectory=null) {}
  /**
   * @param ProviderSnapshot|MemberContext|null $preflight
   * @return array<string,scalar|null>
@@ -40,8 +40,8 @@ final readonly class MemberBookingService {
   return $s;
  }
  /** @return MemberProfile */
- private function profile(MemberIdentity $identity): array {
-  return $this->checkedProfile($this->directory->verifiedProfile($identity->memberReference),$identity);
+ private function profile(MemberIdentity $identity,bool $display=false): array {
+  return $this->checkedProfile(($display?($this->displayDirectory??$this->directory):$this->directory)->verifiedProfile($identity->memberReference),$identity);
  }
  /** @return array{contractVersion:string,route:string,tripId?:int,released?:bool} */
  public function route(string $event): array {
@@ -53,12 +53,9 @@ final readonly class MemberBookingService {
  /** @param array<array-key,mixed> $q
   * @return array{items:list<array<array-key,mixed>>,nextCursor:?string} */
  public function all(MemberIdentity $identity,array $q): array {
-  $profile=$this->profile($identity);$members=array_column($profile['persons'],'memberReference');
+  $profile=$this->profile($identity,true);$members=array_column($profile['persons'],'memberReference');
   $after=$q['after']??'0';
   if(!is_string($after)||!preg_match('/^[0-9]{1,18}$/D',$after))throw new ValidationException(['after'=>'integer_cursor']);
-  if($after==='0'){
-  foreach($this->store->releasedTripIds() as $trip){try{$this->importExisting($trip,$profile);}catch(AccessException|NotFoundException){/* Existing local bookings remain readable during a provider outage. */}}
-  }
   $ids=$this->store->ownedBookingIndex($identity->memberReference,(int)$after,$members);
   $more=count($ids)>25;$items=[];$last=null;
   foreach(array_slice($ids,0,25) as $row){
@@ -89,8 +86,7 @@ final readonly class MemberBookingService {
  }
  /** @return MemberContext */
  public function context(int $trip,MemberIdentity $identity): array {
-  $s=$this->allowed($trip,'read');$profile=$this->profile($identity);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->sync->readSnapshot($trip,$link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
-  $this->importExisting($trip,$profile,$snapshot);
+  $s=$this->allowed($trip,'read');$profile=$this->profile($identity,true);$link=$this->store->link($trip)??throw new NotFoundException('Member trip');$snapshot=$this->sync->readSnapshot($trip,$link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
   $binding=$this->forms->binding($trip);$v=$binding['versionId']===null?null:$this->forms->get($binding['versionId']);
   $t=$this->trips->getById($trip)??throw new NotFoundException('Trip');
   return ['startDate'=>$t->startDate()->format('Y-m-d'),'adultAgeThreshold'=>$t->pricingPolicy()->adultAgeThreshold(),'readOnly'=>($this->access->metadata($trip)['closed_at']??null)!==null||($this->access->metadata($trip)['archived_at']??null)!==null,'contractVersion'=>'1.7.0','tripId'=>$trip,'eventId'=>$link['externalId'],'versionId'=>$binding['versionId'],'form'=>$v===null?null:['id'=>$v['id'],'fields'=>$v['fields']],'people'=>array_map(static fn($person)=>array_intersect_key($person,array_flip(['memberReference','name','birthDate','editable'])),$profile['persons']),'guests'=>$this->store->availableGuests($trip, $identity->memberReference),'priceGroups'=>$snapshot['groups'],'priceRevision'=>$snapshot['revision'],'capacityRemaining'=>$snapshot['capacityRemaining'],'guestsAllowed'=>($snapshot['guestsAllowed']??false),'canceled'=>$snapshot['canceled']||($this->access->metadata($trip)['archived_at']??null)!==null,'bookingUntil'=>$snapshot['bookingUntil'],'correctionUntil'=>$snapshot['bookingUntil'],'cancelUntil'=>$snapshot['bookingUntil']];
@@ -107,21 +103,6 @@ final readonly class MemberBookingService {
   }
   throw new NotFoundException('Booking');
  }
- /** @param MemberProfile $profile
-  * @param ProviderSnapshot|null $snapshot */
- private function importExisting(int $trip,array $profile,?array $snapshot=null): void {
-  $this->allowed($trip,'read');
-  $link=$this->store->link($trip)??throw new NotFoundException('Member trip');
-  $snapshot??=$this->sync->readSnapshot($trip,$link['externalId']);$this->sync->validateSnapshot($snapshot,$link['externalId']);
-  $members=array_column($profile['persons'],'memberReference');
-  $this->access->transaction(function()use($trip,$link,$snapshot,$members){
-   $this->allowed($trip,'read');
-   if(($this->store->link($trip)['externalId']??null)!==$link['externalId'])throw new AccessException('term_review_changed',409);
-   $meta=$this->access->metadata($trip);if($meta['closed_at']!==null||$meta['archived_at']!==null)return;
-   $importer=new ExternalParticipationImporter($this->participations,$this->bookings);
-   foreach($snapshot['participants'] as $person){if($person['memberReference']!==null&&in_array($person['memberReference'],$members,true))$importer->import($trip,$person,0);}
-  });
- }
  /**
   * @param BookingView $b
   * @return array<array-key,mixed>
@@ -135,13 +116,13 @@ final readonly class MemberBookingService {
   if(isset($b['answers'])){foreach($b['answers'] as &$a){unset($a['actorId'],$a['reason']);}unset($a);}return $b;
  }
  /** @return array<array-key,mixed> */
- public function get(int $trip,int $booking,MemberIdentity $identity): array {$this->allowed($trip,'read');$profile=$this->profile($identity);return $this->output($this->owned($trip,$booking,$identity,array_column($profile['persons'],'memberReference')));}
+ public function get(int $trip,int $booking,MemberIdentity $identity): array {$this->allowed($trip,'read');$profile=$this->profile($identity,true);return $this->output($this->owned($trip,$booking,$identity,array_column($profile['persons'],'memberReference')));}
  /**
   * @param array<array-key,mixed> $q
   * @return array<array-key,mixed>
   */
  public function list(int $trip,MemberIdentity $identity,array $q): array {
-  $this->allowed($trip,'read');$profile=$this->profile($identity);$this->importExisting($trip,$profile);$members=array_column($profile['persons'],'memberReference');$after=$q['after']??'0';if(!is_string($after)||!preg_match('/^[0-9]{1,9}$/D',$after)){throw new ValidationException(['after'=>'integer_cursor']);}
+  $this->allowed($trip,'read');$profile=$this->profile($identity,true);$members=array_column($profile['persons'],'memberReference');$after=$q['after']??'0';if(!is_string($after)||!preg_match('/^[0-9]{1,9}$/D',$after)){throw new ValidationException(['after'=>'integer_cursor']);}
   $ids=$this->store->ownedBookingIds($trip, $identity->memberReference, (int)$after,$members);$more=count($ids)>25;$ids=array_slice($ids,0,25);
   return ['items'=>array_map(fn($id)=>$this->output($this->owned($trip,(int)$id,$identity,$members)),$ids),'nextCursor'=>$more?(string)end($ids):null];
  }

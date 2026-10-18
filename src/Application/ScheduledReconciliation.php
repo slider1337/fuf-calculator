@@ -26,7 +26,7 @@ final readonly class ScheduledReconciliation
         $policy=new AccessPolicy($this->access,$actor);
         $service=new ParticipationService($policy,$this->store,$this->external,$this->bookings,$this->access);
         try {$service->reconcile($trip);}
-        catch(\Throwable){return true;} // Next bounded poll; do not log member data or provider bodies.
+        catch(\Throwable $e){if($e instanceof AccessException && $e->retryAfter>0){$this->store->recordScheduledAttempt($trip,time()+$e->retryAfter);}return true;} // Next bounded poll; do not log member data or provider bodies.
         return true;
     }
 }

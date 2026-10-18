@@ -62,7 +62,8 @@ interface ParticipationRepositoryInterface
     /** @return array<string,scalar|null>|false */
     public function memberSettings(mixed $trip): array|false;
     public function setPersonSync(mixed $sync, mixed $person): void;
-    public function deferJob(mixed $status, mixed $until, mixed $error, mixed $job): void;
+    /** @param list<array{field:string,reason:string}> $validationErrors */
+    public function deferJob(mixed $status, mixed $until, mixed $error, mixed $job,array $validationErrors=[]): void;
     public function completeJob(mixed $job): void;
     public function duplicateExternalPerson(mixed $external, mixed $person): int|string|false|null;
     public function leaseToken(mixed $job): int|string|false|null;

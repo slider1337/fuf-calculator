@@ -22,7 +22,7 @@ final readonly class LocalTermCatalog implements EasyVereinReadClient {
   if(!preg_match('~^(event|calendar|member)/(?:([1-9][0-9]*)/)?$~D',$path,$m))throw new \InvalidArgumentException('Invalid catalogue path');
   $resource=$m[1];
   if($resource==='member'){
-   $this->enqueue($path);$rows=$this->rows($path);if($rows)return $rows[0];throw new AccessException('provider_catalog_loading',503,60);
+   $this->enqueue($path);$rows=$this->rows($path);if($rows){$this->enqueueFamily($rows[0]);return $rows[0];}throw new AccessException('provider_catalog_loading',503,60);
   }
   $this->enqueue($resource.'/');$rows=$this->rows($resource.'/');
   if(isset($m[2])){
@@ -39,6 +39,18 @@ final readonly class LocalTermCatalog implements EasyVereinReadClient {
   usort($rows,static fn(array $a,array $b)=>[$a[$resource==='event'?'start':'name']??'',(int)EasyVereinData::id($a['id']??null,$resource)]<=>[$b[$resource==='event'?'start':'name']??'',(int)EasyVereinData::id($b['id']??null,$resource)]);
   $offset=(int)($query['offset']??0);$limit=(int)($query['limit']??50);
   return ['results'=>array_slice($rows,$offset,$limit),'next'=>count($rows)>$offset+$limit?'local:next':null];
+ }
+ /** Queue the complete explicitly editable family together, rather than waiting
+  * for a page to fail once for each missing child.
+  * @param array<array-key,mixed> $member */
+ private function enqueueFamily(array $member): void {
+  $own=EasyVereinData::id($member['id']??null,'member');$relations=$member['related_members']??null;
+  if(!is_array($relations)||!array_is_list($relations)||count($relations)>99)throw new AccessException('member_identity_unproven',503);
+  foreach($relations as $relation){
+   if(!is_array($relation)||($relation['editable_by_related_members']??null)!==true)continue;
+   if(EasyVereinData::id($relation['related_member']??null,'member')!==$own)continue;
+   $child=EasyVereinData::id($relation['id']??null,'member');if($child!==$own)$this->enqueue('member/'.$child.'/');
+  }
  }
  /** One claim covers the whole pagination; failures never replace the last complete snapshot. */
  public function run(): void {
@@ -67,6 +79,7 @@ final readonly class LocalTermCatalog implements EasyVereinReadClient {
     $this->access->transaction(function()use($rows,$now,$period,$path,$token,$resource): void {
     $lease=$this->store->query('SELECT lease_token FROM provider_catalog WHERE resource=?',[$path])->fetchColumn();
     if($lease!==$token)return;
+    if($resource==='member'){foreach($rows as $member)$this->enqueueFamily($member);}
     if($resource==='event'){$this->updateTerms($rows);if($path==='event/')$this->markMissing($rows);}
     $this->store->query('UPDATE provider_catalog SET data_json=?,succeeded_at=?,due_at=?,attempts=0,lease_until=0,lease_token=NULL WHERE resource=? AND lease_token=?',[json_encode($rows,JSON_THROW_ON_ERROR),$now,$now+$period,$path,$token]);
     });

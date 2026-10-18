@@ -19,6 +19,7 @@ class FakeParticipationProvider implements ParticipationPort {
  public int $capacity=100;
  public bool $canceled=false;
  public bool $guestsAllowed=false;
+ public ?string $guestProofName=null;
  public array $termFields=[];
  public function blockedReason(): ?string {return null;}
  public function snapshot(string $eventId): array {if($this->onSnapshot!==null){($this->onSnapshot)();}return ($this->termFields?['termFields'=>$this->termFields]:[])+['eventId'=>$eventId,'revision'=>$this->revision,'canceled'=>$this->canceled,'bookingUntil'=>$this->bookingUntil??time()+3600,'capacityRemaining'=>$this->capacity,'groups'=>$this->groups,'participants'=>array_values($this->rows),'guestsAllowed'=>$this->guestsAllowed];}
@@ -27,7 +28,7 @@ class FakeParticipationProvider implements ParticipationPort {
   if(($this->outcomes[$person['memberReference']]??null)==='reject'){throw new ParticipationRejected('provider_rejected');}
   $id=$person['externalId']??(string)(1000+$this->writes);
   $row=['eventId'=>$person['eventId'],'externalId'=>$id,'memberReference'=>$person['memberReference'],'status'=>$kind==='cancel'?'cancelled':'confirmed','priceGroupId'=>$person['priceGroupId'],'price'=>$person['price']];
-  if(isset($person['guestId'])){$row+=['isCompanion'=>true,'companionName'=>$person['guestName'],'parentExternalId'=>'1001'];}
+  if(isset($person['guestId'])){$row+=['isCompanion'=>true,'companionName'=>$this->guestProofName??$person['guestName'],'parentExternalId'=>'1001'];}
   $this->rows[$id]=$row;$this->outcomes[$operationReference]=$row;
   if($this->timeout){$this->timeout=false;throw new \RuntimeException('Secret provider body must never be stored');}
   return $row;
@@ -402,6 +403,35 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $b=$this->create($p);self::assertSame($b,$this->create($p));self::assertCount(2,$b['persons']);self::assertNotNull($b['persons'][1]['guestId']);
   self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());self::assertSame('11',$this->db->query('SELECT owner_member FROM guest_approvals')->fetchColumn());
   $this->worker();$next=$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}");self::assertSame('confirmed',$next['status']);self::assertSame(2,$this->provider->writes);
+ }
+ public function testGuestPreflightReadFailureQueuesRetryWithNameAndSafeDetails(): void {
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$p=$this->payload(1);
+  $p['persons'][]=['guest'=>['key'=>'guest_retry_001','name'=>'Wiederholbarer Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $this->create($p);$this->worker(1);
+  $this->provider->onExecute=static function(){throw new ParticipationRejected('provider_read_failed',503);};
+  $this->worker(1);
+  $job=$this->db->query('SELECT * FROM participation_jobs ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+  self::assertSame('pending',$job['status']);self::assertSame('provider_read_failed',$job['error_code']);
+  $_SESSION['user_id']=1;$r=$this->dispatch('GET',"/api/trips/{$this->trip}/participation-sync");self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());
+  $view=json_decode((string)$r->getBody(),true)['jobs'][0];self::assertSame('Wiederholbarer Gast',$view['personName']);self::assertSame(1,$view['isGuest']);$_SESSION=[];
+  $this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->provider->onExecute=null;
+  // A fresh worker resumes the deferred guest rather than looking for a receipt forever.
+  $c=$this->app->getContainer();$w=new ParticipationWorker($c->get(\App\Application\Port\ParticipationRepositoryInterface::class),$c->get(\App\Application\Port\AccessRepositoryInterface::class),$this->provider,$c->get(\App\Application\ParticipationService::class),$this->directory);$w->runOne();
+  self::assertSame('succeeded',$this->db->query('SELECT status FROM participation_jobs ORDER BY id DESC LIMIT 1')->fetchColumn());
+ }
+ public function testIncorrectGuestReceiptKeepsSpecificCauseInsteadOfGenericUnproven(): void {
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();$p=$this->payload(1);
+  $p['persons'][]=['guest'=>['key'=>'guest_receipt_001','name'=>'Gebuchter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $this->create($p);$this->worker(1);$this->provider->guestProofName='Andere Begleitperson';$this->worker(1);
+  $job=$this->db->query('SELECT status,error_code FROM participation_jobs ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+  self::assertSame(['status'=>'unknown','error_code'=>'external_guest_reference_conflict'],$job);
+ }
+ public function testOriginalFailureAndValidationSurviveLaterUnprovenReconciliation(): void {
+  $this->create($this->payload(1));$store=$this->app->getContainer()->get(\App\Application\Port\ParticipationRepositoryInterface::class);
+  $id=(int)$this->db->query('SELECT id FROM participation_jobs')->fetchColumn();
+  $details=[['field'=>'companion_name','reason'=>'required']];$store->deferJob('unknown',0,'external_guest_reference_conflict',$id,$details);
+  $this->worker(1);$job=$this->db->query('SELECT * FROM participation_jobs')->fetch(PDO::FETCH_ASSOC);
+  self::assertSame('external_result_unproven',$job['error_code']);self::assertSame('external_guest_reference_conflict',$job['initial_error_code']);self::assertSame($details,json_decode($job['validation_errors_json'],true));self::assertSame(0,$this->provider->writes);
  }
  public function testInlineGuestsCannotBypassProviderGuestFlagOrPrice(): void {
   $p=$this->payload(1);$p['persons'][]=['guest'=>['key'=>'guest_client_002','name'=>'Direkter Gast','birthDate'=>'2001-02-03'],'priceGroupId'=>'21','expectedPrice'=>'12'];$this->createError($p,409);self::assertSame(0,(int)$this->db->query('SELECT COUNT(*) FROM guest_approvals')->fetchColumn());

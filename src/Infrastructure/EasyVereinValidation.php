@@ -8,7 +8,7 @@ namespace App\Infrastructure;
  */
 final class EasyVereinValidation
 {
-    public const FIELDS = ['name','start','end','all_day','calendar','location_name','location_object','description','prologue','min_participators','max_participators','start_participation','end_participation','access','note','creator','show_memberarea','is_public','is_reservation','reservation_parent_event','allow_multiple_price_groups_per_participation','confirmation_to_addresses','send_mail_check'];
+    public const FIELDS = ['name','start','end','all_day','calendar','location_name','location_object','description','prologue','min_participators','max_participators','start_participation','end_participation','access','note','creator','show_memberarea','is_public','is_reservation','reservation_parent_event','allow_multiple_price_groups_per_participation','confirmation_to_addresses','send_mail_check','participation_event','participation_address','state','is_companion','companion_name','companion_email','parent','participation_price_groups','price_group','pieces'];
     /** @return list<array{field:string,reason:string}> */
     public static function fromBody(string $body): array
     {

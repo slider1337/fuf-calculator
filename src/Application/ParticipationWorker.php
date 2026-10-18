@@ -31,7 +31,7 @@ final class ParticipationWorker {
 
    $this->store->claimJob($mode==='execute'?'running':'reconciling', $token, $now+300, $j['id']);return ['job'=>$j,'mode'=>$mode,'token'=>$token];
   });
-  if($claim===null){return false;}if(isset($claim['skip'])){return true;}if(isset($claim['jobs'])){if(!$this->external instanceof \App\Application\Port\BatchParticipationPort)throw new \LogicException('Batch adapter changed');return $this->runBatch($claim['jobs'],$claim['token'],$this->external);}$j=$claim['job'];$payload=\App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true,512,JSON_THROW_ON_ERROR));$reference='calculator-person-'.$j['id'];$result=null;$error=null;$status='unknown';$executeStarted=false;$retryAfter=0;
+  if($claim===null){return false;}if(isset($claim['skip'])){return true;}if(isset($claim['jobs'])){if(!$this->external instanceof \App\Application\Port\BatchParticipationPort)throw new \LogicException('Batch adapter changed');return $this->runBatch($claim['jobs'],$claim['token'],$this->external);}$j=$claim['job'];$payload=\App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true,512,JSON_THROW_ON_ERROR));$reference='calculator-person-'.$j['id'];$result=null;$error=null;$status='unknown';$executeStarted=false;$retryAfter=0;$validationErrors=[];
   try {
    if($claim['mode']==='execute'){
     $s=$this->external->snapshot($payload['eventId']);$this->sync->validateSnapshot($s,$payload['eventId']);
@@ -57,10 +57,11 @@ final class ParticipationWorker {
     $executeStarted=true;$result=$this->external->execute($j['kind'],$payload,$reference);
    }else{$result=$this->external->reconcile($j['kind'],$payload,$reference);}
    if($result!==null&&isset($payload['guestId'])&&(($result['isCompanion']??false)!==true||($result['companionName']??null)!==($payload['guestName'] ?? null)||!is_string($result['parentExternalId']??null))){$result=null;$error='external_guest_reference_conflict';}
-   if($result===null){$error='external_result_unproven';}
+   if($result===null){$error??='external_result_unproven';}
    else{$this->sync->validateResult($result);if($result['eventId']!==$payload['eventId']||$result['memberReference']!==$payload['memberReference']||$result['priceGroupId']!==$payload['priceGroupId']||$result['price']!==$payload['price']||($j['kind']==='cancel'&&($result['externalId']!==$payload['externalId']||$result['status']!=='cancelled'))||($j['kind']==='register'&&$result['status']!=='confirmed')){$error='external_result_conflict';}}
   }catch(ParticipationRejected $e){
-   if($claim['mode']==='execute'&&$e->getCode()===429){$status='pending';$error='provider_rate_limited';$retryAfter=max(60,$e->retryAfter);}
+   $validationErrors=$e->validationErrors;
+   if($claim['mode']==='execute'&&in_array($e->getCode(),[429,503],true)){$status='pending';$error=$e->getCode()===429?'provider_rate_limited':'provider_read_failed';$retryAfter=max(60,$e->retryAfter);}
    elseif($claim['mode']==='execute'){$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','guest_parent_not_confirmed','guest_not_allowed','guest_approval_revoked','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
    else{$error='external_result_unproven';}
   }catch(AccessException $e){
@@ -72,7 +73,7 @@ final class ParticipationWorker {
   }catch(\Throwable){$error=$executeStarted||$claim['mode']==='reconcile'?'external_outcome_unknown':'provider_preflight_failed';if(!$executeStarted&&$claim['mode']==='execute'){$status='failed';}}
   // A throttle pauses the whole participation batch; do not fail the remaining family.
   if($retryAfter>0)$this->pauseUntil=time()+$retryAfter;
-  $this->access->transaction(function()use($claim,$j,$result,$error,$status,$retryAfter){
+  $this->access->transaction(function()use($claim,$j,$result,$error,$status,$retryAfter,$validationErrors){
    $token=$this->store->leaseToken($j['id']);if($token!==$claim['token']){return;}
    if(!$this->allowed($j)){$this->block($j);return;}
    if($error===null && $result!==null){
@@ -81,13 +82,13 @@ final class ParticipationWorker {
     else{$this->sync->applyResult((int)$j['registration_id'],(int)$j['participant_id'],$result,(int)$j['actor_id']);$this->store->completeJob($j['id']);$this->store->invalidateObservation($j['trip_id']);return;}
    }
    $backoff=max($retryAfter,min(3600,60*(2**min(6,(int)$j['attempts']))))+random_int(0,15);
-   $this->store->deferJob($status, time()+$backoff, $error, $j['id']);
+   $this->store->deferJob($status, time()+$backoff, $error, $j['id'],$validationErrors);
    $this->store->setPersonSync($status==='unknown'?'unknown':($status==='pending'?'pending':'error'), $j['participant_id']);$this->sync->refresh((int)$j['registration_id']);
   });return true;
  }
  /** @param list<ParticipationJob> $jobs */
  private function runBatch(array $jobs,string $token,\App\Application\Port\BatchParticipationPort $external): bool {
-  $people=[];$profiles=[];$results=[];$status='unknown';$error=null;$started=false;$retryAfter=0;
+  $people=[];$profiles=[];$results=[];$status='unknown';$error=null;$started=false;$retryAfter=0;$validationErrors=[];
   try{
    foreach($jobs as $j){
     $p=\App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true,512,JSON_THROW_ON_ERROR));
@@ -108,6 +109,7 @@ final class ParticipationWorker {
     foreach($jobs as $job){if($this->store->leaseToken($job['id'])!==$token||!$this->allowed($job))throw new ParticipationRejected('permission_revoked_or_trip_closed');}
    });
   }catch(ParticipationRejected $e){
+   $validationErrors=$e->validationErrors;
    if(in_array($e->getCode(),[429,503],true)){$status='pending';$error=$e->getCode()===429?'provider_rate_limited':'provider_read_failed';if($e->getCode()===429)$retryAfter=max(60,$e->retryAfter);}
    else{$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
   }catch(AccessException $e){
@@ -117,7 +119,7 @@ final class ParticipationWorker {
    if($error==='provider_rate_limited')$retryAfter=max(60,$e->retryAfter);
   }catch(\Throwable){$error=$started?'external_outcome_unknown':'provider_preflight_failed';if(!$started)$status='failed';}
   if($retryAfter>0)$this->pauseUntil=time()+$retryAfter;
-  $this->access->transaction(function()use($jobs,$token,$people,$results,$status,$error,$retryAfter){
+  $this->access->transaction(function()use($jobs,$token,$people,$results,$status,$error,$retryAfter,$validationErrors){
    foreach($jobs as $j){
     if($this->store->leaseToken($j['id'])!==$token)continue;
     if(!$this->allowed($j)){$this->block($j);continue;}
@@ -129,7 +131,7 @@ final class ParticipationWorker {
      else{$this->sync->applyResult($j['registration_id'],$j['participant_id'],$r,$j['actor_id']);$this->store->completeJob($j['id']);$this->store->invalidateObservation($j['trip_id']);continue;}
     }
     $backoff=max($retryAfter,min(3600,60*(2**min(6,$j['attempts']))))+random_int(0,15);
-    $this->store->deferJob($status,time()+$backoff,$problem??'external_result_unproven',$j['id']);
+    $this->store->deferJob($status,time()+$backoff,$problem??'external_result_unproven',$j['id'],$validationErrors);
     $this->store->setPersonSync($status==='unknown'?'unknown':($status==='pending'?'pending':'error'),$j['participant_id']);$this->sync->refresh($j['registration_id']);
    }
   });return true;

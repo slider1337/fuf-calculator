@@ -20,6 +20,7 @@ final readonly class ParticipationService {
   $cases=$this->store->clarifications($trip);
   $snapshot=$o?json_decode(Input::text($o['snapshot_json']),true,512,JSON_THROW_ON_ERROR):[];if(!is_array($snapshot))throw new \LogicException('Invalid saved snapshot');
   $canView=$this->policy->can('trip',$trip,'registration.view');
+  if(!$canView){foreach($jobs as &$job){unset($job['personName']);}unset($job);}
   $conflicts=$o?json_decode(Input::text($o['conflicts_json']),true,512,JSON_THROW_ON_ERROR):[];
   if(!is_array($conflicts))throw new \LogicException('Invalid saved conflicts');
   $conflicts=array_values(array_filter($conflicts,static fn($c)=>is_array($c)&&is_string($c['field']??null)&&($c['field']==='groups'||($canView&&str_starts_with($c['field'],'person:')))));

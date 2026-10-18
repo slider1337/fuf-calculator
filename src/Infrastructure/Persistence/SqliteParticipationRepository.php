@@ -180,7 +180,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     /** @return list<array<string,scalar|null>> */
     public function recentJobs(mixed $trip): array
     {
-        $s=$this->execute('SELECT id,registration_id AS bookingId,participant_id AS personId,kind,status,attempts,error_code AS errorCode,lease_until AS nextAttemptAt,created_at AS createdAt FROM participation_jobs WHERE trip_id=? ORDER BY id DESC LIMIT 100', [$trip]);
+        $s=$this->execute('SELECT j.id,j.registration_id AS bookingId,j.participant_id AS personId,p.name AS personName,CASE WHEN p.guest_approval_id IS NULL THEN 0 ELSE 1 END AS isGuest,j.kind,j.status,j.attempts,j.error_code AS errorCode,j.initial_error_code AS initialErrorCode,j.validation_errors_json AS validationErrorsJson,j.lease_until AS nextAttemptAt,j.created_at AS createdAt FROM participation_jobs j JOIN registration_participants p ON p.id=j.participant_id AND p.registration_id=j.registration_id JOIN registrations r ON r.id=j.registration_id AND r.trip_id=j.trip_id WHERE j.trip_id=? ORDER BY j.id DESC LIMIT 100', [$trip]);
         $rows=[]; foreach($s->fetchAll(PDO::FETCH_ASSOC) as $row) { $rows[]=StoredRow::scalars($row); } return $rows;
     }
     public function markUnknown(mixed $person): void
@@ -210,9 +210,10 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     {
         $s=$this->execute('UPDATE registration_participants SET sync_status=? WHERE id=?', [$sync, $person]);
     }
-    public function deferJob(mixed $status, mixed $until, mixed $error, mixed $job): void
+    /** @param list<array{field:string,reason:string}> $validationErrors */
+    public function deferJob(mixed $status, mixed $until, mixed $error, mixed $job,array $validationErrors=[]): void
     {
-        $s=$this->execute('UPDATE participation_jobs SET status=?,lease_token=NULL,lease_until=?,error_code=? WHERE id=?', [$status, $until, $error, $job]);
+        $s=$this->execute("UPDATE participation_jobs SET status=?,lease_token=NULL,lease_until=?,error_code=?,initial_error_code=COALESCE(initial_error_code,?),validation_errors_json=CASE WHEN ?='[]' THEN validation_errors_json ELSE ? END WHERE id=?", [$status, $until, $error,$error,json_encode($validationErrors,JSON_THROW_ON_ERROR),json_encode($validationErrors,JSON_THROW_ON_ERROR), $job]);
     }
     public function completeJob(mixed $job): void
     {

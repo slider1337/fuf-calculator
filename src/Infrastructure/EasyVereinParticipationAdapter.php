@@ -64,6 +64,26 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
   */
  public function execute(string $kind,array $p,string $operationReference): array {
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
+  // Reads and validation inside the adapter precede the write. A failed read must
+  // not strand a guest in reconciliation for a POST that was never attempted.
+  try{$prepared=$this->prepare($kind,$p,$operationReference);}
+  catch(AccessException $e){
+   $code=match($e->error){'provider_rate_limited'=>429,'provider_read_failed'=>503,'provider_unauthorized'=>401,'provider_forbidden'=>403,default=>0};
+   if($code!==0)throw new ParticipationRejected($e->error,$code,[],$e->retryAfter);
+   throw $e;
+  }
+  $event=$prepared['event'];
+  if($prepared['method']==='PATCH'){
+   $this->client->write('PATCH',$prepared['path'],$prepared['body']);
+   return $this->proved($event,$p,$prepared['id']??throw new \LogicException('Missing cancellation ID'),'cancelled');
+  }
+  $created=$this->client->write('POST',$prepared['path'],$prepared['body']);
+  if(!isset($created['id'])){return $this->reconcile('register',$p,$operationReference)??throw new \RuntimeException('provider_result_unproven');}
+  $id=EasyVereinData::id($created['id'],'participation');return $this->proved($event,$p,$id,'confirmed');
+ }
+ /** @param ParticipationPayload $p
+  * @return array{event:string,method:string,path:string,body:array<array-key,mixed>,id:?string} */
+ private function prepare(string $kind,array $p,string $operationReference): array {
   $event=EasyVereinData::id($p['eventId'],'event');$member=EasyVereinData::id($p['memberReference'],'member');
   $profile=$this->client->get('member/'.$member.'/', ['query'=>'{id,contact_details{id}}']);
   if(EasyVereinData::id($profile['id']??null,'member')!==$member){throw new ParticipationRejected('member_reference_changed');}$contact=EasyVereinData::id($profile['contact_details']??null,'contact-details');
@@ -72,8 +92,7 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
    $id=EasyVereinData::id($p['externalId']??null,'participation');$row=$this->find($current,$id);
    if(!$row||$row['memberReference']!==$member||$row['contactReference']!==$contact){throw new ParticipationRejected('participation_reference_changed');}
    if(!$row['isCompanion']&&array_filter($current['participants'],fn($g)=>$g['isCompanion']&&$g['parentExternalId']===$id&&$g['status']!=='cancelled')){throw new ParticipationRejected('cancel_dependents_first');}
-   $this->client->write('PATCH','participation/'.$id.'/', ['state'=>0]);
-   return $this->proved($event,$p,$id,'cancelled');
+   return ['event'=>$event,'method'=>'PATCH','path'=>'participation/'.$id.'/','body'=>['state'=>0],'id'=>$id];
   }
   if($kind!=='register'||$current['canceled']||$current['bookingUntil']<time()||!is_int($current['capacityRemaining'])||$current['capacityRemaining']<1){throw new ParticipationRejected('event_unavailable');}
   $groups=array_column($current['groups'],null,'id');$gid=$p['priceGroupId']??null;
@@ -87,9 +106,7 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
    $body+=['is_companion'=>true,'companion_name'=>$p['guestName'],'parent'=>(int)$parents[0]['externalId']];
   }
   $path='participation/';if($groups){$path='participation/create-participation-with-price-groups/';$body['participation_price_groups']=[['price_group'=>(int)$gid,'pieces'=>1]];}
-  $created=$this->client->write('POST',$path,$body);
-  if(!isset($created['id'])){return $this->reconcile('register',$p,$operationReference)??throw new \RuntimeException('provider_result_unproven');}
-  $id=EasyVereinData::id($created['id'],'participation');return $this->proved($event,$p,$id,'confirmed');
+  return ['event'=>$event,'method'=>'POST','path'=>$path,'body'=>$body,'id'=>null];
  }
  /** @param array<string,ParticipationPayload> $people
   * @return array<string,EasyVereinPerson> */

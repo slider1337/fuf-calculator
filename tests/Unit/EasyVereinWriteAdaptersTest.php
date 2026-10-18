@@ -5,10 +5,11 @@ use App\Application\Port\EasyVereinWriteClient;
 use App\Infrastructure\{EasyVereinParticipationAdapter,EasyVereinData,Mail\TestRecipientMailer};
 use PHPUnit\Framework\TestCase;
 final class ProviderFixture implements EasyVereinWriteClient {
- public array $writes=[];public array $rows=[];public int $memberReads=0;public int $capacity=40;public bool $enabled=true;public bool $timeout=false;public ?string $next=null;
+ public array $writes=[];public array $rows=[];public int $memberReads=0;public int $capacity=40;public bool $enabled=true;public bool $timeout=false;public ?string $next=null;public ?string $failRead=null;
  public function configured(): bool {return true;}
  public function writeEnabled(): bool {return $this->enabled;}
  public function get(string $path,array $q=[]): array {
+  if($this->failRead===$path)throw new \App\Application\AccessException('provider_rate_limited',503,120);
   if($path==='event/77/'){return ['id'=>77,'name'=>'Fiktiver Termin','canceled'=>false,'access'=>2,'max_participators'=>$this->capacity,'end_participation'=>'2030-12-31T23:59:59+01:00','start_participation'=>null];}
   if($path==='price-group/'){return ['results'=>[['id'=>21,'event'=>77,'name'=>'Gastpreis','selling_price'=>'12.00']],'next'=>null];}
   if($path==='participation/'){return ['results'=>array_values($this->rows),'next'=>$this->next];}
@@ -40,6 +41,18 @@ final class EasyVereinWriteAdaptersTest extends TestCase {
   $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);
   try{$a->executeBatch('register',['calculator-person-1'=>$this->payload(),'calculator-person-2'=>array_replace($this->payload(),['memberReference'=>'12'])],static function(){throw new \App\Application\ParticipationRejected('permission_revoked_or_trip_closed');});self::fail('Guard must stop write');}catch(\App\Application\ParticipationRejected){}
   self::assertSame([],$c->writes);
+ }
+ public function testGuestPreflightThrottleProvesNoWriteAndCanBeRetried(): void {
+  $c=new ProviderFixture();$a=new EasyVereinParticipationAdapter($c);$a->execute('register',$this->payload(),'calculator-person-1');
+  $p=$this->payload()+['guestId'=>1,'guestName'=>'Fiktiver Gast'];$c->failRead='member/11/';
+  try{$a->execute('register',$p,'calculator-person-2');self::fail('Read throttle expected');}
+  catch(\App\Application\ParticipationRejected $e){self::assertSame(429,$e->getCode());self::assertSame(120,$e->retryAfter);}
+  self::assertCount(1,$c->writes);$c->failRead=null;
+  self::assertTrue($a->execute('register',$p,'calculator-person-2')['isCompanion']);self::assertCount(2,$c->writes);
+ }
+ public function testParticipationValidationRetainsSafeFieldAndReasonOnly(): void {
+  $r=\App\Infrastructure\EasyVereinValidation::fromBody(json_encode(['companion_name'=>['This field is required. Secret guest value'], 'parent'=>['Invalid pk: member private data does not exist.']]));
+  self::assertSame([['field'=>'companion_name','reason'=>'required'],['field'=>'parent','reason'=>'reference']],$r);
  }
  private function payload(): array {return ['eventId'=>'77','memberReference'=>'11','externalId'=>null,'priceGroupId'=>'21','price'=>'12'];}
  public function testParticipationContactProvidesDisplayNameAndDoesNotGiveGuestTheMembersBirthday(): void {

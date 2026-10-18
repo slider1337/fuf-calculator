@@ -91,6 +91,11 @@ final class ParticipationFeedTest extends ApiTestCase {
   try{$this->feed()->rows('77');self::fail('Invalidated fallback replayed');}catch(AccessException){}
   self::assertNull($this->db()->query("SELECT data_json FROM participation_reference_cache WHERE scope='participation:all'")->fetchColumn());
  }
+ public function testNewEventBypassesFutureSuccessfulDueDateWithActualPdoParameterBinding(): void {
+  $this->remote->response=fn()=> $this->page([$this->person()]);$this->feed()->rows('77');self::assertCount(1,$this->remote->calls);
+  $this->remote->response=fn()=> $this->page([$this->person(701,79)]);
+  self::assertSame(701,$this->feed()->rows('79')[0]['id']);self::assertCount(2,$this->remote->calls);self::assertArrayNotHasKey('updated_at__gte',$this->remote->calls[1][1]);
+ }
  public function testScopeExtensionGetsFullSnapshotAndNeverTreatsAnUnloadedEventAsEmpty(): void {
   $this->remote->response=fn()=> $this->page([$this->person()]);$this->feed()->rows('77');$this->remote->response=fn()=>['results'=>[]];
   try{$this->feed()->rows('79');self::fail('Unloaded event accepted');}catch(AccessException){}self::assertSame([$this->person()],$this->feed()->rows('77'));$calls=count($this->remote->calls);

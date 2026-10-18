@@ -26,7 +26,7 @@ final readonly class ParticipationFeed {
   $scopeChanged=$feed!==null&&$feed['events']!==$events;
   // A new scope may bypass the normal cadence, but never a failed attempt's backoff.
   if($old->integer('due_at')>$now&&(!$scopeChanged||$old->integer('attempts')>0))return $this->select($feed,$event);
-  $claim=$this->store->query('UPDATE participation_reference_cache SET lease_token=?,lease_until=? WHERE scope=? AND lease_until<=? AND (due_at<=? OR (?=1 AND attempts=0)) RETURNING attempts',[$token,$now+300,self::SCOPE,$now,$now,$scopeChanged?1:0])->fetch(\PDO::FETCH_ASSOC);
+  $claim=$this->store->query('UPDATE participation_reference_cache SET lease_token=?,lease_until=? WHERE scope=? AND lease_until<=? AND (due_at<=? OR (CAST(? AS INTEGER)=1 AND attempts=0)) RETURNING attempts',[$token,$now+300,self::SCOPE,$now,$now,$scopeChanged?1:0])->fetch(\PDO::FETCH_ASSOC);
   if(!$claim)return $this->select($feed,$event);
   try{
    $full=count($events)===1||$feed===null||$scopeChanged||$feed['fullAt']<=$now-3600;

@@ -59,7 +59,7 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private int $trip;
  private const KEY='test-secret-32-characters-minimum-only-fixture';
  protected function setUp(): void {
-  parent::setUp();$c=$this->app->getContainer();$c->set(\App\Application\MemberBookingService::class,\DI\autowire()->constructorParameter('displayDirectory',null));$this->provider=new FakeParticipationProvider();$this->directory=new FakeMemberDirectory();$c->set(ParticipationPort::class,$this->provider);$c->set(MemberDirectoryPort::class,$this->directory);$this->db=$c->get(PDO::class);
+  parent::setUp();$c=$this->app->getContainer();$c->set(\App\Application\ScheduledReconciliation::class,\DI\autowire()->constructorParameter('external',\DI\get(ParticipationPort::class)));$c->set(\App\Application\MemberBookingService::class,\DI\autowire()->constructorParameter('displayDirectory',null));$this->provider=new FakeParticipationProvider();$this->directory=new FakeMemberDirectory();$c->set(ParticipationPort::class,$this->provider);$c->set(MemberDirectoryPort::class,$this->directory);$this->db=$c->get(PDO::class);
   // Enforce the real production network/transaction guard for every fake provider read.
   $this->provider->onSnapshot=fn()=>$c->get(\App\Infrastructure\ProviderRequestBudget::class)->reserve('member-fixture');
   putenv('FUF_INTEGRATION_AUDIENCE=calculator-test');putenv('FUF_INTEGRATION_SERVICES='.json_encode(['website'=>['issuer'=>'https://website.test','keys'=>['current'=>self::KEY,'previous'=>self::KEY],'scopes'=>['member.read','member.write']]]));

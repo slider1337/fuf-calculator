@@ -9,12 +9,13 @@ use App\Application\{AccessException,ParticipationRejected,Port\ParticipationPor
  * @phpstan-type EasyVereinSnapshot array{eventId:string,revision:string,canceled:bool,bookingUntil:int,capacityRemaining:?int,groups:list<array{id:string,price:string,label?:string}>,participants:list<EasyVereinPerson>,capacityConfirmed?:bool,capacity?:int,guestsAllowed:bool,termFields?:array<string,mixed>}
  */
 final class EasyVereinParticipationAdapter implements \App\Application\Port\BatchParticipationPort {
- public function __construct(private readonly EasyVereinWriteClient $client) {}
+ public function __construct(private readonly EasyVereinWriteClient $client,private readonly bool $retainMemberCache=true) {}
  /** @var array<int|string,?string> */
  private array $memberCache=[];
  public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
  /** @return EasyVereinSnapshot */
  public function snapshot(string $eventId): array {
+  if(!$this->retainMemberCache)$this->memberCache=[];
   $eventId=EasyVereinData::id($eventId,'event');$event=$this->client->get('event/'.$eventId.'/', ['query'=>'{id,updated_at,canceled,access,end_participation,start_participation,max_participators,name,start,end,location_name,prologue,show_memberarea}']);
   if(EasyVereinData::id($event['id']??null,'event')!==$eventId||!is_bool($event['canceled']??null)||!is_int($event['access']??null)||!in_array($event['access'],[0,1,2,3],true)||!is_int($event['max_participators']??null)||$event['max_participators']<0){throw new AccessException('provider_event_invalid',503);}
   $groups=[];$groupMap=[];

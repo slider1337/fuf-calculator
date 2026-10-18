@@ -49,6 +49,7 @@ return static function (): ContainerInterface {
         App\Application\Port\TermRepositoryInterface::class => autowire(App\Infrastructure\Persistence\SqliteTermRepository::class),
         App\Application\Port\BookingPolicy::class => factory(static fn(ContainerInterface $c) => \App\Infrastructure\ContainerServices::get($c,App\Application\AccessPolicy::class)),
         App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),
+        App\Application\ScheduledReconciliation::class => autowire()->constructorParameter('external', factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinParticipationAdapter(\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\ReconciliationReadClient::class),false))),
         App\Application\TermUpdateService::class => autowire()->constructorParameter('displayClient', DI\get(App\Infrastructure\LocalTermCatalog::class)),
         App\Application\MemberBookingService::class => autowire()->constructorParameter('displayDirectory', factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinMemberDirectory(\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\LocalTermCatalog::class)))),
         App\Application\TermCatalogService::class => autowire()->constructorParameter('client', DI\get(App\Infrastructure\LocalTermCatalog::class)),

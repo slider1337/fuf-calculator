@@ -53,6 +53,31 @@ final class TermCatalogApiTest extends ApiTestCase {
   $this->db()->exec("UPDATE provider_catalog SET due_at=0 WHERE resource='event/'");$f->pages['event/:0']=['results'=>[],'next'=>null];$this->catalog()->run();
   $data=json_decode($this->db()->query('SELECT external_json FROM external_event_links')->fetchColumn(),true);self::assertTrue($data['providerDeleted']);
  }
+ public function testBackgroundWarmsWholeEditableFamilyBeforeNextPageRead(): void {
+  $f=$this->fake();$this->seed('event/',[$this->event()]);$this->seed('calendar/',[['id'=>42,'name'=>'FuF Verein']]);
+  $member=['id'=>11,'related_member'=>null,'editable_by_related_members'=>false,'contact_details'=>['id'=>51,'name'=>'Elternteil','date_of_birth'=>'1980-01-01'],'related_members'=>[
+   ['id'=>12,'related_member'=>11,'editable_by_related_members'=>true],
+   ['id'=>13,'related_member'=>11,'editable_by_related_members'=>true],
+   ['id'=>14,'related_member'=>11,'editable_by_related_members'=>false],
+   ['id'=>15,'related_member'=>99,'editable_by_related_members'=>true]]];
+  $f->pages['member/11/:0']=$member;
+  foreach([12,13] as $id)$f->pages['member/'.$id.'/:0']=['id'=>$id,'related_member'=>11,'editable_by_related_members'=>true,'contact_details'=>['id'=>$id+40,'name'=>'Kind '.$id,'date_of_birth'=>'2018-01-01'],'related_members'=>[]];
+  try{$this->catalog()->get('member/11/');self::fail('Initial profile should be queued');}catch(AccessException $e){self::assertSame('provider_catalog_loading',$e->error);}
+  self::assertSame([],$f->calls);$this->catalog()->run();
+  self::assertSame(['member/11/','member/12/','member/13/'],array_column($f->calls,0));$calls=count($f->calls);
+  // Ignore the unrelated embedded relation, just as the real directory does.
+  $profile=(new \App\Infrastructure\EasyVereinMemberDirectory($this->catalog()))->verifiedProfile('11');
+  self::assertSame(['11','12','13'],array_column($profile['persons'],'memberReference'));
+  $index=$this->app->getContainer()->get(\App\Application\MemberBookingService::class)->all(new \App\Application\MemberIdentity('11','website',[]),['after'=>'0']);
+  self::assertSame([],$index['items']);self::assertCount($calls,$f->calls);
+  self::assertSame(0,(int)$this->db()->query("SELECT COUNT(*) FROM provider_catalog WHERE resource IN ('member/14/','member/15/')")->fetchColumn());
+ }
+ public function testCachedParentQueuesAllMissingChildrenTogetherEvenWhenFirstChildIsLoading(): void {
+  $f=$this->fake();$this->seed('member/11/',[['id'=>11,'contact_details'=>['id'=>51,'name'=>'Elternteil','date_of_birth'=>'1980-01-01'],'related_members'=>[
+   ['id'=>12,'related_member'=>11,'editable_by_related_members'=>true],['id'=>13,'related_member'=>11,'editable_by_related_members'=>true]]]]);
+  try{(new \App\Infrastructure\EasyVereinMemberDirectory($this->catalog()))->verifiedProfile('11');self::fail('Children missing');}catch(AccessException $e){self::assertSame('provider_catalog_loading',$e->error);}
+  self::assertSame(2,(int)$this->db()->query("SELECT COUNT(*) FROM provider_catalog WHERE resource IN ('member/12/','member/13/')")->fetchColumn());self::assertSame([],$f->calls);
+ }
  public function testFirstStockShowsLoadingAndInvalidQueriesDoNotContactProvider(): void {
   $f=$this->fake();self::assertSame(503,$this->dispatch('GET','/api/trip-wizard/catalog/events')->getStatusCode());
   foreach(['offset=-1','offset=10001','selected=https%3A%2F%2Fevil.test','q%5B%5D=bad','from=2027-02-30'] as $q)self::assertSame(422,$this->dispatch('GET','/api/trip-wizard/catalog/events?'.$q)->getStatusCode());self::assertSame([],$f->calls);

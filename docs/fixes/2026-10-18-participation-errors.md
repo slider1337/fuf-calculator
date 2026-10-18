@@ -8,8 +8,20 @@
 - Sichere Feld-/Grundcodes von Provider-Ablehnungen sowie die erste Fehlerursache werden dauerhaft gespeichert. Spätere ergebnislose Abgleiche löschen diese Ursache nicht. Keine Providertexte oder Zugangsdaten werden gespeichert.
 - Nach wiederholtem erfolglosem Abgleich wird die nötige Prüfung durch die Orga ausdrücklich genannt. Ein Abgleich wird nicht als erneute Anmeldung bezeichnet.
 
-## Noch nicht bestätigte Produktionsursachen
+## Bestätigte Produktionsdiagnose
 
-Der konkrete historische Gastauftrag hatte laut bestehendem Deploymentprotokoll bereits 24 erfolglose Abgleiche. Sein ursprünglicher Fehler wurde im bisherigen Schema nicht aufbewahrt und kann durch diese Migration nicht rückwirkend rekonstruiert werden. Bestehende unklare Aufträge werden nicht automatisch erneut geschrieben.
+Die vom Nutzer ausdrücklich freigegebene lesende SSH-Diagnose bestätigte am 18.10.2026:
 
-Der Screenshot der Website zeigt getrennte Fehler beim Buchungsindex und bei der easyVerein-Übersicht. Die Anmeldung des Calculators ist erreichbar; das beweist nicht die Funktionsfähigkeit des authentifizierten Buchungsindex. Für die konkrete Ursache wird eine begrenzte Produktionsdiagnose benötigt. Ein zusätzlicher SSH-Diagnoseworkflow wurde von der automatischen Freigabeprüfung abgelehnt und wird nicht mit diesem PR ausgeliefert oder ausgeführt.
+- Der betroffene Buchungsindex endet mit `provider_catalog_loading` beim Zugriff auf den Cache eines verwalteten Familienmitglieds.
+- Der Cache des Hauptmitglieds ist vorhanden und aktuell. Für die drei freigegebenen Familienmitglieder existiert noch nicht einmal ein angeforderter Cacheeintrag.
+- Die direkt gelesenen Mitgliedsdaten entsprechen dem erwarteten Schema. Derselbe Buchungsindex funktioniert mit frisch gelesenen Familiendaten (`booking_index_fresh_profile: ok`).
+- Gäste sind am betroffenen Termin erlaubt, das anmeldende Mitglied ist bestätigt. Weder der Auftragsmarker noch der zugehörige Gast sind im vollständigen aktuellen easyVerein-Stand vorhanden.
+- Der Gastauftrag bleibt nach 26 Abgleichen `unknown / external_result_unproven`. Sein ursprünglicher Fehler wurde im bisherigen Schema nicht aufbewahrt und kann nicht rückwirkend rekonstruiert werden. Der gefundene Vorprüfungsfehler erklärt einen möglichen Entstehungsweg, beweist aber nicht den historischen Verlauf dieses Auftrags.
+
+Der Hintergrundkatalog stellt jetzt bei erfolgreicher Mitgliedssynchronisation alle ausdrücklich verwaltbaren Familienreferenzen gemeinsam in die Warteschlange. Auch beim Lesen eines bestehenden Hauptmitglied-Caches werden alle benötigten Referenzen gemeinsam vorgemerkt. Ein einziger Hintergrundlauf kann die vollständige Familie laden; Seitenaufrufe greifen weiterhin ausschließlich auf lokale Daten zu. Nicht freigegebene oder einem anderen Hauptmitglied zugehörige Referenzen werden nicht geladen. Fehlende Profile werden weiterhin nicht als bestätigte Identität ausgegeben.
+
+Bestehende unklare Teilnahmeaufträge werden nicht automatisch erneut geschrieben. Die Diagnose verändert weder Buchungen noch Teilnahmen und löst keine Nachrichten aus. Es werden ausschließlich technische Fehlercodes, Stackstellen und Auftragsstatus protokolliert. Der nur für diese Diagnose verwendete Workflow gehört nicht zum Produkt-PR.
+
+Diagnoseläufe:
+- https://github.com/slider1337/fuf-calculator/actions/runs/39152423668
+- https://github.com/slider1337/fuf-calculator/actions/runs/39152606236

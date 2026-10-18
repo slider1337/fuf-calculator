@@ -1,4 +1,4 @@
-name: Diagnose affected member booking reads
+name: Recover authorized missing guest
 on:
   push:
     branches: [diagnose/booking-guest-20261018]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 jobs:
-  diagnose:
+  recover:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -18,41 +18,50 @@ jobs:
           script: |
             set -e
             cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml exec -T app php scripts/backup.php
             docker compose -f docker-compose.prod.yml exec -T app php <<'PHP'
             <?php
             require '/app/vendor/autoload.php';
-            function reportError(string $stage,Throwable $e): void {
-                echo json_encode(['stage'=>$stage,'type'=>get_class($e),
-                    'error'=>$e instanceof App\Application\AccessException?$e->error:null,
-                    'location'=>basename($e->getFile()).':'.$e->getLine(),
-                    'trace'=>array_map(static fn($t)=>($t['class']??'').'::'.($t['function']??'').' '.basename($t['file']??'').':'.($t['line']??0),array_slice($e->getTrace(),0,8))]).PHP_EOL;
-            }
             $c=App\Infrastructure\ContainerServices::create();
             $db=App\Infrastructure\ContainerServices::get($c,PDO::class);
-            $j=$db->query('SELECT j.id,j.kind,j.status,j.error_code,j.attempts,j.payload_json,r.owner_member_reference FROM participation_jobs j JOIN registrations r ON r.id=j.registration_id WHERE j.id=11 AND j.trip_id=3 AND j.registration_id=19')->fetch(PDO::FETCH_ASSOC);
-            if(!$j)exit("affected_job_not_found\n");
-            $p=json_decode($j['payload_json'],true);$owner=(string)$j['owner_member_reference'];
-            unset($j['payload_json'],$j['owner_member_reference']);
-            echo json_encode(['stage'=>'job','job'=>$j,'guest'=>isset($p['guestId']),'priceGroup'=>isset($p['priceGroupId'])]).PHP_EOL;
-            // The display path only reads the provider cache. Roll back its reference-enqueue bookkeeping.
-            $db->beginTransaction();
+            if(!method_exists(App\Infrastructure\EasyVereinParticipationAdapter::class,'prepare'))exit("new_release_required\n");
+            function reportFailure(Throwable $e): void {echo json_encode(['stage'=>'recovery','type'=>get_class($e),'error'=>$e instanceof App\Application\AccessException?$e->error:null,'location'=>basename($e->getFile()).':'.$e->getLine()]).PHP_EOL;}
             try {
-                $s=App\Infrastructure\ContainerServices::get($c,App\Application\MemberBookingService::class);
-                $r=$s->all(new App\Application\MemberIdentity($owner,'website',[]),['after'=>'0']);
-                echo json_encode(['stage'=>'booking_index','status'=>'ok']).PHP_EOL;
-            }catch(Throwable $e){reportError('booking_index',$e);}
-            finally{if($db->inTransaction())$db->rollBack();}
-
-            // Isolate index logic from the missing display cache using read-only provider lookups.
-            try {
-                $read=App\Infrastructure\ContainerServices::get($c,App\Application\Port\EasyVereinReadClient::class);
-                $directory=new App\Infrastructure\EasyVereinMemberDirectory($read);
-                $reflection=new ReflectionClass($s);$args=[];
-                foreach($reflection->getConstructor()->getParameters() as $parameter){
-                    $name=$parameter->getName();$args[]=$name==='displayDirectory'?$directory:$reflection->getProperty($name)->getValue($s);
-                }
-                $fresh=$reflection->newInstanceArgs($args);
-                $fresh->all(new App\Application\MemberIdentity($owner,'website',[]),['after'=>'0']);
-                echo json_encode(['stage'=>'booking_index_fresh_profile','status'=>'ok']).PHP_EOL;
-            }catch(Throwable $e){reportError('booking_index_fresh_profile',$e);}
+             $j=$db->query('SELECT j.*,r.owner_member_reference FROM participation_jobs j JOIN registrations r ON r.id=j.registration_id WHERE j.id=11 AND j.trip_id=3 AND j.registration_id=19 AND j.participant_id=53')->fetch(PDO::FETCH_ASSOC);
+             if(!$j)exit("affected_job_not_found\n");
+             $owner=(string)$j['owner_member_reference'];$p=App\Application\Data\ParticipationPayloadData::from(json_decode($j['payload_json'],true));
+             echo json_encode(['stage'=>'before','status'=>$j['status'],'error'=>$j['error_code'],'attempts'=>$j['attempts']]).PHP_EOL;
+             if($j['status']!=='unknown'||$j['kind']!=='register'||!isset($p['guestId']))exit("recovery_not_applicable\n");
+             $audit='participation.manual_resume.job_11.20261018';
+             $q=$db->prepare('SELECT 1 FROM member_audit WHERE trip_id=3 AND action=?');$q->execute([$audit]);if($q->fetchColumn())exit("already_resumed_once\n");
+             $a=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationPort::class);
+             if($a->blockedReason()!==null)exit("provider_writes_blocked\n");
+             $sync=App\Infrastructure\ContainerServices::get($c,App\Application\ParticipationService::class);
+             $snapshot=$a->snapshot($p['eventId']);$sync->validateSnapshot($snapshot,$p['eventId']);
+             $matches=[];$parents=[];
+             foreach($snapshot['participants'] as $row){
+              if(($row['operationReference']??null)==='calculator-person-11'||(($row['isCompanion']??false)&&$row['memberReference']===$p['memberReference']&&($row['companionName']??null)===$p['guestName']))$matches[]=$row;
+              if(!($row['isCompanion']??false)&&$row['memberReference']===$p['memberReference']&&$row['status']==='confirmed')$parents[]=$row;
+             }
+             echo json_encode(['stage'=>'fresh_check','existingGuestMatches'=>count($matches),'confirmedParents'=>count($parents),'guestsAllowed'=>$snapshot['guestsAllowed']??false]).PHP_EOL;
+             if($matches||count($parents)!==1||!($snapshot['guestsAllowed']??false)||$snapshot['canceled']||$snapshot['bookingUntil']<time()||!is_int($snapshot['capacityRemaining'])||$snapshot['capacityRemaining']<1)exit("fresh_preflight_blocked\n");
+             $groups=array_column($snapshot['groups'],null,'id');if(($groups&&(!isset($groups[$p['priceGroupId']??''])||$groups[$p['priceGroupId']]['price']!==$p['price']))||(!$groups&&($p['priceGroupId']!==null||$p['price']!==null)))exit("price_conflict\n");
+             $access=App\Infrastructure\ContainerServices::get($c,App\Application\Port\AccessRepositoryInterface::class);
+             $store=App\Infrastructure\ContainerServices::get($c,App\Application\Port\ParticipationRepositoryInterface::class);
+             $access->transaction(function()use($db,$j,$p,$audit,$owner,$access,$store,$sync){
+              $meta=$access->metadata(3);$settings=$store->memberSettings(3);$guest=$store->guestForJob($p['guestId'],3);
+              if($meta['registration_mode']!=='easyverein'||$meta['archived_at']!==null||$meta['closed_at']!==null||!$settings||!(bool)$settings['enabled']||($store->link(3)['externalId']??null)!==$p['eventId']||!$guest||$guest['status']!=='approved'||(int)$guest['participant_id']!==53||$guest['parent_member']!==$p['memberReference'])throw new App\Application\AccessException('recovery_state_changed',409);
+              $person=$db->query('SELECT external_reference,participation_status FROM registration_participants WHERE id=53 AND registration_id=19')->fetch(PDO::FETCH_ASSOC);
+              if(!$person||$person['external_reference']!==null||$person['participation_status']==='confirmed')throw new App\Application\AccessException('recovery_person_changed',409);
+              $q=$db->prepare("UPDATE participation_jobs SET status='pending',error_code=NULL,lease_token=NULL,lease_until=NULL WHERE id=11 AND trip_id=3 AND registration_id=19 AND participant_id=53 AND status='unknown' AND lease_token IS NULL AND attempts=? AND payload_json=?");
+              $q->execute([$j['attempts'],$j['payload_json']]);if($q->rowCount()!==1)throw new App\Application\AccessException('recovery_state_changed',409);
+              $store->markPending(53);$sync->refresh(19);
+              $db->prepare('INSERT INTO member_audit(member_reference,service_id,action,trip_id,created_at) VALUES (?,?,?,?,?)')->execute([$owner,'authorized-maintenance',$audit,3,gmdate(DATE_ATOM)]);
+             });
+             echo json_encode(['stage'=>'resume','status'=>'pending','job'=>11]).PHP_EOL;
+             // Queue the complete affected family locally; only the normal background worker fetches it.
+             try{App\Infrastructure\ContainerServices::get($c,App\Application\MemberBookingService::class)->all(new App\Application\MemberIdentity($owner,'website',[]),['after'=>'0']);echo "{\"stage\":\"booking_index\",\"status\":\"ok\"}\n";}
+             catch(App\Application\AccessException $e){echo json_encode(['stage'=>'booking_index','error'=>$e->error]).PHP_EOL;}
+            }catch(Throwable $e){reportFailure($e);exit(1);}
+            
             PHP

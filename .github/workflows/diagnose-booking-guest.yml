@@ -53,4 +53,27 @@ jobs:
                 }
                 echo json_encode(['stage'=>'guest_read','guestsAllowed'=>$s['guestsAllowed']??null,'operationMatches'=>count($exact),'guestMatches'=>count($guests),'confirmedParents'=>count($parents)]).PHP_EOL;
             }catch(Throwable $e){reportError('guest_read',$e);}
+
+            // Inspect only cache state for the affected family, with anonymous labels.
+            $check=$db->prepare('SELECT data_json,attempts,due_at,requested_at,succeeded_at,lease_until FROM provider_catalog WHERE resource=?');
+            $check->execute(['member/'.$owner.'/']);$ownCache=$check->fetch(PDO::FETCH_ASSOC);
+            $ownRaw=$ownCache&&is_string($ownCache['data_json'])?json_decode($ownCache['data_json'],true):[];
+            $resources=['own'=>'member/'.$owner.'/'];
+            foreach(($ownRaw[0]['related_members']??[]) as $i=>$relation){
+                if(($relation['editable_by_related_members']??false)!==true)continue;
+                $id=App\Infrastructure\EasyVereinData::id($relation['id']??null,'member');$resources['related_'.$i]='member/'.$id.'/';
+            }
+            $missing=null;
+            foreach($resources as $label=>$resource){
+                $check->execute([$resource]);$row=$check->fetch(PDO::FETCH_ASSOC);
+                echo json_encode(['stage'=>'family_cache','slot'=>$label,'exists'=>(bool)$row,'hasData'=>$row&&is_string($row['data_json']),'attempts'=>$row?(int)$row['attempts']:null,'dueInSeconds'=>$row?(int)$row['due_at']-time():null,'lastRequestedAge'=>$row?time()-(int)$row['requested_at']:null,'lastSuccessAge'=>$row?time()-(int)$row['succeeded_at']:null,'leaseActive'=>$row&&(int)$row['lease_until']>time()]).PHP_EOL;
+                if($missing===null&&(!$row||!is_string($row['data_json'])))$missing=$resource;
+            }
+            if($missing!==null){
+                try {
+                    $read=App\Infrastructure\ContainerServices::get($c,App\Application\Port\EasyVereinReadClient::class);
+                    $raw=$read->get($missing,['query'=>'{id,related_member,editable_by_related_members,contact_details{id,name,date_of_birth},related_members{id,related_member,editable_by_related_members}}']);
+                    echo json_encode(['stage'=>'missing_profile_schema','idPresent'=>isset($raw['id']),'contactObject'=>is_array($raw['contact_details']??null),'namePresent'=>is_string($raw['contact_details']['name']??null),'birthDateValid'=>App\Domain\Form\FormSchema::date($raw['contact_details']['date_of_birth']??null),'relatedList'=>is_array($raw['related_members']??null)&&array_is_list($raw['related_members']),'parentReferencePresent'=>isset($raw['related_member']),'editable'=>($raw['editable_by_related_members']??null)===true]).PHP_EOL;
+                }catch(Throwable $e){reportError('missing_profile_read',$e);}
+            }
             PHP

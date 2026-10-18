@@ -4,11 +4,12 @@ namespace App\Infrastructure;
 use App\Application\Port\EasyVereinWriteClient;
 /** Passive reconciliation reuses references. Write adapters retain their independent fresh client. */
 final readonly class ReconciliationReadClient implements EasyVereinWriteClient {
- public function __construct(private EasyVereinWriteClient $remote,private LocalTermCatalog $events,private ParticipationReferenceCache $references) {}
+ public function __construct(private EasyVereinWriteClient $remote,private LocalTermCatalog $events,private ParticipationReferenceCache $references,private ParticipationFeed $participations) {}
  public function configured(): bool {return $this->remote->configured();}
  public function writeEnabled(): bool {return $this->remote->writeEnabled();}
  public function get(string $path,array $query=[]): array {
   if(preg_match('~^event/[1-9][0-9]*/$~D',$path))return $this->events->get($path);
+  if($path==='participation/')return ['results'=>$this->participations->rows(EasyVereinData::id($query['participation_event']??null,'event')),'next'=>null];
   if($path==='price-group/'){
    $event=EasyVereinData::id($query['event']??null,'event');
    return ['results'=>$this->references->rows('price-group',$event),'next'=>null];

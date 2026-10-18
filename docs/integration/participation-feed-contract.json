@@ -1,0 +1,100 @@
+{
+  "checkedAt": "2026-10-18",
+  "source": "https://easyverein.com/api/v3.0/documentation",
+  "htmlSha256": "6ec6630d322d4ec1aeaf3f23ea9627c22e56837914fbed65505994e7c017b5d6",
+  "verification": "Public OpenAPI contract; no live participation mutation test.",
+  "resources": {
+    "/api/v3.0/participation": {
+      "deltaParameters": [
+        {
+          "name": "id__in",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "updated_at",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "updated_at__gte",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "participation_event__in",
+          "in": "query",
+          "description": "Termin",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "deleteStatuses": [
+        "401",
+        "403",
+        "500",
+        "204"
+      ]
+    },
+    "/api/v3.0/participation-price-group": {
+      "deltaParameters": [
+        {
+          "name": "id__in",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "updated_at",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "updated_at__gte",
+          "in": "query",
+          "description": "Description not found",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "participation",
+          "in": "query",
+          "description": "Teilnahme",
+          "required": false,
+          "schema": {
+            "type": "number"
+          }
+        }
+      ],
+      "deleteStatuses": [
+        "401",
+        "403",
+        "500",
+        "204"
+      ]
+    }
+  }
+}

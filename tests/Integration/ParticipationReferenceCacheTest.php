@@ -24,24 +24,24 @@ final class ParticipationReferenceCacheTest extends ApiTestCase {
  private function cache(): ParticipationReferenceCache {return $this->app->getContainer()->get(ParticipationReferenceCache::class);}
  private function event(int $id=77): array {return ['id'=>$id,'name'=>'Winterfreizeit','start'=>'2027-01-01T10:00:00+01:00','end'=>'2027-01-03T18:00:00+01:00','calendar'=>42,'canceled'=>false,'location_name'=>'Erding','prologue'=>'Text','max_participators'=>30,'end_participation'=>null,'start_participation'=>null,'access'=>2,'show_memberarea'=>true];}
  private function seedEvents(): void {$s=$this->db()->prepare('INSERT INTO provider_catalog (resource,data_json,succeeded_at,due_at) VALUES (?,?,?,?)');$s->execute(['event/',json_encode([$this->event(),$this->event(78)]),time(),time()+60]);}
- private function person(): array {return ['id'=>700,'participation_event'=>77,'participation_address'=>['id'=>101,'name'=>'Person','date_of_birth'=>'1980-01-01'],'state'=>1,'is_companion'=>false,'participation_price_groups'=>[]];}
- public function testRepeatedSnapshotsOnlyReloadParticipantsAndSurviveNewAdapterAndCacheInstances(): void {
+ private function person(): array {return ['id'=>700,'updated_at'=>gmdate(DATE_ATOM),'participation_event'=>77,'participation_address'=>['id'=>101,'name'=>'Person','date_of_birth'=>'1980-01-01'],'state'=>1,'is_companion'=>false,'participation_price_groups'=>[]];}
+ public function testRepeatedSnapshotsReuseFeedAndReferencesAcrossNewAdapterAndCacheInstances(): void {
   $fake=$this->transport();$this->seedEvents();$fake->pages['member/:0']=['results'=>[['id'=>11,'contact_details'=>['id'=>101]]],'next'=>null];$fake->pages['participation/:0']=['results'=>[$this->person()],'next'=>null];
   $client=$this->app->getContainer()->get(ReconciliationReadClient::class);$snapshot=(new EasyVereinParticipationAdapter($client,false))->snapshot('77');self::assertSame('11',$snapshot['participants'][0]['memberReference']);
   self::assertSame(['price-group/','participation/','member/'],array_column($fake->calls,0));
   $fake->calls=[];
   // A new object graph represents loss of the former in-memory member cache.
   $store=$this->app->getContainer()->get(\App\Infrastructure\Persistence\SqliteWorkflowRepository::class);$access=$this->app->getContainer()->get(\App\Application\Port\AccessRepositoryInterface::class);
-  $client=new ReconciliationReadClient($fake,$this->app->getContainer()->get(\App\Infrastructure\LocalTermCatalog::class),new ParticipationReferenceCache($store,$access,$fake));
-  $adapter=new EasyVereinParticipationAdapter($client,false);$adapter->snapshot('77');self::assertSame(['participation/'],array_column($fake->calls,0));
+  $client=new ReconciliationReadClient($fake,$this->app->getContainer()->get(\App\Infrastructure\LocalTermCatalog::class),new ParticipationReferenceCache($store,$access,$fake),new \App\Infrastructure\ParticipationFeed($store,$access,$fake));
+  $adapter=new EasyVereinParticipationAdapter($client,false);$adapter->snapshot('77');self::assertSame([],array_column($fake->calls,0));
   $fake->calls=[];$this->db()->exec("UPDATE participation_reference_cache SET due_at=0");$adapter->snapshot('77');self::assertSame(['price-group/','participation/','member/'],array_column($fake->calls,0));
-  self::assertSame([3600,3600],array_map('intval',$this->db()->query('SELECT due_at-succeeded_at FROM participation_reference_cache ORDER BY scope')->fetchAll(PDO::FETCH_COLUMN)));
+  self::assertSame([3600,3600],array_map('intval',$this->db()->query("SELECT due_at-succeeded_at FROM participation_reference_cache WHERE scope!='participation:all' ORDER BY scope")->fetchAll(PDO::FETCH_COLUMN)));
  }
  public function testDefaultScheduledWorkerUsesCachedAdapterAndKeepsFiveMinuteCadence(): void {
   $fake=$this->transport();$this->seedEvents();$trip=json_decode((string)$this->dispatch('POST','/api/trips',$this->validTripPayload()+['registrationMode'=>'easyverein'])->getBody(),true)['id'];
   $s=$this->db()->prepare('INSERT INTO external_event_links (trip_id,external_id,external_json,confirmed_at) VALUES (?,?,?,?)');$s->execute([$trip,'77','{"groups":[]}',gmdate(DATE_ATOM)]);
   $worker=$this->app->getContainer()->get(\App\Application\ScheduledReconciliation::class);self::assertTrue($worker->runOne(1));self::assertFalse($worker->runOne(1));self::assertSame(['price-group/','participation/'],array_column($fake->calls,0));
-  $fake->calls=[];$this->db()->exec('UPDATE reconciliation_schedule SET attempted_at=0');self::assertTrue($worker->runOne(1));self::assertSame(['participation/'],array_column($fake->calls,0));
+  $fake->calls=[];$this->db()->exec('UPDATE reconciliation_schedule SET attempted_at=0');self::assertTrue($worker->runOne(1));self::assertSame([],array_column($fake->calls,0));
  }
  public function testSharedMemberIndexFiltersStableReferencesWithoutPerPersonRequests(): void {
   $fake=$this->transport();$fake->pages['member/:0']=['results'=>[['id'=>11,'contact_details'=>101],['id'=>12,'contact_details'=>102]],'next'=>null];

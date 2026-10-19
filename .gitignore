@@ -10,3 +10,6 @@
 /migration/output
 
 /phpstan-tmp/
+
+__pycache__/
+/.local/api-contract/

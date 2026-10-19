@@ -33,11 +33,15 @@ foreach(array_keys($events) as $event){
  }catch(Throwable $e){echo json_encode(['provider_read_error'=>$e instanceof App\Application\AccessException?$e->error:get_class($e)])."\n";}
 }
 // Deliberately invalid references (zero) cannot create a participation or trigger a member mail.
-foreach(['participation/bulk-create-participations-with-price-groups/'=>['entries'=>[['participation_event'=>0,'participation_address'=>0,'state'=>1,'description'=>'calculator-contract-invalid','participation_price_groups'=>[['price_group'=>0,'pieces'=>1]]]]]] as $path=>$body){
+foreach([
+ ['entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'participation_price_groups'=>[['price_group'=>0,'pieces'=>1]]]]],
+ ['participation_event'=>(int)array_key_first($events),'entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'participation_price_groups'=>[['price_group'=>0,'pieces'=>1]]]]],
+] as $probe=>$body){
+ $path='participation/bulk-create-participations-with-price-groups/';
  $h=curl_init('https://easyverein.com/api/v3.0/'.$path);
  curl_setopt_array($h,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($body),CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.(getenv('EASYVEREIN_API_TOKEN')?:''),'Content-Type: application/json','Accept: application/json']]);
  $raw=curl_exec($h);$code=curl_getinfo($h,CURLINFO_RESPONSE_CODE);curl_close($h);
  $data=is_string($raw)?json_decode($raw,true):null;
  $shape=function($v,int $depth=0)use(&$shape){if($depth>4)return 'nested';if(!is_array($v))return get_debug_type($v);$out=[];foreach(array_slice($v,0,12,true) as $k=>$c){$key=is_int($k)?$k:(preg_match('/^[a-z_]{1,60}$/D',(string)$k)?$k:'other');$out[$key]=$shape($c,$depth+1);}return $out;};
- echo json_encode(['invalid_reference_probe_http'=>$code,'response_shape'=>$shape($data),'validation'=>is_string($raw)?App\Infrastructure\EasyVereinValidation::fromBody($raw):[]],JSON_THROW_ON_ERROR)."\n";
+ echo json_encode(['probe'=>$probe,'invalid_reference_probe_http'=>$code,'response_shape'=>$shape($data),'validation'=>is_string($raw)?App\Infrastructure\EasyVereinValidation::fromBody($raw):[]],JSON_THROW_ON_ERROR)."\n";
 }

@@ -1,0 +1,30 @@
+name: Scoped booking diagnostics
+on:
+  push:
+    branches: [fix/booking-quality]
+    paths: [.github/workflows/booking-diagnostics.yml, scripts/booking-diagnostics.php]
+permissions:
+  contents: read
+jobs:
+  read-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: scripts/booking-diagnostics.php
+          target: /opt/fuf-calculator/diagnostics
+          strip_components: 1
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/fuf-calculator
+            docker compose -f docker-compose.prod.yml exec -T app php < diagnostics/booking-diagnostics.php
+            rm diagnostics/booking-diagnostics.php

@@ -1,0 +1,34 @@
+<?php
+/** Scoped, read-only diagnostics. No names, tokens, addresses or remote bodies in output. */
+declare(strict_types=1);
+require '/app/vendor/autoload.php';
+$pdo=new PDO('sqlite:'.(getenv('DB_PATH')?:'/app/database/fuf.sqlite'));
+$pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+$pdo->exec('PRAGMA query_only=ON');
+$jobs=$pdo->query("SELECT id,status,kind,error_code,initial_error_code,attempts,payload_json FROM participation_jobs WHERE trip_id=5 AND registration_id=29 ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+$events=[];$members=[];
+foreach($jobs as $job){
+ $payload=json_decode($job['payload_json'],true,512,JSON_THROW_ON_ERROR);unset($job['payload_json']);
+ $job['guest']=isset($payload['guestId']);echo json_encode(['job'=>$job],JSON_THROW_ON_ERROR)."\n";
+ $events[(string)$payload['eventId']]=true;$members[(string)$payload['memberReference']]=true;
+}
+$client=new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN')?:'');
+$contacts=[];
+foreach(array_keys($members) as $id){
+ try{$m=$client->get('member/'.$id.'/', ['query'=>'{id,contact_details{id}}']);$contacts[App\Infrastructure\EasyVereinData::id($m['contact_details']??null,'contact-details')]=true;}
+ catch(Throwable $e){echo json_encode(['member_read_error'=>$e instanceof App\Application\AccessException?$e->error:get_class($e)])."\n";}
+}
+foreach(array_keys($events) as $event){
+ try{
+  $rows=App\Infrastructure\EasyVereinData::collection($client,'participation/',['participation_event'=>$event,'query'=>'{id,participation_event,participation_address,state,is_companion,parent,description,participation_price_groups{id,participation,price_group,pieces}}']);
+  $states=[];$markers=0;$matching=0;$guests=0;$assignments=[];
+  foreach($rows as $row){
+   $state=(string)($row['state']??'missing');$states[$state]=($states[$state]??0)+1;
+   if(preg_match('/^calculator-person-[1-9][0-9]*$/D',(string)($row['description']??'')))$markers++;
+   if(isset($contacts[App\Infrastructure\EasyVereinData::id($row['participation_address']??null,'contact-details')]))$matching++;
+   if(($row['is_companion']??false)===true)$guests++;
+   $assignments[]=is_array($row['participation_price_groups']??null)?count($row['participation_price_groups']):null;
+  }
+  echo json_encode(['provider_rows'=>count($rows),'operation_markers'=>$markers,'matching_contacts'=>$matching,'guest_rows'=>$guests,'states'=>$states,'assignment_counts'=>$assignments],JSON_THROW_ON_ERROR)."\n";
+ }catch(Throwable $e){echo json_encode(['provider_read_error'=>$e instanceof App\Application\AccessException?$e->error:get_class($e)])."\n";}
+}

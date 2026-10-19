@@ -34,8 +34,8 @@ foreach(array_keys($events) as $event){
 }
 // Deliberately invalid references (zero) cannot create a participation or trigger a member mail.
 foreach([
- ['entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'participation_price_groups'=>[['price_group'=>0,'pieces'=>1]]]]],
- ['participation_event'=>(int)array_key_first($events),'entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'participation_price_groups'=>[['price_group'=>0,'pieces'=>1]]]]],
+ ['entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'participation_price_groups'=>[['price_group'=>(int)$payload['priceGroupId'],'pieces'=>1]]]]],
+ ['entries'=>[['participation_event'=>(int)array_key_first($events),'participation_address'=>0,'state'=>1,'price_group'=>(int)$payload['priceGroupId'],'pieces'=>1]]],
 ] as $probe=>$body){
  $path='participation/bulk-create-participations-with-price-groups/';
  $h=curl_init('https://easyverein.com/api/v3.0/'.$path);

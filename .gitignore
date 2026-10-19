@@ -11,4 +11,7 @@
 
 /phpstan-tmp/
 
+__pycache__/
+/.local/api-contract/
+
 /public/assets/vendor/tinymce/

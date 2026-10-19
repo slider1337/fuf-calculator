@@ -20,6 +20,17 @@ final class TripTermBasisTest extends TestCase
             endDate:new DateTimeImmutable('2026-11-02'));
     }
 
+    public function testGeneratedRoomDescriptionIsIdempotentAndKeepsOwnHtml():void
+    {
+        $original=$this->trip(true);
+        $trip=new Trip(null,'HTML',new DateTimeImmutable('2026-11-01'),$original->pricingPolicy(),$original->bookings(),[],0,0,roomReservations:[new \App\Domain\Trip\RoomReservation('2-Bettzimmer',2)]);
+        $first=TripTermBasis::description($trip,'<p>Eigener Text</p>');
+        self::assertSame($first,TripTermBasis::description($trip,$first));
+        self::assertSame(1,substr_count($first,'Zimmerkategorien:'));
+        self::assertStringContainsString('<p>Eigener Text</p>',$first);
+        self::assertSame('<p>Eigener Text</p>',TripTermBasis::description($original,$first));
+    }
+
     public function testAverageAdultPriceProducesOneAdultGroupAndKeepsChildrenAndGuests(): void
     {
         $guest=['label'=>'Gast','category'=>'GUEST','price'=>'110'];

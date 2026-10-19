@@ -13,8 +13,19 @@ final class TripTermBasis
     public static function prices(Trip $trip): array
     {
         $calculated=(new PriceCalculatorService())->calculate($trip)['pricesPerCategory'];$result=[];
+        $adultPrices=[];
+        foreach(['ADULT_DOUBLE','ADULT_MULTI'] as $key){
+            if(isset($calculated[$key]))$adultPrices[$key]=Decimal::normalize(number_format($calculated[$key],2,'.',''))??throw new \LogicException('Invalid calculated price');
+        }
+        // Room categories remain separate; a shared selling price needs only one ticket.
+        $uniformAdult=count(array_unique($adultPrices))===1;
         foreach(['ADULT_DOUBLE'=>'Erwachsene · Doppelzimmer','ADULT_MULTI'=>'Erwachsene · Mehrbettzimmer','CHILD'=>'Kinder'] as $key=>$label){
-            if(isset($calculated[$key]))$result[]=['label'=>$label,'category'=>$key,'price'=>Decimal::normalize(number_format($calculated[$key],2,'.',''))??throw new \LogicException('Invalid calculated price')];
+            if(!isset($calculated[$key]))continue;
+            if($key!=='CHILD'&&$uniformAdult){
+                if($result!==[])continue;
+                $label='Erwachsener';
+            }
+            $result[]=['label'=>$label,'category'=>$key,'price'=>Decimal::normalize(number_format($calculated[$key],2,'.',''))??throw new \LogicException('Invalid calculated price')];
         }
         return $result;
     }
@@ -24,6 +35,7 @@ final class TripTermBasis
     public static function groups(Trip $trip,array $extras): array
     {
         $base=self::prices($trip);$categories=array_column($base,'category');$labels=array_map('mb_strtolower',array_column($base,'label'));
+        if(in_array('Erwachsener',array_column($base,'label'),true))$categories=[...$categories,'ADULT_DOUBLE','ADULT_MULTI'];
         return [...$base,...array_values(array_filter($extras,static fn($g)=>!in_array($g['category'],$categories,true)&&!in_array(mb_strtolower($g['label']),$labels,true)))];
     }
 

@@ -30,3 +30,10 @@ PHPStan Level 10 ohne Baseline, PHPUnit und betroffene JS-/WordPress-Prüfungen.
 - Neue API-Fälle prüfen Mehrzimmer, stabile Referenzen, gefälschte Preise, atomaren Rollback, Herkunft, Storno ohne Grund sowie Hintergrundabgleich inklusive verlorener Antwort.
 - Vollständige PHPUnit-Suite: 520 Tests, 14.002 Assertions erfolgreich. GitHub-Checks vor Merge abschließen.
 - Browser-/Lighthouse-Abnahme optional und ausschließlich manuell durch den Nutzer.
+
+## Ergänzung: einheitlicher Erwachsenenpreis (19.10.2026)
+
+- [x] Ein einheitlicher Erwachsenen-Verkaufspreis wird als genau eine Basispreisgruppe „Erwachsener“ übernommen. Das gilt auch bei identischen kalkulierten Preisen ohne Mittelung.
+- [x] Unterschiedliche Erwachsenenpreise bleiben getrennt; Kinder, zusätzliche Gastpreise und Zimmerkategorien bleiben erhalten. Alte Erwachsenen-Basisgruppen aus einem Termin-Entwurf werden nicht als zusätzliche Gruppen übernommen.
+- [x] Der Hintergrundabgleich aktualisiert bei einer bereits verwalteten Preisgruppe auch deren Namen. Bereits angenommene Buchungen werden nicht umgeschrieben.
+- Bereits extern bestehende zusätzliche Preisgruppen werden durch diese Änderung nicht gelöscht.

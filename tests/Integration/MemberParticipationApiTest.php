@@ -37,6 +37,7 @@ class FakeParticipationProvider implements ParticipationPort {
 }
 final class FakeBatchParticipationProvider extends FakeParticipationProvider implements \App\Application\Port\BatchParticipationPort {
  public int $batches=0;
+ public function supportsBatch(string $kind):bool{return true;}
  public function executeBatch(string $kind,array $people,callable $beforeWrite): array {
   $beforeWrite($this->bookingUntil??time()+3600);$this->batches++;$out=[];
   foreach($people as $reference=>$person)$out[$reference]=$this->execute($kind,$person,$reference);
@@ -98,6 +99,31 @@ final class MemberParticipationApiTest extends ApiTestCase {
  private function payload(int $n=4): array {return ['operationKey'=>bin2hex(random_bytes(10)),'versionId'=>null,'priceRevision'=>'r1','confirmed'=>true,'persons'=>array_map(fn($id)=>['memberReference'=>(string)$id,'priceGroupId'=>'21','expectedPrice'=>'12'],array_slice([11,12,13,14],0,$n)),'answers'=>[]];}
  private function create(?array $p=null): array {return $this->call('POST',"/integration/v1/trips/{$this->trip}/bookings",$p??$this->payload(),202);}
  private function worker(int $limit=10): void {$w=$this->app->getContainer()->get(ParticipationWorker::class);for($i=0;$i<$limit&&$w->runOne();$i++) {}}
+ public function testGroupOrderingFormattingAndAddedLabelsDoNotCreateFalseDeviation():void {
+  $q=$this->db->query('SELECT external_json FROM external_event_links WHERE trip_id='.$this->trip)->fetchColumn();$d=json_decode($q,true);$d['groups']=[['id'=>'21','price'=>'12.00'],['id'=>'22','price'=>'5.00']];
+  $this->db->prepare('UPDATE external_event_links SET external_json=? WHERE trip_id=?')->execute([json_encode($d),$this->trip]);
+  $this->provider->groups=[['id'=>'22','price'=>'5','label'=>'Kind'],['id'=>'21','price'=>'12','label'=>'Erwachsener']];
+  $_SESSION['user_id']=1;
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);self::assertSame(200,$r->getStatusCode(),(string)$r->getBody());$data=json_decode((string)$r->getBody(),true);self::assertSame([],$data['observation']['conflicts']);
+  $this->provider->groups[1]['price']='13';$r=$this->dispatch('POST',"/api/trips/{$this->trip}/participation-sync/reconcile",[]);$data=json_decode((string)$r->getBody(),true);self::assertSame('groups',$data['observation']['conflicts'][0]['field']);self::assertSame('Erwachsener',$data['observation']['conflicts'][0]['external'][1]['label']);
+ }
+
+ public function testRealAdapterConfirmsFourMembersAndTwoGuestsAfterDelayedLostResponseWithoutDuplicates():void {
+  $this->provider->guestsAllowed=true;$this->backgroundRefresh();
+  $wire=new FamilyWireContract();$adapter=new \App\Infrastructure\EasyVereinParticipationAdapter($wire);
+  $this->app->getContainer()->set(ParticipationPort::class,$adapter);
+  $p=$this->payload(4);
+  foreach(['guest_adult_01','guest_child_01'] as $key)$p['persons'][]=['guest'=>['key'=>$key,'name'=>'Fiktiv '.$key,'birthDate'=>'2010-01-01'],'priceGroupId'=>'21','expectedPrice'=>'12'];
+  $b=$this->create($p);$this->worker();
+  self::assertSame(0,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='failed'")->fetchColumn());
+  self::assertSame(2,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE error_code='guest_waiting_for_parent' AND status='pending'")->fetchColumn());
+  self::assertFalse($adapter->supportsBatch('register'));self::assertTrue($adapter->supportsBatch('cancel'));
+  $wire->reveal=true;$this->db->exec("UPDATE participation_jobs SET lease_until=0 WHERE status IN ('pending','unknown')");$this->worker();
+  self::assertSame(6,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE status='succeeded'")->fetchColumn());
+  self::assertCount(6,$wire->rows);self::assertSame(6,$wire->writes);self::assertSame(0,$wire->bulkWrites);
+  self::assertSame('confirmed',$this->call('GET',"/integration/v1/trips/{$this->trip}/bookings/{$b['id']}")['status']);
+ }
+
  public function testWebsiteFamilyAndGuestCanBookSeparateRoomsAndCorrectWithoutReason(): void {
   $_SESSION['user_id']=1;
   $planning=$this->validTripPayload()+['roomReservations'=>[['roomType'=>'2-Bettzimmer','count'=>3],['roomType'=>'4-Bettzimmer','count'=>2]]];
@@ -556,4 +582,31 @@ final class MemberParticipationApiTest extends ApiTestCase {
   $b=$this->create($this->payload(1));$this->db->exec("UPDATE trips SET registration_mode='clubdesk_csv' WHERE id=".$this->trip);$this->worker(1);self::assertSame(0,$this->provider->writes);self::assertSame('pending',$this->db->query('SELECT participation_status FROM registration_participants WHERE id='.$b['persons'][0]['id'])->fetchColumn());
  }
 
+}
+
+/** Wire-shaped contract fixture: IDs, status and price assignments are returned exactly as provider JSON. */
+final class FamilyWireContract implements \App\Application\Port\EasyVereinWriteClient {
+ public array $rows=[];public int $writes=0;public int $bulkWrites=0;public bool $reveal=false;
+ public function configured():bool{return true;}
+ public function writeEnabled():bool{return true;}
+ public function get(string $path,array $query=[]):array {
+  if($path==='event/77/')return ['id'=>77,'canceled'=>false,'access'=>2,'max_participators'=>40,'end_participation'=>'2030-01-01T00:00:00Z','start_participation'=>null];
+  if($path==='price-group/')return ['results'=>[['id'=>21,'event'=>77,'name'=>'Preis','selling_price'=>'12.00']],'next'=>null];
+  if(preg_match('~^member/(11|12|13|14)/$~',$path,$m))return ['id'=>(int)$m[1],'contact_details'=>['id'=>(int)$m[1]+40]];
+  if($path==='member/'){
+   $members=[];foreach([11,12,13,14] as $id){if(!isset($query['contact_details'])||(int)$query['contact_details']===$id+40)$members[]=['id'=>$id,'contact_details'=>['id'=>$id+40]];}
+   return ['results'=>$members,'next'=>null];
+  }
+  if($path==='participation/')return ['results'=>array_values(array_filter($this->rows,fn($r)=>$this->reveal||$r['participation_address']!==51)),'next'=>null];
+  throw new \LogicException('Unexpected contract path');
+ }
+ public function write(string $method,string $path,array $payload):array {
+  if(str_contains($path,'bulk-create')){$this->bulkWrites++;throw new \RuntimeException('Unverified bulk contract must not be used');}
+  if($path!=='participation/create-participation-with-price-groups/')throw new \LogicException('Unexpected contract write');
+  $this->writes++;$id=100+$this->writes;
+  $row=['id'=>$id,'participation_event'=>$payload['participation_event'],'participation_address'=>$payload['participation_address'],'state'=>1,'description'=>$payload['description'],'is_companion'=>$payload['is_companion']??false,'companion_name'=>$payload['companion_name']??null,'parent'=>$payload['parent']??null,'participation_price_groups'=>[['id'=>500+$id,'participation'=>$id]+$payload['participation_price_groups'][0]]];
+  $this->rows[$id]=$row;
+  if($this->writes===1)throw new \RuntimeException('Simulated response lost after committing parent');
+  return $row;
+ }
 }

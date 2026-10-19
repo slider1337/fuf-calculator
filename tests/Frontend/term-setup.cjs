@@ -1,7 +1,7 @@
 // Runs only isolated frontend logic with fake API responses; no browser/provider calls.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=['workflows','participation','term-updates'].map(name=>fs.readFileSync(`public/assets/js/${name}.js`,'utf8')).join('\n');
-const scope={JSON,Error};vm.createContext(scope);
+const scope={JSON,Error};vm.createContext(scope);vm.runInContext(fs.readFileSync('public/assets/js/rich-text.js','utf8'),scope);
 vm.runInContext(source.slice(source.indexOf('function termProblemText'),source.indexOf('async function loadWorkflowStatus')),scope);
 const draft={title:'Fiktive Reise',startDate:'2027-03-01',endDate:null,mode:'create',calendarReference:'42',externalId:'',priceGroups:[],teamUserIds:[],registrationDeadline:null,formVersionId:null};
 const existing=()=>({id:2,eventId:null,revision:1,createKey:'local-key',actionKey:'external-key'});
@@ -50,7 +50,7 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  scope.dirtyPlanning=()=>false;scope.escapeHtml=x=>String(x??'');scope.crypto={randomUUID:()=> 'fake-key'};scope.hasTripCapability=()=>false;scope.state={currentUser:{role:'member'}};scope.capabilityLabels={};
  vm.runInContext(source.slice(source.indexOf('async function openTermWizard'),source.indexOf('// Explicit searches')),scope);
  for(const trip of [null,{id:2,name:'Fiktive Reise',startDate:'2027-03-01',endDate:null,eventId:null}]){
-  scope.api=async url=>url.endsWith('/form')?{versionId:null,availableVersions:[]}:{};
+  scope.api=async url=>url==='/api/events'?[]:url.endsWith('/form')?{versionId:null,availableVersions:[]}:{};
   let html;scope.showManagementModal=(title,fields)=>{html=fields;throw new Error('capture')};
   await assert.rejects(scope.openTermWizard(trip),/capture/);
   assert.deepEqual([...html.matchAll(/data-wizard-panel="(\d)"/g)].map(m=>m[1]),['0','1','2']);
@@ -105,5 +105,9 @@ function fake({issues=[],blockedReason=null,failRequest=false}={}){
  await scope.loadParticipationStatus({id:2,capabilities:['term.manage','registration.manage']},true);
  assert.deepEqual(participationCalls,[{url:'/api/trips/2/participation-sync/reconcile',method:'POST'}]);assert.equal(loaded,1);assert(!scope.byId('participation-details').innerHTML.includes('Person ausdrücklich zuordnen'));assert(!scope.byId('participation-details').innerHTML.includes('Gastfreigaben'));count++;
  participationCalls.length=0;await scope.loadParticipationStatus({id:2,archivedAt:'2026-10-15',capabilities:['term.manage','registration.manage']},true);assert.deepEqual(participationCalls,[{url:'/api/trips/2/participation-sync',method:'GET'}]);assert.equal(loaded,1);count++;
+ const contextSelected={eventId:null},eventNodes=new Map();scope.byId=id=>{if(!eventNodes.has(id))eventNodes.set(id,{querySelector:()=>scope.byId('version-select')});return eventNodes.get(id)};
+ scope.api=async url=>url.endsWith('/forms')?[{id:10,status:'published',number:2},{id:11,status:'draft',number:3}]:[{userId:7,email:'orga@example.invalid'}];
+ await scope.loadWizardEvent(contextSelected,'42');assert.equal(contextSelected.eventId,42);assert.equal(contextSelected.eventLoading,false);assert(scope.byId('version-select').innerHTML.includes('Version 2'));assert(!scope.byId('version-select').innerHTML.includes('Version 3'));assert(scope.byId('wizard-team-options').innerHTML.includes('data-term-user="7"'));count++;
+ calls=fake();context={...existing(),id:null,eventId:42};await scope.saveTermSetup(context,draft,false);assert.equal(calls[0].body.planning.eventId,42);count++;
  console.log(`${count} term setup scenarios passed.`);
 })().catch(error=>{console.error(error);process.exit(1)});

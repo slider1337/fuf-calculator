@@ -7,7 +7,7 @@ async function openTermUpdate(trip){
   const locked=!!trip.archivedAt||!!trip.closedAt||!!data.blockedReason||!!active;
   const fields=Object.entries(termFieldLabels).filter(([field])=>!['start','end'].includes(field)).map(([field,label])=>{
     const value=data.fields[field],date=field==='registrationDeadline';
-    const input=field==='description'?`<textarea aria-label="${label}" data-term-update="${field}" maxlength="10000">${escapeHtml(value??'')}</textarea>`:field==='visibleToMembers'?`<select aria-label="${label}" data-term-update="${field}"><option value="true" ${value?'selected':''}>Ja</option><option value="false" ${!value?'selected':''}>Nein</option></select>`:`<input aria-label="${label}" data-term-update="${field}" type="${date?'datetime-local':field==='capacity'?'number':'text'}" value="${escapeHtml(date?termLocalDateTime(value):field==='capacity'&&value===0?'':value)}" ${date?'step="1"':field==='capacity'?'min="1" max="1000000"':field==='title'?'maxlength="200" required':'maxlength="500"'}>`;
+    const input=field==='description'?`<textarea data-rich-text aria-label="${label}" data-term-update="${field}" maxlength="10000">${escapeHtml(value??'')}</textarea>`:field==='visibleToMembers'?`<select aria-label="${label}" data-term-update="${field}"><option value="true" ${value?'selected':''}>Ja</option><option value="false" ${!value?'selected':''}>Nein</option></select>`:`<input aria-label="${label}" data-term-update="${field}" type="${date?'datetime-local':field==='capacity'?'number':'text'}" value="${escapeHtml(date?termLocalDateTime(value):field==='capacity'&&value===0?'':value)}" ${date?'step="1"':field==='capacity'?'min="1" max="1000000"':field==='title'?'maxlength="200" required':'maxlength="500"'}>`;
     return `<label class="f">${label}${date?' (deutsche Ortszeit)':''}<div class="in">${input}</div></label>`;
   }).join('');
   let command=null;
@@ -32,7 +32,8 @@ async function openTermUpdate(trip){
     try{await loadWorkflowStatus(trip);setStatusNote('management-status','Termin in easyVerein gespeichert.','success');}
     catch{setStatusNote('management-status','Termin in easyVerein gespeichert. Die Anzeige konnte gerade nicht aktualisiert werden. Bitte die Seite neu laden.','success');}
   },'In easyVerein speichern');
-  function collect(){const changes={};byId('management-fields').querySelectorAll('[data-term-update]').forEach(input=>{
+  await mountTermEditors(byId('management-fields'));
+  function collect(){syncTermEditors();const changes={};byId('management-fields').querySelectorAll('[data-term-update]').forEach(input=>{
     const field=input.dataset.termUpdate,value=input.value;
     if(field==='registrationDeadline'){
       if(value!==termLocalDateTime(data.fields[field]))changes[field]=value||null;
@@ -85,4 +86,19 @@ async function openMemberRelease(trip){
     if(enabled&&locked)throw new Error('Die Mitgliederfreigabe ist derzeit gesperrt.');
     await api(url,{method:'PUT',body:JSON.stringify({enabled})});await loadWorkflowStatus(state.currentTrip);
   },'Freigabe speichern');
+}
+
+async function openPriceGroups(trip){
+  const url=`/api/trips/${trip.id}/term/price-groups`,data=await api(url);
+  if(!data.groups.length)throw new Error('Für diesen Termin sind noch keine Preisgruppen gespeichert. Bitte den Hintergrundabgleich abwarten.');
+  let selected=data.groups[0];
+  showManagementModal('Preisgruppen bearbeiten',`<p>Änderungen gelten für neue Anmeldungen. Bereits gebuchte Preise bleiben erhalten.</p><label class="f">Preisgruppe<div class="in"><select id="price-group-choice">${data.groups.map(g=>`<option value="${escapeHtml(g.id)}">${escapeHtml(g.label)} · ${escapeHtml(g.price)} €</option>`).join('')}</select></div></label><label class="f">Bezeichnung<div class="in"><input id="price-group-label" maxlength="200" required></div></label><label class="f">Preis pro Person<div class="in"><input id="price-group-price" type="number" min="0" max="1000000" step="0.01" required><span class="u">€</span></div></label><p role="status" id="price-group-status"></p>`,async()=>{
+    const payload={label:byId('price-group-label').value,price:byId('price-group-price').value,beforeLabel:selected.label,beforePrice:selected.price};
+    const result=await api(url+'/'+selected.id,{method:'PUT',body:JSON.stringify(payload)});
+    if(result.status!=='succeeded')throw new Error(result.status==='unknown'?'Die Änderung ist noch nicht bestätigt. Bitte unverändert erneut speichern; dabei wird zuerst der aktuelle Stand geprüft.':`easyVerein hat die Preisänderung abgelehnt. ${termValidationText(result.validationErrors)}`);
+    await loadWorkflowStatus(trip);setStatusNote('management-status','Preisgruppe gespeichert. Bereits gebuchte Preise bleiben erhalten.','success');
+  },'Preisgruppe speichern');
+  function fill(){byId('price-group-label').value=selected.label;byId('price-group-price').value=selected.price;}
+  byId('price-group-choice').onchange=()=>{selected=data.groups.find(g=>g.id===byId('price-group-choice').value);fill();};fill();
+  byId('management-submit').disabled=!!trip.archivedAt||!!trip.closedAt;
 }

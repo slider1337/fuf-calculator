@@ -7,6 +7,61 @@ security:
 servers:
   - url: /
 paths:
+  /api/trips/{id}/term/price-groups:
+    get:
+      summary: Lokal gespeicherte Preisgruppen des verknüpften Termins
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: Preisgruppen mit stabiler ID, Bezeichnung und normalisiertem Preis
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [groups]
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, label, price]
+                      properties:
+                        id: {type: string}
+                        label: {type: string}
+                        price: {type: string}
+  /api/trips/{id}/term/price-groups/{groupId}:
+    put:
+      summary: Preisgruppe für neue Anmeldungen ändern; bereits gebuchte Preise bleiben erhalten
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: groupId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, price, beforeLabel, beforePrice]
+              properties:
+                label: {type: string, minLength: 1, maxLength: 200}
+                price: {type: string}
+                beforeLabel: {type: string}
+                beforePrice: {type: string}
+      responses:
+        '200':
+          description: Gespeichert, abgelehnt oder noch unbestätigt; unverändertes Wiederholen prüft zuerst den vorhandenen Stand
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, errorCode, validationErrors]
+                properties:
+                  status: {type: string, enum: [succeeded, failed, unknown]}
+                  errorCode: {type: string, nullable: true}
+                  validationErrors: {type: array, items: {type: object}}
+        '409': {description: 'Preisgruppe inzwischen geändert, falscher Termin oder Reise schreibgeschützt'}
+        '422': {description: Ungültige Bezeichnung oder ungültiger Preis}
   /api/trips/{id}/booking-options:
     get:
       summary: Lokal gespeicherte Preise und Zimmerkategorien für die Anmeldung

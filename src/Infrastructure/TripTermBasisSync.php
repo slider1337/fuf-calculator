@@ -18,7 +18,7 @@ final readonly class TripTermBasisSync
     {
         $trip=$this->trips->getById($id);$event=$this->store->query('SELECT external_id FROM external_event_links WHERE trip_id=?',[$id])->fetchColumn();
         if($trip===null||!is_string($event))return ['status'=>'not_linked','errorCode'=>null];
-        $base=TripTermBasis::prices($trip);$rooms=BookingRooms::categories($trip);
+        $base=$this->prices($trip);$rooms=BookingRooms::categories($trip);
         if(!$base&&!$rooms)return ['status'=>'synced','errorCode'=>null];
         $raw=$this->store->query('SELECT * FROM trip_term_basis_sync WHERE trip_id=?',[$id])->fetch(\PDO::FETCH_ASSOC);
         if($raw===false)return ['status'=>'pending','errorCode'=>null];
@@ -26,12 +26,20 @@ final readonly class TripTermBasisSync
         return ['status'=>$error!==null?'error':($row->nullableText('applied_hash')===PlanningTransferService::hash([$event,$base,$rooms])?'synced':'pending'),'errorCode'=>$error];
     }
 
+    /** @return list<array{label:string,category:'ADULT_DOUBLE'|'ADULT_MULTI'|'CHILD'|'GUEST',price:string}> */
+    private function prices(\App\Domain\Trip\Trip $trip):array {
+        $base=TripTermBasis::prices($trip);
+        foreach($this->store->query('SELECT category,label,price FROM trip_price_group_overrides WHERE trip_id=?',[$trip->id()])->fetchAll(\PDO::FETCH_ASSOC) as $raw){
+            $row=StoredRow::from($raw);foreach($base as &$g){if($row->nullableText('category')===$g['category']){$g['label']=$row->text('label');$g['price']=$row->text('price');}}unset($g);
+        }return $base;
+    }
+
     public function runOne(): bool
     {
         if(!$this->client->writeEnabled())return false;
         foreach($this->store->query("SELECT l.trip_id,l.external_id FROM external_event_links l JOIN trips t ON t.id=l.trip_id WHERE t.registration_mode='easyverein' AND t.archived_at IS NULL AND t.closed_at IS NULL ORDER BY l.trip_id")->fetchAll(\PDO::FETCH_ASSOC) as $raw){
             $row=StoredRow::from($raw);$id=$row->integer('trip_id');$event=$row->text('external_id');$trip=$this->trips->getById($id);if($trip===null)continue;
-            $base=TripTermBasis::prices($trip);$rooms=BookingRooms::categories($trip);
+            $base=$this->prices($trip);$rooms=BookingRooms::categories($trip);
             if(!$base&&!$rooms)continue;
             $hash=PlanningTransferService::hash([$event,$base,$rooms]);
             $this->store->query('INSERT INTO trip_term_basis_sync(trip_id) VALUES (?) ON CONFLICT(trip_id) DO NOTHING',[$id]);
@@ -66,10 +74,11 @@ final readonly class TripTermBasisSync
                     $this->store->query('UPDATE trip_term_basis_sync SET pending_marker=NULL WHERE trip_id=? AND lease_token=?',[$id,$token]);
                 }
                 if($rooms){
-                    $eventData=$this->client->get('event/'.$event.'/', ['query'=>'{id,prologue}']);
+                    $eventData=$this->client->get('event/'.$event.'/', ['query'=>'{id,prologue,description}']);
                     if(EasyVereinData::id($eventData['id']??null,'event')!==$event)throw new AccessException('term_review_changed',409);
                     $old=is_string($eventData['prologue']??null)?$eventData['prologue']:'';$description=TripTermBasis::description($trip,$old);
-                    if($old!==$description){$guard();$this->client->write('PATCH','event/'.$event.'/', ['prologue'=>$description]);}
+                    $notice='Die Anmeldung zu dieser Veranstaltung erfolgt ausschließlich über die Website des Vereins.';
+                    if($old!==$description||($eventData['description']??null)!==$notice){$guard();$this->client->write('PATCH','event/'.$event.'/', ['prologue'=>$description,'description'=>$notice]);}
                 }
                 $this->store->query('UPDATE trip_term_basis_sync SET applied_hash=?,error_code=NULL,due_at=0,lease_until=0,lease_token=NULL WHERE trip_id=? AND lease_token=?',[$hash,$id,$token]);
             }catch(\Throwable $e){

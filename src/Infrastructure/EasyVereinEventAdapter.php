@@ -29,6 +29,7 @@ final readonly class EasyVereinEventAdapter implements \App\Application\Port\Rec
   if($this->blockedReason()!==null){throw new AccessException($this->blockedReason(),409);}
   $id=EasyVereinData::id($eventId,'event');$changes=\App\Application\TermFields::changes($changes);$body=[];
   foreach($changes as $field=>$value){$body[EasyVereinTermFields::MAP[$field]]=$value;}
+  if(array_key_exists('description',$changes))$body['description']='Die Anmeldung zu dieser Veranstaltung erfolgt ausschließlich über die Website des Vereins.';
   $this->client->write('PATCH','event/'.$id.'/',$body);
  }
  /**
@@ -44,7 +45,7 @@ final readonly class EasyVereinEventAdapter implements \App\Application\Port\Rec
    if(EasyVereinData::id($check['id']??null,'calendar')!==$calendar){throw new AccessException('provider_calendar_invalid',503);}
   }catch(\Throwable){throw new TermCreationNotStarted('term_preflight_failed');}
   $marker=$this->marker($reference);$tz=new \DateTimeZone('Europe/Berlin');$start=(new \DateTimeImmutable($d['startDate'].' 00:00:00',$tz))->format(DATE_ATOM);$end=(new \DateTimeImmutable(($d['endDate']??$d['startDate']).' 23:59:59',$tz))->format(DATE_ATOM);
-  $body=['name'=>$d['title'],'start'=>$start,'end'=>$end,'all_day'=>true,'calendar'=>(int)$calendar,'location_name'=>$d['location'],'prologue'=>$d['description'],'max_participators'=>$d['capacity'],'show_memberarea'=>$d['visibility']==='members','is_public'=>false,'note'=>$marker,'access'=>0,'allow_multiple_price_groups_per_participation'=>false];
+  $body=['name'=>$d['title'],'start'=>$start,'end'=>$end,'all_day'=>true,'calendar'=>(int)$calendar,'location_name'=>$d['location'],'prologue'=>$d['description'],'description'=>'Die Anmeldung zu dieser Veranstaltung erfolgt ausschließlich über die Website des Vereins.','max_participators'=>$d['capacity'],'show_memberarea'=>$d['visibility']==='members','is_public'=>false,'note'=>$marker,'access'=>0,'allow_multiple_price_groups_per_participation'=>false];
   // Optional empty text must use provider defaults rather than failing blank-field validation.
   foreach(['location_name','prologue'] as $field){if(trim($body[$field] ?? '')==='')unset($body[$field]);}
   if($d['registrationDeadline']!==null){$body['end_participation']=(new \DateTimeImmutable($d['registrationDeadline'].' 23:59:59',$tz))->format(DATE_ATOM);}

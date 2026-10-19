@@ -10,3 +10,5 @@
 /migration/output
 
 /phpstan-tmp/
+
+/public/assets/vendor/tinymce/

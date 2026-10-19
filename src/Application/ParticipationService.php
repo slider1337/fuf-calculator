@@ -133,7 +133,7 @@ final readonly class ParticipationService {
    foreach(['revision','canceled','bookingUntil','capacity','capacityRemaining','termFields'] as $field){
     if(array_key_exists($field,$snapshot)){$baseline[$field]=$snapshot[$field];}
    }
-   if(($baseline['groups']??null)!==$snapshot['groups']){$conflicts[]=['field'=>'groups','before'=>$baseline['groups']??null,'external'=>$snapshot['groups']];}
+   if(!$this->sameGroups($baseline['groups']??null,$snapshot['groups'])){$conflicts[]=['field'=>'groups','before'=>$baseline['groups']??null,'external'=>$snapshot['groups']];}else{$baseline['groups']=$snapshot['groups'];}
    $this->store->saveLinkData(json_encode($baseline,JSON_THROW_ON_ERROR),$trip);
    $editable=($this->access->metadata($trip)['archived_at']??null)===null&&($this->access->metadata($trip)['closed_at']??null)===null;
    $importer=new ExternalParticipationImporter($this->store,$this->bookings);
@@ -154,6 +154,17 @@ final readonly class ParticipationService {
    $this->store->saveObservation($trip, $old===false?1:(int)$old+1, json_encode($snapshot,JSON_THROW_ON_ERROR), json_encode($conflicts,JSON_THROW_ON_ERROR), gmdate(DATE_ATOM));
    $this->policy->audit('participation.reconcile','trip',$trip,'Abgleich ohne automatisches Umbepreisen');
   });return $this->read($trip);
+ }
+ /** Compare financial choices by stable ID and normalized price, independently of ordering/display metadata. */
+ private function sameGroups(mixed $before,mixed $after): bool {
+  $normalize=static function(mixed $value): array {
+   if(!is_array($value))return [];
+   $groups=[];foreach($value as $group){
+    if(!is_array($group)||!is_string($group['id']??null)||!is_string($group['price']??null))return [];
+    $groups[$group['id']]=Decimal::normalize($group['price']);
+   }ksort($groups,SORT_STRING);return $groups;
+  };
+  return $normalize($before)===$normalize($after);
  }
  /**
   * @param array<array-key,mixed> $p

@@ -1251,6 +1251,8 @@ $assetVersion = static fn (string $path): string => substr(hash_file('sha256', _
     </footer>
 </div>
 <script src="/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/vendor/tinymce/tinymce.min.js"></script>
+<script src="/assets/js/rich-text.js?v=<?= $assetVersion('/assets/js/rich-text.js') ?>"></script>
 <script src="/assets/js/core.js?v=<?= $assetVersion('/assets/js/core.js') ?>"></script>
 <script src="/assets/js/calculator.js?v=<?= $assetVersion('/assets/js/calculator.js') ?>"></script>
 <script src="/assets/js/calculator-preview.js?v=<?= $assetVersion('/assets/js/calculator-preview.js') ?>"></script>

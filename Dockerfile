@@ -4,6 +4,7 @@ COPY composer.json composer.lock ./
 COPY scripts/patch-openid-nullability.php ./scripts/patch-openid-nullability.php
 COPY scripts/copy-bootstrap.php ./scripts/copy-bootstrap.php
 COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
+COPY scripts/copy-tinymce.php ./scripts/copy-tinymce.php
 RUN composer install --no-interaction --prefer-dist --no-progress
 
 FROM php:8.4.26-cli-bookworm@sha256:836ac6c672d1372a47c8fd61b625015bd07760f493fb2eaab2087636498a2b4b
@@ -19,6 +20,7 @@ RUN apt-get update \
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=vendor /app/public/assets/vendor/bootstrap ./public/assets/vendor/bootstrap
 COPY --from=vendor /app/public/docs/swagger-ui ./public/docs/swagger-ui
+COPY --from=vendor /app/public/assets/vendor/tinymce ./public/assets/vendor/tinymce
 COPY . .
 
 EXPOSE 8080

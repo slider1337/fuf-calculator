@@ -1,7 +1,7 @@
 // Isolated UI logic with fake transport, no browser/provider requests.
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 let key=0;
-const scope={Date,Intl,JSON,Error,Promise,crypto:{randomUUID:()=> `fake-key-${++key}`},escapeHtml:value=>String(value??''),valueText:value=>String(value??''),termProblemText:()=> 'Anmeldeschluss muss vor dem Terminbeginn liegen.',participationError:code=>code||'',workflowAction:fn=>fn(),loadWorkflowStatus:async()=>{},setStatusNote:()=>{},termValidationText:errors=>(errors||[]).map(e=>e.field==='prologue'?'Beschreibung: darf nicht leer sein.':'').join(' '),managementMessage:error=>error.message};
+const scope={mountTermEditors:async()=>{},syncTermEditors:()=>{},Date,Intl,JSON,Error,Promise,crypto:{randomUUID:()=> `fake-key-${++key}`},escapeHtml:value=>String(value??''),valueText:value=>String(value??''),termProblemText:()=> 'Anmeldeschluss muss vor dem Terminbeginn liegen.',participationError:code=>code||'',workflowAction:fn=>fn(),loadWorkflowStatus:async()=>{},setStatusNote:()=>{},termValidationText:errors=>(errors||[]).map(e=>e.field==='prologue'?'Beschreibung: darf nicht leer sein.':'').join(' '),managementMessage:error=>error.message};
 vm.createContext(scope);vm.runInContext(fs.readFileSync('public/assets/js/term-updates.js','utf8'),scope);
 assert.equal(scope.termLocalDateTime('2026-10-22T21:59:00Z'),'2026-10-22T23:59:00');
 assert.equal(scope.termLocalDateTime('2026-12-19T22:59:00Z'),'2026-12-19T23:59:00');

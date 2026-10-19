@@ -20,7 +20,7 @@ final class ParticipationWorker {
    $j=$this->store->nextJob($now);if(!$j){return null;}
    if(!$this->allowed($j)){$this->block($j);return ['skip'=>true];}
    $mode=$j['status']==='pending'?'execute':'reconcile';$token=bin2hex(random_bytes(16));
-   if($mode==='execute'&&$this->external instanceof \App\Application\Port\BatchParticipationPort){
+   if($mode==='execute'&&$this->external instanceof \App\Application\Port\BatchParticipationPort&&$this->external->supportsBatch($j['kind'])){
     $jobs=$this->store->pendingFamilyJobs($j['registration_id'],$j['kind'],$now);
     if(count($jobs)>1&&in_array($j['id'],array_column($jobs,'id'),true)){
      foreach($jobs as $job){if(!$this->allowed($job)){$this->block($job);return ['skip'=>true];}}
@@ -61,7 +61,8 @@ final class ParticipationWorker {
    else{$this->sync->validateResult($result);if($result['eventId']!==$payload['eventId']||$result['memberReference']!==$payload['memberReference']||$result['priceGroupId']!==$payload['priceGroupId']||$result['price']!==$payload['price']||($j['kind']==='cancel'&&($result['externalId']!==$payload['externalId']||$result['status']!=='cancelled'))||($j['kind']==='register'&&$result['status']!=='confirmed')){$error='external_result_conflict';}}
   }catch(ParticipationRejected $e){
    $validationErrors=$e->validationErrors;
-   if($claim['mode']==='execute'&&$j['kind']==='cancel'&&$e->getMessage()==='cancel_dependents_first'){$status='pending';$error='cancel_dependents_first';}
+   if($claim['mode']==='execute'&&$j['kind']==='register'&&$e->getMessage()==='guest_parent_not_confirmed'){$status='pending';$error='guest_waiting_for_parent';}
+   elseif($claim['mode']==='execute'&&$j['kind']==='cancel'&&$e->getMessage()==='cancel_dependents_first'){$status='pending';$error='cancel_dependents_first';}
    elseif($claim['mode']==='execute'&&in_array($e->getCode(),[429,503],true)){$status='pending';$error=$e->getCode()===429?'provider_rate_limited':'provider_read_failed';$retryAfter=max(60,$e->retryAfter);}
    elseif($claim['mode']==='execute'){$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','guest_parent_not_confirmed','guest_not_allowed','guest_approval_revoked','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
    else{$error='external_result_unproven';}

@@ -218,6 +218,8 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     public function completeJob(mixed $job): void
     {
         $s=$this->execute("UPDATE participation_jobs SET status='succeeded',lease_token=NULL,lease_until=NULL,error_code=NULL WHERE id=?", [$job]);
+        // Repair earlier guest rejections once their exact parent job has been confirmed.
+        $this->execute("UPDATE participation_jobs SET status='pending',lease_until=NULL,error_code='guest_waiting_for_parent' WHERE status='failed' AND error_code='guest_parent_not_confirmed' AND kind='register' AND EXISTS (SELECT 1 FROM participation_jobs parent WHERE parent.id=? AND parent.kind='register' AND json_extract(parent.payload_json,'$.guestId') IS NULL AND parent.registration_id=participation_jobs.registration_id AND json_extract(parent.payload_json,'$.memberReference')=json_extract(participation_jobs.payload_json,'$.memberReference'))",[$job]);
     }
     public function duplicateExternalPerson(mixed $external, mixed $person): int|string|false|null
     {

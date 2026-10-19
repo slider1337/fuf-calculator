@@ -8,9 +8,11 @@ use Psr\Http\Message\{ServerRequestInterface as Request,ResponseInterface as Res
 
 final readonly class WorkflowController
 {
-    public function __construct(private PlanningTransferService $planning,private TermService $terms,private \App\Application\TermUpdateService $updates,private \App\Application\RegistrationModeService $modes,private \App\Application\TermCatalogService $catalog,private \App\Application\TermWorker $worker,private \App\Infrastructure\TripTermBasisSync $basis) {}
+    public function __construct(private PlanningTransferService $planning,private TermService $terms,private \App\Application\TermUpdateService $updates,private \App\Application\RegistrationModeService $modes,private \App\Application\TermCatalogService $catalog,private \App\Application\TermWorker $worker,private \App\Infrastructure\TripTermBasisSync $basis,private \App\Application\PriceGroupService $prices) {}
     /** @param array<array-key,mixed> $d */
     private function json(Response $response,array $d,int $status=200): Response {return JsonResponder::write($response,$d,$status)->withHeader('Cache-Control','no-store');}
+    public function priceGroups(Request $request,Response $response,string $id):Response {return $this->json($response,$this->prices->read((int)$id));}
+    public function savePriceGroup(Request $request,Response $response,string $id,string $groupId):Response {return $this->json($response,$this->prices->save((int)$id,$groupId,(array)$request->getParsedBody()));}
     public function planningStatus(Request $request,Response $response,string $id): Response {return $this->json($response,$this->planning->status((int)$id));}
     public function planningPreview(Request $request,Response $response,string $id): Response {return $this->json($response,$this->planning->preview((int)$id,(array)$request->getParsedBody()));}
     public function planningApply(Request $request,Response $response,string $id): Response {return $this->json($response,$this->planning->apply((int)$id,(array)$request->getParsedBody()));}

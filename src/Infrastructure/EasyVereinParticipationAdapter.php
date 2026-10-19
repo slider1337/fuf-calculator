@@ -12,6 +12,7 @@ final class EasyVereinParticipationAdapter implements \App\Application\Port\Batc
  public function __construct(private readonly EasyVereinWriteClient $client,private readonly bool $retainMemberCache=true) {}
  /** @var array<int|string,?string> */
  private array $memberCache=[];
+ public function supportsBatch(string $kind):bool {return $kind==='cancel';}
  public function blockedReason(): ?string {return $this->client->writeEnabled()?null:'easyverein_production_writes_disabled';}
  /** @return EasyVereinSnapshot */
  public function snapshot(string $eventId): array {

@@ -15,7 +15,8 @@
     "ext-mbstring": "*",
     "robmorgan/phinx": "^0.16.12",
     "jumbojett/openid-connect-php": "^1.0",
-    "ext-curl": "*"
+    "ext-curl": "*",
+    "tinymce/tinymce": "8.10.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^13.4",
@@ -35,12 +36,14 @@
     "post-install-cmd": [
       "@php scripts/patch-openid-nullability.php",
       "@php scripts/copy-bootstrap.php",
-      "@php scripts/copy-swagger-ui.php"
+      "@php scripts/copy-swagger-ui.php",
+      "@php scripts/copy-tinymce.php"
     ],
     "post-update-cmd": [
       "@php scripts/patch-openid-nullability.php",
       "@php scripts/copy-bootstrap.php",
-      "@php scripts/copy-swagger-ui.php"
+      "@php scripts/copy-swagger-ui.php",
+      "@php scripts/copy-tinymce.php"
     ],
     "test": "phpunit --configuration phpunit.xml",
     "test:coverage": "phpunit --configuration phpunit.xml --coverage-text --coverage-clover build/logs/clover.xml",

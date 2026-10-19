@@ -4,6 +4,8 @@ namespace App\Application\Port;
 /** @phpstan-import-type ParticipationPayload from ParticipationPort
  * @phpstan-import-type ProviderPerson from ParticipationPort */
 interface BatchParticipationPort extends ParticipationPort {
+ /** Only enable batches for operations with a verified provider contract. */
+ public function supportsBatch(string $kind):bool;
  /** Operation markers are preserved per person, including after partial/ambiguous provider results.
   * @param callable(int):void $beforeWrite Receives the freshly checked provider deadline.
   * @param array<string,ParticipationPayload> $people

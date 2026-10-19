@@ -49,7 +49,7 @@ function renderDirtyState() {
 
 // DESIGN: Status-Punkt je Abschnitt - gefuellt, sobald der Abschnitt Inhalt hat.
 function renderJumpState() {
-  const registrations = state.currentRegistrations || [];
+  const registrations = activeRegistrations(state.currentRegistrations || []);
   const settlement = state.currentSettlement;
   const filled = {
     "sec-eckdaten": byId("name").value.trim() !== "" && byId("startDate").value !== "",
@@ -209,9 +209,9 @@ function showTab(name) {
 // Eintrag in der Sprungnavigation. Sie zeigen alle denselben Stand des jeweils
 // anderen Bereichs, also fuellt eine Funktion sie gemeinsam.
 function renderSwitchTargets() {
-  const registrations = state.currentRegistrations || [];
+  const registrations = activeRegistrations(state.currentRegistrations || []);
   const settlement = state.currentSettlement;
-  const participants = registrations.reduce((sum, reg) => sum + reg.participants.length, 0);
+  const participants = registrations.reduce((sum, reg) => sum + activeRegistrationPeople(reg).length, 0);
   const expenses = settlement ? (settlement.expenses || []) : [];
 
   setTabChip("tab-planung-count", registrations.length);

@@ -88,10 +88,10 @@ final readonly class TripListService
 
         $registeredParticipants = 0;
         foreach ($registrations as $registration) {
-            $registeredParticipants += count($registration->participants());
+            $registeredParticipants += count(array_filter($registration->participants(),static fn($p)=>$p->status()!=='cancelled'));
         }
 
-        $hasRegistrations = $registrations !== [];
+        $hasRegistrations = $registeredParticipants > 0;
 
         return [
             'nights' => $trip->nights(),

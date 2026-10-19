@@ -50,7 +50,7 @@ function showManagementModal(title, fields, submit, submitLabel = 'Speichern') {
 function textField(id, label, value = '', type = 'text') {
   return `<label class="f" for="${id}">${label}<div class="in"><input id="${id}" type="${type}" value="${escapeHtml(value)}" required maxlength="200"></div></label>`;
 }
-function reasonField() { return '<label class="f" for="action-reason">Grund<div class="in"><textarea id="action-reason" required maxlength="500" rows="2"></textarea></div></label>'; }
+function reasonField() { return ''; }
 byId('management-form').addEventListener('submit', async event => {
   event.preventDefault(); const button = event.currentTarget.querySelector('[type=submit]'); button.disabled = true;
   try { await management.submit(); management.modal.hide(); } catch (error) { byId('management-modal-error').textContent = `Fehler: ${managementMessage(error)}`; byId('management-modal-error').focus(); }
@@ -146,7 +146,7 @@ byId('event-assign-trip').addEventListener('click', () => performManagement(asyn
   const unassigned = trips.filter(t => t.eventId === null && !t.closedAt);
   if (!unassigned.length) { throw new Error('Keine unzugeordneten offenen Reisen verfügbar.'); }
   showManagementModal('Bestehende Reise zuordnen', '<label class="f">Reise<div class="in"><select id="assign-trip-id">' + unassigned.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('') + '</select></div></label>' + reasonField(), async () => {
-    await api(`/api/trips/${byId('assign-trip-id').value}/event`, {method:'PUT',body:JSON.stringify({eventId:management.event.id,reason:byId('action-reason').value})}); await showEvent(management.event.id);
+    await api(`/api/trips/${byId('assign-trip-id').value}/event`, {method:'PUT',body:JSON.stringify({eventId:management.event.id,reason:'Änderung im Calculator'})}); await showEvent(management.event.id);
   });
 }));
 function teamPath(type) { return type === 'trip' ? `/api/trips/${state.currentTripId}/team` : `/api/events/${management.event.id}/${type === 'default' ? 'default-team' : 'access'}`; }
@@ -162,7 +162,7 @@ async function editTeam(type, userId = null) {
   const caps = type === 'event' ? eventCapabilities : tripCapabilities;
   showManagementModal(type === 'default' ? 'Standardteam bearbeiten' : type === 'event' ? 'Veranstaltungsrechte bearbeiten' : 'Reiseteam bearbeiten', '<label class="f">Person<div class="in"><select id="team-user" required>' + people.map(p => `<option value="${p.id}">${escapeHtml(p.email)}</option>`).join('') + '</select></div></label><p class="help">Alle Haken entfernen widerruft die Freigabe. Antwortrechte sind von Abrechnungsrechten getrennt.</p>' + (type === 'event' ? '' : '<div class="event-toolbar"><button type="button" class="btn btn-o" data-team-preset="orga">Orga</button><button type="button" class="btn btn-o" data-team-preset="settlement">Abrechnung lesen</button><button type="button" class="btn btn-o" data-team-preset="term">Terminpflege</button></div>') + `<div class="capability-grid">${caps.map(c => `<label><input type="checkbox" data-capability="${c}" ${member?.capabilities.includes(c) ? 'checked' : ''}> ${escapeHtml(capabilityLabels[c])}</label>`).join('')}</div>` + reasonField(), async () => {
     const capabilities = Array.from(byId('management-fields').querySelectorAll('[data-capability]:checked')).map(c => c.dataset.capability);
-    await api(`${teamPath(type)}/${byId('team-user').value}`, {method:'PUT',body:JSON.stringify({capabilities,reason:byId('action-reason').value})}); await loadTeam(type);
+    await api(`${teamPath(type)}/${byId('team-user').value}`, {method:'PUT',body:JSON.stringify({capabilities,reason:'Änderung im Calculator'})}); await loadTeam(type);
   });
   if (userId) { byId('team-user').value = userId; byId('team-user').disabled = true; }
 }
@@ -216,14 +216,14 @@ byId('trip-event-assign').addEventListener('click', () => performManagement(asyn
   showManagementModal('Veranstaltung zuordnen / ändern', '<p>Die Reise und ihre Kalkulation bleiben erhalten. Das Reiseteam wird nicht durch das Standardteam ersetzt.</p><label class="f">Veranstaltung<div class="in"><select id="trip-assignment-event"><option value="">Ohne Veranstaltung</option>' + events.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('') + '</select></div></label>' + reasonField(), async () => {
     const eventId = byId('trip-assignment-event').value === '' ? null : Number(byId('trip-assignment-event').value);
     if (eventId === trip.eventId) { throw new Error('Bitte eine andere Zuordnung wählen.'); }
-    await api(`/api/trips/${trip.id}/event`, {method:'PUT',body:JSON.stringify({eventId,reason:byId('action-reason').value})});
+    await api(`/api/trips/${trip.id}/event`, {method:'PUT',body:JSON.stringify({eventId,reason:'Änderung im Calculator'})});
     await openTrip(trip.id);
   }, 'Zuordnung speichern');
   byId('trip-assignment-event').value = trip.eventId || '';
 }));
 for (const [id,action,title] of [['trip-close','close','Abrechnung abschließen'],['trip-reopen','reopen','Abrechnung begründet wiederöffnen']]) {
-  byId(id).addEventListener('click', () => showManagementModal(title, '<p>Der Schritt wird mit Akteur, Zeitpunkt und Grund protokolliert.</p>' + reasonField(), async () => {
-    await api(`/api/trips/${state.currentTripId}/${action}`, {method:'POST',body:JSON.stringify({reason:byId('action-reason').value})}); await openTrip(state.currentTripId);
+  byId(id).addEventListener('click', () => showManagementModal(title, '<p>Der Schritt wird gespeichert und intern protokolliert.</p>' + reasonField(), async () => {
+    await api(`/api/trips/${state.currentTripId}/${action}`, {method:'POST',body:JSON.stringify({reason:'Änderung im Calculator'})}); await openTrip(state.currentTripId);
   }));
 }
 byId('trip-duplicate').addEventListener('click', () => showManagementModal('Reise duplizieren', '<p class="help">Kopiert Planung und aktuelles Standardteam. Anmeldungen und Abschluss werden nicht übernommen.</p>' + textField('duplicate-name','Name',state.currentTrip.name + ' – Kopie') + textField('duplicate-start','Beginn','','date') + '<label class="f">Ende (optional)<div class="in"><input id="duplicate-end" type="date"></div></label>', async () => {
@@ -234,7 +234,7 @@ byId('legacy-preview-btn').addEventListener('click', () => performManagement(asy
   showManagementModal('Alt-Reiserechte übernehmen', '<p>Die Auswahl zeigt Benutzer und Reisen zum Migrationszeitpunkt. Es wurden keine Rechte automatisch vergeben. Nur markierte Zuordnungen werden übernommen. Jede Auswahl vergibt vollständige Orga-Reiserechte; anschließend können diese einzeln eingeschränkt werden.</p>' + rows.map((r,i) => `<label class="team-member"><input type="checkbox" data-legacy-pair="${i}"> ${escapeHtml(r.tripName)} (#${r.tripId}) · ${escapeHtml(r.email)}</label>`).join('') + reasonField(), async () => {
     const selected = Array.from(byId('management-fields').querySelectorAll('[data-legacy-pair]:checked')).map(e => rows[Number(e.dataset.legacyPair)]);
     if (!selected.length) { throw new Error('Mindestens eine Zuordnung wählen.'); }
-    await api('/api/admin/legacy-access', {method:'POST',body:JSON.stringify({pairs:selected.map(r => ({tripId:r.tripId,userId:r.userId})),reason:byId('action-reason').value})}); await loadTripList();
+    await api('/api/admin/legacy-access', {method:'POST',body:JSON.stringify({pairs:selected.map(r => ({tripId:r.tripId,userId:r.userId})),reason:'Änderung im Calculator'})}); await loadTripList();
   });
 }));
 document.addEventListener('click', event => {
@@ -320,6 +320,9 @@ function applyRegistrationModeLayout(trip){
   byId('tab-auswertung').classList.toggle('d-none',!easy||!trip.capabilities.includes('analytics.view'));
   byId('csv-upload-form').classList.toggle('d-none',easy);
   byId('reg-filter-easyverein').classList.toggle('d-none',!easy);
+  byId('reg-filter-website').classList.toggle('d-none',!easy);
+  byId('reg-filter-csv').classList.toggle('d-none',easy);
+  byId('registrations-empty-hint').textContent=easy?'Anmeldungen über die Website oder easyVerein erscheinen hier. Du kannst auch manuell hinzufügen.':'CSV importieren oder eine Anmeldung manuell hinzufügen.';
   byId('booking-contact-field').classList.toggle('d-none',!easy);byId('booking-contact').required=easy;
   byId('booking-intake-note').classList.toggle('d-none',!easy);byId('booking-extra-fields').classList.toggle('d-none',!easy);
 }
@@ -327,7 +330,7 @@ byId('trip-registration-mode-change').addEventListener('click',()=>performManage
   if(dirtyPlanning())throw new Error('Bitte die Planungsänderungen zuerst speichern.');
   const trip=state.currentTrip,current=await api(`/api/trips/${trip.id}/registration-mode`);
   showManagementModal('Anmeldeverfahren wählen',`<p>Clubdesk / CSV nutzt den bisherigen Import und die bisherige Abrechnung. easyVerein ergänzt versionierte Formulare, Mitgliederbuchungen und den Teilnahmeabgleich.</p><label class="f">Verfahren<div class="in"><select id="registration-mode-target"><option value="clubdesk_csv">Clubdesk / CSV · bisheriger Ablauf</option><option value="easyverein">easyVerein · mit Zusatzformular</option></select></div></label><p class="help">Vorhandene CSV-Anmeldungen bleiben beim Wechsel erhalten. Ein Rückwechsel ist möglich, solange keine neuen Buchungen, Gastfreigaben oder laufenden Übertragungen vorliegen.</p>${reasonField()}`,async()=>{
-    try{await api(`/api/trips/${trip.id}/registration-mode`,{method:'PUT',body:JSON.stringify({registrationMode:byId('registration-mode-target').value,revision:current.revision,confirmed:true,reason:byId('action-reason').value})});}
+    try{await api(`/api/trips/${trip.id}/registration-mode`,{method:'PUT',body:JSON.stringify({registrationMode:byId('registration-mode-target').value,revision:current.revision,confirmed:true,reason:'Änderung im Calculator'})});}
     catch(error){let detail;try{detail=JSON.parse(error.message);}catch{};const text={registration_mode_managed_bookings_exist:'Für diese Reise gibt es bereits Buchungen im neuen Verfahren. Ein Rückwechsel würde sie vom Anmeldeweg trennen.',registration_mode_operation_in_progress:'Eine Übertragung läuft oder ist noch ungeklärt. Bitte zuerst den Auftrag klären.',registration_mode_guest_approvals_exist:'Bitte zuerst die offenen Gastfreigaben widerrufen.',revision_conflict:'Das Verfahren wurde inzwischen geändert. Bitte den Dialog neu öffnen.'};throw new Error(text[detail?.error]||error.message);}
     await openTrip(trip.id);
   },'Verfahren übernehmen');byId('registration-mode-target').value=current.registrationMode;

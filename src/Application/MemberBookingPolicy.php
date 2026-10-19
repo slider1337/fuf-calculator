@@ -16,6 +16,6 @@ final readonly class MemberBookingPolicy implements BookingPolicy {
  public function metadata(int $id): array {return $this->access->metadata($id);}
  public function transaction(callable $f): mixed {return $this->access->transaction($f);}
  public function writeTrip(int $id,string $capability,callable $f): mixed {return $this->transaction(function()use($id,$capability,$f){$this->trip($id,$capability,true);return $f();});}
- public function reason(string $reason): string {$reason=trim($reason);if($reason===''||mb_strlen($reason)>500){throw new ValidationException(['reason'=>'required_max_500']);}return $reason;}
+ public function reason(string $reason): string {$reason=trim($reason);if(mb_strlen($reason)>500){throw new ValidationException(['reason'=>'required_max_500']);}return $reason===''?'Änderung gespeichert':$reason;}
  public function audit(string $action,string $type,int $id,string $reason): void {$this->store->auditMember($this->identity->memberReference, $this->identity->serviceId, $action, $id, gmdate(DATE_ATOM));}
 }

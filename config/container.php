@@ -51,6 +51,7 @@ return static function (): ContainerInterface {
         App\Application\Port\MemberDirectoryPort::class => autowire(App\Infrastructure\EasyVereinMemberDirectory::class),
         App\Application\ScheduledReconciliation::class => autowire()->constructorParameter('external', factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinParticipationAdapter(\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\ReconciliationReadClient::class),false))),
         App\Application\TermUpdateService::class => autowire()->constructorParameter('displayClient', DI\get(App\Infrastructure\LocalTermCatalog::class)),
+        App\Application\BookingService::class => autowire()->constructorParameter('participations', DI\get(App\Application\Port\ParticipationRepositoryInterface::class)),
         App\Application\MemberBookingService::class => autowire()->constructorParameter('displayDirectory', factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinMemberDirectory(\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\LocalTermCatalog::class)))),
         App\Application\TermCatalogService::class => autowire()->constructorParameter('client', DI\get(App\Infrastructure\LocalTermCatalog::class)),
         App\Application\Port\EasyVereinReadClient::class => factory(static fn(ContainerInterface $c) => new App\Infrastructure\EasyVereinReadHttpClient(getenv('EASYVEREIN_API_TOKEN') ?: '',\App\Infrastructure\ContainerServices::get($c,App\Infrastructure\ProviderRequestBudget::class))),

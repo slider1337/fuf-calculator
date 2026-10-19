@@ -88,8 +88,8 @@ final readonly class AccessPolicy implements \App\Application\Port\BookingPolicy
     public function reason(string $reason): string
     {
         $reason = trim($reason);
-        if ($reason === '' || mb_strlen($reason) > 500) { throw new ValidationException(['reason' => 'required_max_500']); }
-        return $reason;
+        if (mb_strlen($reason) > 500) { throw new ValidationException(['reason' => 'required_max_500']); }
+        return $reason===''?'Änderung gespeichert':$reason;
     }
     /** @param list<string> $capabilities */
     public function grant(string $type, int $id, int $userId, array $capabilities, string $reason): void

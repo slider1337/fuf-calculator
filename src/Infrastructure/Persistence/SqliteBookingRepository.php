@@ -60,10 +60,10 @@ final readonly class SqliteBookingRepository implements BookingRepositoryInterfa
         }
         $pending=StoredRow::from(['count'=>$this->query("SELECT COUNT(*) FROM form_supplement_requests WHERE registration_id=? AND status='pending'",[$id])->fetchColumn()])->integer('count');
         return ['id'=>$id,'tripId'=>$tripId,'reference'=>$r->nullableText('reference')??'ALT-'.$id,
-            'source'=>$r->text('source'),'contactIdentity'=>$r->nullableText('contact_identity'),
+            'source'=>$r->nullableText('owner_member_reference')!==null?'website':$r->text('source'),'contactIdentity'=>$r->nullableText('contact_identity'),
             'versionId'=>$r->nullableInteger('form_version_id'),'status'=>$r->text('booking_status'),
             'syncStatus'=>$r->text('sync_status'),'roomCategory'=>$r->text('room_category')===''?null:$r->text('room_category'),
-            'roomAssignment'=>$r->nullableText('room_assignment'),'comment'=>$r->text('comment'),
+            'rooms'=>\App\Application\BookingRooms::validateStored($r->jsonArray('rooms_json')),'roomAssignment'=>$r->nullableText('room_assignment'),'comment'=>$r->text('comment'),
             'receivedAt'=>$r->text('received_at'),'revision'=>$r->integer('revision'),'managed'=>$r->integer('managed_booking')!==0,
             'persons'=>$persons,'personRevisions'=>$personRevisions,'answers'=>array_values($current),
             'revisions'=>$revisions,'supplementPending'=>$pending>0];
@@ -102,13 +102,16 @@ final readonly class SqliteBookingRepository implements BookingRepositoryInterfa
     {
         $this->query("INSERT INTO registrations (trip_id,room_category,received_at,comment,source,reference,contact_identity,form_version_id,booking_status,sync_status,managed_booking,revision) VALUES (?,?,?,?,'manual',?,?,?,'pending','pending',1,1)",[$tripId,$d['roomCategory']??'',gmdate(DATE_ATOM),$d['comment']??'','B-'.bin2hex(random_bytes(12)),$d['contactIdentity'],$d['versionId']]);
         $id=(int)$this->pdo->lastInsertId();
-        foreach(\App\Application\Data\BookingPersonData::list($d['persons']) as $p){$this->query("INSERT INTO registration_participants (registration_id,name,birth_date,client_reference,participation_status,sync_status) VALUES (?,?,?,?,'pending','pending')",[$id,$p['name'],$p['birthDate'],$p['id']]);}
+        foreach(\App\Application\Data\BookingPersonData::list($d['persons']) as $p){$this->query("INSERT INTO registration_participants (registration_id,name,birth_date,client_reference,price_group_reference,expected_price,participation_status,sync_status) VALUES (?,?,?,?,?,?,'pending','pending')",[$id,$p['name'],$p['birthDate'],$p['id'],$p['priceGroupId']??null,$p['expectedPrice']??null]);}
+        $map=[];foreach($this->query('SELECT id,client_reference FROM registration_participants WHERE registration_id=?',[$id])->fetchAll(PDO::FETCH_ASSOC) as $row){$stored=StoredRow::from($row);$map[$stored->text('client_reference')]=$stored->integer('id');}
+        $rooms=[];foreach(\App\Application\BookingRooms::validateStored($d['rooms']??[]) as $room){$rooms[]=['category'=>$room['category'],'personIds'=>array_map(static fn($pid)=>$map[(string)$pid],$room['personIds'])];}
+        $this->query('UPDATE registrations SET rooms_json=? WHERE id=?',[json_encode($rooms,JSON_THROW_ON_ERROR),$id]);
         return $id;
     }
     /** @param array<array-key,mixed> $values */
     public function revise(int $id,int $revision,array $values): void
     {
-        $allowed=['booking_status','form_version_id','room_assignment'];$sets=['revision=revision+1'];$p=[];
+        $allowed=['booking_status','form_version_id','room_assignment','rooms_json','room_category'];$sets=['revision=revision+1'];$p=[];
         foreach($values as $k=>$v){if(!in_array($k,$allowed,true)){throw new \LogicException('Invalid booking metadata');}$sets[]="$k=?";$p[]=$v;}
         $p[]=$id;$p[]=$revision;
         if($this->query('UPDATE registrations SET '.implode(',',$sets).' WHERE id=? AND revision=?',$p)->rowCount()!==1){throw new AccessException('revision_conflict',409);}

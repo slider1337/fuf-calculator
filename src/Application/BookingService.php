@@ -16,7 +16,18 @@ use App\Domain\Form\{AnswerValidator,FormSchema};
  */
 final readonly class BookingService
 {
-    public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private \App\Application\Port\BookingPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations) {}
+    public function __construct(private BookingRepositoryInterface $bookings,private FormRepositoryInterface $forms,private TripRepositoryInterface $trips,private \App\Application\Port\BookingPolicy $policy,private AnswerValidator $validator,private RegistrationService $registrations,private ?\App\Application\Port\ParticipationRepositoryInterface $participations=null) {}
+    /** @return array{priceGroups:list<array{id:string,price:string,label:string}>,roomCategories:list<string>,basePriceGroups:list<array{label:string,category:string,price:string}>} */
+    public function options(int $tripId): array
+    {
+        $this->policy->trip($tripId,"registration.view");
+        $groups=[];
+        foreach(Input::objects($this->participations?->link($tripId)["data"]["groups"]??[]) as $g){
+            if(is_string($g["id"]??null)&&is_string($g["price"]??null))$groups[]=["id"=>$g["id"],"price"=>$g["price"],"label"=>Input::text($g["label"]??("Preisgruppe ".$g["id"]))];
+        }
+        $trip=$this->trips->getById($tripId)??throw new NotFoundException("Trip");
+        return ["priceGroups"=>$groups,"roomCategories"=>BookingRooms::categories($trip),"basePriceGroups"=>TripTermBasis::prices($trip)];
+    }
     /** @return list<BookingView> */
     public function list(int $tripId): array
     {
@@ -121,8 +132,11 @@ final readonly class BookingService
             foreach($people as $i=>$person){if(!is_array($person)||!is_string($person['name']??null)||trim($person['name'])===''||mb_strlen($person['name'])>200){throw new ValidationException(["persons.$i.name"=>'name_required_max_200']);}}
             foreach(['contactIdentity'=>200,'comment'=>2000,'roomCategory'=>200] as $k=>$max){$value=$p[$k]??($k==='roomCategory'?null:'');if(($value!==null&&!is_string($value))||(is_string($value)&&mb_strlen($value)>$max)||($k==='contactIdentity'&&(!is_string($value)||trim($value)===''))){throw new ValidationException([$k=>'invalid_text']);}}
             $people=\App\Application\Data\BookingPersonData::list($people);
+            $groups=$this->participations===null?null:array_column($this->options($tripId)['priceGroups'],null,'id');
+            foreach($people as $person){if($groups!==null&&($person['priceGroupId']??null)!==null){$gid=$person['priceGroupId'];if(!is_string($gid)||!isset($groups[$gid])||($person['expectedPrice']??null)!==$groups[$gid]['price'])throw new AccessException('price_conflict',409);}}
             $answers=$this->validate($tripId,$v,$people,$p['answers']??[]);
-            $id=$this->bookings->create($tripId,['persons'=>$people,'versionId'=>$v['id']??null,'contactIdentity'=>trim(Input::text($p['contactIdentity'])),'comment'=>$p['comment']??'','roomCategory'=>$p['roomCategory']??null]);
+            $rooms=array_key_exists('rooms',$p)?BookingRooms::validate($this->trips->getById($tripId)??throw new NotFoundException('Trip'),$p['rooms'],array_column($people,'id')):[];
+            $id=$this->bookings->create($tripId,['rooms'=>$rooms,'persons'=>$people,'versionId'=>$v['id']??null,'contactIdentity'=>trim(Input::text($p['contactIdentity'])),'comment'=>$p['comment']??'','roomCategory'=>$p['roomCategory']??null]);
             $b=$this->load($tripId,$id);if($v){$this->persistAnswers($b,$answers,$v['id'],'Lokale Orga-Erfassung',true);}
             $this->bookings->recordOperation($tripId,$key,$hash,$id);$this->policy->audit('booking.create','trip',$tripId,'booking='.$id.' · local_pending');
             return $this->get($tripId,$id);
@@ -166,7 +180,13 @@ final readonly class BookingService
                 if($changed){foreach($answers['booking'] as $fid=>&$entry){if($entry['state']==='answered'&&!array_key_exists($fid,$patch['booking']??[])){$entry['state']='unchecked';}}unset($entry);}
             }
 
-            $this->bookings->revise($id,$b['revision'],['form_version_id'=>$vid]);$b['revision']++;
+            $changes=['form_version_id'=>$vid];
+            if(array_key_exists('rooms',$p)){
+                $this->policy->trip($tripId,'registration.manage',true);
+                $rooms=BookingRooms::validate($this->trips->getById($tripId)??throw new NotFoundException('Trip'),$p['rooms'],array_column($people,'id'));
+                $changes['rooms_json']=json_encode($rooms,JSON_THROW_ON_ERROR);
+            }
+            $this->bookings->revise($id,$b['revision'],$changes);$b['revision']++;
             if(array_key_exists('persons',$p)){foreach($people as $person){$this->bookings->correctPerson($id,$person,$this->policy->actorId(),$reason);}if(!$b['managed']){$this->registrations->recalculateBillings($tripId);}}
 
             if($v){$this->persistAnswers($b,$answers,$v['id'],$reason);}
@@ -178,8 +198,8 @@ final readonly class BookingService
     /** @param array<array-key,mixed> $p */
     private function reason(array $p): string
     {
-        if(!is_string($p['reason']??null)){throw new ValidationException(['reason'=>'text_required']);}
-        return $this->policy->reason($p['reason']);
+        if(array_key_exists('reason',$p)&&!is_string($p['reason']))throw new ValidationException(['reason'=>'text_required']);
+        return $this->policy->reason(is_string($p['reason']??null)?$p['reason']:'Änderung der Buchung');
     }
     /**
      * @param Booking $b

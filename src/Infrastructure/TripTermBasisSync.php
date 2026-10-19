@@ -55,7 +55,7 @@ final readonly class TripTermBasisSync
                     $guard();
                     if($matches){$match=$matches[0];$gid=EasyVereinData::id($match['id']??null,'price-group');
                         if(EasyVereinData::id($match['event']??null,'event')!==$event)throw new AccessException('trip_price_basis_ambiguous',409);
-                        if(EasyVereinData::money($match['selling_price']??null)!==$g['price'])$this->client->write('PATCH','price-group/'.$gid.'/', ['selling_price'=>(float)$g['price']]);
+                        if(EasyVereinData::money($match['selling_price']??null)!==$g['price']||($match['name']??null)!==$g['label'])$this->client->write('PATCH','price-group/'.$gid.'/', ['name'=>$g['label'],'selling_price'=>(float)$g['price']]);
                     }else{
                         // A prior ambiguous POST is only reconciled, never blindly repeated.
                         $pending=$this->store->query('SELECT pending_marker FROM trip_term_basis_sync WHERE trip_id=?',[$id])->fetchColumn();

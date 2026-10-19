@@ -88,6 +88,22 @@ final class BookingProcessApiTest extends ApiTestCase
         $c=$this->request('POST',"/api/trips/$this->trip/bookings/{$b['id']}/cancel",['operationKey'=>'cancel_booking_01','revision'=>$b['revision'],'personIds'=>array_column($b['persons'],'id')]);self::assertSame('cancelled',$c['status']);self::assertCount(2,$c['persons']);
         $list=$this->request('GET','/api/trips');self::assertSame(0,$list[0]['registeredParticipants']);
     }
+    public function testUniformAdultBasisSyncCreatesOneAdultGroupAndRenamesItInPlace(): void
+    {
+        $payload=$this->validTripPayload();$payload['averageAdultPrice']=true;
+        $this->request('PUT',"/api/trips/$this->trip",$payload);
+        $c=$this->app->getContainer();$provider=new BookingBasisProvider();
+        $provider->groups[9]=['id'=>9,'event'=>77,'name'=>'Erwachsene · Doppelzimmer','selling_price'=>1,'description'=>'[FuF Reise '.$this->trip.' ADULT_DOUBLE]'];
+        $worker=new TripTermBasisSync($c->get(SqliteWorkflowRepository::class),$c->get(TripRepositoryInterface::class),$c->get(AccessRepositoryInterface::class),$provider);
+        self::assertTrue($worker->runOne());
+        self::assertSame('synced',$worker->status($this->trip)['status']);
+        self::assertCount(2,$provider->groups);
+        self::assertSame('Erwachsener',$provider->groups[9]['name']);
+        self::assertSame(['Erwachsener','Kinder'],array_column(array_values($provider->groups),'name'));
+        self::assertSame('PATCH',$provider->writes[0][0]);self::assertSame('price-group/9/',$provider->writes[0][1]);
+        self::assertFalse($worker->runOne());
+    }
+
     public function testBackgroundBasisSyncPreservesExtrasRecoversLostPostAndSkipsUnchangedTrips(): void
     {
         $c=$this->app->getContainer();$provider=new BookingBasisProvider();

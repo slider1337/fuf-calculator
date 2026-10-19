@@ -45,3 +45,14 @@ foreach([
  $shape=function($v,int $depth=0)use(&$shape){if($depth>4)return 'nested';if(!is_array($v))return get_debug_type($v);$out=[];foreach(array_slice($v,0,12,true) as $k=>$c){$key=is_int($k)?$k:(preg_match('/^[a-z_]{1,60}$/D',(string)$k)?$k:'other');$out[$key]=$shape($c,$depth+1);}return $out;};
  echo json_encode(['probe'=>$probe,'invalid_reference_probe_http'=>$code,'response_shape'=>$shape($data),'validation'=>is_string($raw)?App\Infrastructure\EasyVereinValidation::fromBody($raw):[]],JSON_THROW_ON_ERROR)."\n";
 }
+// Execute the exact batch preflight with a write-stopping decorator; never submit a booking.
+$stoppedClient=new class($client) implements App\Application\Port\EasyVereinWriteClient {
+ public function __construct(private App\Application\Port\EasyVereinReadClient $reads){}
+ public function configured():bool{return true;}
+ public function writeEnabled():bool{return true;}
+ public function get(string $path,array $query=[]):array{return $this->reads->get($path,$query);}
+ public function write(string $method,string $path,array $payload):array{echo json_encode(['preflight_reached_write'=>$path,'entry_count'=>count($payload['entries']??[])])."\n";throw new RuntimeException('probe_stopped_before_write');}
+};
+$people=[];foreach($jobs as $job){$p=json_decode($pdo->query('SELECT payload_json FROM participation_jobs WHERE id='.(int)$job['id'])->fetchColumn(),true);if(!isset($p['guestId']))$people['calculator-person-'.$job['id']]=$p;}
+try{(new App\Infrastructure\EasyVereinParticipationAdapter($stoppedClient))->executeBatch('register',$people,static function(int $deadline):void{});}
+catch(Throwable $e){echo json_encode(['preflight_exception'=>get_class($e),'technical_code'=>preg_match('/^[a-z_]+$/D',$e->getMessage())?$e->getMessage():'type_or_contract_error','location'=>basename($e->getFile()).':'.$e->getLine(),'stack'=>array_map(static fn($f)=>($f['class']??'').($f['type']??'').($f['function']??''),array_slice($e->getTrace(),0,5))])."\n";}

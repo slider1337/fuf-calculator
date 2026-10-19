@@ -45,6 +45,9 @@ jobs:
           for file in public/assets/js/*.js; do node --check "$file"; done
           node --test tests/Frontend/*.cjs
 
+      - name: Check manual API runner offline (no live API calls)
+        run: python3 -m unittest discover -s tests/Manual -v
+
       - name: Run PHPUnit with coverage
         run: composer test:coverage
 

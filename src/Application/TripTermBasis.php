@@ -42,6 +42,7 @@ final class TripTermBasis
     public static function description(Trip $trip,string $description): string
     {
         $start='<!-- fuf-trip-rooms -->';$end='<!-- /fuf-trip-rooms -->';
+        $description=preg_replace('/'.preg_quote($start,'/').'.*?'.preg_quote($end,'/').'/s','',$description)??$description;
         $description=trim(preg_replace('/\\[Zimmerkategorien aus der Reise\\].*?\\[\/Zimmerkategorien\\]/s','',$description)??$description);
         $rooms=BookingRooms::categories($trip);
         return $rooms===[]?$description:trim($description."\n\n".$start."\nZimmerkategorien:\n".implode("\n",$rooms)."\n".$end);

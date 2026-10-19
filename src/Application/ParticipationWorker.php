@@ -60,6 +60,7 @@ final class ParticipationWorker {
    if($result===null){$error??='external_result_unproven';}
    else{$this->sync->validateResult($result);if($result['eventId']!==$payload['eventId']||$result['memberReference']!==$payload['memberReference']||$result['priceGroupId']!==$payload['priceGroupId']||$result['price']!==$payload['price']||($j['kind']==='cancel'&&($result['externalId']!==$payload['externalId']||$result['status']!=='cancelled'))||($j['kind']==='register'&&$result['status']!=='confirmed')){$error='external_result_conflict';}}
   }catch(ParticipationRejected $e){
+   ParticipationFailureLog::record([$j['id']],$claim['mode'],$e);
    $validationErrors=$e->validationErrors;
    if($claim['mode']==='execute'&&$j['kind']==='register'&&$e->getMessage()==='guest_parent_not_confirmed'){$status='pending';$error='guest_waiting_for_parent';}
    elseif($claim['mode']==='execute'&&$j['kind']==='cancel'&&$e->getMessage()==='cancel_dependents_first'){$status='pending';$error='cancel_dependents_first';}
@@ -67,12 +68,13 @@ final class ParticipationWorker {
    elseif($claim['mode']==='execute'){$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','guest_parent_not_confirmed','guest_not_allowed','guest_approval_revoked','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
    else{$error='external_result_unproven';}
   }catch(AccessException $e){
+   ParticipationFailureLog::record([$j['id']],$claim['mode'],$e);
    $error=$e->error;
    if(!$executeStarted&&$claim['mode']==='execute'){
     $status=in_array($error,['provider_rate_limited','provider_read_failed'],true)?'pending':'failed';
    }
    if($error==='provider_rate_limited')$retryAfter=max(60,$e->retryAfter);
-  }catch(\Throwable){$error=$executeStarted||$claim['mode']==='reconcile'?'external_outcome_unknown':'provider_preflight_failed';if(!$executeStarted&&$claim['mode']==='execute'){$status='failed';}}
+  }catch(\Throwable $e){ParticipationFailureLog::record([$j['id']],$claim['mode'],$e);$error=$executeStarted||$claim['mode']==='reconcile'?'external_outcome_unknown':'provider_preflight_failed';if(!$executeStarted&&$claim['mode']==='execute'){$status='failed';}}
   // A throttle pauses the whole participation batch; do not fail the remaining family.
   if($retryAfter>0)$this->pauseUntil=time()+$retryAfter;
   $this->access->transaction(function()use($claim,$j,$result,$error,$status,$retryAfter,$validationErrors){
@@ -111,16 +113,18 @@ final class ParticipationWorker {
     foreach($jobs as $job){if($this->store->leaseToken($job['id'])!==$token||!$this->allowed($job))throw new ParticipationRejected('permission_revoked_or_trip_closed');}
    });
   }catch(ParticipationRejected $e){
+   ParticipationFailureLog::record(array_column($jobs,'id'),'batch',$e);
    $validationErrors=$e->validationErrors;
    if($jobs[0]['kind']==='cancel'&&$e->getMessage()==='cancel_dependents_first'){$status='pending';$error='cancel_dependents_first';}
    elseif(in_array($e->getCode(),[429,503],true)){$status='pending';$error=$e->getCode()===429?'provider_rate_limited':'provider_read_failed';if($e->getCode()===429)$retryAfter=max(60,$e->retryAfter);}
    else{$status='failed';$error=match($e->getCode()){401=>'provider_unauthorized',403=>'provider_forbidden',default=>in_array($e->getMessage(),['event_unavailable','price_conflict','existing_participation_requires_clarification','permission_revoked_or_trip_closed','cancel_dependents_first'],true)?$e->getMessage():'provider_rejected'};}
   }catch(AccessException $e){
+   ParticipationFailureLog::record(array_column($jobs,'id'),'batch',$e);
    $error=$e->error;
    // Reads inside the adapter might follow an accepted bulk write: reconcile, never repost.
    if(!$started)$status=in_array($error,['provider_rate_limited','provider_read_failed'],true)?'pending':'failed';
    if($error==='provider_rate_limited')$retryAfter=max(60,$e->retryAfter);
-  }catch(\Throwable){$error=$started?'external_outcome_unknown':'provider_preflight_failed';if(!$started)$status='failed';}
+  }catch(\Throwable $e){ParticipationFailureLog::record(array_column($jobs,'id'),'batch',$e);$error=$started?'external_outcome_unknown':'provider_preflight_failed';if(!$started)$status='failed';}
   if($retryAfter>0)$this->pauseUntil=time()+$retryAfter;
   $this->access->transaction(function()use($jobs,$token,$people,$results,$status,$error,$retryAfter,$validationErrors){
    foreach($jobs as $j){

@@ -270,6 +270,31 @@ class RunnerTest(unittest.TestCase):
         self.assertIn("contact-details/2/?query={id,primary_email}", paths)
         self.check.cleanup()
 
+    def test_price_group_read_explicitly_requests_fields(self):
+        original = self.provider.get
+        def limited_default(path):
+            row = original(path)
+            if path.startswith("price-group/") and "query=" not in path:
+                return {"id": row["id"]}
+            return row
+        self.provider.get = limited_default
+        self.check.run()
+        self.check.cleanup()
+
+    def test_name_update_failure_remains_failure_but_does_not_skip_participation_checks(self):
+        original = self.provider.call
+        def ignore_rename(method, path, body=None, expected=(200,)):
+            if method == "PATCH" and path.startswith("price-group/"):
+                return original("GET", path)
+            return original(method, path, body, expected)
+        self.provider.call = ignore_rename
+        with self.assertRaisesRegex(runner.CheckFailed, "price_group_update_not_persisted"):
+            self.check.run()
+        self.assertEqual(2, len(self.provider.data["participation"]))
+        self.assertTrue(all(row["state"] == 0 for row in self.provider.data["participation"].values()))
+        self.check.cleanup()
+        self.assertFalse(self.path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

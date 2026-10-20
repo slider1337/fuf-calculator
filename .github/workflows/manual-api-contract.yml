@@ -1,0 +1,75 @@
+name: API-Vertragsprüfung (nur manuell)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Neuer Testlauf oder Bereinigung eines früheren Laufs
+        type: choice
+        options: [run, cleanup]
+        default: run
+      calendar_id:
+        description: Optional zur eindeutigen Auswahl; sonst wird FuF Verein nach Namen aufgelöst
+        type: string
+        required: false
+      member_id:
+        description: Testmitglied mit Kontaktadresse me@benna.me (alternativ Variable FUF_TEST_MEMBER_ID)
+        type: string
+        required: false
+      cleanup_run_id:
+        description: Nur für cleanup, frühere Laufkennung aus dem Protokoll (Run-ID-Versuch)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calculator-manual-api-contract
+  cancel-in-progress: false
+
+jobs:
+  manual-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate runner offline
+        run: python3 -m unittest discover -s tests/Manual -v
+
+      - name: Copy isolated test scripts to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: scripts/manual/api_contract_test.py,scripts/manual/launch_api_contract.py
+          target: /opt/fuf-calculator/api-contract/code/${{ github.run_id }}-${{ github.run_attempt }}
+          strip_components: 2
+
+      - name: Run selected API checks and cleanup on VM
+        uses: appleboy/ssh-action@v1
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          EASYVEREIN_API_TOKEN: ${{ secrets.EASYVEREIN_API_TOKEN }}
+          FUF_INTEGRATION_AUDIENCE: ${{ vars.FUF_INTEGRATION_AUDIENCE }}
+          FUF_INTEGRATION_SERVICES: ${{ secrets.FUF_INTEGRATION_SERVICES }}
+          FUF_TEST_SERVICE_ID: ${{ vars.FUF_TEST_SERVICE_ID }}
+          FUF_TEST_KEY_ID: ${{ vars.FUF_TEST_KEY_ID }}
+          FUF_TEST_CALENDAR_ID: ${{ inputs.calendar_id || vars.FUF_TEST_CALENDAR_ID }}
+          FUF_TEST_MEMBER_ID: ${{ inputs.member_id || vars.FUF_TEST_MEMBER_ID }}
+          FUF_API_TEST_MODE: ${{ inputs.mode }}
+          FUF_API_CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
+          FUF_API_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 18m
+          envs: APP_URL,EASYVEREIN_API_TOKEN,FUF_INTEGRATION_AUDIENCE,FUF_INTEGRATION_SERVICES,FUF_TEST_SERVICE_ID,FUF_TEST_KEY_ID,FUF_TEST_CALENDAR_ID,FUF_TEST_MEMBER_ID,FUF_API_TEST_MODE,FUF_API_CLEANUP_RUN_ID,FUF_API_RUN_ID
+          script: |
+            set -eu
+            umask 077
+            cd /opt/fuf-calculator/api-contract/code/${{ github.run_id }}-${{ github.run_attempt }}
+            python3 launch_api_contract.py

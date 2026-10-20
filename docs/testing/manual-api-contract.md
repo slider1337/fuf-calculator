@@ -37,6 +37,36 @@ Folgende Umgebungsvariablen über die vorhandene sichere Secret-Konfiguration be
 
 ## Ausführen
 
+### GitHub Actions mit vorhandenen Secrets
+
+Actions → **API-Vertragsprüfung (nur manuell)** → **Run workflow**, Modus `run`.
+Der Test legt den Termin selbst an; es gibt keine Eingabe einer Termin-ID.
+Der Nutzer hat am 20.10.2026 **FuF Verein** als Testkalender festgelegt. Der Starter
+liest die Kalender paginiert und verwendet ausschließlich den eindeutig exakten
+Namens-Treffer. Bei fehlendem oder doppeltem Namen bricht er vor Schreibaktionen ab.
+Eine optional eingegebene `calendar_id` / Variable `FUF_TEST_CALENDAR_ID` muss ebenfalls
+zu **FuF Verein** gehören; eine abweichende ID wird abgewiesen. Die Kalender-ID muss
+der Nutzer damit normalerweise nicht heraussuchen.
+Das Testmitglied mit Kontaktadresse `me@benna.me` kommt aus `member_id` oder der
+Repository-Variable `FUF_TEST_MEMBER_ID`. Die oben genannten Mailgrenzen gelten weiterhin.
+
+Der Workflow verwendet die vorhandenen Deployment-Secrets `DEPLOY_SSH_KEY`,
+`EASYVEREIN_API_TOKEN`, `FUF_INTEGRATION_SERVICES` und die Variablen `DEPLOY_HOST`,
+`DEPLOY_USER`, `APP_URL`, `FUF_INTEGRATION_AUDIENCE`. Der Integrationsschlüssel wird
+im Testprozess aus dem konfigurierten Service übernommen (standardmäßig `website`,
+Key `current`, alternativ der einzige vorhandene Key). Abweichende Kennungen über
+`FUF_TEST_SERVICE_ID` / `FUF_TEST_KEY_ID` konfigurieren. Keine Secrets kopieren oder ausgeben.
+
+Die Skripte laufen isoliert per SSH auf der vorhandenen VM. Sie deployen keine
+Anwendung und ändern keine Betriebskonfiguration. Das Journal bleibt bei Fehlern
+unter `/opt/fuf-calculator/api-contract/journals/<Run-ID>-<Versuch>.json` erhalten,
+auch wenn der Actions-Runner ausfällt. Zur Wiederaufnahme denselben Workflow mit
+Modus `cleanup` und der im Protokoll genannten früheren Laufkennung starten.
+Ein normaler neuer Lauf verwendet eine neue Kennung und bereinigt kein altes Journal.
+Der Workflow hat ausschließlich `workflow_dispatch`, keine automatischen Auslöser.
+
+### Direkter Aufruf
+
 Nach ausdrücklicher Nutzeraufforderung aus dem Repository:
 
 ```bash

@@ -41,9 +41,14 @@ Folgende Umgebungsvariablen über die vorhandene sichere Secret-Konfiguration be
 
 Actions → **API-Vertragsprüfung (nur manuell)** → **Run workflow**, Modus `run`.
 Der Test legt den Termin selbst an; es gibt keine Eingabe einer Termin-ID.
-Benötigt werden lediglich der übergeordnete Testkalender und das Testmitglied mit
-Kontaktadresse `me@benna.me`, jeweils per Eingabefeld oder Repository-Variable
-`FUF_TEST_CALENDAR_ID` / `FUF_TEST_MEMBER_ID`. Die oben genannten Mailgrenzen gelten weiterhin.
+Der Nutzer hat am 20.10.2026 **FuF Verein** als Testkalender festgelegt. Der Starter
+liest die Kalender paginiert und verwendet ausschließlich den eindeutig exakten
+Namens-Treffer. Bei fehlendem oder doppeltem Namen bricht er vor Schreibaktionen ab.
+Eine optional eingegebene `calendar_id` / Variable `FUF_TEST_CALENDAR_ID` muss ebenfalls
+zu **FuF Verein** gehören; eine abweichende ID wird abgewiesen. Die Kalender-ID muss
+der Nutzer damit normalerweise nicht heraussuchen.
+Das Testmitglied mit Kontaktadresse `me@benna.me` kommt aus `member_id` oder der
+Repository-Variable `FUF_TEST_MEMBER_ID`. Die oben genannten Mailgrenzen gelten weiterhin.
 
 Der Workflow verwendet die vorhandenen Deployment-Secrets `DEPLOY_SSH_KEY`,
 `EASYVEREIN_API_TOKEN`, `FUF_INTEGRATION_SERVICES` und die Variablen `DEPLOY_HOST`,

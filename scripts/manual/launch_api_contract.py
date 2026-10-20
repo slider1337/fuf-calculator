@@ -17,6 +17,7 @@ def prepare(environment):
     runner.require(re.fullmatch(r"[1-9][0-9]*-[1-9][0-9]*", run_id), "invalid_run_id")
     env["FUF_TEST_CALCULATOR_URL"] = env.get("APP_URL", "")
     if mode == "run":
+        env["FUF_TEST_CALENDAR_NAME"] = "FuF Verein"
         # Prefer the explicitly configured existing website service and current key.
         services = json.loads(env.get("FUF_INTEGRATION_SERVICES", "{}"))
         service_id = env.get("FUF_TEST_SERVICE_ID") or "website"
@@ -31,15 +32,32 @@ def prepare(environment):
                    FUF_TEST_ISSUER=service.get("issuer", ""), FUF_TEST_SIGNING_KEY=keys[key_id])
     required = ["EASYVEREIN_API_TOKEN", "FUF_TEST_CALCULATOR_URL"]
     if mode == "run":
-        required += ["FUF_TEST_CALENDAR_ID", "FUF_TEST_MEMBER_ID", "FUF_INTEGRATION_AUDIENCE",
+        required += ["FUF_TEST_MEMBER_ID", "FUF_INTEGRATION_AUDIENCE",
                      "FUF_TEST_ISSUER", "FUF_TEST_SIGNING_KEY"]
     for key in required:
         runner.require(isinstance(env.get(key), str) and bool(env[key]), "missing_" + key)
     return env, mode, run_id
 
 
+def resolve_calendar(env, provider):
+    name = env["FUF_TEST_CALENDAR_NAME"]
+    if env.get("FUF_TEST_CALENDAR_ID"):
+        rid = runner.reference(env["FUF_TEST_CALENDAR_ID"])
+        row = provider.get("calendar/" + rid + "/?query={id,name}")
+        runner.require(runner.reference(row) == rid and row.get("name") == name,
+                       "configured_calendar_is_not_FuF_Verein")
+    else:
+        matches = [row for row in provider.rows("calendar", query="{id,name}")
+                   if row.get("name") == name]
+        runner.require(len(matches) == 1, "FuF_Verein_calendar_missing_or_ambiguous")
+        rid = runner.reference(matches[0])
+    return {**env, "FUF_TEST_CALENDAR_ID": rid}
+
+
 def main():
     env, mode, run_id = prepare(os.environ)
+    if mode == "run":
+        env = resolve_calendar(env, runner.Provider(env["EASYVEREIN_API_TOKEN"]))
     directory = Path("/opt/fuf-calculator/api-contract/journals")
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     journal = directory / (run_id + ".json")

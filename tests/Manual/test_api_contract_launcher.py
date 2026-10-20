@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import Mock
 
 DIRECTORY = Path(__file__).resolve().parents[2] / "scripts/manual"
 sys.path.insert(0, str(DIRECTORY))
@@ -39,11 +40,35 @@ class LauncherTest(unittest.TestCase):
         with self.assertRaisesRegex(launcher.runner.CheckFailed, "invalid_run_id"):
             launcher.prepare(env)
 
-    def test_missing_calendar_is_reported_without_creating_anything(self):
+    def test_missing_calendar_id_uses_user_selected_calendar_name(self):
         env = self.config()
         del env["FUF_TEST_CALENDAR_ID"]
-        with self.assertRaisesRegex(launcher.runner.CheckFailed, "missing_FUF_TEST_CALENDAR_ID"):
-            launcher.prepare(env)
+        prepared = launcher.prepare(env)[0]
+        self.assertEqual("FuF Verein", prepared["FUF_TEST_CALENDAR_NAME"])
+        provider = Mock()
+        provider.rows.return_value = [{"id": 10, "name": "FuF Teens"}, {"id": 3, "name": "FuF Verein"}]
+        self.assertEqual("3", launcher.resolve_calendar(prepared, provider)["FUF_TEST_CALENDAR_ID"])
+        provider.rows.assert_called_once_with("calendar", query="{id,name}")
+        provider.call.assert_not_called()
+
+    def test_missing_or_duplicate_calendar_names_abort_instead_of_guessing(self):
+        env = launcher.prepare(self.config())[0]
+        del env["FUF_TEST_CALENDAR_ID"]
+        for rows in ([], [{"id": 3, "name": "FuF Verein"}, {"id": 4, "name": "FuF Verein"}]):
+            provider = Mock()
+            provider.rows.return_value = rows
+            with self.assertRaisesRegex(launcher.runner.CheckFailed, "missing_or_ambiguous"):
+                launcher.resolve_calendar(env, provider)
+            provider.call.assert_not_called()
+
+    def test_explicit_calendar_id_must_match_user_selected_name(self):
+        env = launcher.prepare(self.config())[0]
+        provider = Mock()
+        provider.get.return_value = {"id": 3, "name": "FuF Teens"}
+        with self.assertRaisesRegex(launcher.runner.CheckFailed, "not_FuF_Verein"):
+            launcher.resolve_calendar(env, provider)
+        provider.get.return_value = {"id": 3, "name": "FuF Verein"}
+        self.assertEqual("3", launcher.resolve_calendar(env, provider)["FUF_TEST_CALENDAR_ID"])
 
     def test_multiple_noncurrent_keys_require_explicit_selection(self):
         env = self.config()

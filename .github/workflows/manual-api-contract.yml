@@ -9,7 +9,7 @@ on:
         options: [run, cleanup]
         default: run
       calendar_id:
-        description: Testkalender-ID (kein Termin; alternativ Variable FUF_TEST_CALENDAR_ID)
+        description: Optional zur eindeutigen Auswahl; sonst wird FuF Verein nach Namen aufgelöst
         type: string
         required: false
       member_id:

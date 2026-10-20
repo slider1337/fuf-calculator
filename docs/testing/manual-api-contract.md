@@ -47,8 +47,12 @@ Namens-Treffer. Bei fehlendem oder doppeltem Namen bricht er vor Schreibaktionen
 Eine optional eingegebene `calendar_id` / Variable `FUF_TEST_CALENDAR_ID` muss ebenfalls
 zu **FuF Verein** gehören; eine abweichende ID wird abgewiesen. Die Kalender-ID muss
 der Nutzer damit normalerweise nicht heraussuchen.
-Das Testmitglied mit Kontaktadresse `me@benna.me` kommt aus `member_id` oder der
-Repository-Variable `FUF_TEST_MEMBER_ID`. Die oben genannten Mailgrenzen gelten weiterhin.
+Als Testmitglied hat der Nutzer am 20.10.2026 **Benedikt Schaller** bestimmt. Der
+Starter sucht das Mitglied lesend und verlangt einen eindeutigen Treffer sowohl
+für den vollständigen Kontaktnamen als auch für `me@benna.me`. Der Name allein
+genügt nicht. Eine optional eingegebene `member_id` / Variable `FUF_TEST_MEMBER_ID`
+wird ebenfalls gegen beide Angaben geprüft. Kalender- und Mitglieds-ID müssen
+somit normalerweise nicht eingegeben werden. Die oben genannten Mailgrenzen gelten weiterhin.
 
 Der Workflow verwendet die vorhandenen Deployment-Secrets `DEPLOY_SSH_KEY`,
 `EASYVEREIN_API_TOKEN`, `FUF_INTEGRATION_SERVICES` und die Variablen `DEPLOY_HOST`,

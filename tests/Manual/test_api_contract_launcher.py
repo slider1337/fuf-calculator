@@ -80,6 +80,44 @@ class LauncherTest(unittest.TestCase):
         env["FUF_TEST_KEY_ID"] = "new"
         self.assertEqual("y" * 32, launcher.prepare(env)[0]["FUF_TEST_SIGNING_KEY"])
 
+    def test_resolve_selected_member_requires_name_and_email_not_name_alone(self):
+        env = self.config()
+        del env["FUF_TEST_MEMBER_ID"]
+        env = launcher.prepare(env)[0]
+        provider = Mock()
+        provider.rows.return_value = [
+            {"id": 8, "contact_details": {"id": 80, "name": "Benedikt Schaller", "email": "other@example.invalid"}},
+            {"id": 9, "contact_details": {"id": 90, "name": "Other Person", "email": "me@benna.me"}},
+            {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}}]
+        self.assertEqual("1", launcher.resolve_member(env, provider)["FUF_TEST_MEMBER_ID"])
+        provider.rows.assert_called_once_with("member", search="Benedikt Schaller",
+                                              query="{id,contact_details{id,name,email}}")
+        provider.call.assert_not_called()
+
+    def test_ambiguous_or_absent_selected_member_aborts(self):
+        env = launcher.prepare(self.config())[0]
+        del env["FUF_TEST_MEMBER_ID"]
+        row = {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}}
+        for rows in ([], [row, {**row, "id": 2}]):
+            provider = Mock()
+            provider.rows.return_value = rows
+            with self.assertRaisesRegex(launcher.runner.CheckFailed, "missing_or_ambiguous"):
+                launcher.resolve_member(env, provider)
+
+    def test_explicit_member_id_does_not_bypass_selected_name_and_email(self):
+        env = launcher.prepare(self.config())[0]
+        provider = Mock()
+        provider.get.return_value = {"id": 1, "contact_details": {"id": 10, "name": "Other Person", "email": "me@benna.me"}}
+        with self.assertRaisesRegex(launcher.runner.CheckFailed, "missing_or_ambiguous"):
+            launcher.resolve_member(env, provider)
+
+    def test_unexpanded_contact_is_checked_before_selecting_member(self):
+        env = launcher.prepare(self.config())[0]
+        provider = Mock()
+        provider.get.side_effect = [{"id": 1, "contact_details": 10},
+            {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}]
+        self.assertEqual("1", launcher.resolve_member(env, provider)["FUF_TEST_MEMBER_ID"])
+
 
 if __name__ == "__main__":
     unittest.main()

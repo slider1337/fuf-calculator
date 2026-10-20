@@ -18,6 +18,7 @@ def prepare(environment):
     env["FUF_TEST_CALCULATOR_URL"] = env.get("APP_URL", "")
     if mode == "run":
         env["FUF_TEST_CALENDAR_NAME"] = "FuF Verein"
+        env["FUF_TEST_MEMBER_NAME"] = "Benedikt Schaller"
         # Prefer the explicitly configured existing website service and current key.
         services = json.loads(env.get("FUF_INTEGRATION_SERVICES", "{}"))
         service_id = env.get("FUF_TEST_SERVICE_ID") or "website"
@@ -32,7 +33,7 @@ def prepare(environment):
                    FUF_TEST_ISSUER=service.get("issuer", ""), FUF_TEST_SIGNING_KEY=keys[key_id])
     required = ["EASYVEREIN_API_TOKEN", "FUF_TEST_CALCULATOR_URL"]
     if mode == "run":
-        required += ["FUF_TEST_MEMBER_ID", "FUF_INTEGRATION_AUDIENCE",
+        required += ["FUF_INTEGRATION_AUDIENCE",
                      "FUF_TEST_ISSUER", "FUF_TEST_SIGNING_KEY"]
     for key in required:
         runner.require(isinstance(env.get(key), str) and bool(env[key]), "missing_" + key)
@@ -54,10 +55,34 @@ def resolve_calendar(env, provider):
     return {**env, "FUF_TEST_CALENDAR_ID": rid}
 
 
+def resolve_member(env, provider):
+    name = env["FUF_TEST_MEMBER_NAME"]
+    if env.get("FUF_TEST_MEMBER_ID"):
+        rid = runner.reference(env["FUF_TEST_MEMBER_ID"])
+        rows = [provider.get("member/" + rid + "/?query={id,contact_details{id,name,email}}")]
+        runner.require(runner.reference(rows[0]) == rid, "configured_test_member_reference_mismatch")
+    else:
+        rows = provider.rows("member", search=name, query="{id,contact_details{id,name,email}}")
+    matches = []
+    for row in rows:
+        contact = row.get("contact_details")
+        if not isinstance(contact, dict) or not all(key in contact for key in ("id", "name", "email")):
+            cid = runner.reference(contact)
+            contact = provider.get("contact-details/" + cid + "/?query={id,name,email}")
+            runner.require(runner.reference(contact) == cid, "test_contact_reference_mismatch")
+        if (contact.get("name") == name and
+                str(contact.get("email", "")).strip().lower() == "me@benna.me"):
+            matches.append(runner.reference(row))
+    runner.require(len(matches) == 1, "test_member_name_and_email_missing_or_ambiguous")
+    return {**env, "FUF_TEST_MEMBER_ID": matches[0]}
+
+
 def main():
     env, mode, run_id = prepare(os.environ)
     if mode == "run":
-        env = resolve_calendar(env, runner.Provider(env["EASYVEREIN_API_TOKEN"]))
+        provider = runner.Provider(env["EASYVEREIN_API_TOKEN"])
+        env = resolve_calendar(env, provider)
+        env = resolve_member(env, provider)
     directory = Path("/opt/fuf-calculator/api-contract/journals")
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     journal = directory / (run_id + ".json")

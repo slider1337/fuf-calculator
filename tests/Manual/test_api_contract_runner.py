@@ -59,7 +59,7 @@ class FakeProvider:
         if path.startswith("member/"):
             return {"id": 1, "contact_details": {"id": 2}}
         if path.startswith("contact-details/"):
-            return {"id": 2, "email": "me@benna.me"}
+            return {"id": 2, "primary_email": "me@benna.me"}
         if path.startswith("calendar/"):
             return {"id": 3}
         return self.call("GET", path)[1]
@@ -84,6 +84,10 @@ class FakeCalculator:
 
 class RunnerTest(unittest.TestCase):
     def setUp(self):
+        # These are fake runs; do not emit live-looking PASS messages into CI logs.
+        output = patch("sys.stdout", new=io.StringIO())
+        output.start()
+        self.addCleanup(output.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / "run.json"
@@ -181,7 +185,7 @@ class RunnerTest(unittest.TestCase):
 
     def test_wrong_contact_email_aborts_before_writes(self):
         original = self.provider.get
-        self.provider.get = lambda path: {"id": 2, "email": "other@example.invalid"} if path.startswith("contact-details/") else original(path)
+        self.provider.get = lambda path: {"id": 2, "primary_email": "other@example.invalid"} if path.startswith("contact-details/") else original(path)
         with self.assertRaisesRegex(runner.CheckFailed, "email_must_be"):
             self.check.run()
         self.assertEqual(10, self.provider.next_id)
@@ -244,6 +248,27 @@ class RunnerTest(unittest.TestCase):
             with patch.object(provider, "get", return_value={"results": [], "next": next_url}):
                 with self.assertRaises(runner.CheckFailed):
                     list(provider.rows("event", search="marker"))
+
+    def test_http_failure_names_resource_without_query_or_response_body(self):
+        body = io.BytesIO(b'{"secret":"private-response-body"}')
+        error = runner.HTTPError("https://easyverein.com/api/v3.0/member/", 400, "bad", {}, body)
+        http = runner.Http("https://easyverein.com/api/v3.0/")
+        with patch.object(http.opener, "open", side_effect=error):
+            with self.assertRaises(runner.CheckFailed) as failure:
+                http.call("GET", "member/?search=private-member-name")
+        self.assertEqual("unexpected_http_status_400_GET_member", str(failure.exception))
+        self.assertNotIn("private", str(failure.exception))
+
+    def test_contact_preflight_requests_primary_email(self):
+        original = self.provider.get
+        paths = []
+        def checked(path):
+            paths.append(path)
+            return original(path)
+        self.provider.get = checked
+        self.check.run()
+        self.assertIn("contact-details/2/?query={id,primary_email}", paths)
+        self.check.cleanup()
 
 
 if __name__ == "__main__":

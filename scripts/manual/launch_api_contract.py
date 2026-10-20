@@ -59,19 +59,19 @@ def resolve_member(env, provider):
     name = env["FUF_TEST_MEMBER_NAME"]
     if env.get("FUF_TEST_MEMBER_ID"):
         rid = runner.reference(env["FUF_TEST_MEMBER_ID"])
-        rows = [provider.get("member/" + rid + "/?query={id,contact_details{id,name,email}}")]
+        rows = [provider.get("member/" + rid + "/?query={id,contact_details{id,name,primary_email}}")]
         runner.require(runner.reference(rows[0]) == rid, "configured_test_member_reference_mismatch")
     else:
-        rows = provider.rows("member", search=name, query="{id,contact_details{id,name,email}}")
+        rows = provider.rows("member", search=name, query="{id,contact_details{id,name,primary_email}}")
     matches = []
     for row in rows:
         contact = row.get("contact_details")
-        if not isinstance(contact, dict) or not all(key in contact for key in ("id", "name", "email")):
+        if not isinstance(contact, dict) or not all(key in contact for key in ("id", "name", "primary_email")):
             cid = runner.reference(contact)
-            contact = provider.get("contact-details/" + cid + "/?query={id,name,email}")
+            contact = provider.get("contact-details/" + cid + "/?query={id,name,primary_email}")
             runner.require(runner.reference(contact) == cid, "test_contact_reference_mismatch")
         if (contact.get("name") == name and
-                str(contact.get("email", "")).strip().lower() == "me@benna.me"):
+                str(contact.get("primary_email", "")).strip().lower() == "me@benna.me"):
             matches.append(runner.reference(row))
     runner.require(len(matches) == 1, "test_member_name_and_email_missing_or_ambiguous")
     return {**env, "FUF_TEST_MEMBER_ID": matches[0]}
@@ -81,8 +81,12 @@ def main():
     env, mode, run_id = prepare(os.environ)
     if mode == "run":
         provider = runner.Provider(env["EASYVEREIN_API_TOKEN"])
+        print("BEGIN preflight_calendar (read-only; no test data created)", flush=True)
         env = resolve_calendar(env, provider)
+        print("PASS preflight_calendar", flush=True)
+        print("BEGIN preflight_member (read-only; no test data created)", flush=True)
         env = resolve_member(env, provider)
+        print("PASS preflight_member", flush=True)
     directory = Path("/opt/fuf-calculator/api-contract/journals")
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     journal = directory / (run_id + ".json")

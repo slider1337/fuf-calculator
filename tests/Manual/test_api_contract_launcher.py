@@ -86,18 +86,18 @@ class LauncherTest(unittest.TestCase):
         env = launcher.prepare(env)[0]
         provider = Mock()
         provider.rows.return_value = [
-            {"id": 8, "contact_details": {"id": 80, "name": "Benedikt Schaller", "email": "other@example.invalid"}},
-            {"id": 9, "contact_details": {"id": 90, "name": "Other Person", "email": "me@benna.me"}},
-            {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}}]
+            {"id": 8, "contact_details": {"id": 80, "name": "Benedikt Schaller", "primary_email": "other@example.invalid"}},
+            {"id": 9, "contact_details": {"id": 90, "name": "Other Person", "primary_email": "me@benna.me"}},
+            {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "primary_email": "me@benna.me"}}]
         self.assertEqual("1", launcher.resolve_member(env, provider)["FUF_TEST_MEMBER_ID"])
         provider.rows.assert_called_once_with("member", search="Benedikt Schaller",
-                                              query="{id,contact_details{id,name,email}}")
+                                              query="{id,contact_details{id,name,primary_email}}")
         provider.call.assert_not_called()
 
     def test_ambiguous_or_absent_selected_member_aborts(self):
         env = launcher.prepare(self.config())[0]
         del env["FUF_TEST_MEMBER_ID"]
-        row = {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}}
+        row = {"id": 1, "contact_details": {"id": 10, "name": "Benedikt Schaller", "primary_email": "me@benna.me"}}
         for rows in ([], [row, {**row, "id": 2}]):
             provider = Mock()
             provider.rows.return_value = rows
@@ -107,7 +107,7 @@ class LauncherTest(unittest.TestCase):
     def test_explicit_member_id_does_not_bypass_selected_name_and_email(self):
         env = launcher.prepare(self.config())[0]
         provider = Mock()
-        provider.get.return_value = {"id": 1, "contact_details": {"id": 10, "name": "Other Person", "email": "me@benna.me"}}
+        provider.get.return_value = {"id": 1, "contact_details": {"id": 10, "name": "Other Person", "primary_email": "me@benna.me"}}
         with self.assertRaisesRegex(launcher.runner.CheckFailed, "missing_or_ambiguous"):
             launcher.resolve_member(env, provider)
 
@@ -115,8 +115,16 @@ class LauncherTest(unittest.TestCase):
         env = launcher.prepare(self.config())[0]
         provider = Mock()
         provider.get.side_effect = [{"id": 1, "contact_details": 10},
-            {"id": 10, "name": "Benedikt Schaller", "email": "me@benna.me"}]
+            {"id": 10, "name": "Benedikt Schaller", "primary_email": "me@benna.me"}]
         self.assertEqual("1", launcher.resolve_member(env, provider)["FUF_TEST_MEMBER_ID"])
+
+    def test_provider_primary_email_field_is_used_for_member_lookup(self):
+        env = launcher.prepare(self.config())[0]
+        provider = Mock()
+        contact = {"id": 10, "name": "Benedikt Schaller", "primary_email": "me@benna.me"}
+        provider.get.side_effect = [{"id": 1, "contact_details": contact}, contact]
+        self.assertEqual("1", launcher.resolve_member(env, provider)["FUF_TEST_MEMBER_ID"])
+        self.assertIn("primary_email", provider.get.call_args_list[0].args[0])
 
 
 if __name__ == "__main__":

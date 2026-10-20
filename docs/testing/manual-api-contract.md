@@ -17,7 +17,7 @@ Der Test belegt ausgewählte echte API-Verträge. Er belegt **nicht** den gesamt
 ## Voraussetzungen
 
 - Python 3.10 oder neuer, nur Standardbibliothek; HTTPS-Zugriff auf beide Systeme.
-- Eigener Testkalender und ausdrücklich dafür vorgesehenes Testmitglied, dessen verknüpfter Kontakt ausschließlich `me@benna.me` als Testadresse nutzt. Der Runner prüft `contact-details.email` vor dem ersten Schreibaufruf und bricht bei Abweichung ab. Kalender-/Providerbenachrichtigungen müssen vor dem Lauf so eingerichtet sein, dass Testmails ausschließlich an diese Adresse gehen. Der Runner kann zusätzliche Providerempfänger nicht erkennen und verändert keine globalen Mailregeln.
+- Eigener Testkalender und ausdrücklich dafür vorgesehenes Testmitglied, dessen verknüpfter Kontakt ausschließlich `me@benna.me` als Testadresse nutzt. Der Runner prüft `contact-details.primary_email` vor dem ersten Schreibaufruf und bricht bei Abweichung ab. Kalender-/Providerbenachrichtigungen müssen vor dem Lauf so eingerichtet sein, dass Testmails ausschließlich an diese Adresse gehen. Der Runner kann zusätzliche Providerempfänger nicht erkennen und verändert keine globalen Mailregeln.
 - Tokenrechte zum Lesen, Anlegen, Ändern und Löschen der genannten Providerressourcen; passender vorhandener Calculator-Integrationsschlüssel mit `member.read`. Keine Rechteerweiterung durch den Test.
 - Ein beständiger, nicht mit Git synchronisierter Pfad für das Laufjournal. Dieses enthält ausschließlich Laufkennung, Calculator-Zieladresse, Termin-ID und POST-Status; keine Tokens, Namen oder Antwortinhalte. Nicht veröffentlichen.
 
@@ -92,6 +92,18 @@ python3 scripts/manual/api_contract_test.py --run-live --cleanup-only --journal 
 Dafür genügen `EASYVEREIN_API_TOKEN` und dieselbe `FUF_TEST_CALCULATOR_URL`. Bereits entfernte Ressourcen gelten als bereinigt. Vor dem Termin-POST wird die Absicht dauerhaft gespeichert. Geht dessen Antwort verloren, sucht die Bereinigung paginiert nach der exakten eigenen Markierung. Teilnahmen und Preisgruppen werden über Termin-ID plus exakte Markierung wiedergefunden, auch wenn ihre POST-Antwort verloren ging. Fremde Markierungen und widersprüchliche Referenzen verhindern Löschungen. Bei einem nicht eindeutig auflösbaren POST bleibt das Journal bestehen; keinen neuen POST als vermeintlichen Retry starten. Zurückgebliebene Daten und ungeklärte Ergebnisse im Abschluss melden.
 
 ## Offline-Prüfung des Runners
+
+Korrektur nach dem echten Lauf vom 20.10.2026: Die Kontaktprojektion muss
+`primary_email` verwenden, nicht `email`. Geprüft gegen die eingebettete OpenAPI-
+Dokumentation von [easyVerein v3.0](https://easyverein.com/api/v3.0/documentation).
+Der fehlgeschlagene Lauf `39385685217-1` brach im lesenden Launcher-Vorabcheck ab,
+vor Journalerstellung und vor dem ersten Testdaten-POST. Es wurden keine
+Testdaten angelegt. Der Launcher protokolliert nun Beginn/Erfolg jedes Vorabchecks;
+HTTP-Fehler enthalten Methode und Ressourcentyp, aber keine IDs, Suchwerte oder
+Antwortkörper. Offline-Fakes geben keine irreführenden Live-PASS-Zeilen mehr aus.
+
+Nach Übernahme einer Runner-Korrektur einen **neuen** manuellen Lauf auf `master`
+starten. „Re-run jobs“ eines älteren Laufs verwendet weiterhin dessen alten Commit.
 
 ```bash
 python3 -m unittest discover -s tests/Manual -v

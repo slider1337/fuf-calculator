@@ -54,6 +54,13 @@ class Http:
     def call(self, method, path, body=None, headers=None, expected=(200,)):
         require(not path.startswith(("/", "http")) and ".." not in path,
                 "invalid_request_path")
+        # Only fixed resource/method labels may appear in diagnostics. Never IDs,
+        # query values, names, delegated tokens or remote response bodies.
+        resource = path.split("/", 1)[0].split("?", 1)[0]
+        resource = resource if resource in {"calendar", "member", "contact-details", "event",
+                    "price-group", "participation", "integration"} else "resource"
+        method_label = method if method in {"GET", "POST", "PATCH", "PUT", "DELETE"} else "METHOD"
+        context = method_label + "_" + resource
         raw = b"" if body is None else json.dumps(body, separators=(",", ":")).encode()
         request = Request(self.base + path, data=raw if body is not None else None,
                           method=method, headers={"Accept": "application/json",
@@ -63,11 +70,11 @@ class Http:
         except HTTPError as error:
             response = error
         except (URLError, TimeoutError, OSError):
-            raise CheckFailed("http_outcome_unknown") from None
+            raise CheckFailed("http_outcome_unknown_" + context) from None
         with response:
             status = response.code
             # Do not read or log error bodies: they may contain personal data or secrets.
-            require(status in expected, "unexpected_http_status_" + str(status))
+            require(status in expected, "unexpected_http_status_" + str(status) + "_" + context)
             if method == "DELETE" or status in (204, 404) or status >= 400:
                 return status, None
             data = response.read(4_194_305)
@@ -186,8 +193,8 @@ class LiveCheck:
         member = self.provider.get("member/" + reference(self.env["FUF_TEST_MEMBER_ID"]) + "/?query={id,contact_details{id}}")
         require(reference(member) == self.env["FUF_TEST_MEMBER_ID"], "test_member_mismatch")
         contact = reference(member.get("contact_details"))
-        address = self.provider.get("contact-details/" + contact + "/?query={id,email}")
-        require(reference(address) == contact and str(address.get("email", "")).strip().lower() == "me@benna.me",
+        address = self.provider.get("contact-details/" + contact + "/?query={id,primary_email}")
+        require(reference(address) == contact and str(address.get("primary_email", "")).strip().lower() == "me@benna.me",
                 "test_contact_email_must_be_me_at_benna_me")
         require(reference(self.provider.get("calendar/" + calendar + "/?query={id}")) == calendar,
                 "test_calendar_mismatch")

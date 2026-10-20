@@ -295,6 +295,59 @@ class RunnerTest(unittest.TestCase):
         self.check.cleanup()
         self.assertFalse(self.path.exists())
 
+    def test_provider_decimal_string_quantity_is_accepted_exactly(self):
+        original = self.provider.get
+        def decimal_quantity(path):
+            row = original(path)
+            if path.startswith("participation/") and "participation_price_groups" in row:
+                row = {**row, "participation_price_groups": [
+                    {**assignment, "pieces": "1.000000"}
+                    for assignment in row["participation_price_groups"]]}
+            return row
+        self.provider.get = decimal_quantity
+        self.check.run()
+        self.check.cleanup()
+
+    def test_decimal_comparison_does_not_accept_invalid_or_inexact_values(self):
+        for value in (1, 1.0, "1", "1.000000"):
+            self.assertTrue(runner.decimal_equals(value, "1"), repr(value))
+        for value in (True, None, "NaN", "Infinity", "1e0", "1.0000000001", "2", [], {}):
+            self.assertFalse(runner.decimal_equals(value, "1"), repr(value))
+
+    def test_price_group_check_updates_price_with_label_like_calculator(self):
+        self.check.run()
+        group = next(iter(self.provider.data["price-group"].values()))
+        self.assertEqual("API Test geändert", group["name"])
+        self.assertEqual(1.75, group["selling_price"])
+        self.check.cleanup()
+
+    def test_readback_requests_bypass_http_cache_like_calculator(self):
+        http = runner.Http("https://easyverein.com/api/v3.0/")
+        with patch.object(http.opener, "open") as opened:
+            response = opened.return_value
+            response.code = 200
+            response.read.return_value = b'{}'
+            http.call("GET", "price-group/1/?query={id,name}")
+            request = opened.call_args.args[0]
+            self.assertEqual("no-cache", request.get_header("Cache-control"))
+
+    def test_bad_assignment_stays_failure_but_both_cancellations_are_tested(self):
+        original = self.provider.get
+        def wrong_quantity(path):
+            row = original(path)
+            if path.startswith("participation/") and "participation_price_groups" in row:
+                row = {**row, "participation_price_groups": [
+                    {**assignment, "pieces": "2.000000"}
+                    for assignment in row["participation_price_groups"]]}
+            return row
+        self.provider.get = wrong_quantity
+        with self.assertRaisesRegex(runner.CheckFailed, "participation_price_group_contract_member.*guest"):
+            self.check.run()
+        self.assertEqual(2, len(self.provider.data["participation"]))
+        self.assertTrue(all(row["state"] == 0 for row in self.provider.data["participation"].values()))
+        self.check.cleanup()
+        self.assertFalse(self.path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

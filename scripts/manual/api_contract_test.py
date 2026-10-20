@@ -3,6 +3,7 @@
 import argparse
 import base64
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 import hashlib
 import hmac
 import html
@@ -39,6 +40,18 @@ def reference(value):
     return str(value)
 
 
+def decimal_equals(value, expected):
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return False
+    text = str(value)
+    if len(text) > 64 or not re.fullmatch(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", text):
+        return False
+    try:
+        return Decimal(text) == Decimal(expected)
+    except InvalidOperation:
+        return False
+
+
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -66,7 +79,9 @@ class Http:
         raw = b"" if body is None else json.dumps(body, separators=(",", ":")).encode()
         request = Request(self.base + path, data=raw if body is not None else None,
                           method=method, headers={"Accept": "application/json",
-                                                  "Content-Type": "application/json", **(headers or {})})
+                                                  "Content-Type": "application/json",
+                                                  **({"Cache-Control": "no-cache"} if method == "GET" else {}),
+                                                  **(headers or {})})
         try:
             response = self.opener.open(request, timeout=20)
         except HTTPError as error:
@@ -192,27 +207,48 @@ class LiveCheck:
 
     def check_price_group_update(self, group, event):
         path = "price-group/" + group + "/"
-        query = "?query={id,event,name,description}"
+        query = "?query={id,event,name,description,selling_price}"
         before = self.provider.get(path + query)
         require(reference(before) == group and reference(before.get("event")) == event
                 and before.get("description") == self.marker, "price_group_ownership_unproven")
         expected = "API Test geändert"
-        _, patched = self.provider.call("PATCH", path, {"name": expected})
+        # Match the actual Calculator PriceGroupService contract: label + price.
+        _, patched = self.provider.call("PATCH", path, {"name": expected, "selling_price": 1.75})
         after = self.provider.get(path + query)
         require(reference(after) == group and reference(after.get("event")) == event
                 and after.get("description") == self.marker, "price_group_readback_reference_mismatch")
         actual = after.get("name")
-        if actual == expected:
-            print("PASS price_group_name_update", flush=True)
+        price_ok = decimal_equals(after.get("selling_price"), "1.75")
+        if actual == expected and price_ok:
+            print("PASS price_group_name_and_price_update", flush=True)
             return True
         # Diagnostics are booleans/type labels only; never dump provider values.
         diagnostic = {"name_present": "name" in after,
                       "name_is_string": isinstance(actual, str),
                       "unchanged": actual == before.get("name"),
                       "patch_name_matches": isinstance(patched, dict) and patched.get("name") == expected,
+                      "price_matches": price_ok,
+                      "price_unchanged": after.get("selling_price") == before.get("selling_price"),
                       "html_encoded_match": isinstance(actual, str) and html.unescape(actual) == expected,
                       "unicode_normalized_match": isinstance(actual, str) and unicodedata.normalize("NFC", actual) == expected}
         print("FAIL price_group_name_update " + json.dumps(diagnostic), flush=True)
+        return False
+
+    def check_participation_price(self, row, group, companion):
+        groups = row.get("participation_price_groups")
+        entry = groups[0] if isinstance(groups, list) and len(groups) == 1 and isinstance(groups[0], dict) else {}
+        try:
+            group_ok = reference(entry.get("price_group")) == group
+        except CheckFailed:
+            group_ok = False
+        pieces_ok = decimal_equals(entry.get("pieces"), "1")
+        if isinstance(groups, list) and len(groups) == 1 and group_ok and pieces_ok:
+            return True
+        diagnostic = {"is_guest": companion, "assignments_is_list": isinstance(groups, list),
+                      "assignment_count": len(groups) if isinstance(groups, list) else None,
+                      "group_matches": group_ok, "pieces_is_string": isinstance(entry.get("pieces"), str),
+                      "pieces_equal_one": pieces_ok}
+        print("FAIL participation_price_group " + json.dumps(diagnostic), flush=True)
         return False
 
     def run(self):
@@ -244,6 +280,7 @@ class LiveCheck:
                             "description": self.marker, "selling_price": 1.25, "pieces": -1,
                             "maximum_pieces_per_participation": 1})
         price_group_name_ok = self.check_price_group_update(group, event)
+        failures = [] if price_group_name_ok else ["price_group_update_not_persisted"]
         body = {"participation_event": int(event), "participation_address": int(contact),
                 "state": 1, "description": self.marker,
                 "participation_price_groups": [{"price_group": int(group), "pieces": 1}]}
@@ -252,12 +289,13 @@ class LiveCheck:
         guest = self.create("participation", {**body, "is_companion": True,
                             "companion_name": self.marker, "parent": int(parent)}, endpoint)
         for rid, companion in ((parent, False), (guest, True)):
-            row = self.provider.get("participation/" + rid + "/?query={id,participation_event,state,is_companion,parent,companion_name,participation_price_groups{price_group,pieces}}")
-            require(reference(row.get("participation_event")) == event and row.get("state") == 1
+            row = self.provider.get("participation/" + rid + "/?query={id,participation_event,participation_address,description,state,is_companion,parent,companion_name,participation_price_groups{price_group,pieces}}")
+            require(reference(row) == rid and reference(row.get("participation_event")) == event
+                    and reference(row.get("participation_address")) == contact
+                    and row.get("description") == self.marker and row.get("state") == 1
                     and row.get("is_companion") is companion, "participation_contract")
-            groups = row.get("participation_price_groups", [])
-            require(len(groups) == 1 and reference(groups[0].get("price_group")) == group
-                    and groups[0].get("pieces") == 1, "participation_price_group_contract")
+            if not self.check_participation_price(row, group, companion):
+                failures.append("participation_price_group_contract_" + ("guest" if companion else "member"))
             if companion:
                 require(reference(row.get("parent")) == parent and row.get("companion_name") == self.marker,
                         "guest_parent_contract")
@@ -265,8 +303,8 @@ class LiveCheck:
             self.provider.call("PATCH", "participation/" + rid + "/", {"state": 0})
             require(self.provider.get("participation/" + rid + "/?query={id,state}").get("state") == 0,
                     "cancellation_not_persisted")
-        print("PASS easyverein: event, description, price assignment, member, guest, cancellations", flush=True)
-        require(price_group_name_ok, "price_group_update_not_persisted")
+        print("PASS easyverein: event, description, member, guest, cancellations", flush=True)
+        require(not failures, "contract_checks_failed_" + "__".join(failures))
 
     def delete(self, resource, rid):
         path = resource + "/" + reference(rid) + "/"

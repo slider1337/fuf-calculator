@@ -121,6 +121,24 @@ hat oder der Provider den Namen anders zurückgibt, ist noch nicht belegt.
 Eine fehlgeschlagene reine Namensänderung verhindert die unabhängigen Teilnahme-
 und Abmeldeprüfungen nicht mehr; der Gesamtlauf bleibt trotzdem fehlgeschlagen.
 
+Dritter echter Lauf `39396516704-1`: Der Name war im GET vorhanden, unverändert,
+und entsprach auch in der PATCH-Antwort nicht dem angeforderten Namen. HTML- und
+Unicode-Normalisierung erklären die Abweichung nicht. Danach schlug die kombinierte
+Prüfung der Teilnahme-Preisgruppenzuordnung fehl; ihre einzelne Teilbedingung ist
+im damaligen Protokoll nicht erkennbar. Eigene Testdaten wurden erfolgreich bereinigt.
+
+Der Test korrigiert nun eine nachgewiesene falsche Annahme: Stückzahlen können wie
+in der eigentlichen Calculator-Anbindung als Dezimalstrings vorliegen. `1.000000`
+wird exakt mit `Decimal` verglichen; falsche Mengen, Boolesche Werte und ungültige
+Zahlen bleiben Fehler. Fehlende/falsche Gruppenzuordnung wird mit sicheren Flags
+je Mitglied/Gast eingegrenzt. Nach belegter eigener Teilnahme werden die Stornos
+auch bei einem Preiszuordnungsfehler geprüft; der Gesamtlauf bleibt fehlgeschlagen.
+Die Preisgruppenänderung verwendet nun wie `PriceGroupService` den gemeinsamen
+Payload aus Name und Verkaufspreis und prüft beide Werte nach dem Schreiben.
+GET-Aufrufe senden wie `EasyVereinReadHttpClient` `Cache-Control: no-cache`, damit
+die Prüfung nach einer Änderung keine vorangegangene HTTP-Cacheantwort übernimmt.
+Die Ursache des unveränderten Namens bleibt bis zum nächsten echten Lauf offen.
+
 ```bash
 python3 -m unittest discover -s tests/Manual -v
 ```

@@ -105,6 +105,22 @@ Antwortkörper. Offline-Fakes geben keine irreführenden Live-PASS-Zeilen mehr a
 Nach Übernahme einer Runner-Korrektur einen **neuen** manuellen Lauf auf `master`
 starten. „Re-run jobs“ eines älteren Laufs verwendet weiterhin dessen alten Commit.
 
+Zweiter echter Lauf `39389815796-1`: Beide lesenden Vorabchecks und die Calculator-
+Vertragsprüfungen waren erfolgreich. Eigener Termin und Preisgruppe wurden angelegt;
+die Prüfung des zurückgelesenen geänderten Preisgruppennamens schlug fehl.
+Die eigene Bereinigung wurde erfolgreich mit GET/404 bestätigt. Mitglieds-/Gast-
+Teilnahme und Abmeldung wurden in diesem Lauf noch nicht erreicht.
+
+Die Preisgruppenprüfung fordert nun explizit `id,event,name,description` an und
+prüft vor/nach der Änderung den Bezug zur eigenen Laufkennung und zum eigenen
+Termin. Bei Namensabweichung werden ausschließlich technische Wahrheitswerte
+ausgegeben: Feld vorhanden, Stringtyp, unverändert, PATCH-Antwort passend sowie
+HTML-/Unicode-Normalisierung passend. Das ist Diagnose, keine Akzeptanz einer
+abweichenden Rückgabe. Ob die alte unprojizierte GET-Antwort das Feld ausgelassen
+hat oder der Provider den Namen anders zurückgibt, ist noch nicht belegt.
+Eine fehlgeschlagene reine Namensänderung verhindert die unabhängigen Teilnahme-
+und Abmeldeprüfungen nicht mehr; der Gesamtlauf bleibt trotzdem fehlgeschlagen.
+
 ```bash
 python3 -m unittest discover -s tests/Manual -v
 ```

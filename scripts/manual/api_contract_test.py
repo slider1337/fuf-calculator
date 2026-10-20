@@ -5,6 +5,7 @@ import base64
 from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
+import html
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ import signal
 import sys
 import time
 import uuid
+import unicodedata
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
@@ -188,6 +190,31 @@ class LiveCheck:
         _, row = self.provider.call("POST", endpoint or resource + "/", body, (200, 201))
         return reference(row)
 
+    def check_price_group_update(self, group, event):
+        path = "price-group/" + group + "/"
+        query = "?query={id,event,name,description}"
+        before = self.provider.get(path + query)
+        require(reference(before) == group and reference(before.get("event")) == event
+                and before.get("description") == self.marker, "price_group_ownership_unproven")
+        expected = "API Test geändert"
+        _, patched = self.provider.call("PATCH", path, {"name": expected})
+        after = self.provider.get(path + query)
+        require(reference(after) == group and reference(after.get("event")) == event
+                and after.get("description") == self.marker, "price_group_readback_reference_mismatch")
+        actual = after.get("name")
+        if actual == expected:
+            print("PASS price_group_name_update", flush=True)
+            return True
+        # Diagnostics are booleans/type labels only; never dump provider values.
+        diagnostic = {"name_present": "name" in after,
+                      "name_is_string": isinstance(actual, str),
+                      "unchanged": actual == before.get("name"),
+                      "patch_name_matches": isinstance(patched, dict) and patched.get("name") == expected,
+                      "html_encoded_match": isinstance(actual, str) and html.unescape(actual) == expected,
+                      "unicode_normalized_match": isinstance(actual, str) and unicodedata.normalize("NFC", actual) == expected}
+        print("FAIL price_group_name_update " + json.dumps(diagnostic), flush=True)
+        return False
+
     def run(self):
         calendar = reference(self.env["FUF_TEST_CALENDAR_ID"])
         member = self.provider.get("member/" + reference(self.env["FUF_TEST_MEMBER_ID"]) + "/?query={id,contact_details{id}}")
@@ -216,9 +243,7 @@ class LiveCheck:
         group = self.create("price-group", {"event": int(event), "name": "API Test Erwachsene",
                             "description": self.marker, "selling_price": 1.25, "pieces": -1,
                             "maximum_pieces_per_participation": 1})
-        self.provider.call("PATCH", "price-group/" + group + "/", {"name": "API Test geändert"})
-        require(self.provider.get("price-group/" + group + "/").get("name") == "API Test geändert",
-                "price_group_update_not_persisted")
+        price_group_name_ok = self.check_price_group_update(group, event)
         body = {"participation_event": int(event), "participation_address": int(contact),
                 "state": 1, "description": self.marker,
                 "participation_price_groups": [{"price_group": int(group), "pieces": 1}]}
@@ -240,7 +265,8 @@ class LiveCheck:
             self.provider.call("PATCH", "participation/" + rid + "/", {"state": 0})
             require(self.provider.get("participation/" + rid + "/?query={id,state}").get("state") == 0,
                     "cancellation_not_persisted")
-        print("PASS easyverein: event, description, price group, member, guest, cancellations")
+        print("PASS easyverein: event, description, price assignment, member, guest, cancellations", flush=True)
+        require(price_group_name_ok, "price_group_update_not_persisted")
 
     def delete(self, resource, rid):
         path = resource + "/" + reference(rid) + "/"

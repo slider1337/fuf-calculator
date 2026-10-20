@@ -66,10 +66,13 @@ final readonly class ParticipationService {
    $people=array_column($b['persons'],null,'id');$seen=[];$link=$this->store->link($trip)??throw new AccessException('confirmed_term_required',409);
    foreach($selected as $i=>$choice){
     $choice=Input::map($choice);$id=$choice['id']??null;if(!is_int($id)||!isset($people[$id])||isset($seen[$id])){throw new ValidationException(["persons.$i.id"=>'owned_unique_id_required']);}$seen[$id]=true;$person=$people[$id];
-    $active=$this->store->activePersonJob($id);if($active!==false){throw new AccessException('person_operation_in_progress',409);}
     if($kind==='register'&&$person['status']==='confirmed'){continue;}
     $member=$person['memberReference']??null;$requested=$choice['memberReference']??$member;
-    if(!is_string($requested)||!preg_match('/^[1-9][0-9]{0,18}$/D',$requested)||($member!==null&&$member!==$requested)){throw new ValidationException(["persons.$i.memberReference"=>'stable_verified_reference_required']);}
+    if(!is_string($requested)||!preg_match('/^[1-9][0-9]{0,18}$/D',$requested)||($member===null||$member!==$requested)){throw new ValidationException(["persons.$i.memberReference"=>'stable_verified_reference_required']);}
+    $active=$this->store->activePersonJob($id);
+    // Reuse an ongoing action, including unknown outcomes; never enqueue a duplicate write.
+    if($active===$kind){continue;}
+    if($active!==false){throw new AccessException('person_operation_in_progress',409);}
     if($kind==='register'&&$person['status']==='cancelled'){throw new AccessException('person_cancelled',409);}
     if($kind==='cancel'&&($person['externalReference']??null)===null){throw new AccessException('external_participation_required',409);}
     $group=$choice['priceGroupId']??null;$price=$choice['expectedPrice']??null;

@@ -163,7 +163,7 @@ final readonly class SqliteParticipationRepository implements ParticipationRepos
     }
     public function activePersonJob(mixed $person): int|string|false|null
     {
-        $s=$this->execute("SELECT 1 FROM participation_jobs WHERE participant_id=? AND status IN ('pending','running','unknown','reconciling')", [$person]);
+        $s=$this->execute("SELECT kind FROM participation_jobs WHERE participant_id=? AND status IN ('pending','running','unknown','reconciling')", [$person]);
         return $s->fetchColumn();
     }
     /** @return list<mixed> */

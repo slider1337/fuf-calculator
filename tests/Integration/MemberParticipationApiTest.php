@@ -393,7 +393,29 @@ final class MemberParticipationApiTest extends ApiTestCase {
  }
  public function testLostResponseAndRevokedRightsCannotQueueAnotherRegistration(): void {
   $this->provider->timeout=true;$b=$this->create($this->payload(1));$this->worker(1);$this->db->exec('UPDATE member_trip_settings SET enabled=0');$this->db->exec('UPDATE participation_jobs SET lease_until=0');$this->worker(1);self::assertSame('unknown',$this->db->query('SELECT status FROM participation_jobs')->fetchColumn());
-  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",['operationKey'=>'no_duplicate_001','revision'=>1,'kind'=>'register','persons'=>[['id'=>$b['persons'][0]['id'],'memberReference'=>'11','priceGroupId'=>'21','expectedPrice'=>'12']]]);self::assertSame(409,$r->getStatusCode());self::assertSame(1,$this->provider->writes);
+  $_SESSION['user_id']=1;$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",['operationKey'=>'no_duplicate_001','revision'=>1,'kind'=>'register','persons'=>[['id'=>$b['persons'][0]['id'],'memberReference'=>'11','priceGroupId'=>'21','expectedPrice'=>'12']]]);self::assertSame(202,$r->getStatusCode(),(string)$r->getBody());self::assertSame(1,$this->provider->writes);self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM participation_jobs')->fetchColumn());
+ }
+ public function testOrgSelectionReusesRunningAndConfirmedPeopleAndQueuesOnlyOpenPeople(): void {
+  $b=$this->create($this->payload(4));$ids=array_column($b['persons'],'id');
+  $this->db->exec("UPDATE participation_jobs SET status='failed' WHERE participant_id IN ($ids[1],$ids[2])");
+  $this->db->exec("UPDATE registration_participants SET participation_status='confirmed' WHERE id=$ids[2]");
+  $_SESSION['user_id']=1;
+  $p=['operationKey'=>'org_mixed_people_001','revision'=>$b['revision'],'kind'=>'register','persons'=>array_map(fn($id)=>['id'=>$id,'priceGroupId'=>'21','expectedPrice'=>'12'],$ids)];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",$p);
+  self::assertSame(202,$r->getStatusCode(),(string)$r->getBody());
+  self::assertSame(5,(int)$this->db->query('SELECT COUNT(*) FROM participation_jobs')->fetchColumn());
+  self::assertSame(1,(int)$this->db->query("SELECT COUNT(*) FROM participation_jobs WHERE participant_id=$ids[1] AND status='pending'")->fetchColumn());
+  $p['operationKey']='org_mixed_people_002';$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",$p);
+  self::assertSame(202,$r->getStatusCode(),(string)$r->getBody());self::assertSame(5,(int)$this->db->query('SELECT COUNT(*) FROM participation_jobs')->fetchColumn());
+  self::assertSame(0,$this->provider->writes);
+ }
+ public function testOrgCannotReplaceVerifiedIdentityOrCancelDuringRegistration(): void {
+  $b=$this->create($this->payload(1));$_SESSION['user_id']=1;
+  $p=['operationKey'=>'org_identity_001','revision'=>$b['revision'],'kind'=>'register','persons'=>[['id'=>$b['persons'][0]['id'],'memberReference'=>'999','priceGroupId'=>'21','expectedPrice'=>'12']]];
+  $r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",$p);self::assertSame(422,$r->getStatusCode());
+  unset($p['persons'][0]['memberReference']);$p['kind']='cancel';$r=$this->dispatch('POST',"/api/trips/{$this->trip}/bookings/{$b['id']}/participations",$p);
+  self::assertSame(409,$r->getStatusCode());self::assertStringContainsString('person_operation_in_progress',(string)$r->getBody());
+  self::assertSame(1,(int)$this->db->query('SELECT COUNT(*) FROM participation_jobs')->fetchColumn());
  }
  public function testOrgSyncResponsesMatchContract(): void {
   $b=$this->create($this->payload(1));$_SESSION['user_id']=1;

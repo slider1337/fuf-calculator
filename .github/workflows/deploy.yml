@@ -119,6 +119,11 @@ jobs:
             # Restart with new image
             docker compose -f docker-compose.prod.yml up -d
 
+            # Confirm the patched runtime in both running services.
+            for service in app worker; do
+              docker compose -f docker-compose.prod.yml exec -T "$service" php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION_ID < 80427 || PHP_VERSION_ID >= 80500) exit(1);'
+            done
+
             # Read-only sync diagnostics; never make provider calls during deployment verification.
             docker compose -f docker-compose.prod.yml exec -T app php scripts/sync-health.php
             docker compose -f docker-compose.prod.yml ps --status running --services

@@ -7,7 +7,8 @@ COPY scripts/copy-swagger-ui.php ./scripts/copy-swagger-ui.php
 COPY scripts/copy-tinymce.php ./scripts/copy-tinymce.php
 RUN composer install --no-interaction --prefer-dist --no-progress
 
-FROM php:8.4.26-cli-bookworm@sha256:836ac6c672d1372a47c8fd61b625015bd07760f493fb2eaab2087636498a2b4b
+FROM php:8.4.27-cli-bookworm@sha256:496b5e02fe9fe44fcfb715023b931048111dc4e0bc719789d83c906be9f04b05
+RUN php -r 'if (PHP_VERSION_ID < 80427 || PHP_VERSION_ID >= 80500) { fwrite(STDERR, "PHP 8.4.27 or newer 8.4 security patch required\n"); exit(1); }'
 WORKDIR /var/www/html
 
 RUN apt-get update \

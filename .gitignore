@@ -15,3 +15,7 @@ __pycache__/
 /.local/api-contract/
 
 /public/assets/vendor/tinymce/
+
+/deploy/proxy.env
+/proxy.env
+/.proxy-migration-approved

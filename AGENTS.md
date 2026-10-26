@@ -60,3 +60,10 @@ Diese Regeln gelten für jede Implementierungsphase im FuF-Projekt:
 - **Am Ende jeder Implementierungsphase dem Nutzer ausdrücklich vorschlagen, diesen API-Test auszuführen.** Der Vorschlag startet ihn nicht. Kein automatischer Start über Push, PR, Cron, Deployment oder die normale Testsuite.
 - Nur eindeutig gekennzeichnete eigene Testdaten anlegen. Sie bei Erfolg, Fehler und behandelbarem Abbruch wieder bereinigen und die Entfernung prüfen. Bei hartem Prozessabbruch oder API-Ausfall mit dem beständigen Laufjournal die Bereinigung wiederholen; zurückgebliebene/ungeklärte Daten sichtbar melden und den Lauf als fehlgeschlagen behandeln. Keine fremden Termine, Teilnahmen oder Mitgliedsdaten verändern/löschen. Keine automatische Wiederholung mehrdeutiger POST-Aufrufe.
 - Zugangsdaten ausschließlich aus der Umgebung, niemals ausgeben oder committen. Bestehende Mailgrenze bleibt: tatsächliche Testmails ausschließlich an `me@benna.me`. Der Test verwendet einen dafür vorgesehenen Kalender und einen ausdrücklich konfigurierten Testkontakt mit dieser Adresse; keine globalen Provider-/Mailkonfigurationen verändern.
+
+## Gemeinsamer Reverse Proxy seit 26.10.2026
+
+- `server-proxy` verwaltet öffentliche Ports, Routing und Zertifikate unabhängig. Calculator darf den Proxy nie stoppen, ersetzen, als orphan entfernen oder dessen Volumes/Images bereinigen.
+- Produktions-Compose nutzt ausschließlich internes HTTP :80, externes `benna-web` mit Alias `fuf-calculator` und das ausdrücklich benannte bestehende SQLite-Volume. `proxy.env` wird lokal gepflegt und nicht durch write-env.py ersetzt.
+- Deployment-Sperre vor Dateiübertragung bleibt bis zur freigegebenen und live geprüften Migration bestehen. Änderungen an Ports/Netzen/Zertifikaten benötigen einen konkreten Migrations- und Rollbackplan. Keine automatische Migration beim Merge.
+- Für Infrastrukturänderungen zusätzlich `python3 -m unittest discover -s tests/Deployment -v`, Compose config --quiet und Caddy validate ausführen. Live-Prüfungen und fehlende Werkzeuge getrennt melden.

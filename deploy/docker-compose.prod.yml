@@ -1,3 +1,5 @@
+name: ${FUF_COMPOSE_PROJECT:?Set existing project in proxy.env}
+
 services:
   # Bringt das Schema auf den Stand des Images und beendet sich wieder. Laeuft
   # vor app, damit ein Release mit neuer Migration nicht auf eine alte Tabelle
@@ -17,19 +19,17 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+    networks:
+      benna-web:
+        aliases: [fuf-calculator]
     volumes:
       - sqlite-data:/app/database
-      - caddy-data:/data
-      - caddy-config:/config
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     environment: &calculator-environment
       - DB_PATH=/app/database/fuf.sqlite
       - APP_DEBUG=0
-      - SERVER_NAME=fuf-calc.benna.me
+      - SERVER_NAME=:80
+      - FUF_PROXY_CIDR=${FUF_PROXY_CIDR:?Set benna-web subnet in proxy.env}
       - APP_URL=${APP_URL}
       - MAILER_DSN=${MAILER_DSN}
       - MAIL_FROM=${MAIL_FROM}
@@ -57,10 +57,12 @@ services:
       - sqlite-data:/app/database
     environment: *calculator-environment
 
+networks:
+  benna-web:
+    external: true
+    name: benna-web
+
 volumes:
   sqlite-data:
-    driver: local
-  caddy-data:
-    driver: local
-  caddy-config:
-    driver: local
+    external: true
+    name: ${FUF_SQLITE_VOLUME:?Set existing database volume in proxy.env}

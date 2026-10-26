@@ -64,6 +64,18 @@ jobs:
         with:
           sparse-checkout: deploy
 
+      - name: Require completed proxy migration before replacing deployment files
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -eu
+            test -f /opt/fuf-calculator/.proxy-migration-approved
+            test -s /opt/fuf-calculator/proxy.env
+            docker network inspect benna-web >/dev/null
+
       - name: Copy deployment files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -110,25 +122,24 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}:$FUF_IMAGE_TAG
 
             # Stop all writers and create a consistent backup before migration.
-            docker compose -f docker-compose.prod.yml stop app worker
-            docker compose -f docker-compose.prod.yml run --rm --no-deps app php scripts/backup.php
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml stop app worker
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml run --rm --no-deps app php scripts/backup.php
 
             # Run database migrations using the new image (one-shot, shares the DB volume)
-            docker compose -f docker-compose.prod.yml run --rm --no-deps app php scripts/migrate.php
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml run --rm --no-deps app php scripts/migrate.php
 
             # Restart with new image
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml up -d app worker
 
             # Confirm the patched runtime in both running services.
             for service in app worker; do
-              docker compose -f docker-compose.prod.yml exec -T "$service" php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION_ID < 80427 || PHP_VERSION_ID >= 80500) exit(1);'
+              docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml exec -T "$service" php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION_ID < 80427 || PHP_VERSION_ID >= 80500) exit(1);'
             done
 
             # Read-only sync diagnostics; never make provider calls during deployment verification.
-            docker compose -f docker-compose.prod.yml exec -T app php scripts/sync-health.php
-            docker compose -f docker-compose.prod.yml ps --status running --services
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml exec -T app php scripts/sync-health.php
+            docker compose --env-file .env --env-file proxy.env -f docker-compose.prod.yml ps --status running --services
 
-            # Clean up old images
-            docker image prune -f
+            # Shared proxy and rollback images are managed independently.
 
             echo "Deployment complete!"

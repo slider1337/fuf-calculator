@@ -111,3 +111,8 @@ Im Reise-/Terminwizard werden bestehende easyVerein-Termine nach Name und Datum 
 ## Sicherheit
 
 Browser-Schreibanfragen benötigen einen CSRF-Token. Login und Passwortreset sind persistent begrenzt; Passwortänderungen widerrufen weitere Resetlinks und bestehende Sitzungen. Änderungen und Betriebshinweise: [Sicherheitsverbesserungen vom 15.10.2026](docs/fixes/2026-10-15-security-hardening.md).
+
+## Gemeinsamer Server-Proxy
+
+Die produktive Web-Infrastruktur wird getrennt verwaltet. Vor Deployment siehe
+[Migration und Deployment-Sperre](docs/deployment/server-proxy.md).

@@ -1,18 +1,16 @@
 {
 	frankenphp
+	servers {
+		trusted_proxies static {$FUF_PROXY_CIDR}
+		trusted_proxies_strict
+	}
 }
 
-fuf-calc.benna.me {
+:80 {
 	root * /app/public
-
 	encode zstd br gzip
-
 	php_server {
 		try_files {path} index.php
 	}
-
-	log {
-		output stderr
-		format console
-	}
+	# No access log containing login query parameters / member API bodies.
 }

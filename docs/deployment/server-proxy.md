@@ -55,3 +55,15 @@ für tatsächlich ausgeführte PHP-Prüfungen und deren Grenzen.
 Die lokalen Tests ersetzen keine produktive Routing-Abnahme.
 
 Die Python-Architekturtests benötigen PyYAML (geprüft mit 6.0.3).
+
+
+## nginx-proxy-Erkennung seit 30.10.2026
+
+server-proxy verwendet nginxproxy/nginx-proxy mit acme-companion. Nur app erhält
+VIRTUAL_HOST, VIRTUAL_PORT=80 und ACME_HOST. Die gemeinsamen Einstellungen liegen
+in einer separaten YAML-Mapping-Verankerung; worker und migrate erben keine
+Erkennungsvariablen. FUF_VIRTUAL_HOST in proxy.env ist optional und hat den
+Standard fuf-calc.benna.me. FUF_PROXY_CIDR bleibt für internes FrankenPHP erforderlich.
+Der Proxy stellt Zertifikate neu aus; die SQLite-Volume-Zuordnung bleibt erhalten.
+Keine Images, Workflow- oder Datenbankänderungen für diese Compose-Anbindung.
+Die Details stehen im server-proxy-Repository unter docs/migration.md.

@@ -1,5 +1,7 @@
 /vendor/
 /database/*.sqlite
+/database/easyverein-token.json*
+/database/.ev-token-*
 !/database/.gitkeep
 
 .idea

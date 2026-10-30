@@ -7,5 +7,7 @@ build
 database/*.sqlite
 database/*.sqlite-wal
 database/*.sqlite-shm
+database/easyverein-token.json*
+database/.ev-token-*
 node_modules
 *.csv

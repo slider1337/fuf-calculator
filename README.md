@@ -102,7 +102,7 @@ Die [typisierte Termin- und Anmeldeverwaltung](docs/fixes/2026-10-16-typed-term-
 
 
 
-Reisen können archiviert und wiederhergestellt werden; ihre Daten bleiben erhalten. Mitgliederänderungen und Stornos gelten bis Anmeldeschluss. Die lesende easyVerein-Mitgliederintegration wird serverseitig über `EASYVEREIN_API_TOKEN` konfiguriert; externe Schreibaktionen sind standardmäßig deaktiviert. [Prüfstand 14.10.](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-14-10.md).
+Reisen können archiviert und wiederhergestellt werden; ihre Daten bleiben erhalten. Mitgliederänderungen und Stornos gelten bis Anmeldeschluss. Der easyVerein-API-Zugang wird einmalig über `EASYVEREIN_API_TOKEN` eingerichtet; automatische Erneuerungen werden danach gemeinsam für Web und Worker in `database/easyverein-token.json` gespeichert ([Betrieb und manueller Austausch](docs/integration/easyverein-token-rotation.md)); externe Schreibaktionen sind standardmäßig deaktiviert. [Prüfstand 14.10.](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-14-10.md).
 
 Echte Termin-/Teilnahmeschreibadapter und Orga-Gastfreigaben sind vorhanden. `EASYVEREIN_WRITE_MODE=production` aktiviert den späteren echten Betrieb nach Abnahme; standardmäßig aus. Testmails des Calculators gehen ausschließlich an me@benna.me, normale Empfänger erst bei `MAIL_DELIVERY_MODE=production`. [Aktuelle Prüfung/Betrieb](docs/implementation/veranstaltungsverwaltung/PRUEFUNG-14-10-SCHREIBWEGE.md).
 

@@ -9,7 +9,7 @@ COPY scripts/copy-tinymce.php ./scripts/copy-tinymce.php
 RUN composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
 
 # Stage 2: Production FrankenPHP image
-FROM dunglas/frankenphp:1.13.2-php8.4-bookworm@sha256:49369ff211d81dc30a15890d58c0651d639aef0d9c0a9b91bcc6f387a77bd7a2
+FROM dunglas/frankenphp:1.13.3-php8.4-bookworm@sha256:a3d212a043a87f5a31fc13e0b564a857eba2592e9326f004bc43d405a3463b11
 
 RUN php -r 'if (PHP_VERSION_ID < 80427 || PHP_VERSION_ID >= 80500) { fwrite(STDERR, "PHP 8.4.27 or newer 8.4 security patch required\n"); exit(1); }'
 

@@ -1,5 +1,26 @@
 name: ${FUF_COMPOSE_PROJECT:?Set existing project in proxy.env}
 
+x-calculator-environment: &calculator-environment
+  DB_PATH: '/app/database/fuf.sqlite'
+  APP_DEBUG: '0'
+  SERVER_NAME: ':80'
+  FUF_PROXY_CIDR: '${FUF_PROXY_CIDR:?Set benna-web subnet in proxy.env}'
+  APP_URL: '${APP_URL}'
+  MAILER_DSN: '${MAILER_DSN}'
+  MAIL_FROM: '${MAIL_FROM}'
+  EASYVEREIN_CLIENT_ID: '${EASYVEREIN_CLIENT_ID:-}'
+  EASYVEREIN_CLIENT_SECRET: '${EASYVEREIN_CLIENT_SECRET:-}'
+  EASYVEREIN_API_TOKEN: '${EASYVEREIN_API_TOKEN:-}'
+  EASYVEREIN_WRITE_MODE: '${EASYVEREIN_WRITE_MODE:-off}'
+  EASYVEREIN_REQUESTS_PER_MINUTE: '${EASYVEREIN_REQUESTS_PER_MINUTE:-60}'
+  MAIL_DELIVERY_MODE: '${MAIL_DELIVERY_MODE:-test}'
+  FUF_INTEGRATION_AUDIENCE: '${FUF_INTEGRATION_AUDIENCE:-}'
+  FUF_INTEGRATION_SERVICES: '${FUF_INTEGRATION_SERVICES:-}'
+  FUF_WORKER_BATCH: '${FUF_WORKER_BATCH:-10}'
+  FUF_WORKER_INTERVAL: '${FUF_WORKER_INTERVAL:-60}'
+  FUF_RECONCILE_ACTOR_ID: '${FUF_RECONCILE_ACTOR_ID:-0}'
+  FUF_RECONCILE_INTERVAL: '${FUF_RECONCILE_INTERVAL:-300}'
+
 services:
   # Bringt das Schema auf den Stand des Images und beendet sich wieder. Laeuft
   # vor app, damit ein Release mit neuer Migration nicht auf eine alte Tabelle
@@ -25,26 +46,12 @@ services:
     volumes:
       - sqlite-data:/app/database
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    environment: &calculator-environment
-      - DB_PATH=/app/database/fuf.sqlite
-      - APP_DEBUG=0
-      - SERVER_NAME=:80
-      - FUF_PROXY_CIDR=${FUF_PROXY_CIDR:?Set benna-web subnet in proxy.env}
-      - APP_URL=${APP_URL}
-      - MAILER_DSN=${MAILER_DSN}
-      - MAIL_FROM=${MAIL_FROM}
-      - EASYVEREIN_CLIENT_ID=${EASYVEREIN_CLIENT_ID:-}
-      - EASYVEREIN_CLIENT_SECRET=${EASYVEREIN_CLIENT_SECRET:-}
-      - EASYVEREIN_API_TOKEN=${EASYVEREIN_API_TOKEN:-}
-      - EASYVEREIN_WRITE_MODE=${EASYVEREIN_WRITE_MODE:-off}
-      - EASYVEREIN_REQUESTS_PER_MINUTE=${EASYVEREIN_REQUESTS_PER_MINUTE:-60}
-      - MAIL_DELIVERY_MODE=${MAIL_DELIVERY_MODE:-test}
-      - FUF_INTEGRATION_AUDIENCE=${FUF_INTEGRATION_AUDIENCE:-}
-      - FUF_INTEGRATION_SERVICES=${FUF_INTEGRATION_SERVICES:-}
-      - FUF_WORKER_BATCH=${FUF_WORKER_BATCH:-10}
-      - FUF_WORKER_INTERVAL=${FUF_WORKER_INTERVAL:-60}
-      - FUF_RECONCILE_ACTOR_ID=${FUF_RECONCILE_ACTOR_ID:-0}
-      - FUF_RECONCILE_INTERVAL=${FUF_RECONCILE_INTERVAL:-300}
+    expose: ["80"]
+    environment:
+      <<: *calculator-environment
+      VIRTUAL_HOST: ${FUF_VIRTUAL_HOST:-fuf-calc.benna.me}
+      VIRTUAL_PORT: "80"
+      ACME_HOST: ${FUF_VIRTUAL_HOST:-fuf-calc.benna.me}
 
   worker:
     image: ghcr.io/slider1337/fuf-calculator:${FUF_IMAGE_TAG:-latest}

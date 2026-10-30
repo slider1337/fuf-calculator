@@ -5,6 +5,20 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 class ProxySplitTest(TestCase):
+    def test_only_web_container_is_discovered_and_requests_a_certificate(self):
+        cfg = yaml.safe_load((ROOT / 'deploy/docker-compose.prod.yml').read_text())
+        app = cfg['services']['app']
+        self.assertIn('80', app.get('expose', []))
+        self.assertIsInstance(app['environment'], dict)
+        env = app['environment']
+        self.assertEqual(env['VIRTUAL_HOST'], '${FUF_VIRTUAL_HOST:-fuf-calc.benna.me}')
+        self.assertEqual(env['ACME_HOST'], env['VIRTUAL_HOST'])
+        self.assertEqual(env['VIRTUAL_PORT'], '80')
+        for name in ['worker', 'migrate']:
+            other = cfg['services'][name]['environment']
+            keys = set(other) if isinstance(other, dict) else {line.split('=', 1)[0] for line in other}
+            self.assertFalse(keys & {'VIRTUAL_HOST', 'VIRTUAL_PORT', 'ACME_HOST', 'LETSENCRYPT_HOST'})
+
     def test_calculator_cannot_publish_proxy_ports_or_own_certificates(self):
         cfg = yaml.safe_load((ROOT / 'deploy/docker-compose.prod.yml').read_text())
         self.assertEqual(set(cfg['services']), {'app', 'worker', 'migrate'})

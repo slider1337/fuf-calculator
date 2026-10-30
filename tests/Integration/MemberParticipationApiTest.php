@@ -147,9 +147,11 @@ final class MemberParticipationApiTest extends ApiTestCase {
    public function configured(): bool {return true;}
    public function get(string $path,array $query=[]): array {throw new \LogicException('No network allowed');}
   };
-  $client=new \App\Infrastructure\EasyVereinWriteHttpClient($reads,$token,'production',$c->get(\App\Infrastructure\ProviderRequestBudget::class));
+  $api=new \App\Infrastructure\EasyVereinApi(new \App\Infrastructure\EasyVereinTokenStore((string)getenv('DB_PATH').'.token.json',$token),$c->get(\App\Infrastructure\ProviderRequestBudget::class));
+  $client=new \App\Infrastructure\EasyVereinWriteHttpClient($reads,$api,'production');
   try{$client->write('POST','participation/',[]);self::fail('Budget must stop the write');}
   catch(ParticipationRejected $e){self::assertSame(429,$e->getCode());self::assertSame('provider_rate_limited',$e->getMessage());self::assertGreaterThanOrEqual(60,$e->retryAfter);}
+  finally {foreach(glob((string)getenv('DB_PATH').'.token.json*')?:[] as $f)unlink($f);}
  }
  public function testFamilyBatchChecksMemberDeadlineAgainBeforeWriting(): void {
   $batch=new FakeBatchParticipationProvider();$c=$this->app->getContainer();$c->set(ParticipationPort::class,$batch);
